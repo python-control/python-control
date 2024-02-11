@@ -55,7 +55,7 @@ def _h2norm_slycot(sys, print_warning=True):
         if dico == 'C':
             if any(D.flat != 0):
                 if print_warning:
-                    warnings.warn("System has a direct feedthrough term!")
+                    warnings.warn("System has a direct feedthrough term!", UserWarning)
                 return float("inf")
             else:
                 return 0.0
@@ -67,15 +67,15 @@ def _h2norm_slycot(sys, print_warning=True):
     except SlycotArithmeticError as e:
         if e.info == 3:
             if print_warning:
-                warnings.warn("System has pole(s) on the stability boundary!")
+                warnings.warn("System has pole(s) on the stability boundary!", UserWarning)
             return float("inf")
         elif e.info == 5:
             if print_warning:
-                warnings.warn("System has a direct feedthrough term!")
+                warnings.warn("System has a direct feedthrough term!", UserWarning)
             return float("inf")
         elif e.info == 6:
             if print_warning:
-                warnings.warn("System is unstable!")
+                warnings.warn("System is unstable!", UserWarning)
             return float("inf")
         else:
             raise e
@@ -91,7 +91,7 @@ def norm(system, p=2, tol=1e-10, print_warning=True, method=None):
     system : LTI (:class:`StateSpace` or :class:`TransferFunction`)
         System in continuous or discrete time for which the norm should be computed.
     p : int or str
-        Type of norm to be computed. p=2 gives the H2 norm, and p='inf' gives the L-infinity norm.
+        Type of norm to be computed. ``p=2`` gives the H2 norm, and ``p='inf'`` gives the L-infinity norm.
     tol : float
         Relative tolerance for accuracy of L-infinity norm computation. Ignored
         unless p='inf'.
@@ -145,15 +145,15 @@ def norm(system, p=2, tol=1e-10, print_warning=True, method=None):
             poles_real_part = G.poles().real    
             if any(np.isclose(poles_real_part, 0.0)):  # Poles on imaginary axis
                 if print_warning:
-                    warnings.warn("Poles close to, or on, the imaginary axis. Norm value may be uncertain.")
+                    warnings.warn("Poles close to, or on, the imaginary axis. Norm value may be uncertain.", UserWarning)
                 return float('inf')
             elif any(poles_real_part > 0.0):  # System unstable
                 if print_warning:
-                    warnings.warn("System is unstable!")
+                    warnings.warn("System is unstable!", UserWarning)
                 return float('inf')
             elif any(D.flat != 0):  # System has direct feedthrough
                 if print_warning:
-                    warnings.warn("System has a direct feedthrough term!")
+                    warnings.warn("System has a direct feedthrough term!", UserWarning)
                 return float('inf')   
             
             else:      
@@ -169,7 +169,7 @@ def norm(system, p=2, tol=1e-10, print_warning=True, method=None):
                     # Test next is a precaution in case the Lyapunov equation is ill conditioned.
                     if any(la.eigvals(P).real < 0.0):  
                         if print_warning:
-                            warnings.warn("There appears to be poles close to the imaginary axis. Norm value may be uncertain.")
+                            warnings.warn("There appears to be poles close to the imaginary axis. Norm value may be uncertain.", UserWarning)
                         return float('inf')
                     else:
                         norm_value = np.sqrt(np.trace(C@P@C.T))  # Argument in sqrt should be non-negative
@@ -187,11 +187,11 @@ def norm(system, p=2, tol=1e-10, print_warning=True, method=None):
             poles_abs = abs(G.poles())
             if any(np.isclose(poles_abs, 1.0)):  # Poles on imaginary axis
                 if print_warning:
-                    warnings.warn("Poles close to, or on, the complex unit circle. Norm value may be uncertain.")
+                    warnings.warn("Poles close to, or on, the complex unit circle. Norm value may be uncertain.", UserWarning)
                 return float('inf')
             elif any(poles_abs > 1.0):  # System unstable
                 if print_warning:
-                    warnings.warn("System is unstable!")
+                    warnings.warn("System is unstable!", UserWarning)
                 return float('inf')
             
             else:
@@ -207,7 +207,7 @@ def norm(system, p=2, tol=1e-10, print_warning=True, method=None):
                 # Test next is a precaution in case the Lyapunov equation is ill conditioned.
                 if any(la.eigvals(P).real < 0.0):
                     if print_warning:
-                        warnings.warn("Warning: There appears to be poles close to the complex unit circle. Norm value may be uncertain.")
+                        warnings.warn("Warning: There appears to be poles close to the complex unit circle. Norm value may be uncertain.", UserWarning)
                     return float('inf')
                 else:
                     norm_value = np.sqrt(np.trace(C@P@C.T + D@D.T))  # Argument in sqrt should be non-negative               
@@ -226,12 +226,12 @@ def norm(system, p=2, tol=1e-10, print_warning=True, method=None):
         if G.isdtime():  # Discrete time
             if any(np.isclose(abs(poles), 1.0)):  # Poles on unit circle
                 if print_warning:
-                    warnings.warn("Poles close to, or on, the complex unit circle. Norm value may be uncertain.")
+                    warnings.warn("Poles close to, or on, the complex unit circle. Norm value may be uncertain.", UserWarning)
                 return float('inf')
         else:  # Continuous time
             if any(np.isclose(poles.real, 0.0)):  # Poles on imaginary axis
                 if print_warning:
-                    warnings.warn("Poles close to, or on, the imaginary axis. Norm value may be uncertain.")
+                    warnings.warn("Poles close to, or on, the imaginary axis. Norm value may be uncertain.", UserWarning)
                 return float('inf')
     
         # Use slycot, if available, to compute (finite) norm
