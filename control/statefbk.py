@@ -1119,18 +1119,21 @@ def gram(sys, type):
     if type not in ['c', 'o', 'cf', 'of']:
         raise ValueError("That type is not supported!")
 
-    # TODO: Check for continuous or discrete, only continuous supported for now
-        # if isCont():
-        #    dico = 'C'
-        # elif isDisc():
-        #    dico = 'D'
-        # else:
-    dico = 'C'
+    # Check if system is continuous or discrete
+    if sys.isctime():
+        dico = 'C'
 
-    # TODO: Check system is stable, perhaps a utility in ctrlutil.py
-    # or a method of the StateSpace class?
-    if np.any(np.linalg.eigvals(sys.A).real >= 0.0):
-        raise ValueError("Oops, the system is unstable!")
+        # TODO: Check system is stable, perhaps a utility in ctrlutil.py
+        # or a method of the StateSpace class?
+        if np.any(np.linalg.eigvals(sys.A).real >= 0.0):
+            raise ValueError("Oops, the system is unstable!")
+
+    else:
+        assert sys.isdtime()
+        dico = 'D'
+
+        if np.any(np.abs(sys.poles()) >= 1.):
+            raise ValueError("Oops, the system is unstable!")
 
     if type == 'c' or type == 'o':
         # Compute Gramian by the Slycot routine sb03md

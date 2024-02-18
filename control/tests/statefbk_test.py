@@ -98,6 +98,28 @@ class TestStatefbk:
         Wctrue = np.array([[18.5, 24.5], [24.5, 32.5]])
         Wc = gram(sys, 'c')
         np.testing.assert_array_almost_equal(Wc, Wctrue)
+        sysd = ct.c2d(sys, 0.2)
+        Wctrue = np.array([[3.666767, 4.853625],
+                           [4.853625, 6.435233]])
+        Wc = gram(sysd, 'c')
+        np.testing.assert_array_almost_equal(Wc, Wctrue)
+
+    @slycotonly
+    def testGramWc2(self):
+        A = np.array([[1., -2.], [3., -4.]])
+        B = np.array([[5.], [7.]])
+        C = np.array([[6., 8.]])
+        D = np.array([[9.]])
+        sys = ss(A,B,C,D)
+        Wctrue = np.array([[ 7.166667,  9.833333],
+                           [ 9.833333,  13.5]])
+        Wc = gram(sys, 'c')
+        np.testing.assert_array_almost_equal(Wc, Wctrue)
+        sysd = ct.c2d(sys, 0.2)
+        Wctrue = np.array([[1.418978, 1.946180],
+                           [1.946180, 2.670758]])
+        Wc = gram(sysd, 'c')
+        np.testing.assert_array_almost_equal(Wc, Wctrue)
 
     @slycotonly
     def testGramRc(self):
@@ -106,9 +128,15 @@ class TestStatefbk:
         C = np.array([[4., 5.], [6., 7.]])
         D = np.array([[13., 14.], [15., 16.]])
         sys = ss(A, B, C, D)
-        Rctrue = np.array([[4.30116263, 5.6961343], [0., 0.23249528]])
+        Rctrue = np.array([[4.30116263, 5.6961343], 
+                           [0., 0.23249528]])
         Rc = gram(sys, 'cf')
         np.testing.assert_array_almost_equal(Rc, Rctrue)
+        sysd = ct.c2d(sys, 0.2)
+        Rctrue = np.array([[1.91488054, 2.53468814],
+                           [0.        , 0.10290372]])
+        Rc = gram(sysd, 'cf')
+        np.testing.assert_array_almost_equal(Rc, Rctrue)        
 
     @slycotonly
     def testGramWo(self):
@@ -119,6 +147,11 @@ class TestStatefbk:
         sys = ss(A, B, C, D)
         Wotrue = np.array([[257.5, -94.5], [-94.5, 56.5]])
         Wo = gram(sys, 'o')
+        np.testing.assert_array_almost_equal(Wo, Wotrue)
+        sysd = ct.c2d(sys, 0.2)
+        Wotrue = np.array([[ 1305.369179, -440.046414], 
+                           [ -440.046414,  333.034844]])
+        Wo = gram(sysd, 'o')
         np.testing.assert_array_almost_equal(Wo, Wotrue)
 
     @slycotonly
@@ -131,6 +164,11 @@ class TestStatefbk:
         Wotrue = np.array([[198., -72.], [-72., 44.]])
         Wo = gram(sys, 'o')
         np.testing.assert_array_almost_equal(Wo, Wotrue)
+        sysd = ct.c2d(sys, 0.2)
+        Wotrue = np.array([[ 1001.835511, -335.337663],
+                           [ -335.337663,  263.355793]])
+        Wo = gram(sysd, 'o')
+        np.testing.assert_array_almost_equal(Wo, Wotrue)
 
     @slycotonly
     def testGramRo(self):
@@ -142,15 +180,34 @@ class TestStatefbk:
         Rotrue = np.array([[16.04680654, -5.8890222], [0., 4.67112593]])
         Ro = gram(sys, 'of')
         np.testing.assert_array_almost_equal(Ro, Rotrue)
+        sysd = ct.c2d(sys, 0.2)
+        Rotrue = np.array([[ 36.12989315, -12.17956588],
+                           [  0.        ,  13.59018097]])
+        Ro = gram(sysd, 'of')
+        np.testing.assert_array_almost_equal(Ro, Rotrue) 
 
     def testGramsys(self):
-        num =[1.]
-        den = [1., 1., 1.]
-        sys = tf(num,den)
-        with pytest.raises(ValueError):
+        sys = tf([1.], [1., 1., 1.])
+        with pytest.raises(ValueError) as excinfo:
             gram(sys, 'o')
-        with pytest.raises(ValueError):
+        assert "must be StateSpace" in str(excinfo.value)
+        with pytest.raises(ValueError) as excinfo:
             gram(sys, 'c')
+        assert "must be StateSpace" in str(excinfo.value)
+        sys = tf([1], [1, -1], 0.5)
+        with pytest.raises(ValueError) as excinfo:
+            gram(sys, 'o')
+        assert "must be StateSpace" in str(excinfo.value)
+        with pytest.raises(ValueError) as excinfo:
+            gram(sys, 'c')
+        assert "must be StateSpace" in str(excinfo.value)
+        sys = ct.ss(sys)  # this system is unstable
+        with pytest.raises(ValueError) as excinfo:
+            gram(sys, 'o')
+        assert "is unstable" in str(excinfo.value)
+        with pytest.raises(ValueError) as excinfo:
+            gram(sys, 'c')
+        assert "is unstable" in str(excinfo.value)
 
     def testAcker(self, fixedseed):
         for states in range(1, self.maxStates):
