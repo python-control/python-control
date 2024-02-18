@@ -83,7 +83,7 @@ def _h2norm_slycot(sys, print_warning=True):
 
 #------------------------------------------------------------------------------
 
-def norm(system, p=2, tol=1e-10, print_warning=True, method=None):
+def norm(system, p=2, tol=1e-6, print_warning=True, method=None):
     """Computes norm of system.
     
     Parameters
