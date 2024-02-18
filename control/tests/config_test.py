@@ -51,6 +51,7 @@ class TestConfig:
         ct.config.defaults['deprecated.config.oldmiss'] = 'config.newmiss'
 
         msgpattern = r'config\.oldkey.* has been renamed to .*config\.newkey'
+        msgmisspattern = r'config\.oldmiss.* has been renamed to .*config\.newmiss'
 
         ct.config.defaults['config.newkey'] = 1
         with pytest.warns(FutureWarning, match=msgpattern):
@@ -77,7 +78,7 @@ class TestConfig:
             assert ct.config.defaults.get('config.oldkey') == 6
 
         with pytest.raises(KeyError):
-            with pytest.warns(FutureWarning, match=msgpattern):
+            with pytest.warns(FutureWarning, match=msgmisspattern):
                 ct.config.defaults['config.oldmiss']
         with pytest.raises(KeyError):
             ct.config.defaults['config.neverdefined']
