@@ -179,6 +179,7 @@ Utility functions and conversions
     issys
     mag2db
     modal_form
+    norm
     observable_form
     pade
     reachable_form

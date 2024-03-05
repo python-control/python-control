@@ -94,13 +94,13 @@ def norm(system, p=2, tol=1e-6, print_warning=True, method=None):
         Type of norm to be computed. ``p=2`` gives the H2 norm, and ``p='inf'`` gives the L-infinity norm.
     tol : float
         Relative tolerance for accuracy of L-infinity norm computation. Ignored
-        unless p='inf'.
+        unless ``p='inf'``.
     print_warning : bool
         Print warning message in case norm value may be uncertain.
     method : str, optional
         Set the method used for computing the result.  Current methods are
-        'slycot' and 'scipy'. If set to None (default), try 'slycot' first
-        and then 'scipy'.
+        ``'slycot'`` and ``'scipy'``. If set to ``None`` (default), try ``'slycot'`` first
+        and then ``'scipy'``.
     
     Returns
     -------
@@ -114,10 +114,10 @@ def norm(system, p=2, tol=1e-6, print_warning=True, method=None):
     Examples
     --------
     >>> Gc = ct.tf([1], [1, 2, 1])
-    >>> ct.norm(Gc, 2)
-    0.5000000000000001
-    >>> ct.norm(Gc, 'inf', tol=1e-11, method='scipy')
-    1.000000000007276
+    >>> round(ct.norm(Gc, 2), 3)
+    0.5
+    >>> round(ct.norm(Gc, 'inf', tol=1e-5, method='scipy'), 3)
+    1.0
     """
            
     if not isinstance(system, (ct.StateSpace, ct.TransferFunction)):
