@@ -510,7 +510,7 @@ def placep(A,B,P):
     wrka = zeros((n,m))
     wrk1 = zeros(m)
     wrk2 = zeros(m)
-    iwrk = zeros((m),np.int)
+    iwrk = zeros((m),np.int64)
 
     A,B,ncont,indcont,nblk,z = _wrapper.ssxmc(n,m,A,n,B,wrka,wrk1,wrk2,iwrk,tol,mode)
     P = sort(P)
