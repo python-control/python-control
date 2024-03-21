@@ -3,7 +3,7 @@ Phase  plot examples
 
 Code
 ....
-.. literalinclude:: phaseplots.py
+.. literalinclude:: phase_plane_plots.py
    :language: python
    :linenos:
 
