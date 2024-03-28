@@ -30,7 +30,8 @@ import control.tests.timeplot_test as timeplot_test
 import control.tests.descfcn_test as descfcn_test
 
 @pytest.mark.parametrize("module, prefix", [
-    (control, ""), (control.flatsys, "flatsys."), (control.optimal, "optimal.")
+    (control, ""), (control.flatsys, "flatsys."),
+    (control.optimal, "optimal."), (control.phaseplot, "phaseplot.")
 ])
 def test_kwarg_search(module, prefix):
     # Look through every object in the package
@@ -62,7 +63,12 @@ def test_kwarg_search(module, prefix):
                 continue
 
             # Make sure there is a unit test defined
-            assert prefix + name in kwarg_unittest
+            if prefix + name not in kwarg_unittest:
+                # For phaseplot module, look for tests w/out prefix (and skip)
+                if prefix.startswith('phaseplot.') and \
+                   (prefix + name)[10:] in kwarg_unittest:
+                    continue
+                pytest.fail(f"couldn't find kwarg test for {prefix}{name}")
 
             # Make sure there is a unit test
             if not hasattr(kwarg_unittest[prefix + name], '__call__'):
@@ -151,6 +157,11 @@ def test_unrecognized_kwargs(function, nsssys, ntfsys, moreargs, kwargs,
      (control.nichols_plot, 1, (), {}),
      (control.nyquist, 1, (), {}),
      (control.nyquist_plot, 1, (), {}),
+     (control.phase_plane_plot, 1, ([-1, 1, -1, 1], 1), {}),
+     (control.phaseplot.streamlines, 1, ([-1, 1, -1, 1], 1), {}),
+     (control.phaseplot.vectorfield, 1, ([-1, 1, -1, 1], ), {}),
+     (control.phaseplot.equilpoints, 1, ([-1, 1, -1, 1], ), {}),
+     (control.phaseplot.separatrices, 1, ([-1, 1, -1, 1], ), {}),
      (control.singular_values_plot, 1, (), {})]
 )
 def test_matplotlib_kwargs(function, nsysargs, moreargs, kwargs, mplcleanup):
@@ -245,8 +256,9 @@ kwarg_unittest = {
     'nyquist': test_matplotlib_kwargs,
     'nyquist_response': test_response_plot_kwargs,
     'nyquist_plot': test_matplotlib_kwargs,
-    'pzmap': test_unrecognized_kwargs,
+    'phase_plane_plot': test_matplotlib_kwargs,
     'pole_zero_plot': test_unrecognized_kwargs,
+    'pzmap': test_unrecognized_kwargs,
     'rlocus': test_unrecognized_kwargs,
     'root_locus': test_unrecognized_kwargs,
     'root_locus_plot': test_unrecognized_kwargs,
@@ -267,10 +279,10 @@ kwarg_unittest = {
         flatsys_test.TestFlatSys.test_point_to_point_errors,
     'flatsys.solve_flat_ocp':
         flatsys_test.TestFlatSys.test_solve_flat_ocp_errors,
+    'flatsys.FlatSystem.__init__': test_unrecognized_kwargs,
     'optimal.create_mpc_iosystem': optimal_test.test_mpc_iosystem_rename,
     'optimal.solve_ocp': optimal_test.test_ocp_argument_errors,
     'optimal.solve_oep': optimal_test.test_oep_argument_errors,
-    'flatsys.FlatSystem.__init__': test_unrecognized_kwargs,
     'FrequencyResponseData.__init__':
         frd_test.TestFRD.test_unrecognized_keyword,
     'FrequencyResponseData.plot': test_response_plot_kwargs,
@@ -305,6 +317,10 @@ kwarg_unittest = {
         optimal_test.test_oep_argument_errors,
     'optimal.OptimalEstimationProblem.create_mhe_iosystem':
         optimal_test.test_oep_argument_errors,
+    'phaseplot.streamlines': test_matplotlib_kwargs,
+    'phaseplot.vectorfield': test_matplotlib_kwargs,
+    'phaseplot.equilpoints': test_matplotlib_kwargs,
+    'phaseplot.separatrices': test_matplotlib_kwargs,
 }
 
 #

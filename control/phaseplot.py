@@ -1,61 +1,912 @@
-#! TODO: add module docstring
 # phaseplot.py - generate 2D phase portraits
 #
 # Author: Richard M. Murray
-# Date: 24 July 2011, converted from MATLAB version (2002); based on
-# a version by Kristi Morgansen
+# Date:   23 Mar 2024 (legacy version information below)
 #
-# Copyright (c) 2011 by California Institute of Technology
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-#
-#   1. Redistributions of source code must retain the above copyright
-#      notice, this list of conditions and the following disclaimer.
-#
-#   2. Redistributions in binary form must reproduce the above copyright
-#      notice, this list of conditions and the following disclaimer in the
-#      documentation and/or other materials provided with the distribution.
-#
-#   3. The name of the author may not be used to endorse or promote products
-#      derived from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
-# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT,
-# INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
-# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
+# TODO
+# * Allow multiple timepoints (and change timespec name to T?)
+# * Update linestyles (color -> linestyle?)
+# * Check for keyword compatibility with other plot routines
+# * Set up configuration parameters (nyquist --> phaseplot)
 
+"""The :mod:`control.phaseplot` module contains functions for generating 2D
+phase plots.
+
+The base function for creating phase plane portraits is
+:func:`~control.phase_plane_plot`, which generates a phase plane portrait
+for a 2 state I/O system (with no inputs).  In addition, several other
+functions are available to creat ecustomize phase plane plots:
+
+* boxgrid: Generate a list of points along the edge of a box
+* circlegrid: Generate list of points around a circle
+* equilpoints: Plot equilibrium points in the phase plane
+* meshgrid: Generate a list of points forming a mesh
+* separatrices: Plot separatrices in the phase plane
+* streamlines: Plot stream lines in the phase plane
+* vectorfield: Plot a vector field in the phase plane
+
+"""
+
+import math
+import warnings
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib.pyplot as mpl
-
 from scipy.integrate import odeint
+
+from . import config
 from .exception import ControlNotImplemented
+from .freqplot import _add_arrows_to_line2D
+from .nlsys import NonlinearIOSystem, find_eqpt, input_output_response
 
-__all__ = ['phase_plot', 'box_grid']
+__all__ = ['phase_plane_plot', 'phase_plot', 'box_grid']
+
+# Default values for module parameter variables
+_phaseplot_defaults = {
+    'phaseplot.arrows': 2,                  # number of arrows around curve
+    'phaseplot.arrow_size': 8,              # pixel size for arrows
+    'phaseplot.separatrices_radius': 0.1    # initial radius for separatrices
+}
+
+def phase_plane_plot(
+        sys, pointdata=None, timedata=None, gridtype=None, gridspec=None,
+        plot_streamlines=True, plot_vectorfield=False, plot_equilpoints=True,
+        plot_separatrices=True,  ax=None, **kwargs
+):
+    """Plot phase plane diagram.
+
+    This function plots phase plane data, including vector fields, stream
+    lines, equilibrium points, and contour curves.
+
+    Parameters
+    ----------
+    sys : NonlinearIOSystem or callable(x, t, ...)
+        Function used to generate phase plane data.
+    pointdata : list or 2D array
+        List of the form [xmin, xmax, ymin, ymax] describing the
+        boundaries of the phase plot or an array of shape (N, 2)
+        giving points of at which to plot the vector field.
+    timedata : int or list of int
+        Time to simulate each streamline.  If a list is given, a different
+        time can be used for each initial condition in `pointdata`.
+    gridtype : str, optional
+        The type of grid to use for generating initial conditions:
+        'meshgrid' (default) generates a mesh of initial conditions within
+        the specified boundaries, 'boxgrid' generates initial conditions
+        along the edges of the boundary, 'circlegrid' generates a circle of
+        initial conditions around each point in point data.
+    gridspec : list, optional
+        If the gridtype is 'meshgrid' and 'boxgrid', `gridspec` gives the
+        size of the grid in the x and y axes on which to generate points.
+        If gridtype is 'circlegrid', then `gridspec` is a 2-tuple
+        specifying the radius and number of points around each point in the
+        `pointdata` array.
+    plot_streamlines : bool or dict
+        If `True` (default) then plot streamlines based on the pointdata
+        and gridtype.  If set to a dict, pass on the key-value pairs in
+        the dict as keywords to :func:`~control.phaseplot.streamlines`.
+    plot_vectorfield : bool or dict
+        If `True` (default) then plot the vector field based on the pointdata
+        and gridtype.  If set to a dict, pass on the key-value pairs in
+        the dict as keywords to :func:`~control.phaseplot.vectorfield`.
+    plot_equilpoints : bool or dict
+        If `True` (default) then plot equilibrium points based in the phase
+        plot boundary. If set to a dict, pass on the key-value pairs in the
+        dict as keywords to :func:`~control.phaseplot.equilpoints`.
+    plot_separatrices : bool or dict
+        If `True` (default) then plot separatrices starting from each
+        equilibrium point.  If set to a dict, pass on the key-value pairs
+        in the dict as keywords to :func:`~control.phaseplot.streamlines`.
+    color : str
+        Plot all elements in the given color (use `plot_<fcn>={'color': c}`
+        to set the color in one element of the phase plot.
+    ax : Axes
+        Use the given axes for the plot instead of creating a new figure.
+
+    Returns
+    -------
+    out : list of list of Artists
+        out[0] = list of Line2D objects (streamlines and separatrices)
+        out[1] = Quiver object (vector field arrows)
+        out[2] = list of Line2D objects (equilibrium points)
+
+    """
+    # Process arguments
+    pointdata = [-1, 1, -1, 1] if pointdata is None else pointdata
+
+    # Create axis if needed
+    if ax is None:
+        fig, ax = plt.gcf(), plt.gca()
+    else:
+        fig = None              # don't modify figure
+
+    # Create copy of kwargs for later checking to find unused arguments
+    initial_kwargs = dict(kwargs)
+
+    # Utility function to create keyword arguments
+    def _create_kwargs(global_kwargs, local_kwargs, **other_kwargs):
+        new_kwargs = dict(global_kwargs)
+        new_kwargs.update(other_kwargs)
+        if isinstance(local_kwargs, dict):
+            new_kwargs.update(local_kwargs)
+        return new_kwargs
+
+    # Create array for storing outputs
+    out = np.empty(3, dtype=object)
+    out[0] = []
+
+    # Plot out the main elements
+    if plot_streamlines:
+        kwargs_local = _create_kwargs(
+            kwargs, plot_streamlines, gridspec=gridspec, gridtype=gridtype,
+            ax=ax)
+        out[0] += streamlines(
+            sys, pointdata, timedata, check_kwargs=False, **kwargs_local)
+
+        # Get rid of keyword arguments handled by streamlines
+        for kw in ['arrows', 'arrow_size', 'arrow_style', 'color',
+                   'dir', 'params']:
+            initial_kwargs.pop(kw, None)
+
+    # Reset the gridspec for the remaining commands, if needed
+    if gridtype not in [None, 'boxgrid', 'meshgrid']:
+        gridspec = None
+
+    if plot_separatrices:
+        kwargs_local = _create_kwargs(
+            kwargs, plot_separatrices, gridspec=gridspec, ax=ax)
+        out[0] += separatrices(
+            sys, pointdata, check_kwargs=False, **kwargs_local)
+
+        # Get rid of keyword arguments handled by separatrices
+        for kw in ['arrows', 'arrow_size', 'arrow_style', 'params']:
+            initial_kwargs.pop(kw, None)
+
+    if plot_vectorfield:
+        kwargs_local = _create_kwargs(
+            kwargs, plot_vectorfield, gridspec=gridspec, ax=ax)
+        out[1] = vectorfield(
+            sys, pointdata, check_kwargs=False, **kwargs_local)
+
+        # Get rid of keyword arguments handled by vectorfield
+        for kw in ['color', 'params']:
+            initial_kwargs.pop(kw, None)
+
+    if plot_equilpoints:
+        kwargs_local = _create_kwargs(
+            kwargs, plot_equilpoints, gridspec=gridspec, ax=ax)
+        out[2] = equilpoints(
+            sys, pointdata, check_kwargs=False, **kwargs_local)
+
+        # Get rid of keyword arguments handled by equilpoints
+        for kw in ['params']:
+            initial_kwargs.pop(kw, None)
+
+    # Make sure all keyword arguments were used
+    if initial_kwargs:
+        raise TypeError("unrecognized keywords: ", str(initial_kwargs))
+
+    if fig is not None:
+        fig.suptitle(f"Phase portrait for {sys.name}")
+        ax.set_xlabel(sys.state_labels[0])
+        ax.set_ylabel(sys.state_labels[1])
+
+    return out
 
 
+def vectorfield(
+        sys, pointdata, gridspec=None, ax=None, check_kwargs=True, **kwargs):
+    """Plot a vector field in the phase plane.
+
+    This function plots a vector field for a two-dimensional state
+    space system.
+
+    Parameters
+    ----------
+    sys : NonlinearIOSystem or callable(x, t, ...)
+        Function used to generate phase plane data.
+    pointdata : list or 2D array
+        List of the form [xmin, xmax, ymin, ymax] describing the
+        boundaries of the phase plot or an array of shape (N, 2)
+        giving points of at which to plot the vector field.
+    gridtype : str, optional
+        The type of grid to use for generating initial conditions:
+        'meshgrid' (default) generates a mesh of initial conditions within
+        the specified boundaries, 'boxgrid' generates initial conditions
+        along the edges of the boundary, 'circlegrid' generates a circle of
+        initial conditions around each point in point data.
+    gridspec : list, optional
+        If the gridtype is 'meshgrid' and 'boxgrid', `gridspec` gives the
+        size of the grid in the x and y axes on which to generate points.
+        If gridtype is 'circlegrid', then `gridspec` is a 2-tuple
+        specifying the radius and number of points around each point in the
+        `pointdata` array.
+    color : str
+        Plot the vector field in the given color.
+    ax : Axes
+        Use the given axes for the plot, otherwise use the current axes.
+
+    Returns
+    -------
+    out : Quiver
+
+    """
+    # Get system parameters
+    params = kwargs.pop('params', None)
+
+    # Determine the points on which to generate the vector field
+    points, _ = _make_points(pointdata, gridspec, 'meshgrid')
+
+    # Create axis if needed
+    if ax is None:
+        ax = plt.gca()
+
+    # Set the plotting limits
+    xlim, ylim, maxlim = _set_axis_limits(ax, pointdata)
+
+    # Figure out the color to use
+    color = _get_color(kwargs, ax)
+
+    # Make sure all keyword arguments were processed
+    if check_kwargs and kwargs:
+        raise TypeError("unrecognized keywords: ", str(kwargs))
+
+    # Generate phase plane (quiver) data
+    vfdata = np.zeros((points.shape[0], 4))
+    for i, x in enumerate(points):
+        vfdata[i, :2] = x
+        vfdata[i, 2:] = sys.dynamics(0, x, 0, params=params)
+
+    out = ax.quiver(
+        vfdata[:, 0], vfdata[:, 1], vfdata[:, 2], vfdata[:, 3],
+        angles='xy', color=color)
+
+    return out
+
+
+def streamlines(
+        sys, pointdata, timedata=1, gridspec=None, gridtype=None,
+        dir=None, ax=None, check_kwargs=True, **kwargs):
+    """Plot stream lines in the phase plane.
+
+    This function plots stream lines for a two-dimensional state space
+    system.
+
+    Parameters
+    ----------
+    sys : NonlinearIOSystem or callable(x, t, ...)
+        Function used to generate phase plane data.
+    pointdata : list or 2D array
+        List of the form [xmin, xmax, ymin, ymax] describing the
+        boundaries of the phase plot or an array of shape (N, 2)
+        giving points of at which to plot the vector field.
+    timedata : int or list of int
+        Time to simulate each streamline.  If a list is given, a different
+        time can be used for each initial condition in `pointdata`.
+    gridtype : str, optional
+        The type of grid to use for generating initial conditions:
+        'meshgrid' (default) generates a mesh of initial conditions within
+        the specified boundaries, 'boxgrid' generates initial conditions
+        along the edges of the boundary, 'circlegrid' generates a circle of
+        initial conditions around each point in point data.
+    gridspec : list, optional
+        If the gridtype is 'meshgrid' and 'boxgrid', `gridspec` gives the
+        size of the grid in the x and y axes on which to generate points.
+        If gridtype is 'circlegrid', then `gridspec` is a 2-tuple
+        specifying the radius and number of points around each point in the
+        `pointdata` array.
+    color : str
+        Plot the streamlines in the given color.
+    ax : Axes
+        Use the given axes for the plot, otherwise use the current axes.
+
+    Returns
+    -------
+    out : list of Line2D objects
+
+    """
+    #
+    # Keyword processing
+    #
+
+    # Get system parameters
+    params = kwargs.pop('params', None)
+
+    # Parse the arrows keyword
+    arrow_pos, arrow_style = _parse_arrow_keywords(kwargs)
+
+    # Determine the points on which to generate the streamlines
+    points, gridspec = _make_points(pointdata, gridspec, gridtype=gridtype)
+    if dir is None:
+        dir = 'both' if gridtype == 'meshgrid' else 'forward'
+
+    # Create axis if needed
+    if ax is None:
+        ax = plt.gca()
+
+    # Set the axis limits
+    xlim, ylim, maxlim = _set_axis_limits(ax, pointdata)
+
+    # Figure out the color to use
+    color = _get_color(kwargs, ax)
+
+    # Make sure all keyword arguments were processed
+    if check_kwargs and kwargs:
+        raise TypeError("unrecognized keywords: ", str(kwargs))
+
+    # Create reverse time system, if needed
+    if dir != 'forward':
+        revsys = NonlinearIOSystem(
+            lambda t, x, u, params: -np.array(sys.updfcn(t, x, u, params)),
+            sys.outfcn, states=sys.nstates, inputs=sys.ninputs,
+            outputs=sys.noutputs, params=sys.params)
+    else:
+        revsys = None
+
+    # Generate phase plane (streamline) data
+    out = []
+    for i, X0 in enumerate(points):
+        # Create the trajectory for this point
+        timepts = _make_timepts(timedata, i)
+        traj = _create_trajectory(
+            sys, revsys, timepts, X0, params, dir,
+            gridtype=gridtype, gridspec=gridspec, xlim=xlim, ylim=ylim)
+
+        # Plot the trajectory
+        if traj.shape[1] > 1:
+            out.append(
+                ax.plot(traj[0], traj[1], color=color))
+
+            # Add arrows to the lines at specified intervals
+            _add_arrows_to_line2D(
+                ax, out[-1][0], arrow_pos, arrowstyle=arrow_style, dir=1)
+
+    return out
+
+
+def equilpoints(
+        sys, pointdata, gridspec=None, color='k', ax=None, check_kwargs=True,
+        **kwargs):
+    """Plot equilibrium points in the phase plane.
+
+    This function plots the equilibrium points for a planar dynamical system.
+
+    Parameters
+    ----------
+    sys : NonlinearIOSystem or callable(x, t, ...)
+        Function used to generate phase plane data.
+    pointdata : list or 2D array
+        List of the form [xmin, xmax, ymin, ymax] describing the
+        boundaries of the phase plot or an array of shape (N, 2)
+        giving points of at which to plot the vector field.
+    gridtype : str, optional
+        The type of grid to use for generating initial conditions:
+        'meshgrid' (default) generates a mesh of initial conditions within
+        the specified boundaries, 'boxgrid' generates initial conditions
+        along the edges of the boundary, 'circlegrid' generates a circle of
+        initial conditions around each point in point data.
+    gridspec : list, optional
+        If the gridtype is 'meshgrid' and 'boxgrid', `gridspec` gives the
+        size of the grid in the x and y axes on which to generate points.
+        If gridtype is 'circlegrid', then `gridspec` is a 2-tuple
+        specifying the radius and number of points around each point in the
+        `pointdata` array.
+    color : str
+        Plot the equilibrium points in the given color.
+    ax : Axes
+        Use the given axes for the plot, otherwise use the current axes.
+
+    Returns
+    -------
+    out : list of Line2D objects
+
+    """
+    # Get system parameters
+    params = kwargs.pop('params', None)
+
+    # Create axis if needed
+    if ax is None:
+        ax = plt.gca()
+
+    # Set the axis limits
+    xlim, ylim, maxlim = _set_axis_limits(ax, pointdata)
+
+    # Determine the points on which to generate the vector field
+    gridspec = [5, 5] if gridspec is None else gridspec
+    points, _ = _make_points(pointdata, gridspec, 'meshgrid')
+
+    # Make sure all keyword arguments were processed
+    if check_kwargs and kwargs:
+        raise TypeError("unrecognized keywords: ", str(kwargs))
+
+    # Search for equilibrium points
+    equilpts = _find_equilpts(sys, points, params=params)
+
+    # Plot the equilibrium points
+    out = []
+    for xeq in equilpts:
+        out.append(
+            ax.plot(xeq[0], xeq[1], marker='o', color=color))
+
+    return out
+
+
+def separatrices(
+        sys, pointdata, timedata=None, gridspec=None, ax=None,
+        check_kwargs=True, **kwargs):
+    """Plot separatrices in the phase plane.
+
+    This function plots separatrices for a two-dimensional state space
+    system.
+
+    Parameters
+    ----------
+    sys : NonlinearIOSystem or callable(x, t, ...)
+        Function used to generate phase plane data.
+    pointdata : list or 2D array
+        List of the form [xmin, xmax, ymin, ymax] describing the
+        boundaries of the phase plot or an array of shape (N, 2)
+        giving points of at which to plot the vector field.
+    timedata : int or list of int
+        Time to simulate each streamline.  If a list is given, a different
+        time can be used for each initial condition in `pointdata`.
+    gridtype : str, optional
+        The type of grid to use for generating initial conditions:
+        'meshgrid' (default) generates a mesh of initial conditions within
+        the specified boundaries, 'boxgrid' generates initial conditions
+        along the edges of the boundary, 'circlegrid' generates a circle of
+        initial conditions around each point in point data.
+    gridspec : list, optional
+        If the gridtype is 'meshgrid' and 'boxgrid', `gridspec` gives the
+        size of the grid in the x and y axes on which to generate points.
+        If gridtype is 'circlegrid', then `gridspec` is a 2-tuple
+        specifying the radius and number of points around each point in the
+        `pointdata` array.
+    color : str
+        Plot the streamlines in the given color.
+    ax : Axes
+        Use the given axes for the plot, otherwise use the current axes.
+
+    Returns
+    -------
+    out : list of Line2D objects
+    
+    """
+    #
+    # Keyword processing
+    #
+    # TODO: add unit test
+    radius = config._get_param('phaseplot', 'separatrices_radius')
+
+    # Get system parameters
+    params = kwargs.pop('params', None)
+
+    # Parse the arrows keyword
+    arrow_pos, arrow_style = _parse_arrow_keywords(kwargs)
+
+    # Determine the initial states to use in searching for equilibrium points
+    gridspec = [5, 5] if gridspec is None else gridspec
+    points, _ = _make_points(pointdata, gridspec, 'meshgrid')
+
+    # Find the for equilibrium points
+    equilpts = _find_equilpts(sys, points, params=params)
+
+    # Create axis if needed
+    if ax is None:
+        ax = plt.gca()
+
+    # Set the axis limits
+    xlim, ylim, maxlim = _set_axis_limits(ax, pointdata)
+
+    # Figure out the color to use for stable, unstable subspaces
+    color = _get_color(kwargs)
+    match color:
+        case None:
+            stable_color = 'r'
+            unstable_color = 'b'
+        case (stable_color, unstable_color) | [stable_color, unstable_color]:
+            pass
+        case single_color:
+            stable_color = unstable_color = color
+
+    # Make sure all keyword arguments were processed
+    if check_kwargs and kwargs:
+        raise TypeError("unrecognized keywords: ", str(kwargs))
+
+    # Create a "reverse time" system to use for simulation
+    revsys = NonlinearIOSystem(
+        lambda t, x, u, params: -np.array(sys.updfcn(t, x, u, params)),
+        sys.outfcn, states=sys.nstates, inputs=sys.ninputs,
+        outputs=sys.noutputs, params=sys.params)
+
+    # Plot separatrices by flowing backwards in time along eigenspaces
+    out = []
+    for i, xeq in enumerate(equilpts):
+        # Plot the equilibrium points
+        out.append(
+            ax.plot(xeq[0], xeq[1], marker='o', color='k'))
+
+        # Figure out the linearization and eigenvectors
+        evals, evecs = np.linalg.eig(sys.linearize(xeq, 0, params=params).A)
+
+        # See if we have real eigenvalues (=> evecs are meaningful)
+        if evals[0].imag > 0:
+            continue
+
+        # Create default list of time points
+        if timedata is not None:
+            timepts = _make_timepts(timedata, i)
+
+        # Generate the traces
+        for j, dir in enumerate(evecs.T):
+            # Figure out time vector if not yet computed
+            if timedata is None:
+                timescale = math.log(maxlim / radius) / abs(evals[j].real)
+                timepts = np.linspace(0, timescale)
+
+            # Run the trajectory starting in eigenvector directions
+            for eps in [-radius, radius]:
+                x0 = xeq + dir * eps
+                if evals[j].real < 0:
+                    traj = _create_trajectory(
+                        sys, revsys, timepts, x0, params, 'reverse',
+                        gridtype='boxgrid', xlim=xlim, ylim=ylim)
+                    color = stable_color
+                    linestyle = '--'
+                elif evals[j].real > 0:
+                    traj = _create_trajectory(
+                        sys, revsys, timepts, x0, params, 'forward',
+                        gridtype='boxgrid', xlim=xlim, ylim=ylim)
+                    color = unstable_color
+                    linestyle = '-'
+
+                if traj.shape[1] > 1:
+                    out.append(ax.plot(
+                        traj[0], traj[1], color=color, linestyle=linestyle))
+
+                    # Add arrows to the lines at specified intervals
+                    _add_arrows_to_line2D(
+                        ax, out[-1][0], arrow_pos, arrowstyle=arrow_style,
+                        dir=1)
+
+    return out
+
+
+#
+# User accessible utility functions
+#
+# TODO: document and add unit tests
+
+# Utility function for generating initial conditions around a box
+# TODO: replace with boxgrid?
+def box_grid(xlimp, ylimp):
+    """box_grid   generate list of points on edge of box
+
+    list = box_grid([xmin xmax xnum], [ymin ymax ynum]) generates a
+    list of points that correspond to a uniform grid at the end of the
+    box defined by the corners [xmin ymin] and [xmax ymax].
+    """
+
+    # Generate a deprecation warning
+    warnings.warn(
+        "box_grid is deprecated; use phaseplot.boxgrid instead",
+        FutureWarning)
+
+    return boxgrid(
+        np.linspace(xlimp[0], xlimp[1], xlimp[2]),
+        np.linspace(ylimp[0], ylimp[1], ylimp[2]))
+
+
+# Utility function to generate boxgrid (in the form needed here)
+def boxgrid(xvals, yvals):
+    """Generate list of points along the edge of box.
+
+    points = boxgrid(xvals, yvals) generates a list of points that
+    corresponds to a grid given by the cross product of the x and y values.
+
+    Parameters
+    ----------
+    xvals, yvals: 1D array-like
+        Array of points defining the points on the lower and left edges of
+        the box.
+
+    Returns
+    -------
+    grid: 2D array
+        Array with shape (p, 2) defining the points along the edges of the
+        box, where p is the number of points around the edge.
+
+    """
+    return np.array(
+        [(x, yvals[0]) for x in xvals[:-1]] +           # lower edge
+        [(xvals[-1], y) for y in yvals[:-1]] +          # right edge
+        [(x, yvals[-1]) for x in xvals[:0:-1]] +        # upper edge
+        [(xvals[0], y) for y in yvals[:0:-1]]           # left edge
+    )
+
+
+# Utility function to generate meshgrid (in the form needed here)
+# TODO: add examples of using grid functions directly
+def meshgrid(xvals, yvals):
+    """Generate list of points forming a mesh.
+
+    points = meshgrid(xvals, yvals) generates a list of points that
+    corresponds to a grid given by the cross product of the x and y values.
+
+    Parameters
+    ----------
+    xvals, yvals: 1D array-like
+        Array of points defining the points on the lower and left edges of
+        the box.
+
+    Returns
+    -------
+    grid: 2D array
+        Array of points with shape (n * m, 2) defining the mesh
+
+    """
+    xvals, yvals = np.meshgrid(xvals, yvals)
+    grid = np.zeros((xvals.shape[0] * xvals.shape[1], 2))
+    grid[:, 0] = xvals.reshape(-1)
+    grid[:, 1] = yvals.reshape(-1)
+
+    return grid
+
+
+# Utility function to generate circular grid
+def circlegrid(centers, radius, num):
+    """Generate list of points around a circle.
+
+    points = circlegrid(centers, radius, num) generates a list of points
+    that form a circle around a list of centers.
+
+    Parameters
+    ----------
+    centers : 2D array-like
+        Array of points with shape (p, 2) defining centers of the circles.
+    radius : float
+        Radius of the points to be generated around each center.
+    num : int
+        Number of points to generate around the circle.
+
+    Returns
+    -------
+    grid: 2D array
+        Array of points with shape (p * num, 2) defining the circles.
+
+    """
+    centers = np.atleast_2d(np.array(centers))
+    grid = np.zeros((centers.shape[0] * num, 2))
+    for i, center in enumerate(centers):
+        grid[i * num: (i + 1) * num, :] = center + np.array([
+            [radius * math.cos(theta), radius * math.sin(theta)] for
+            theta in np.linspace(0, 2 * math.pi, num, endpoint=False)])
+    return grid
+
+#
+# Internal utility functions
+#
+
+# TODO: rename to something more useful (or remove??)
 def _find(condition):
     """Returns indices where ravel(a) is true.
     Private implementation of deprecated matplotlib.mlab.find
     """
     return np.nonzero(np.ravel(condition))[0]
 
+# Set axis limits for the plot
+def _set_axis_limits(ax, pointdata):
+    # Get the current axis limits
+    if ax.lines:
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+    else:
+        # Nothing on the plot => always use new limits
+        xlim, ylim = [np.inf, -np.inf], [np.inf, -np.inf]
 
+    # Short utility function for updating axis limits
+    def _update_limits(cur, new):
+        return [min(cur[0], np.min(new)), max(cur[1], np.max(new))]
+
+    # If we were passed a box, use that to update the limits
+    if isinstance(pointdata, list) and len(pointdata) == 4:
+        xlim = _update_limits(xlim, [pointdata[0], pointdata[1]])
+        ylim = _update_limits(ylim, [pointdata[2], pointdata[3]])
+
+    elif isinstance(pointdata, np.ndarray):
+        pointdata = np.atleast_2d(pointdata)
+        xlim = _update_limits(
+            xlim, [np.min(pointdata[:, 0]), np.max(pointdata[:, 0])])
+        ylim = _update_limits(
+            ylim, [np.min(pointdata[:, 1]), np.max(pointdata[:, 1])])
+
+    # Keep track of the largest dimension on the plot
+    maxlim = max(xlim[1] - xlim[0], ylim[1] - ylim[0])
+
+    # Set the new limits
+    ax.autoscale(enable=True, axis='x', tight=True)
+    ax.autoscale(enable=True, axis='y', tight=True)
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+
+    return xlim, ylim, maxlim
+
+
+# Find equilibrium points
+def _find_equilpts(sys, points, params=None):
+    equilpts = []
+    for i, x0 in enumerate(points):
+        # Look for an equilibrium point near this point
+        xeq, ueq = find_eqpt(sys, x0, 0, params=params)
+
+        if xeq is None:
+            continue            # didn't find anything
+
+        # See if we have already found this point
+        seen = False
+        for x in equilpts:
+            if np.allclose(np.array(x), xeq):
+                seen = True
+        if seen:
+            continue
+
+        # Save a new point
+        equilpts += [xeq.tolist()]
+
+    return equilpts
+
+
+def _make_points(pointdata, gridspec, gridtype):
+    # Check to see what type of data we got
+    if isinstance(pointdata, np.ndarray) and gridtype is None:
+        pointdata = np.atleast_2d(pointdata)
+        if pointdata.shape[1] == 2:
+            # Given a list of points => no action required
+            return pointdata, None
+
+    # Utility function to parse (and check) input arguments
+    def _parse_args(defsize):
+        # if not isinstance(pointdata, (list, tuple)) or len(pointdata) != 4:
+        #     raise ValueError("invalid grid data specification")
+
+        if gridspec is None:
+            return defsize
+
+        elif not isinstance(gridspec, (list, tuple)) or \
+             len(gridspec) != len(defsize):
+            raise ValueError("invalid grid size specificiation")
+
+        return gridspec
+
+    # Generate points based on grid type
+    match gridtype:
+        case 'boxgrid' | None:
+            gridspec = _parse_args([6, 4])
+            points = boxgrid(
+                np.linspace(pointdata[0], pointdata[1], gridspec[0]),
+                np.linspace(pointdata[2], pointdata[3], gridspec[1]))
+
+        case 'meshgrid':
+            gridspec = _parse_args([9, 6])
+            points = meshgrid(
+                np.linspace(pointdata[0], pointdata[1], gridspec[0]),
+                np.linspace(pointdata[2], pointdata[3], gridspec[1]))
+
+        case 'circlegrid':
+            gridspec = _parse_args((0.5, 10))
+            if isinstance(pointdata, np.ndarray):
+                # Create circles around each point
+                points = circlegrid(pointdata, gridspec[0], gridspec[1])
+            else:
+                # Create circle around center of the plot
+                points = circlegrid(
+                    np.array(
+                        [(pointdata[0] + pointdata[1]) / 2,
+                         (pointdata[0] + pointdata[1]) / 2]),
+                    gridspec[0], gridspec[1])
+
+        case _:
+            raise ValueError(f"unknown grid type '{gridtype}'")
+
+    return points, gridspec
+
+
+def _parse_arrow_keywords(kwargs):
+    # Get values for params (and pop from list to allow keyword use in plot)
+    # TODO: turn this into a utility function (shared with nyquist_plot?)
+    arrows = config._get_param(
+        'phaseplot', 'arrows', kwargs, None, pop=True)
+    arrow_size = config._get_param(
+        'phaseplot', 'arrow_size', kwargs, None, pop=True)
+    arrow_style = config._get_param('phaseplot', 'arrow_style', kwargs, None)
+
+    # Parse the arrows keyword
+    if not arrows:
+        arrow_pos = []
+    elif isinstance(arrows, int):
+        N = arrows
+        # Space arrows out, starting midway along each "region"
+        arrow_pos = np.linspace(0.5/N, 1 + 0.5/N, N, endpoint=False)
+    elif isinstance(arrows, (list, np.ndarray)):
+        arrow_pos = np.sort(np.atleast_1d(arrows))
+    else:
+        raise ValueError("unknown or unsupported arrow location")
+
+    # Set the arrow style
+    if arrow_style is None:
+        arrow_style = mpl.patches.ArrowStyle(
+            'simple', head_width=int(2 * arrow_size / 3),
+            head_length=arrow_size)
+
+    return arrow_pos, arrow_style
+
+
+def _get_color(kwargs, ax=None):
+    if 'color' in kwargs:
+        return kwargs.pop('color')
+
+    # If we were passed an axis, try to increment color from previous
+    color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    if ax is not None:
+        color_offset = 0
+        if len(ax.lines) > 0:
+            last_color = ax.lines[-1].get_color()
+            if last_color in color_cycle:
+                color_offset = color_cycle.index(last_color) + 1
+        return color_cycle[color_offset % len(color_cycle)]
+    else:
+        return None
+
+
+def _create_trajectory(
+        sys, revsys, timepts, X0, params, dir,
+        gridtype=None, gridspec=None, xlim=None, ylim=None):
+    # Comput ethe forward trajectory
+    if dir == 'forward' or dir == 'both':
+        fwdresp = input_output_response(sys, timepts, X0=X0, params=params)
+
+    # Compute the reverse trajectory
+    if dir == 'reverse' or dir == 'both':
+        revresp = input_output_response(
+            revsys, timepts, X0=X0, params=params)
+
+    # Create the trace to plot
+    if dir == 'forward':
+        traj = fwdresp.states
+    elif dir == 'reverse':
+        traj = revresp.states[:, ::-1]
+    elif dir == 'both':
+        traj = np.hstack([revresp.states[:, :1:-1], fwdresp.states])
+
+    return traj
+
+
+def _make_timepts(timepts, i):
+    if timepts is None:
+        return np.linspace(0, 1)
+    elif isinstance(timepts, (int, float)):
+        return np.linspace(0, timepts)
+    elif timepts.ndim == 2:
+        return timepts[i]
+    return timepts
+
+
+#
+# Legacy phase plot function
+#
+# Author: Richard Murray
+# Date: 24 July 2011, converted from MATLAB version (2002); based on
+# a version by Kristi Morgansen
+#
 def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
-              lingrid=None, lintime=None, logtime=None, timepts=None,
-              parms=(), verbose=True):
-    """Phase plot for 2D dynamical systems.
+               lingrid=None, lintime=None, logtime=None, timepts=None,
+               parms=(), params=None, tfirst=False, verbose=True):
 
-    Produces a vector field or stream line plot for a planar system.
+    """(legacy) Phase plot for 2D dynamical systems.
+
+    Produces a vector field or stream line plot for a planar system.  This
+    function has been replaced by the :func:`~control.phase_plane_map` and
+    :func:`~control.phase_plane_plot` functions.
 
     Call signatures:
       phase_plot(func, X, Y, ...) - display vector field on meshgrid
@@ -116,6 +967,10 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     box_grid : construct box-shaped grid of initial conditions
 
     """
+    # Generate a deprecation warning
+    warnings.warn(
+        "phase_plot is deprecated; use phase_plot_plot instead",
+        FutureWarning)
 
     #
     # Figure out ranges for phase plot (argument processing)
@@ -123,72 +978,82 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     #! TODO: need to add error checking to arguments
     #! TODO: think through proper action if multiple options are given
     #
-    autoFlag = False; logtimeFlag = False; timeptsFlag = False; Narrows = 0;
+    autoFlag = False
+    logtimeFlag = False
+    timeptsFlag = False
+    Narrows = 0
+
+    # TODO: change parms to params with legacy processing
 
     if lingrid is not None:
-        autoFlag = True;
-        Narrows = lingrid;
+        autoFlag = True
+        Narrows = lingrid
         if (verbose):
             print('Using auto arrows\n')
 
     elif logtime is not None:
-        logtimeFlag = True;
-        Narrows = logtime[0];
-        timefactor = logtime[1];
+        logtimeFlag = True
+        Narrows = logtime[0]
+        timefactor = logtime[1]
         if (verbose):
             print('Using logtime arrows\n')
 
     elif timepts is not None:
-        timeptsFlag = True;
-        Narrows = len(timepts);
+        timeptsFlag = True
+        Narrows = len(timepts)
 
     # Figure out the set of points for the quiver plot
     #! TODO: Add sanity checks
-    elif (X is not None and Y is not None):
-        (x1, x2) = np.meshgrid(
+    elif X is not None and Y is not None:
+        x1, x2 = np.meshgrid(
             np.linspace(X[0], X[1], X[2]),
             np.linspace(Y[0], Y[1], Y[2]))
         Narrows = len(x1)
 
     else:
         # If we weren't given any grid points, don't plot arrows
-        Narrows = 0;
+        Narrows = 0
 
-    if ((not autoFlag) and (not logtimeFlag) and (not timeptsFlag)
-        and (Narrows > 0)):
+    if not autoFlag and not logtimeFlag and not timeptsFlag and Narrows > 0:
         # Now calculate the vector field at those points
-        (nr,nc) = x1.shape;
+        (nr,nc) = x1.shape
         dx = np.empty((nr, nc, 2))
         for i in range(nr):
             for j in range(nc):
-                dx[i, j, :] = np.squeeze(odefun((x1[i,j], x2[i,j]), 0, *parms))
+                if tfirst:
+                    dx[i, j, :] = np.squeeze(
+                        odefun(0, [x1[i,j], x2[i,j]], *parms))
+                else:
+                    dx[i, j, :] = np.squeeze(
+                        odefun([x1[i,j], x2[i,j]], 0, *parms))
 
         # Plot the quiver plot
         #! TODO: figure out arguments to make arrows show up correctly
         if scale is None:
-            mpl.quiver(x1, x2, dx[:,:,1], dx[:,:,2], angles='xy')
+            plt.quiver(x1, x2, dx[:,:,1], dx[:,:,2], angles='xy')
         elif (scale != 0):
             #! TODO: optimize parameters for arrows
             #! TODO: figure out arguments to make arrows show up correctly
-            xy = mpl.quiver(x1, x2, dx[:,:,0]*np.abs(scale),
+            xy = plt.quiver(x1, x2, dx[:,:,0]*np.abs(scale),
                             dx[:,:,1]*np.abs(scale), angles='xy')
-            # set(xy, 'LineWidth', PP_arrow_linewidth, 'Color', 'b');
+            # set(xy, 'LineWidth', PP_arrow_linewidth, 'Color', 'b')
 
         #! TODO: Tweak the shape of the plot
-        # a=gca; set(a,'DataAspectRatio',[1,1,1]);
-        # set(a,'XLim',X(1:2)); set(a,'YLim',Y(1:2));
-        mpl.xlabel('x1'); mpl.ylabel('x2');
+        # a=gca; set(a,'DataAspectRatio',[1,1,1])
+        # set(a,'XLim',X(1:2)); set(a,'YLim',Y(1:2))
+        plt.xlabel('x1'); plt.ylabel('x2')
 
     # See if we should also generate the streamlines
     if X0 is None or len(X0) == 0:
         return
 
     # Convert initial conditions to a numpy array
-    X0 = np.array(X0);
-    (nr, nc) = np.shape(X0);
+    X0 = np.array(X0)
+    (nr, nc) = np.shape(X0)
 
     # Generate some empty matrices to keep arrow information
-    x1 = np.empty((nr, Narrows)); x2 = np.empty((nr, Narrows));
+    x1 = np.empty((nr, Narrows))
+    x2 = np.empty((nr, Narrows))
     dx = np.empty((nr, Narrows, 2))
 
     # See if we were passed a simulation time
@@ -196,112 +1061,98 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         T = 50
 
     # Parse the time we were passed
-    TSPAN = T;
-    if (isinstance(T, (int, float))):
-        TSPAN = np.linspace(0, T, 100);
+    TSPAN = T
+    if isinstance(T, (int, float)):
+        TSPAN = np.linspace(0, T, 100)
 
     # Figure out the limits for the plot
     if scale is None:
         # Assume that the current axis are set as we want them
-        alim = mpl.axis();
-        xmin = alim[0]; xmax = alim[1];
-        ymin = alim[2]; ymax = alim[3];
+        alim = plt.axis()
+        xmin = alim[0]; xmax = alim[1]
+        ymin = alim[2]; ymax = alim[3]
     else:
         # Use the maximum extent of all trajectories
-        xmin = np.min(X0[:,0]); xmax = np.max(X0[:,0]);
-        ymin = np.min(X0[:,1]); ymax = np.max(X0[:,1]);
+        xmin = np.min(X0[:,0]); xmax = np.max(X0[:,0])
+        ymin = np.min(X0[:,1]); ymax = np.max(X0[:,1])
 
     # Generate the streamlines for each initial condition
     for i in range(nr):
-        state = odeint(odefun, X0[i], TSPAN, args=parms);
+        state = odeint(odefun, X0[i], TSPAN, args=parms, tfirst=tfirst)
         time = TSPAN
 
-        mpl.plot(state[:,0], state[:,1])
+        plt.plot(state[:,0], state[:,1])
         #! TODO: add back in colors for stream lines
-        # PP_stream_color(np.mod(i-1, len(PP_stream_color))+1));
-        # set(h[i], 'LineWidth', PP_stream_linewidth);
+        # PP_stream_color(np.mod(i-1, len(PP_stream_color))+1))
+        # set(h[i], 'LineWidth', PP_stream_linewidth)
 
         # Plot arrows if quiver parameters were 'auto'
-        if (autoFlag or logtimeFlag or timeptsFlag):
+        if autoFlag or logtimeFlag or timeptsFlag:
             # Compute the locations of the arrows
             #! TODO: check this logic to make sure it works in python
             for j in range(Narrows):
 
                 # Figure out starting index; headless arrows start at 0
-                k = -1 if scale is None else 0;
+                k = -1 if scale is None else 0
 
                 # Figure out what time index to use for the next point
-                if (autoFlag):
+                if autoFlag:
                     # Use a linear scaling based on ODE time vector
-                    tind = np.floor((len(time)/Narrows) * (j-k)) + k;
-                elif (logtimeFlag):
+                    tind = np.floor((len(time)/Narrows) * (j-k)) + k
+                elif logtimeFlag:
                     # Use an exponential time vector
-                    # MATLAB: tind = find(time < (j-k) / lambda, 1, 'last');
-                    tarr = _find(time < (j-k) / timefactor);
-                    tind = tarr[-1] if len(tarr) else 0;
-                elif (timeptsFlag):
+                    # MATLAB: tind = find(time < (j-k) / lambda, 1, 'last')
+                    tarr = _find(time < (j-k) / timefactor)
+                    tind = tarr[-1] if len(tarr) else 0
+                elif timeptsFlag:
                     # Use specified time points
-                    # MATLAB: tind = find(time < Y[j], 1, 'last');
-                    tarr = _find(time < timepts[j]);
-                    tind = tarr[-1] if len(tarr) else 0;
+                    # MATLAB: tind = find(time < Y[j], 1, 'last')
+                    tarr = _find(time < timepts[j])
+                    tind = tarr[-1] if len(tarr) else 0
 
                 # For tailless arrows, skip the first point
                 if tind == 0 and scale is None:
-                    continue;
+                    continue
 
                 # Figure out the arrow at this point on the curve
-                x1[i,j] = state[tind, 0];
-                x2[i,j] = state[tind, 1];
+                x1[i,j] = state[tind, 0]
+                x2[i,j] = state[tind, 1]
 
                 # Skip arrows outside of initial condition box
                 if (scale is not None or
                      (x1[i,j] <= xmax and x1[i,j] >= xmin and
                       x2[i,j] <= ymax and x2[i,j] >= ymin)):
-                    v = odefun((x1[i,j], x2[i,j]), 0, *parms)
-                    dx[i, j, 0] = v[0]; dx[i, j, 1] = v[1];
+                    if tfirst:
+                        pass
+                        v = odefun(0, [x1[i,j], x2[i,j]], *parms)
+                    else:
+                        v = odefun([x1[i,j], x2[i,j]], 0, *parms)
+                    dx[i, j, 0] = v[0]; dx[i, j, 1] = v[1]
                 else:
-                    dx[i, j, 0] = 0; dx[i, j, 1] = 0;
+                    dx[i, j, 0] = 0; dx[i, j, 1] = 0
 
     # Set the plot shape before plotting arrows to avoid warping
-    # a=gca;
+    # a=gca
     # if (scale != None):
-    #     set(a,'DataAspectRatio', [1,1,1]);
+    #     set(a,'DataAspectRatio', [1,1,1])
     # if (xmin != xmax and ymin != ymax):
-    #     mpl.axis([xmin, xmax, ymin, ymax]);
-    # set(a, 'Box', 'on');
+    #     plt.axis([xmin, xmax, ymin, ymax])
+    # set(a, 'Box', 'on')
 
     # Plot arrows on the streamlines
     if scale is None and Narrows > 0:
         # Use a tailless arrow
         #! TODO: figure out arguments to make arrows show up correctly
-        mpl.quiver(x1, x2, dx[:,:,0], dx[:,:,1], angles='xy')
-    elif (scale != 0 and Narrows > 0):
+        plt.quiver(x1, x2, dx[:,:,0], dx[:,:,1], angles='xy')
+    elif scale != 0 and Narrows > 0:
         #! TODO: figure out arguments to make arrows show up correctly
-        xy = mpl.quiver(x1, x2, dx[:,:,0]*abs(scale), dx[:,:,1]*abs(scale),
+        xy = plt.quiver(x1, x2, dx[:,:,0]*abs(scale), dx[:,:,1]*abs(scale),
                         angles='xy')
-        # set(xy, 'LineWidth', PP_arrow_linewidth);
-        # set(xy, 'AutoScale', 'off');
-        # set(xy, 'AutoScaleFactor', 0);
+        # set(xy, 'LineWidth', PP_arrow_linewidth)
+        # set(xy, 'AutoScale', 'off')
+        # set(xy, 'AutoScaleFactor', 0)
 
-    if (scale < 0):
-        bp = mpl.plot(x1, x2, 'b.');        # add dots at base
-        # set(bp, 'MarkerSize', PP_arrow_markersize);
+    if scale < 0:
+        bp = plt.plot(x1, x2, 'b.');        # add dots at base
+        # set(bp, 'MarkerSize', PP_arrow_markersize)
 
-    return;
-
-# Utility function for generating initial conditions around a box
-def box_grid(xlimp, ylimp):
-    """box_grid   generate list of points on edge of box
-
-    list = box_grid([xmin xmax xnum], [ymin ymax ynum]) generates a
-    list of points that correspond to a uniform grid at the end of the
-    box defined by the corners [xmin ymin] and [xmax ymax].
-    """
-
-    sx10 = np.linspace(xlimp[0], xlimp[1], xlimp[2])
-    sy10 = np.linspace(ylimp[0], ylimp[1], ylimp[2])
-
-    sx1 = np.hstack((0, sx10, 0*sy10+sx10[0], sx10, 0*sy10+sx10[-1]))
-    sx2 = np.hstack((0, 0*sx10+sy10[0], sy10, 0*sx10+sy10[-1], sy10))
-
-    return np.transpose( np.vstack((sx1, sx2)) )

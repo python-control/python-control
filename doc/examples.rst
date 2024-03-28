@@ -24,7 +24,7 @@ other sources.
    pvtol-nested
    pvtol-lqr
    rss-balred
-   phaseplots
+   phase_plane_plots
    robust_siso
    robust_mimo
    scherer_etal_ex7_H2_h2syn

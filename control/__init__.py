@@ -63,6 +63,7 @@ functionality:
 * :mod:`~control.flatsys`: Differentially flat systems
 * :mod:`~control.matlab`: MATLAB compatibility module
 * :mod:`~control.optimal`: Optimization-based control
+* :mod:`~control.phaseplot`: 2D phase plane diagrams
 
 """
 
@@ -102,6 +103,10 @@ from .config import *
 from .sisotool import *
 from .passivity import *
 from .sysnorm import *
+
+# Allow access to phase_plane functions as ct.phaseplot.fcn or ct.pp.fcn
+from . import phaseplot
+from . import phaseplot as pp
 
 # Exceptions
 from .exception import *
