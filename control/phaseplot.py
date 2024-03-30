@@ -270,9 +270,10 @@ def vectorfield(
 
     # Generate phase plane (quiver) data
     vfdata = np.zeros((points.shape[0], 4))
+    sys._update_params(params)
     for i, x in enumerate(points):
         vfdata[i, :2] = x
-        vfdata[i, 2:] = sys.dynamics(0, x, 0, params)
+        vfdata[i, 2:] = sys._rhs(0, x, 0)
 
     out = ax.quiver(
         vfdata[:, 0], vfdata[:, 1], vfdata[:, 2], vfdata[:, 3],
@@ -359,7 +360,7 @@ def streamlines(
     # Create reverse time system, if needed
     if dir != 'forward':
         revsys = NonlinearIOSystem(
-            lambda t, x, u, params: -np.array(sys.updfcn(t, x, u, params)),
+            lambda t, x, u, params: -np.asarray(sys.updfcn(t, x, u, params)),
             sys.outfcn, states=sys.nstates, inputs=sys.ninputs,
             outputs=sys.noutputs, params=sys.params)
     else:
