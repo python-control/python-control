@@ -330,7 +330,7 @@ def pole_zero_plot(
             if grid == 'empty':
                 # Leave off grid entirely
                 ax = plt.axes()
-                xlim = ylim = [0, 0]    # use data to set limits
+                xlim = ylim = [np.inf, -np.inf] # use data to set limits
             else:
                 # draw stability boundary; use first response timebase
                 ax, fig = nogrid(data[0].dt, scaling=scaling)
@@ -574,7 +574,7 @@ def _compute_root_locus_limits(response):
         ]
         ylim = max(0, np.max(response.sys.zeros().imag))
     else:
-        xlim, ylim = [0, 0], 0
+        xlim, ylim = [np.inf, -np.inf], 0
 
     # Go through each locus and look for features
     rho = config._get_param('pzmap', 'buffer_factor')
@@ -602,6 +602,12 @@ def _compute_root_locus_limits(response):
         xlim[0] = rho * xlim[0] if xlim[0] < 0 else 0
         xlim[1] = rho * xlim[1] if xlim[1] > 0 else 0
         ylim = rho * ylim if ylim > 0 else np.max(np.abs(xlim))
+
+    # Make sure the limits make sense
+    if xlim == [0, 0]:
+        xlim = [-1, 1]
+    if ylim == 0:
+        ylim = 1
 
     return xlim, [-ylim, ylim]
 
