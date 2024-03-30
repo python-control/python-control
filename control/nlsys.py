@@ -1367,6 +1367,8 @@ def input_output_response(
 
         * inputs (array): Input(s) to the system, indexed by input and time.
 
+        * params (dict): Parameters values used for the simulation.
+
         The return value of the system can also be accessed by assigning the
         function to a tuple of length 2 (time, output) or of length 3 (time,
         output, state) if ``return_x`` is ``True``.  If the input/output
@@ -1643,7 +1645,7 @@ def input_output_response(
         raise TypeError("Can't determine system type")
 
     return TimeResponseData(
-        soln.t, y, soln.y, u, issiso=sys.issiso(),
+        soln.t, y, soln.y, u, params=params, issiso=sys.issiso(),
         output_labels=sys.output_labels, input_labels=sys.input_labels,
         state_labels=sys.state_labels, sysname=sys.name,
         title="Input/output response for " + sys.name,

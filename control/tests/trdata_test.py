@@ -236,7 +236,8 @@ def test_trdata_labels():
     np.testing.assert_equal(
         response.input_labels, ["u[%d]" % i for i in range(sys.ninputs)])
 
-    # Make sure the selected input and output are both correctly transferred to the response
+    # Make sure the selected input and output are both correctly
+    # transferred to the response
     for nu in range(sys.ninputs):
         for ny in range(sys.noutputs):
             step_response = ct.step_response(sys, T, input=nu, output=ny)
@@ -337,6 +338,37 @@ def test_trdata_multitrace():
     with pytest.raises(ValueError, match="Input vector does not match time"):
         response = ct.TimeResponseData(
             np.zeros(5), np.ones(5), np.zeros((1, 5)), np.zeros(6))
+
+
+@pytest.mark.parametrize("func, args", [
+    (ct.step_response, ()),
+    (ct.initial_response, (1, )),
+    (ct.forced_response, (0, 1)),
+    (ct.input_output_response, (0, 1)),
+])
+@pytest.mark.parametrize("dt", [0, 1])
+def test_trdata_params(func, args, dt):
+    # Create a nonlinear system with parameters, neutrally stable
+    nlsys = ct.nlsys(
+        lambda t, x, u, params: params['a'] * x[0] + u[0],
+        states = 1, inputs = 1, outputs = 1, params={'a': 0}, dt=dt)
+    lnsys = ct.ss([[-0.5]], [[1]], [[1]], 0, dt=dt)
+
+    # Compute the response, setting parameters to make things stable
+    timevec = np.linspace(0, 1) if dt == 0 else np.arange(0, 10, 1)
+    nlresp = func(nlsys, timevec, *args, params={'a': -0.5})
+    lnresp = func(lnsys, timevec, *args)
+
+    # Make sure the modified system was stable
+    np.testing.assert_allclose(
+        nlresp.states, lnresp.states, rtol=1e-3, atol=1e-5)
+    assert lnresp.params == None
+    assert nlresp.params['a'] == -0.5
+
+    # Make sure the match was not accidental
+    bdresp = func(nlsys, timevec, *args)
+    assert not np.allclose(
+        bdresp.states, nlresp.states, rtol=1e-3, atol=1e-5)
 
 
 def test_trdata_exceptions():

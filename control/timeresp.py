@@ -173,6 +173,9 @@ class TimeResponseData:
     sysname : str, optional
         Name of the system that created the data.
 
+    params : dict, optional
+        If system is a nonlinear I/O system, set parameter values.
+
     plot_inputs : bool, optional
         Whether or not to plot the inputs by default (can be overridden in
         the plot() method)
@@ -227,7 +230,7 @@ class TimeResponseData:
             output_labels=None, state_labels=None, input_labels=None,
             title=None, transpose=False, return_x=False, squeeze=None,
             multi_trace=False, trace_labels=None, trace_types=None,
-            plot_inputs=True, sysname=None
+            plot_inputs=True, sysname=None, params=None
     ):
         """Create an input/output time response object.
 
@@ -315,6 +318,7 @@ class TimeResponseData:
             raise ValueError("Time vector must be 1D array")
         self.title = title
         self.sysname = sysname
+        self.params = params
 
         #
         # Output vector (and number of traces)
@@ -856,7 +860,7 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
 
 
 # Forced response of a linear system
-def forced_response(sys, T=None, U=0., X0=0., transpose=False,
+def forced_response(sys, T=None, U=0., X0=0., transpose=False, params=None,
                     interpolate=False, return_x=None, squeeze=None):
     """Compute the output of a linear system given the input.
 
@@ -888,6 +892,9 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
     X0 : array_like or float, default=0.
         Initial condition.
+
+    params : dict, optional
+        If system is a nonlinear I/O system, set parameter values.
 
     transpose : bool, default=False
         If True, transpose all input and output arrays (for backward
@@ -981,7 +988,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
                 warnings.warn(
                     "interpolation not supported for nonlinear I/O systems")
             return input_output_response(
-                sys, T, U, X0, transpose=transpose,
+                sys, T, U, X0, params=params, transpose=transpose,
                 return_x=return_x, squeeze=squeeze)
         else:
             raise TypeError('Parameter ``sys``: must be a ``StateSpace`` or'
@@ -1169,7 +1176,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         yout = np.transpose(yout)
 
     return TimeResponseData(
-        tout, yout, xout, U, issiso=sys.issiso(),
+        tout, yout, xout, U, params=params, issiso=sys.issiso(),
         output_labels=sys.output_labels, input_labels=sys.input_labels,
         state_labels=sys.state_labels, sysname=sys.name, plot_inputs=True,
         title="Forced response for " + sys.name, trace_types=['forced'],
@@ -1256,7 +1263,7 @@ def _process_time_response(
 
 
 def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
-                  transpose=False, return_x=False, squeeze=None):
+                  transpose=False, return_x=False, squeeze=None, params=None):
     # pylint: disable=W0622
     """Compute the step response for a linear system.
 
@@ -1297,6 +1304,9 @@ def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
     output : int, optional
         Only report the step response for the listed output.  If not
         specified, all outputs are reported.
+
+    params : dict, optional
+        If system is a nonlinear I/O system, set parameter values.
 
     T_num : int, optional
         Number of time steps to use in simulation if T is not provided as an
@@ -1403,7 +1413,7 @@ def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
         U = np.zeros((sys.ninputs, T.size))
         U[i, :] = np.ones_like(T)
 
-        response = forced_response(sys, T, U, X0, squeeze=True)
+        response = forced_response(sys, T, U, X0, squeeze=True, params=params)
         inpidx = i if input is None else 0
         yout[:, inpidx, :] = response.y if output is None \
             else response.y[output]
@@ -1424,11 +1434,11 @@ def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
         output_labels=output_labels, input_labels=input_labels,
         state_labels=sys.state_labels, title="Step response for " + sys.name,
         transpose=transpose, return_x=return_x, squeeze=squeeze,
-        sysname=sys.name, trace_labels=trace_labels,
+        sysname=sys.name, params=params, trace_labels=trace_labels,
         trace_types=trace_types, plot_inputs=False)
 
 
-def step_info(sysdata, T=None, T_num=None, yfinal=None,
+def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
               SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1, 0.9)):
     """
     Step response characteristics (Rise time, Settling Time, Peak and others).
@@ -1451,6 +1461,8 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
         systems to simulate and the last value of the the response data is
         used for a given time series of response data. Scalar for SISO,
         (noutputs, ninputs) array_like for MIMO systems.
+    params : dict, optional
+        If system is a nonlinear I/O system, set parameter values.
     SettlingTimeThreshold : float, optional
         Defines the error to compute settling time (default = 0.02)
     RiseTimeLimits : tuple (lower_threshold, upper_theshold)
@@ -1536,7 +1548,7 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
     from .nlsys import NonlinearIOSystem
 
     if isinstance(sysdata, (StateSpace, TransferFunction, NonlinearIOSystem)):
-        T, Yout = step_response(sysdata, T, squeeze=False)
+        T, Yout = step_response(sysdata, T, squeeze=False, params=params)
         if yfinal:
             InfValues = np.atleast_2d(yfinal)
         else:
@@ -1651,7 +1663,7 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
     return ret[0][0] if retsiso else ret
 
 
-def initial_response(sys, T=None, X0=0, output=None, T_num=None,
+def initial_response(sys, T=None, X0=0, output=None, T_num=None, params=None,
                      transpose=False, return_x=False, squeeze=None):
     # pylint: disable=W0622
     """Compute the initial condition response for a linear system.
@@ -1683,6 +1695,9 @@ def initial_response(sys, T=None, X0=0, output=None, T_num=None,
     T_num : int, optional
         Number of time steps to use in simulation if T is not provided as an
         array (autocomputed if not given); ignored if sys is discrete-time.
+
+    params : dict, optional
+        If system is a nonlinear I/O system, set parameter values.
 
     transpose : bool, optional
         If True, transpose all input and output arrays (for backward
@@ -1748,7 +1763,7 @@ def initial_response(sys, T=None, X0=0, output=None, T_num=None,
         raise ValueError("invalid value of T for this type of system")
 
     # Compute the forced response
-    response = forced_response(sys, T, 0, X0)
+    response = forced_response(sys, T, 0, X0, params=params)
 
     # Figure out if the system is SISO or not
     issiso = sys.issiso() or output is not None
@@ -1760,7 +1775,7 @@ def initial_response(sys, T=None, X0=0, output=None, T_num=None,
 
     # Store the response without an input
     return TimeResponseData(
-        response.t, yout, response.x, None, issiso=issiso,
+        response.t, yout, response.x, None, params=params, issiso=issiso,
         output_labels=output_labels, input_labels=None,
         state_labels=sys.state_labels, sysname=sys.name,
         title="Initial response for " + sys.name, trace_types=['initial'],
@@ -1862,6 +1877,10 @@ def impulse_response(sys, T=None, input=None, output=None, T_num=None,
     """
     from .statesp import _convert_to_statespace
     from .lti import LTI
+
+    # Make sure we have an LTI system
+    if not isinstance(sys, LTI):
+        raise ValueError("system must be LTI system for impulse response")
 
     # Create the time and input vectors
     if T is None or np.asarray(T).size == 1:

@@ -75,3 +75,20 @@ def test_lti_nlsys_response(nin, nout, input, output):
     resp_nl = ct.forced_response(sys_nl, timepts, U, X0=X0)
     np.testing.assert_equal(resp_ss.time, resp_nl.time)
     np.testing.assert_allclose(resp_ss.states, resp_nl.states, atol=0.05)
+
+
+# Test to make sure that impulse responses are not allowed
+def test_nlsys_impulse():
+    sys_ss = ct.rss(4, 1, 1, strictly_proper=True)
+    sys_nl = ct.nlsys(
+        lambda t, x, u, params: sys_ss.A @ x + sys_ss.B @ u,
+        lambda t, x, u, params: sys_ss.C @ x + sys_ss.D @ u,
+        inputs=1, outputs=1, states=4)
+
+    # Figure out the time to use from the linear impulse response
+    resp_ss = ct.impulse_response(sys_ss)
+    timepts = np.linspace(0, resp_ss.time[-1]/10, 100)
+
+    # Impulse_response (not implemented)
+    with pytest.raises(ValueError, match="system must be LTI"):
+        resp_nl = ct.impulse_response(sys_nl, timepts)
