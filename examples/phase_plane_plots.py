@@ -1,4 +1,4 @@
-# phase_portraits.py - phase portrait examples
+# phase_plane_plots.py - phase portrait examples
 # RMM, 25 Mar 2024
 #
 # This file contains a number of examples of phase plane plots generated

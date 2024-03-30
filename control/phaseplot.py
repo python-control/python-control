@@ -9,10 +9,10 @@
 # * Check for keyword compatibility with other plot routines
 # * Set up configuration parameters (nyquist --> phaseplot)
 
-"""The :mod:`control.phaseplot` module contains functions for generating 2D
-phase plots.
+"""Module for generating 2D phase plane plots.
 
-The base function for creating phase plane portraits is
+The :mod:`control.phaseplot` module contains functions for generating 2D
+phase plots. The base function for creating phase plane portraits is
 :func:`~control.phase_plane_plot`, which generates a phase plane portrait
 for a 2 state I/O system (with no inputs).  In addition, several other
 functions are available to creat ecustomize phase plane plots:
@@ -52,7 +52,7 @@ _phaseplot_defaults = {
 def phase_plane_plot(
         sys, pointdata=None, timedata=None, gridtype=None, gridspec=None,
         plot_streamlines=True, plot_vectorfield=False, plot_equilpoints=True,
-        plot_separatrices=True,  ax=None, **kwargs
+        plot_separatrices=True, ax=None, **kwargs
 ):
     """Plot phase plane diagram.
 
@@ -61,8 +61,10 @@ def phase_plane_plot(
 
     Parameters
     ----------
-    sys : NonlinearIOSystem or callable(x, t, ...)
-        Function used to generate phase plane data.
+    sys : NonlinearIOSystem or callable(t, x, ...)
+        I/O system or function used to generate phase plane data. If a
+        function is given, the remaining arguments are drawn from the
+        `params` keyword.
     pointdata : list or 2D array
         List of the form [xmin, xmax, ymin, ymax] describing the
         boundaries of the phase plot or an array of shape (N, 2)
@@ -82,6 +84,10 @@ def phase_plane_plot(
         If gridtype is 'circlegrid', then `gridspec` is a 2-tuple
         specifying the radius and number of points around each point in the
         `pointdata` array.
+    params : dict, optional
+        Parameters to pass to system. For an I/O system, `params` should be
+        a dict of parameters and values. For a callable, `params` should be
+        dict with key 'args' and value given by a tuple (passed to callable).
     plot_streamlines : bool or dict
         If `True` (default) then plot streamlines based on the pointdata
         and gridtype.  If set to a dict, pass on the key-value pairs in
@@ -113,6 +119,8 @@ def phase_plane_plot(
 
     """
     # Process arguments
+    params = kwargs.get('params', None)
+    sys = _create_system(sys, params)
     pointdata = [-1, 1, -1, 1] if pointdata is None else pointdata
 
     # Create axis if needed
@@ -132,9 +140,8 @@ def phase_plane_plot(
             new_kwargs.update(local_kwargs)
         return new_kwargs
 
-    # Create array for storing outputs
-    out = np.empty(3, dtype=object)
-    out[0] = []
+    # Create list for storing outputs
+    out = [[], None, None]
 
     # Plot out the main elements
     if plot_streamlines:
@@ -204,8 +211,10 @@ def vectorfield(
 
     Parameters
     ----------
-    sys : NonlinearIOSystem or callable(x, t, ...)
-        Function used to generate phase plane data.
+    sys : NonlinearIOSystem or callable(t, x, ...)
+        I/O system or function used to generate phase plane data.  If a
+        function is given, the remaining arguments are drawn from the
+        `params` keyword.
     pointdata : list or 2D array
         List of the form [xmin, xmax, ymin, ymax] describing the
         boundaries of the phase plot or an array of shape (N, 2)
@@ -222,6 +231,10 @@ def vectorfield(
         If gridtype is 'circlegrid', then `gridspec` is a 2-tuple
         specifying the radius and number of points around each point in the
         `pointdata` array.
+    params : dict or list, optional
+        Parameters to pass to system. For an I/O system, `params` should be
+        a dict of parameters and values. For a callable, `params` should be
+        dict with key 'args' and value given by a tuple (passed to callable).
     color : str
         Plot the vector field in the given color.
     ax : Axes
@@ -234,6 +247,9 @@ def vectorfield(
     """
     # Get system parameters
     params = kwargs.pop('params', None)
+
+    # Create system from callable, if needed
+    sys = _create_system(sys, params)
 
     # Determine the points on which to generate the vector field
     points, _ = _make_points(pointdata, gridspec, 'meshgrid')
@@ -256,7 +272,7 @@ def vectorfield(
     vfdata = np.zeros((points.shape[0], 4))
     for i, x in enumerate(points):
         vfdata[i, :2] = x
-        vfdata[i, 2:] = sys.dynamics(0, x, 0, params=params)
+        vfdata[i, 2:] = sys.dynamics(0, x, 0, params)
 
     out = ax.quiver(
         vfdata[:, 0], vfdata[:, 1], vfdata[:, 2], vfdata[:, 3],
@@ -275,8 +291,10 @@ def streamlines(
 
     Parameters
     ----------
-    sys : NonlinearIOSystem or callable(x, t, ...)
-        Function used to generate phase plane data.
+    sys : NonlinearIOSystem or callable(t, x, ...)
+        I/O system or function used to generate phase plane data.  If a
+        function is given, the remaining arguments are drawn from the
+        `params` keyword.
     pointdata : list or 2D array
         List of the form [xmin, xmax, ymin, ymax] describing the
         boundaries of the phase plot or an array of shape (N, 2)
@@ -296,6 +314,10 @@ def streamlines(
         If gridtype is 'circlegrid', then `gridspec` is a 2-tuple
         specifying the radius and number of points around each point in the
         `pointdata` array.
+    params : dict or list, optional
+        Parameters to pass to system. For an I/O system, `params` should be
+        a dict of parameters and values. For a callable, `params` should be
+        dict with key 'args' and value given by a tuple (passed to callable).
     color : str
         Plot the streamlines in the given color.
     ax : Axes
@@ -306,12 +328,11 @@ def streamlines(
     out : list of Line2D objects
 
     """
-    #
-    # Keyword processing
-    #
-
     # Get system parameters
     params = kwargs.pop('params', None)
+
+    # Create system from callable, if needed
+    sys = _create_system(sys, params)
 
     # Parse the arrows keyword
     arrow_pos, arrow_style = _parse_arrow_keywords(kwargs)
@@ -374,8 +395,10 @@ def equilpoints(
 
     Parameters
     ----------
-    sys : NonlinearIOSystem or callable(x, t, ...)
-        Function used to generate phase plane data.
+    sys : NonlinearIOSystem or callable(t, x, ...)
+        I/O systems or function used to generate phase plane data. If a
+        function is given, the remaining arguments are drawn from the
+        `params` keyword.
     pointdata : list or 2D array
         List of the form [xmin, xmax, ymin, ymax] describing the
         boundaries of the phase plot or an array of shape (N, 2)
@@ -392,6 +415,10 @@ def equilpoints(
         If gridtype is 'circlegrid', then `gridspec` is a 2-tuple
         specifying the radius and number of points around each point in the
         `pointdata` array.
+    params : dict or list, optional
+        Parameters to pass to system. For an I/O system, `params` should be
+        a dict of parameters and values. For a callable, `params` should be
+        dict with key 'args' and value given by a tuple (passed to callable).
     color : str
         Plot the equilibrium points in the given color.
     ax : Axes
@@ -404,6 +431,9 @@ def equilpoints(
     """
     # Get system parameters
     params = kwargs.pop('params', None)
+
+    # Create system from callable, if needed
+    sys = _create_system(sys, params)
 
     # Create axis if needed
     if ax is None:
@@ -442,8 +472,10 @@ def separatrices(
 
     Parameters
     ----------
-    sys : NonlinearIOSystem or callable(x, t, ...)
-        Function used to generate phase plane data.
+    sys : NonlinearIOSystem or callable(t, x, ...)
+        I/O system or function used to generate phase plane data. If a
+        function is given, the remaining arguments are drawn from the
+        `params` keyword.
     pointdata : list or 2D array
         List of the form [xmin, xmax, ymin, ymax] describing the
         boundaries of the phase plot or an array of shape (N, 2)
@@ -463,6 +495,10 @@ def separatrices(
         If gridtype is 'circlegrid', then `gridspec` is a 2-tuple
         specifying the radius and number of points around each point in the
         `pointdata` array.
+    params : dict or list, optional
+        Parameters to pass to system. For an I/O system, `params` should be
+        a dict of parameters and values. For a callable, `params` should be
+        dict with key 'args' and value given by a tuple (passed to callable).
     color : str
         Plot the streamlines in the given color.
     ax : Axes
@@ -471,16 +507,13 @@ def separatrices(
     Returns
     -------
     out : list of Line2D objects
-    
-    """
-    #
-    # Keyword processing
-    #
-    # TODO: add unit test
-    radius = config._get_param('phaseplot', 'separatrices_radius')
 
+    """
     # Get system parameters
     params = kwargs.pop('params', None)
+
+    # Create system from callable, if needed
+    sys = _create_system(sys, params)
 
     # Parse the arrows keyword
     arrow_pos, arrow_style = _parse_arrow_keywords(kwargs)
@@ -489,8 +522,9 @@ def separatrices(
     gridspec = [5, 5] if gridspec is None else gridspec
     points, _ = _make_points(pointdata, gridspec, 'meshgrid')
 
-    # Find the for equilibrium points
+    # Find the equilibrium points
     equilpts = _find_equilpts(sys, points, params=params)
+    radius = config._get_param('phaseplot', 'separatrices_radius')
 
     # Create axis if needed
     if ax is None:
@@ -576,27 +610,6 @@ def separatrices(
 #
 # User accessible utility functions
 #
-# TODO: document and add unit tests
-
-# Utility function for generating initial conditions around a box
-# TODO: replace with boxgrid?
-def box_grid(xlimp, ylimp):
-    """box_grid   generate list of points on edge of box
-
-    list = box_grid([xmin xmax xnum], [ymin ymax ynum]) generates a
-    list of points that correspond to a uniform grid at the end of the
-    box defined by the corners [xmin ymin] and [xmax ymax].
-    """
-
-    # Generate a deprecation warning
-    warnings.warn(
-        "box_grid is deprecated; use phaseplot.boxgrid instead",
-        FutureWarning)
-
-    return boxgrid(
-        np.linspace(xlimp[0], xlimp[1], xlimp[2]),
-        np.linspace(ylimp[0], ylimp[1], ylimp[2]))
-
 
 # Utility function to generate boxgrid (in the form needed here)
 def boxgrid(xvals, yvals):
@@ -688,12 +701,21 @@ def circlegrid(centers, radius, num):
 # Internal utility functions
 #
 
-# TODO: rename to something more useful (or remove??)
-def _find(condition):
-    """Returns indices where ravel(a) is true.
-    Private implementation of deprecated matplotlib.mlab.find
-    """
-    return np.nonzero(np.ravel(condition))[0]
+# Create a system form a callable
+def _create_system(sys, params):
+    if isinstance(sys, NonlinearIOSystem):
+        if sys.nstates != 2:
+            raise ValueError("system must be planar")
+        return sys
+
+    # Make sure that if params is present, it has 'args' key
+    if params and not params.get('args', None):
+        raise ValueError("params must be dict with key 'args'")
+
+    _update = lambda t, x, u, params: sys(t, x, *params.get('args', ()))
+    _output = lambda t, x, u, params: np.array([])
+    return NonlinearIOSystem(
+        _update, _output, states=2, inputs=0, outputs=0, name="_callable")
 
 # Set axis limits for the plot
 def _set_axis_limits(ax, pointdata):
@@ -774,7 +796,7 @@ def _make_points(pointdata, gridspec, gridtype):
 
         elif not isinstance(gridspec, (list, tuple)) or \
              len(gridspec) != len(defsize):
-            raise ValueError("invalid grid size specificiation")
+            raise ValueError("invalid grid specification")
 
         return gridspec
 
@@ -900,7 +922,7 @@ def _make_timepts(timepts, i):
 #
 def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
                lingrid=None, lintime=None, logtime=None, timepts=None,
-               parms=(), params=None, tfirst=False, verbose=True):
+               parms=None, params=(), tfirst=False, verbose=True):
 
     """(legacy) Phase plot for 2D dynamical systems.
 
@@ -919,48 +941,42 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     Parameters
     ----------
     func : callable(x, t, ...)
-        Computes the time derivative of y (compatible with odeint).
-        The function should be the same for as used for
-        :mod:`scipy.integrate`.  Namely, it should be a function of the form
-        dxdt = F(x, t) that accepts a state x of dimension 2 and
-        returns a derivative dx/dt of dimension 2.
-
+        Computes the time derivative of y (compatible with odeint).  The
+        function should be the same for as used for :mod:`scipy.integrate`.
+        Namely, it should be a function of the form dxdt = F(t, x) that
+        accepts a state x of dimension 2 and returns a derivative dx/dt of
+        dimension 2.
     X, Y: 3-element sequences, optional, as [start, stop, npts]
         Two 3-element sequences specifying x and y coordinates of a
         grid.  These arguments are passed to linspace and meshgrid to
         generate the points at which the vector field is plotted.  If
         absent (or None), the vector field is not plotted.
-
     scale: float, optional
         Scale size of arrows; default = 1
-
     X0: ndarray of initial conditions, optional
         List of initial conditions from which streamlines are plotted.
         Each initial condition should be a pair of numbers.
-
     T: array-like or number, optional
         Length of time to run simulations that generate streamlines.
         If a single number, the same simulation time is used for all
         initial conditions.  Otherwise, should be a list of length
         len(X0) that gives the simulation time for each initial
         condition.  Default value = 50.
-
     lingrid : integer or 2-tuple of integers, optional
         Argument is either N or (N, M).  If X0 is given and X, Y are missing,
         a grid of arrows is produced using the limits of the initial
         conditions, with N grid points in each dimension or N grid points in x
         and M grid points in y.
-
     lintime : integer or tuple (integer, float), optional
         If a single integer N is given, draw N arrows using equally space time
         points.  If a tuple (N, lambda) is given, draw N arrows using
         exponential time constant lambda
-
     timepts : array-like, optional
         Draw arrows at the given list times [t1, t2, ...]
-
-    parms: tuple, optional
-        List of parameters to pass to vector field: `func(x, t, *parms)`
+    tfirst : bool, optional
+        If True, call `func` with signature `func(t, x, ...)`.
+    params: tuple, optional
+        List of parameters to pass to vector field: `func(x, t, *params)`
 
     See also
     --------
@@ -983,7 +999,14 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     timeptsFlag = False
     Narrows = 0
 
-    # TODO: change parms to params with legacy processing
+    # Get parameters to pass to function
+    if parms:
+        warnings.warn(
+            f"keyword 'parms' is deprecated; use 'params'", FutureWarning)
+        if params:
+            raise ControlArgument(f"duplicate keywords 'parms' and 'params'")
+        else:
+            params = parms
 
     if lingrid is not None:
         autoFlag = True
@@ -1022,10 +1045,10 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
             for j in range(nc):
                 if tfirst:
                     dx[i, j, :] = np.squeeze(
-                        odefun(0, [x1[i,j], x2[i,j]], *parms))
+                        odefun(0, [x1[i,j], x2[i,j]], *params))
                 else:
                     dx[i, j, :] = np.squeeze(
-                        odefun([x1[i,j], x2[i,j]], 0, *parms))
+                        odefun([x1[i,j], x2[i,j]], 0, *params))
 
         # Plot the quiver plot
         #! TODO: figure out arguments to make arrows show up correctly
@@ -1078,7 +1101,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
 
     # Generate the streamlines for each initial condition
     for i in range(nr):
-        state = odeint(odefun, X0[i], TSPAN, args=parms, tfirst=tfirst)
+        state = odeint(odefun, X0[i], TSPAN, args=params, tfirst=tfirst)
         time = TSPAN
 
         plt.plot(state[:,0], state[:,1])
@@ -1124,9 +1147,9 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
                       x2[i,j] <= ymax and x2[i,j] >= ymin)):
                     if tfirst:
                         pass
-                        v = odefun(0, [x1[i,j], x2[i,j]], *parms)
+                        v = odefun(0, [x1[i,j], x2[i,j]], *params)
                     else:
-                        v = odefun([x1[i,j], x2[i,j]], 0, *parms)
+                        v = odefun([x1[i,j], x2[i,j]], 0, *params)
                     dx[i, j, 0] = v[0]; dx[i, j, 1] = v[1]
                 else:
                     dx[i, j, 0] = 0; dx[i, j, 1] = 0
@@ -1155,4 +1178,33 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     if scale < 0:
         bp = plt.plot(x1, x2, 'b.');        # add dots at base
         # set(bp, 'MarkerSize', PP_arrow_markersize)
+
+
+# Utility function for generating initial conditions around a box
+def box_grid(xlimp, ylimp):
+    """box_grid   generate list of points on edge of box
+
+    list = box_grid([xmin xmax xnum], [ymin ymax ynum]) generates a
+    list of points that correspond to a uniform grid at the end of the
+    box defined by the corners [xmin ymin] and [xmax ymax].
+    """
+
+    # Generate a deprecation warning
+    warnings.warn(
+        "box_grid is deprecated; use phaseplot.boxgrid instead",
+        FutureWarning)
+
+    return boxgrid(
+        np.linspace(xlimp[0], xlimp[1], xlimp[2]),
+        np.linspace(ylimp[0], ylimp[1], ylimp[2]))
+
+
+# TODO: rename to something more useful (or remove??)
+def _find(condition):
+    """Returns indices where ravel(a) is true.
+    Private implementation of deprecated matplotlib.mlab.find
+    """
+    return np.nonzero(np.ravel(condition))[0]
+
+        
 

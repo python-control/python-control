@@ -55,7 +55,7 @@ class TestPhasePlot:
                 [4.2, 2.1], [5, 2.1], [2*pi, -1.6], [2*pi, -0.5],
                 [1.8, -2.1], [1, -2.1], [-4.2, -2.1], [-5, -2.1]],
             T = np.linspace(0, 40, 800),
-            params={'m': 1, 'l': 1, 'b': 0.2, 'g': 1})
+            params=(1, 1, 0.2, 1))
 
         # Separatrices
 
@@ -115,10 +115,49 @@ class TestPhasePlot:
         [ct.phaseplot.separatrices, [5], {'color': ('r', 'g')}],
     ])
 def test_helper_functions(func, args, kwargs):
+    # Test with system
     sys = ct.nlsys(
         lambda t, x, u, params: [x[0] - 3*x[1], -3*x[0] + x[1]],
         states=2, inputs=0)
     out = func(sys, [-1, 1, -1, 1], *args, **kwargs)
+
+    # Test with function
+    rhsfcn = lambda t, x: sys.dynamics(t, x, 0, {})
+    out = func(rhsfcn, [-1, 1, -1, 1], *args, **kwargs)
+
+
+def test_system_types():
+    # Sample dynamical systems - inverted pendulum
+    def invpend_ode(t, x, m=0, l=0, b=0, g=0):
+        return (x[1], -b/m*x[1] + (g*l/m) * np.sin(x[0]))
+
+    # Use callable form, with parameters (if not correct, will get /0 error)
+    ct.phase_plane_plot(
+        invpend_ode, [-5, 5, 2, 2], params={'args': (1, 1, 0.2, 1)})
+
+    # Linear I/O system
+    ct.phase_plane_plot(
+        ct.ss([[0, 1], [-1, -1]], [[0], [1]], [[1, 0]], 0))
+
+
+def test_phaseplane_errors():
+    with pytest.raises(ValueError, match="invalid grid specification"):
+        ct.phase_plane_plot(ct.rss(2, 1, 1), gridspec='bad')
+        
+    with pytest.raises(ValueError, match="unknown grid type"):
+        ct.phase_plane_plot(ct.rss(2, 1, 1), gridtype='bad')
+        
+    with pytest.raises(ValueError, match="system must be planar"):
+        ct.phase_plane_plot(ct.rss(3, 1, 1))
+
+    with pytest.raises(ValueError, match="params must be dict with key"):
+        def invpend_ode(t, x, m=0, l=0, b=0, g=0):
+            return (x[1], -b/m*x[1] + (g*l/m) * np.sin(x[0]))
+        ct.phase_plane_plot(
+            invpend_ode, [-5, 5, 2, 2], params={'stuff': (1, 1, 0.2, 1)})
+
+        
+
 
 def test_basic_phase_plots(savefigs=False):
     sys = ct.nlsys(

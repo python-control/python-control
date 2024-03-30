@@ -329,9 +329,9 @@ units forward and backward in time.  A separate grid specification is used
 to find equilibrium points and separatrices (since the course grid spacing
 of 5x8 does not find all possible equilibrium points).  Together, the
 multiple features in the phase plane plot give a good global picture of the
-topological strucrure of solutions of the dynamical system.
+topological structure of solutions of the dynamical system.
 
-Phase plots can be buit up by hand using a variety of helper functions that
+Phase plots can be built up by hand using a variety of helper functions that
 are part of the :mod:`~control.phaseplot` (pp) module::
 
     import control.phaseplot as pp

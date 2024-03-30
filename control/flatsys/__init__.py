@@ -35,8 +35,10 @@
 # Author: Richard M. Murray
 # Date: 1 Jul 2019
 
-r"""The :mod:`control.flatsys` module contains a set of classes and functions
-that can be used to compute trajectories for differentially flat systems.
+r"""Differentially flat systems sub-package.
+
+The :mod:`control.flatsys` sub-package contains a set of classes and
+functions to compute trajectories for differentially flat systems.
 
 A differentially flat system is defined by creating an object using the
 :class:`~control.flatsys.FlatSystem` class, which has member functions for
