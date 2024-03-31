@@ -15,7 +15,7 @@ The :mod:`control.phaseplot` module contains functions for generating 2D
 phase plots. The base function for creating phase plane portraits is
 :func:`~control.phase_plane_plot`, which generates a phase plane portrait
 for a 2 state I/O system (with no inputs).  In addition, several other
-functions are available to creat ecustomize phase plane plots:
+functions are available to create customized phase plane plots:
 
 * boxgrid: Generate a list of points along the edge of a box
 * circlegrid: Generate list of points around a circle
@@ -103,7 +103,7 @@ def phase_plane_plot(
     plot_separatrices : bool or dict
         If `True` (default) then plot separatrices starting from each
         equilibrium point.  If set to a dict, pass on the key-value pairs
-        in the dict as keywords to :func:`~control.phaseplot.streamlines`.
+        in the dict as keywords to :func:`~control.phaseplot.separatrices`.
     color : str
         Plot all elements in the given color (use `plot_<fcn>={'color': c}`
         to set the color in one element of the phase plot.
@@ -397,7 +397,7 @@ def equilpoints(
     Parameters
     ----------
     sys : NonlinearIOSystem or callable(t, x, ...)
-        I/O systems or function used to generate phase plane data. If a
+        I/O system or function used to generate phase plane data. If a
         function is given, the remaining arguments are drawn from the
         `params` keyword.
     pointdata : list or 2D array
@@ -702,7 +702,7 @@ def circlegrid(centers, radius, num):
 # Internal utility functions
 #
 
-# Create a system form a callable
+# Create a system from a callable
 def _create_system(sys, params):
     if isinstance(sys, NonlinearIOSystem):
         if sys.nstates != 2:
@@ -789,9 +789,6 @@ def _make_points(pointdata, gridspec, gridtype):
 
     # Utility function to parse (and check) input arguments
     def _parse_args(defsize):
-        # if not isinstance(pointdata, (list, tuple)) or len(pointdata) != 4:
-        #     raise ValueError("invalid grid data specification")
-
         if gridspec is None:
             return defsize
 

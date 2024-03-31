@@ -2,7 +2,7 @@
 # RMM, 25 Mar 2024
 #
 # This file contains a number of examples of phase plane plots generated
-# using the phaseplot module.  Most of these figures lines up with examples
+# using the phaseplot module.  Most of these figures line up with examples
 # in FBS2e, with different display options shown as different subplots.
 
 import time
