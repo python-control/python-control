@@ -3,18 +3,19 @@
 RMM, 30 Mar 2011 (based on TestXferFcn from v0.4a)
 """
 
+import operator
+import re
+
 import numpy as np
 import pytest
-import operator
 
 import control as ct
-from control import StateSpace, TransferFunction, rss, evalfr
-from control import ss, ss2tf, tf, tf2ss, zpk
-from control import isctime, isdtime, sample_system
-from control import defaults, reset_defaults, set_defaults
+from control import (StateSpace, TransferFunction, defaults, evalfr, isctime,
+                     isdtime, reset_defaults, rss, sample_system, set_defaults,
+                     ss, ss2tf, tf, tf2ss, zpk)
 from control.statesp import _convert_to_statespace
-from control.xferfcn import _convert_to_transfer_function
 from control.tests.conftest import slycotonly
+from control.xferfcn import _convert_to_transfer_function
 
 
 class TestXferFcn:
@@ -836,9 +837,14 @@ class TestXferFcn:
 
         # differencer, with warning
         sys = TransferFunction(1, [1, -1], True)
-        with pytest.warns(RuntimeWarning, match="divide by zero"):
+        with pytest.warns() as record:
             np.testing.assert_equal(
                 sys.dcgain(warn_infinite=True), np.inf)
+        assert len(record) == 2     # generates two RuntimeWarnings
+        assert record[0].category is RuntimeWarning
+        assert re.search("divide by zero", str(record[0].message))
+        assert record[1].category is RuntimeWarning
+        assert re.search("invalid value", str(record[1].message))
 
         # summer
         sys = TransferFunction([1, -1], [1], True)

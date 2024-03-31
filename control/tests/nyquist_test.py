@@ -8,11 +8,13 @@ from ipython to generate plots interactively.
 
 """
 
+import re
 import warnings
 
-import pytest
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pytest
+
 import control as ct
 
 pytestmark = pytest.mark.usefixtures("mplcleanup")
@@ -66,9 +68,12 @@ def test_nyquist_basic():
     assert _Z(sys) == N_sys + _P(sys)
 
     # With a larger indent_radius, we get a warning message + wrong answer
-    with pytest.warns(UserWarning, match="contour may miss closed loop pole"):
+    with pytest.warns() as rec:
         N_sys = ct.nyquist_response(sys, indent_radius=0.2)
         assert _Z(sys) != N_sys + _P(sys)
+    assert len(rec) == 2
+    assert re.search("contour may miss closed loop pole", str(rec[0].message))
+    assert re.search("encirclements does not match", str(rec[1].message))
 
     # Unstable system
     sys = ct.tf([10], [1, 2, 2, 1])
@@ -104,11 +109,15 @@ def test_nyquist_basic():
         sys, np.linspace(1e-4, 1e2, 100), indent_radius=1e-2,
         return_contour=True)
     assert not all(contour_indented.real == 0)
-    with pytest.warns(UserWarning, match="encirclements does not match"):
+
+    with pytest.warns() as record:
         count, contour = ct.nyquist_response(
             sys, np.linspace(1e-4, 1e2, 100), indent_radius=1e-2,
             return_contour=True, indent_direction='none')
     np.testing.assert_almost_equal(contour, 1j*np.linspace(1e-4, 1e2, 100))
+    assert len(record) == 2
+    assert re.search("encirclements .* non-integer", str(record[0].message))
+    assert re.search("encirclements does not match", str(record[1].message))
 
     # Nyquist plot with poles at the origin, omega unspecified
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0])
@@ -264,13 +273,18 @@ def test_nyquist_indent_default(indentsys):
 def test_nyquist_indent_dont(indentsys):
     # first value of default omega vector was 0.1, replaced by 0. for contour
     # indent_radius is larger than 0.1 -> no extra quater circle around origin
-    with pytest.warns(UserWarning, match="encirclements does not match"):
+    with pytest.warns() as record:
         count, contour = ct.nyquist_response(
             indentsys, omega=[0, 0.2, 0.3, 0.4], indent_radius=.1007,
             plot=False, return_contour=True)
     np.testing.assert_allclose(contour[0], .1007+0.j)
     # second value of omega_vector is larger than indent_radius: not indented
     assert np.all(contour.real[2:] == 0.)
+
+    # Make sure warnings are as expected
+    assert len(record) == 2
+    assert re.search("encirclements .* non-integer", str(record[0].message))
+    assert re.search("encirclements does not match", str(record[1].message))
 
 
 def test_nyquist_indent_do(indentsys):
@@ -352,9 +366,8 @@ def test_nyquist_exceptions():
         ct.nyquist_plot(sys, indent_direction='up')
 
     # Discrete time system sampled above Nyquist frequency
-    sys = ct.drss(2, 1, 1)
-    sys.dt = 0.01
-    with pytest.warns(UserWarning, match="above Nyquist"):
+    sys = ct.ss([[-0.5, 0], [1, 0.5]], [[0], [1]], [[1, 0]], 0, 0.1)
+    with pytest.warns(UserWarning, match="evaluation above Nyquist"):
         ct.nyquist_plot(sys, np.logspace(-2, 3))
 
 
