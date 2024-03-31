@@ -6,19 +6,21 @@ This is a rudimentary set of tests for frequency response functions,
 including bode plots.
 """
 
+import math
+import re
+
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.testing import assert_allclose
-import math
 import pytest
+from numpy.testing import assert_allclose
 
 import control as ctrl
+from control.freqplot import (bode_plot, nyquist_plot, nyquist_response,
+                              singular_values_plot, singular_values_response)
+from control.matlab import bode, rss, ss, tf
 from control.statesp import StateSpace
-from control.xferfcn import TransferFunction
-from control.matlab import ss, tf, bode, rss
-from control.freqplot import bode_plot, nyquist_plot, nyquist_response, \
-    singular_values_plot, singular_values_response
 from control.tests.conftest import slycotonly
+from control.xferfcn import TransferFunction
 
 pytestmark = pytest.mark.usefixtures("mplcleanup")
 
@@ -101,11 +103,16 @@ def test_nyquist_basic(ss_siso):
     response = nyquist_response(tf_siso, omega_num=20)
     assert len(response.contour) == 20
 
-    with pytest.warns(UserWarning, match="encirclements was a non-integer"):
+    with pytest.warns() as record:
         count, contour = nyquist_plot(
             tf_siso, plot=False, omega_limits=(1, 100), return_contour=True)
     assert_allclose(contour[0], 1j)
     assert_allclose(contour[-1], 100j)
+
+    # Check known warnings happened as expected
+    assert len(record) == 2
+    assert re.search("encirclements was a non-integer", str(record[0].message))
+    assert re.search("return values .* deprecated", str(record[1].message))
 
     response = nyquist_response(tf_siso, omega=np.logspace(-1, 1, 10))
     assert len(response.contour) == 10
@@ -428,14 +435,25 @@ def test_freqresp_warn_infinite():
     np.testing.assert_almost_equal(sys_finite(0, warn_infinite=True), 100)
 
     # Transfer function with infinite zero frequency gain
-    with pytest.warns(RuntimeWarning, match="divide by zero"):
+    with pytest.warns() as record:
         np.testing.assert_almost_equal(
             sys_infinite(0), complex(np.inf, np.nan))
-    with pytest.warns(RuntimeWarning, match="divide by zero"):
+    assert len(record) == 2     # generates two RuntimeWarnings
+    assert record[0].category is RuntimeWarning
+    assert re.search("divide by zero", str(record[0].message))
+    assert record[1].category is RuntimeWarning
+    assert re.search("invalid value", str(record[1].message))
+
+    with pytest.warns() as record:
         np.testing.assert_almost_equal(
             sys_infinite(0, warn_infinite=True), complex(np.inf, np.nan))
     np.testing.assert_almost_equal(
         sys_infinite(0, warn_infinite=False), complex(np.inf, np.nan))
+    assert len(record) == 2     # generates two RuntimeWarnings
+    assert record[0].category is RuntimeWarning
+    assert re.search("divide by zero", str(record[0].message))
+    assert record[1].category is RuntimeWarning
+    assert re.search("invalid value", str(record[1].message))
 
     # Switch to state space
     sys_finite = ctrl.tf2ss(sys_finite)
