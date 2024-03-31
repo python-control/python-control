@@ -186,11 +186,13 @@ def test_root_locus_documentation(savefigs=False):
     sys = ct.tf([1, 2], [1, 2, 3], name='SISO transfer function')
     response = ct.pole_zero_map(sys)
     ct.pole_zero_plot(response)
-    plt.savefig('pzmap-siso_ctime-default.png')
+    if savefigs:
+        plt.savefig('pzmap-siso_ctime-default.png')
 
     plt.figure()
     ct.root_locus_map(sys).plot()
-    plt.savefig('rlocus-siso_ctime-default.png')
+    if savefigs:
+        plt.savefig('rlocus-siso_ctime-default.png')
 
     # TODO: generate event in order to generate real title
     plt.figure()
@@ -200,18 +202,21 @@ def test_root_locus_documentation(savefigs=False):
     with plt.rc_context(freqplot_rcParams):
         ax.set_title(
             "Clicked at: -2.729+1.511j  gain = 3.506  damping = 0.8748")
-    plt.savefig('rlocus-siso_ctime-clicked.png')
+    if savefigs:
+        plt.savefig('rlocus-siso_ctime-clicked.png')
 
     plt.figure()
     sysd = sys.sample(0.1)
     ct.root_locus_plot(sysd)
-    plt.savefig('rlocus-siso_dtime-default.png')
+    if savefigs:
+        plt.savefig('rlocus-siso_dtime-default.png')
 
     plt.figure()
     sys1 = ct.tf([1, 2], [1, 2, 3], name='sys1')
     sys2 = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='sys2')
     ct.root_locus_plot([sys1, sys2], grid=False)
-    plt.savefig('rlocus-siso_multiple-nogrid.png')
+    if savefigs:
+        plt.savefig('rlocus-siso_multiple-nogrid.png')
 
 
 if __name__ == "__main__":
