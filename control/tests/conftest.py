@@ -73,6 +73,16 @@ def legacy_plot_signature():
     warnings.resetwarnings()
 
 
+@pytest.fixture(scope="function")
+def ignore_future_warning():
+    """Turn off warnings for functions that generate FutureWarning"""
+    import warnings
+    warnings.filterwarnings(
+        'ignore', message='.*deprecated', category=FutureWarning)
+    yield
+    warnings.resetwarnings()
+    
+
 # Allow pytest.mark.slow to mark slow tests (skip with pytest -m "not slow")
 def pytest_configure(config):
     config.addinivalue_line("markers", "slow: mark test as slow to run")

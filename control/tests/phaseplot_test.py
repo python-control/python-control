@@ -10,23 +10,24 @@ the figures so that you can check them visually.
 """
 
 
-import matplotlib.pyplot as mpl
+import matplotlib.pyplot as plt
 import numpy as np
 from numpy import pi
 import pytest
 from control import phase_plot
+import control as ct
+import control.phaseplot as pp
 
 
-
-@pytest.mark.usefixtures("mplcleanup")
+# Legacy tests
+@pytest.mark.usefixtures("mplcleanup", "ignore_future_warning")
 class TestPhasePlot:
-
-    def testInvPendNoSims(self):
-        phase_plot(self.invpend_ode, (-6,6,10), (-6,6,10));
-
     def testInvPendSims(self):
         phase_plot(self.invpend_ode, (-6,6,10), (-6,6,10),
                   X0 = ([1,1], [-1,1]))
+
+    def testInvPendNoSims(self):
+        phase_plot(self.invpend_ode, (-6,6,10), (-6,6,10));
 
     def testInvPendTimePoints(self):
         phase_plot(self.invpend_ode, (-6,6,10), (-6,6,10),
@@ -46,11 +47,23 @@ class TestPhasePlot:
         phase_plot(self.invpend_ode, lingrid = 0, X0=
                   [[-2.3056, 2.1], [2.3056, -2.1]], T=6, verbose=False)
 
+    def testInvPendFBS(self):
+        # Outer trajectories
+        phase_plot(
+            self.invpend_ode, timepts=[1, 4, 10],
+            X0=[[-2*pi, 1.6], [-2*pi, 0.5], [-1.8, 2.1], [-1, 2.1],
+                [4.2, 2.1], [5, 2.1], [2*pi, -1.6], [2*pi, -0.5],
+                [1.8, -2.1], [1, -2.1], [-4.2, -2.1], [-5, -2.1]],
+            T = np.linspace(0, 40, 800),
+            params=(1, 1, 0.2, 1))
+
+        # Separatrices
+
     def testOscillatorParams(self):
         # default values
         m = 1
         b = 1
-        k = 1           
+        k = 1
         phase_plot(self.oscillator_ode, timepts = [0.3, 1, 2, 3], X0 =
                   [[-1,1], [-0.3,1], [0,1], [0.25,1], [0.5,1], [0.7,1],
                    [1,1], [1.3,1], [1,-1], [0.3,-1], [0,-1], [-0.25,-1],
@@ -69,14 +82,142 @@ class TestPhasePlot:
         x1x2_0 = np.array([[-1.,1.], [-1.,-1.], [1.,1.], [1.,-1.],
                            [-1.,0.],[1.,0.],[0.,-1.],[0.,1.],[0.,0.]])
 
-        mpl.figure(1)
+        plt.figure(1)
         phase_plot(d1,X0=x1x2_0,T=100)
 
     # Sample dynamical systems - inverted pendulum
-    def invpend_ode(self, x, t, m=1., l=1., b=0, g=9.8):
+    def invpend_ode(self, x, t, m=1., l=1., b=0.2, g=1):
         import numpy as np
         return (x[1], -b/m*x[1] + (g*l/m) * np.sin(x[0]))
 
     # Sample dynamical systems - oscillator
     def oscillator_ode(self, x, t, m=1., b=1, k=1, extra=None):
         return (x[1], -k/m*x[0] - b/m*x[1])
+
+
+@pytest.mark.parametrize(
+    "func, args, kwargs", [
+        [ct.phaseplot.vectorfield, [], {}],
+        [ct.phaseplot.vectorfield, [],
+         {'color': 'k', 'gridspec': [4, 3], 'params': {}}],
+        [ct.phaseplot.streamlines, [1], {'params': {}, 'arrows': 5}],
+        [ct.phaseplot.streamlines, [],
+         {'dir': 'forward', 'gridtype': 'meshgrid', 'color': 'k'}],
+        [ct.phaseplot.streamlines, [1],
+         {'dir': 'reverse', 'gridtype': 'boxgrid', 'color': None}],
+        [ct.phaseplot.streamlines, [1],
+         {'dir': 'both', 'gridtype': 'circlegrid', 'gridspec': [0.5, 5]}],
+        [ct.phaseplot.equilpoints, [], {}],
+        [ct.phaseplot.equilpoints, [], {'color': 'r', 'gridspec': [5, 5]}],
+        [ct.phaseplot.separatrices, [], {}],
+        [ct.phaseplot.separatrices, [], {'color': 'k', 'arrows': 4}],
+        [ct.phaseplot.separatrices, [5], {'params': {}, 'gridspec': [5, 5]}],
+        [ct.phaseplot.separatrices, [5], {'color': ('r', 'g')}],
+    ])
+def test_helper_functions(func, args, kwargs):
+    # Test with system
+    sys = ct.nlsys(
+        lambda t, x, u, params: [x[0] - 3*x[1], -3*x[0] + x[1]],
+        states=2, inputs=0)
+    out = func(sys, [-1, 1, -1, 1], *args, **kwargs)
+
+    # Test with function
+    rhsfcn = lambda t, x: sys.dynamics(t, x, 0, {})
+    out = func(rhsfcn, [-1, 1, -1, 1], *args, **kwargs)
+
+
+def test_system_types():
+    # Sample dynamical systems - inverted pendulum
+    def invpend_ode(t, x, m=0, l=0, b=0, g=0):
+        return (x[1], -b/m*x[1] + (g*l/m) * np.sin(x[0]))
+
+    # Use callable form, with parameters (if not correct, will get /0 error)
+    ct.phase_plane_plot(
+        invpend_ode, [-5, 5, 2, 2], params={'args': (1, 1, 0.2, 1)})
+
+    # Linear I/O system
+    ct.phase_plane_plot(
+        ct.ss([[0, 1], [-1, -1]], [[0], [1]], [[1, 0]], 0))
+
+
+def test_phaseplane_errors():
+    with pytest.raises(ValueError, match="invalid grid specification"):
+        ct.phase_plane_plot(ct.rss(2, 1, 1), gridspec='bad')
+        
+    with pytest.raises(ValueError, match="unknown grid type"):
+        ct.phase_plane_plot(ct.rss(2, 1, 1), gridtype='bad')
+        
+    with pytest.raises(ValueError, match="system must be planar"):
+        ct.phase_plane_plot(ct.rss(3, 1, 1))
+
+    with pytest.raises(ValueError, match="params must be dict with key"):
+        def invpend_ode(t, x, m=0, l=0, b=0, g=0):
+            return (x[1], -b/m*x[1] + (g*l/m) * np.sin(x[0]))
+        ct.phase_plane_plot(
+            invpend_ode, [-5, 5, 2, 2], params={'stuff': (1, 1, 0.2, 1)})
+
+        
+
+
+def test_basic_phase_plots(savefigs=False):
+    sys = ct.nlsys(
+        lambda t, x, u, params: np.array([[0, 1], [-1, -1]]) @ x,
+        states=['position', 'velocity'], inputs=0, name='damped oscillator')
+
+    plt.figure()
+    axis_limits = [-1, 1, -1, 1]
+    T = 8
+    ct.phase_plane_plot(sys, axis_limits, T)
+    if savefigs:
+        plt.savefig('phaseplot-dampedosc-default.png')
+
+    def invpend_update(t, x, u, params):
+        m, l, b, g = params['m'], params['l'], params['b'], params['g']
+        return [x[1], -b/m * x[1] + (g * l / m) * np.sin(x[0]) + u[0]/m]
+    invpend = ct.nlsys(invpend_update, states=2, inputs=1, name='invpend')
+
+    plt.figure()
+    ct.phase_plane_plot(
+        invpend, [-2*pi, 2*pi, -2, 2], 5,
+        gridtype='meshgrid', gridspec=[5, 8], arrows=3,
+        plot_separatrices={'gridspec': [12, 9]},
+        params={'m': 1, 'l': 1, 'b': 0.2, 'g': 1})
+    plt.xlabel(r"$\theta$ [rad]")
+    plt.ylabel(r"$\dot\theta$ [rad/sec]")
+
+    if savefigs:
+        plt.savefig('phaseplot-invpend-meshgrid.png')
+
+    def oscillator_update(t, x, u, params):
+        return [x[1] + x[0] * (1 - x[0]**2 - x[1]**2),
+                -x[0] + x[1] * (1 - x[0]**2 - x[1]**2)]
+    oscillator = ct.nlsys(
+        oscillator_update, states=2, inputs=0, name='nonlinear oscillator')
+
+    plt.figure()
+    ct.phase_plane_plot(oscillator, [-1.5, 1.5, -1.5, 1.5], 0.9)
+    pp.streamlines(
+    oscillator, np.array([[0, 0]]), 1.5,
+    gridtype='circlegrid', gridspec=[0.5, 6], dir='both')
+    pp.streamlines(oscillator, np.array([[1, 0]]), 2*pi, arrows=6, color='b')
+    plt.gca().set_aspect('equal')
+
+    if savefigs:
+        plt.savefig('phaseplot-oscillator-helpers.png')
+
+
+if __name__ == "__main__":
+    #
+    # Interactive mode: generate plots for manual viewing
+    #
+    # Running this script in python (or better ipython) will show a
+    # collection of figures that should all look OK on the screeen.
+    #
+
+    # In interactive mode, turn on ipython interactive graphics
+    plt.ion()
+
+    # Start by clearing existing figures
+    plt.close('all')
+
+    test_basic_phase_plots(savefigs=True)

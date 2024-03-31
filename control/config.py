@@ -152,6 +152,9 @@ def reset_defaults():
     from .timeplot import _timeplot_defaults
     defaults.update(_timeplot_defaults)
 
+    from .phaseplot import _phaseplot_defaults
+    defaults.update(_phaseplot_defaults)
+
 
 def _get_param(module, param, argval=None, defval=None, pop=False, last=False):
     """Return the default value for a configuration option.
