@@ -49,7 +49,7 @@ def root_locus_map(sysdata, gains=None):
     ----------
     sys : LTI system or list of LTI systems
         Linear input/output systems (SISO only, for now).
-    kvect : array_like, optional
+    gains : array_like, optional
         Gains to use in computing plot of closed-loop poles.
 
     Returns
