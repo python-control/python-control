@@ -146,9 +146,8 @@ def root_locus_plot(
 
     roots, gains : ndarray
         (legacy) If the `plot` keyword is given, returns the closed-loop
-        root locations, arranged such that each row corresponds to a gain
-        in gains, and the array of gains (ame as gains keyword argument if
-        provided).
+        root locations, arranged such that each row corresponds to a gain,
+        and the array of gains (same as `gains` keyword argument if provided).
 
     Notes
     -----
