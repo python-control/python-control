@@ -180,6 +180,13 @@ def test_root_locus_plots(sys, grid, xlim, ylim, interactive):
     # TODO: add tests to make sure everything "looks" OK
 
 
+# Test deprecated keywords
+def test_root_locus_legacy():
+    sys = ct.rss(2, 1, 1)
+    with pytest.warns(DeprecationWarning, match="'kvect' is deprecated"):
+        ct.root_locus_plot(sys, kvect=[0, 1, 2])
+
+
 # Generate plots used in documentation
 def test_root_locus_documentation(savefigs=False):
     plt.figure()
