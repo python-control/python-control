@@ -16,6 +16,7 @@ import pytest
 
 import numpy as np
 import scipy as sp
+import math
 
 import control as ct
 
@@ -659,3 +660,32 @@ def test_interconnect_rewrite():
         outputs=['y', 'z'])
 
     assert icsys.input_labels == ['u[0]', 'u[1]', 'w[0]', 'w[1]']
+
+
+def test_interconnect_params():
+    # Create a nominally unstable system
+    sys1 = ct.nlsys(
+        lambda t, x, u, params: params['a'] * x[0] + u[0],
+        states=1, inputs='u', outputs='y', params={'a': 1})
+
+    # Simple system for serial interconnection
+    sys2 = ct.nlsys(
+        None, lambda t, x, u, params: u[0],
+        inputs='r', outputs='u')
+
+    # Create a series interconnection
+    sys = ct.interconnect([sys1, sys2], inputs='r', outputs='y')
+
+    # Make sure we can call the update function
+    sys.updfcn(0, [0], [0], {})
+
+    # Make sure the serial interconnection is unstable to start
+    assert sys.linearize([0], [0]).poles()[0].real == 1
+
+    # Change the parameter and make sure it takes
+    assert sys.linearize([0], [0], params={'a': -1}).poles()[0].real == -1
+
+    # Now try running a simulation
+    timepts = np.linspace(0, 10)
+    resp = ct.input_output_response(sys, timepts, 0, params={'a': -1})
+    assert resp.states[0, -1].item() < 2 * math.exp(-10)

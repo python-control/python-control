@@ -706,10 +706,10 @@ class InterconnectedSystem(NonlinearIOSystem):
 
         # Create updfcn and outfcn
         def updfcn(t, x, u, params):
-            self.update_params(params)
+            self._update_params(params)
             return self._rhs(t, x, u)
         def outfcn(t, x, u, params):
-            self.update_params(params)
+            self._update_params(params)
             return self._out(t, x, u)
 
         # Initialize NonlinearIOSystem object
