@@ -21,7 +21,7 @@ from functools import partial
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.signal  # signal processing toolbox
-from numpy import array, imag, poly1d, real, row_stack, zeros_like
+from numpy import array, imag, poly1d, real, vstack, zeros_like
 
 from . import config
 from .exception import ControlMIMONotImplemented
@@ -421,7 +421,7 @@ def _RLFindRoots(nump, denp, kvect):
         curroots.sort()
         roots.append(curroots)
 
-    return row_stack(roots)
+    return vstack(roots)
 
 
 def _RLSortRoots(roots):
