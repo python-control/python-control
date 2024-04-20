@@ -179,8 +179,8 @@ class TestTimeresp:
              'SettlingMax': np.nan,
              'Overshoot': np.nan,
              'Undershoot': np.nan,
-             'Peak': np.Inf,
-             'PeakTime': np.Inf,
+             'Peak': np.inf,
+             'PeakTime': np.inf,
              'SteadyStateValue': np.nan}
 
         # SISO under shoot response and positive final value

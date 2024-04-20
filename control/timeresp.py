@@ -1594,8 +1594,8 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
             settling_time: float = np.nan
             settling_min: float = np.nan
             settling_max: float = np.nan
-            peak_value: float = np.Inf
-            peak_time: float = np.Inf
+            peak_value: float = np.inf
+            peak_time: float = np.inf
             undershoot: float = np.nan
             overshoot: float = np.nan
             steady_state_value: complex = np.nan
