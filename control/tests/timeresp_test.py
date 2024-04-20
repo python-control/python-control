@@ -173,15 +173,15 @@ class TestTimeresp:
         # System Type 1 - Step response not stationary:  G(s)=1/s(s+1)
         siso_tf_type1 = TSys(TransferFunction(1, [1, 1, 0]))
         siso_tf_type1.step_info = {
-             'RiseTime': np.NaN,
-             'SettlingTime': np.NaN,
-             'SettlingMin': np.NaN,
-             'SettlingMax': np.NaN,
-             'Overshoot': np.NaN,
-             'Undershoot': np.NaN,
+             'RiseTime': np.nan,
+             'SettlingTime': np.nan,
+             'SettlingMin': np.nan,
+             'SettlingMax': np.nan,
+             'Overshoot': np.nan,
+             'Undershoot': np.nan,
              'Peak': np.Inf,
              'PeakTime': np.Inf,
-             'SteadyStateValue': np.NaN}
+             'SteadyStateValue': np.nan}
 
         # SISO under shoot response and positive final value
         # G(s)=(-s+1)/(s²+s+1)

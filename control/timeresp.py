@@ -1590,15 +1590,15 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
             InfValue = InfValues[i, j]
             sgnInf = np.sign(InfValue.real)
 
-            rise_time: float = np.NaN
-            settling_time: float = np.NaN
-            settling_min: float = np.NaN
-            settling_max: float = np.NaN
+            rise_time: float = np.nan
+            settling_time: float = np.nan
+            settling_min: float = np.nan
+            settling_max: float = np.nan
             peak_value: float = np.Inf
             peak_time: float = np.Inf
-            undershoot: float = np.NaN
-            overshoot: float = np.NaN
-            steady_state_value: complex = np.NaN
+            undershoot: float = np.nan
+            overshoot: float = np.nan
+            steady_state_value: complex = np.nan
 
             if not np.isnan(InfValue) and not np.isinf(InfValue):
                 # RiseTime
