@@ -1746,9 +1746,9 @@ def find_eqpt(sys, x0, u0=None, y0=None, t=0, params=None,
 
     # Make sure the input arguments match the sizes of the system
     if len(x0) != nstates or \
-       (u0 is not None and len(u0) != ninputs) or \
-       (y0 is not None and len(y0) != noutputs) or \
-       (dx0 is not None and len(dx0) != nstates):
+       (u0 is not None and iu is None and len(u0) != ninputs) or \
+       (y0 is not None and iy is None and len(y0) != noutputs) or \
+       (dx0 is not None and idx is None and len(dx0) != nstates):
         raise ValueError("length of input arguments does not match system")
 
     # Update the parameter values
