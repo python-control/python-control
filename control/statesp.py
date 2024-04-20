@@ -48,26 +48,27 @@ $Id$
 """
 
 import math
-import numpy as np
-from numpy import any, asarray, concatenate, cos, delete, \
-    empty, exp, eye, isinf, ones, pad, sin, zeros, squeeze
-from numpy.random import rand, randn
-from numpy.linalg import solve, eigvals, matrix_rank
-from numpy.linalg.linalg import LinAlgError
-import scipy as sp
-import scipy.linalg
-from scipy.signal import cont2discrete
-from scipy.signal import StateSpace as signalStateSpace
+from copy import deepcopy
 from warnings import warn
 
-from .exception import ControlSlycot, slycot_check, ControlMIMONotImplemented
-from .frdata import FrequencyResponseData
-from .lti import LTI, _process_frequency_response
-from .iosys import InputOutputSystem, common_timebase, isdtime, issiso, \
-    _process_iosys_keywords, _process_dt_keyword, _process_signal_list
-from .nlsys import NonlinearIOSystem, InterconnectedSystem
+import numpy as np
+import scipy as sp
+import scipy.linalg
+from numpy import (any, asarray, concatenate, cos, delete, empty, exp, eye,
+                   isinf, ones, pad, sin, squeeze, zeros)
+from numpy.linalg import LinAlgError, eigvals, matrix_rank, solve
+from numpy.random import rand, randn
+from scipy.signal import StateSpace as signalStateSpace
+from scipy.signal import cont2discrete
+
 from . import config
-from copy import deepcopy
+from .exception import ControlMIMONotImplemented, ControlSlycot, slycot_check
+from .frdata import FrequencyResponseData
+from .iosys import (InputOutputSystem, _process_dt_keyword,
+                    _process_iosys_keywords, _process_signal_list,
+                    common_timebase, isdtime, issiso)
+from .lti import LTI, _process_frequency_response
+from .nlsys import InterconnectedSystem, NonlinearIOSystem
 
 try:
     from slycot import ab13dd
@@ -2221,8 +2222,9 @@ def _convert_to_statespace(sys, use_prefix_suffix=False, method=None):
     by the calling function.
 
     """
-    from .xferfcn import TransferFunction
     import itertools
+
+    from .xferfcn import TransferFunction
 
     if isinstance(sys, StateSpace):
         return sys
