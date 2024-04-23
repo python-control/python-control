@@ -192,6 +192,8 @@ class TestFRD:
         # plt.savefig('/dev/null', format='svg')
         plt.figure(2)
         freqplot.nyquist(f1, f1.omega)
+        plt.figure(3)
+        freqplot.nyquist(f1)
         # plt.savefig('/dev/null', format='svg')
 
     @slycotonly
