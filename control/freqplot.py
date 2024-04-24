@@ -1477,8 +1477,8 @@ def nyquist_response(
 
 def nyquist_plot(
         data, omega=None, plot=None, label_freq=0, color=None, label=None,
-        return_contour=None, title=None, legend_loc='upper right',
-        ax=None, **kwargs):
+        return_contour=None, title=None, legend_loc='upper right', ax=None,
+        unit_circle=False, mt_circles=None, ms_circles=None, **kwargs):
     """Nyquist plot for a system.
 
     Generates a Nyquist plot for the system over a (optional) frequency
@@ -1501,7 +1501,13 @@ def nyquist_plot(
         ``omega_limits``.
     color : string, optional
         Used to specify the color of the line and arrowhead.
-
+    unit_circle : bool, optional
+        If ``True``, display the unit circle, to read gain crossover frequency.
+    mt_circles : array_like, optional
+        Draws circles corresponding to the given magnitudes of sensitivity.
+    ms_circles : array_like, optional
+        Draws circles corresponding to the given magnitudes in complementary
+        sensitivity.
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords (passed to `matplotlib`)
 
@@ -1855,6 +1861,27 @@ def nyquist_plot(
 
         # Mark the -1 point
         plt.plot([-1], [0], 'r+')
+
+        theta = np.linspace(0, 2*np.pi, 100)
+        cos = np.cos(theta)
+        sin = np.sin(theta)
+
+        if unit_circle:
+            plt.plot(cos, sin, color="black", linestyle='dashed', linewidth=1)
+        
+        if ms_circles is not None:
+            for ms in ms_circles:
+                plt.plot(-1 + (1/ms)*cos, (1/ms)*sin, color="black", linestyle="dashed", linewidth=1)
+        
+        if mt_circles is not None:
+            for mt in mt_circles:
+                if mt != 1:
+                    ct = -mt**2/(mt**2-1)  # Mt center
+                    rt = mt/(mt**2-1)  # Mt radius
+                    plt.plot(ct+rt*cos, rt*sin, color="black", linestyle="dashed", linewidth=1)
+                else:
+                    _, _, ymin, ymax = plt.axis()
+                    plt.vlines(-0.5, ymin=ymin, ymax=ymax, colors="black", linestyles="dashed", linewidth=1)
 
         # Label the frequencies of the points
         if label_freq:
