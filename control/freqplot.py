@@ -1861,27 +1861,36 @@ def nyquist_plot(
 
         # Mark the -1 point
         plt.plot([-1], [0], 'r+')
-
+        
         theta = np.linspace(0, 2*np.pi, 100)
         cos = np.cos(theta)
         sin = np.sin(theta)
+        label_pos = 15
 
         if unit_circle:
             plt.plot(cos, sin, color="black", linestyle='dashed', linewidth=1)
         
         if ms_circles is not None:
             for ms in ms_circles:
-                plt.plot(-1 + (1/ms)*cos, (1/ms)*sin, color="black", linestyle="dashed", linewidth=1)
-        
+                pos_x = -1 + (1/ms)*cos
+                pos_y = (1/ms)*sin
+                plt.plot(pos_x, pos_y, color="black", linestyle="dashed", linewidth=1)
+                plt.text(pos_x[label_pos], pos_y[label_pos], ms)
+
         if mt_circles is not None:
             for mt in mt_circles:
                 if mt != 1:
                     ct = -mt**2/(mt**2-1)  # Mt center
                     rt = mt/(mt**2-1)  # Mt radius
-                    plt.plot(ct+rt*cos, rt*sin, color="black", linestyle="dashed", linewidth=1)
+                    pos_x = ct+rt*cos
+                    pos_y = rt*sin
+                    plt.plot(pos_x, pos_y, color="black", linestyle="dashed", linewidth=1)
+                    plt.text(pos_x[label_pos], pos_y[label_pos], mt)
                 else:
                     _, _, ymin, ymax = plt.axis()
+                    pos_y = np.linspace(ymin, ymax, 100)
                     plt.vlines(-0.5, ymin=ymin, ymax=ymax, colors="black", linestyles="dashed", linewidth=1)
+                    plt.text(-0.5, pos_y[label_pos], 1)
 
         # Label the frequencies of the points
         if label_freq:
