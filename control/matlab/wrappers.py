@@ -224,7 +224,7 @@ def rlocus(*args, **kwargs):
         Closed-loop root locations, arranged in which each row corresponds
         to a gain in gains.
     gains : ndarray
-        Gains used.  Same as kvect keyword argument if provided.
+        Gains used.  Same as gains keyword argument if provided.
 
     Notes
     -----
