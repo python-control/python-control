@@ -197,19 +197,19 @@ def _parse_freqplot_args(*args):
 
 # TODO: rewrite to call root_locus_map, without using legacy plot keyword
 def rlocus(*args, **kwargs):
-    """rlocus(sys[, klist, xlim, ylim, ...])
+    """rlocus(sys[, gains, xlim, ylim, ...])
 
     Root locus diagram.
 
     Calculate the root locus by finding the roots of 1 + k * G(s) where G
     is a linear system with transfer function num(s)/den(s) and each k is
-    an element of kvect.
+    an element of gains.
 
     Parameters
     ----------
     sys : LTI object
         Linear input/output systems (SISO only, for now).
-    kvect : array_like, optional
+    gains : array_like, optional
         Gains to use in computing plot of closed-loop poles.
     xlim : tuple or list, optional
         Set limits of x axis, normally with tuple
@@ -224,7 +224,7 @@ def rlocus(*args, **kwargs):
         Closed-loop root locations, arranged in which each row corresponds
         to a gain in gains.
     gains : ndarray
-        Gains used.  Same as kvect keyword argument if provided.
+        Gains used.  Same as gains keyword argument if provided.
 
     Notes
     -----
