@@ -2574,13 +2574,14 @@ def _convert_static_iosystem(sys):
     # Convert sys1 to an I/O system if needed
     if isinstance(sys, (int, float, np.number)):
         return NonlinearIOSystem(
-            None, lambda t, x, u, params: sys * u, inputs=1, outputs=1)
+            None, lambda t, x, u, params: sys * u,
+            outputs=1, inputs=1, dt=None)
 
     elif isinstance(sys, np.ndarray):
         sys = np.atleast_2d(sys)
         return NonlinearIOSystem(
             None, lambda t, x, u, params: sys @ u,
-            outputs=sys.shape[0], inputs=sys.shape[1])
+            outputs=sys.shape[0], inputs=sys.shape[1], dt=None)
 
 def connection_table(sys, show_names=False, column_width=32):
     """Print table of connections inside an interconnected system model.

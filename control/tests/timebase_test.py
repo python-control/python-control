@@ -3,18 +3,36 @@ import inspect
 import numpy as np
 import control as ct
 
+# Utility function to convert state space system to nlsys
+def ss2io(sys):
+    return ct.nlsys(
+        sys.updfcn, sys.outfcn, states=sys.nstates,
+        inputs=sys.ninputs, outputs=sys.noutputs, dt=sys.dt)
+
 @pytest.mark.parametrize(
     "dt1, dt2, dt3", [
         (0, 0, 0),
         (0, 0.1, ValueError),
         (0, None, 0),
+        (0, 'float', 0),
+        (0, 'array', 0),
+        (None, 'array', None),
+        (None, 'array', None),
         (0, True, ValueError),
         (0.1, 0, ValueError),
         (0.1, 0.1, 0.1),
         (0.1, None, 0.1),
         (0.1, True, 0.1),
+        (0.1, 'array', 0.1),
+        (0.1, 'float', 0.1),
         (None, 0, 0),
+        ('float', 0, 0),
+        ('array', 0, 0),
+        ('float', None, None),
+        ('array', None, None),
         (None, 0.1, 0.1),
+        ('array', 0.1, 0.1),
+        ('float', 0.1, 0.1),
         (None, None, None),
         (None, True, True),
         (True, 0, ValueError),
@@ -25,16 +43,28 @@ import control as ct
         (0.2, 0.1, ValueError),
      ])
 @pytest.mark.parametrize("op", [ct.series, ct.parallel, ct.feedback])
-@pytest.mark.parametrize("type", [ct.StateSpace, ct.ss, ct.tf])
+@pytest.mark.parametrize("type", [ct.StateSpace, ct.ss, ct.tf, ss2io])
 def test_composition(dt1, dt2, dt3, op, type):
-    # Define the system
     A, B, C, D = [[1, 1], [0, 1]], [[0], [1]], [[1, 0]], 0
-    sys1 = ct.StateSpace(A, B, C, D, dt1)
-    sys2 = ct.StateSpace(A, B, C, D, dt2)
+    Karray = np.array([[1]])
+    kfloat = 1
 
-    # Convert to the desired form
-    sys1 = type(sys1)
-    sys2 = type(sys2)
+    # Define the system
+    if isinstance(dt1, (int, float)) or dt1 is None:
+        sys1 = ct.StateSpace(A, B, C, D, dt1)
+        sys1 = type(sys1)
+    elif dt1 == 'array':
+        sys1 = Karray
+    elif dt1 == 'float':
+        sys1 = kfloat
+        
+    if isinstance(dt2, (int, float)) or dt2 is None:
+        sys2 = ct.StateSpace(A, B, C, D, dt2)
+        sys2 = type(sys2)
+    elif dt2 == 'array':
+        sys2 = Karray
+    elif dt2 == 'float':
+        sys2 = kfloat
 
     if inspect.isclass(dt3) and issubclass(dt3, Exception):
         with pytest.raises(dt3, match="incompatible timebases"):
