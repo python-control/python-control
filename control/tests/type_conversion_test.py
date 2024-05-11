@@ -57,7 +57,7 @@ conversion_table = [
     ('add',     'ios', ['ios', 'ios', 'E',   'ios', 'ios', 'ios']),
     ('add',     'arr', ['ss',  'tf',  'frd', 'ios', 'arr', 'arr']),
     ('add',     'flt', ['ss',  'tf',  'frd', 'ios', 'arr', 'flt']),
-    
+
     # op        left     ss     tf    frd    ios    arr    flt
     ('sub',     'ss',  ['ss',  'ss',  'frd', 'ios', 'ss',  'ss' ]),
     ('sub',     'tf',  ['tf',  'tf',  'frd', 'ios', 'tf',  'tf' ]),
@@ -65,7 +65,7 @@ conversion_table = [
     ('sub',     'ios', ['ios', 'ios', 'E',   'ios', 'ios', 'ios']),
     ('sub',     'arr', ['ss',  'tf',  'frd', 'ios', 'arr', 'arr']),
     ('sub',     'flt', ['ss',  'tf',  'frd', 'ios', 'arr', 'flt']),
-    
+
     # op        left     ss     tf    frd    ios    arr    flt
     ('mul',     'ss',  ['ss',  'ss',  'frd', 'ios', 'ss',  'ss' ]),
     ('mul',     'tf',  ['tf',  'tf',  'frd', 'ios', 'tf',  'tf' ]),
@@ -73,7 +73,7 @@ conversion_table = [
     ('mul',     'ios', ['ios', 'ios', 'E',   'ios', 'ios', 'ios']),
     ('mul',     'arr', ['ss',  'tf',  'frd', 'ios', 'arr', 'arr']),
     ('mul',     'flt', ['ss',  'tf',  'frd', 'ios', 'arr', 'flt']),
-    
+
     # op        left     ss     tf    frd    ios    arr    flt
     ('truediv', 'ss',  ['E',   'tf',  'frd', 'E',   'ss',  'ss' ]),
     ('truediv', 'tf',  ['tf',  'tf',  'xrd', 'E',   'tf',  'tf' ]),
@@ -88,7 +88,7 @@ for i, (opname, ltype, expected_list) in enumerate(conversion_table):
     for rtype, expected in zip(rtype_list, expected_list):
         # Add this to the list of tests to run
         test_matrix.append([opname, ltype, rtype, expected])
-    
+
 @pytest.mark.parametrize("opname, ltype, rtype, expected", test_matrix)
 def test_operator_type_conversion(opname, ltype, rtype, expected, sys_dict):
     op = getattr(operator, opname)
@@ -98,7 +98,7 @@ def test_operator_type_conversion(opname, ltype, rtype, expected, sys_dict):
     # Get rid of warnings for NonlinearIOSystem objects by making a copy
     if isinstance(leftsys, ct.NonlinearIOSystem) and leftsys == rightsys:
         rightsys = leftsys.copy()
-            
+
     # Make sure we get the right result
     if expected == 'E' or expected[0] == 'x':
         # Exception expected
@@ -107,7 +107,7 @@ def test_operator_type_conversion(opname, ltype, rtype, expected, sys_dict):
     else:
         # Operation should work and return the given type
         result = op(leftsys, rightsys)
-                
+
         # Print out what we are testing in case something goes wrong
         assert isinstance(result, type_dict[expected])
 
@@ -126,7 +126,7 @@ def test_operator_type_conversion(opname, ltype, rtype, expected, sys_dict):
 #
 #   * For IOS/LTI, convert to IOS.  In the case of a linear I/O system (LIO),
 #     this will preserve the linear structure since the LTI system will
-#     be converted to state space.  
+#     be converted to state space.
 #
 #   * When combining state space or transfer with linear I/O systems, the
 #   * output should be of type Linear IO system, since that maintains the

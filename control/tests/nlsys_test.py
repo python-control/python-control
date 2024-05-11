@@ -9,6 +9,7 @@ The main test functions are contained in iosys_test.py.
 
 import pytest
 import numpy as np
+import math
 import control as ct
 
 # Basic test of nlsys()
@@ -45,6 +46,7 @@ def test_nlsys_basic():
     ])
 def test_lti_nlsys_response(nin, nout, input, output):
     sys_ss = ct.rss(4, nin, nout, strictly_proper=True)
+    sys_ss.A = np.diag([-1, -2, -3, -4])        # avoid random noise errors
     sys_nl = ct.nlsys(
         lambda t, x, u, params: sys_ss.A @ x + sys_ss.B @ u,
         lambda t, x, u, params: sys_ss.C @ x + sys_ss.D @ u,
@@ -92,3 +94,63 @@ def test_nlsys_impulse():
     # Impulse_response (not implemented)
     with pytest.raises(ValueError, match="system must be LTI"):
         resp_nl = ct.impulse_response(sys_nl, timepts)
+
+
+# Test nonlinear systems that are missing inputs or outputs
+def test_nlsys_empty_io():
+
+    # No inputs
+    sys_nl = ct.nlsys(
+        lambda t, x, u, params: -x, lambda t, x, u, params: x[0:2],
+        name="no inputs", states=3, inputs=0, outputs=2)
+    P = sys_nl.linearize(np.zeros(sys_nl.nstates), None)
+    assert P.A.shape == (3, 3)
+    assert P.B.shape == (3, 0)
+    assert P.C.shape == (2, 3)
+    assert P.D.shape == (2, 0)
+
+    # Check that we can compute dynamics and outputs
+    x = np.array([1, 2, 3])
+    np.testing.assert_equal(sys_nl.dynamics(0, x, None, {}), -x)
+    np.testing.assert_equal(P.dynamics(0, x, None), -x)
+    np.testing.assert_equal(sys_nl.output(0, x, None, {}), x[0:2])
+    np.testing.assert_equal(P.output(0, x, None), x[0:2])
+
+    # Make sure initial response runs OK
+    resp = ct.initial_response(sys_nl, np.linspace(0, 1), x)
+    np.testing.assert_allclose(
+        resp.states[:, -1], x * math.exp(-1), atol=1e-3, rtol=1e-3)
+
+    resp = ct.initial_response(P, np.linspace(0, 1), x)
+    np.testing.assert_allclose(resp.states[:, -1], x * math.exp(-1))
+
+    # No outputs
+    sys_nl = ct.nlsys(
+        lambda t, x, u, params: -x + np.array([1, 1, 1]) * u[0], None,
+        name="no outputs", states=3, inputs=1, outputs=0)
+    P = sys_nl.linearize(np.zeros(sys_nl.nstates), 0)
+    assert P.A.shape == (3, 3)
+    assert P.B.shape == (3, 1)
+    assert P.C.shape == (0, 3)
+    assert P.D.shape == (0, 1)
+
+    # Check that we can compute dynamics
+    x = np.array([1, 2, 3])
+    np.testing.assert_equal(sys_nl.dynamics(0, x, 1, {}), -x + 1)
+    np.testing.assert_equal(P.dynamics(0, x, 1), -x + 1)
+
+    # Make sure initial response runs OK
+    resp = ct.initial_response(sys_nl, np.linspace(0, 1), x)
+    np.testing.assert_allclose(
+        resp.states[:, -1], x * math.exp(-1), atol=1e-3, rtol=1e-3)
+
+    resp = ct.initial_response(P, np.linspace(0, 1), x)
+    np.testing.assert_allclose(resp.states[:, -1], x * math.exp(-1))
+
+    # Make sure forced response runs OK
+    resp = ct.forced_response(sys_nl, np.linspace(0, 1), 1)
+    np.testing.assert_allclose(
+        resp.states[:, -1], 1 - math.exp(-1), atol=1e-3, rtol=1e-3)
+
+    resp = ct.forced_response(P, np.linspace(0, 1), 1)
+    np.testing.assert_allclose(resp.states[:, -1], 1 - math.exp(-1))
