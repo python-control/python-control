@@ -120,7 +120,8 @@ class LTI(InputOutputSystem):
         response = self(s)
         return FrequencyResponseData(
             response, omega, return_magphase=True, squeeze=squeeze,
-            dt=self.dt, sysname=self.name, plot_type='bode')
+            dt=self.dt, sysname=self.name, inputs=self.input_labels,
+            outputs=self.output_labels, plot_type='bode')
 
     def dcgain(self):
         """Return the zero-frequency gain"""
