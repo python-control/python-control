@@ -160,7 +160,8 @@ def root_locus_plot(
     from .pzmap import pole_zero_plot
 
     # Legacy parameters
-    gains = config._process_legacy_keyword(kwargs, 'kvect', 'gains', gains)
+    for oldkey in ['kvect', 'k']:
+        gains = config._process_legacy_keyword(kwargs, oldkey, 'gains', gains)
 
     # Set default parameters
     grid = config._get_param('rlocus', 'grid', grid, _rlocus_defaults)
