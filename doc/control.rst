@@ -124,6 +124,7 @@ Control system synthesis
     lqr
     mixsyn
     place
+    place_varga
     rootlocus_pid_designer
 
 Model simplification tools
