@@ -1687,7 +1687,7 @@ def zpk(zeros, poles, gain, *args, **kwargs):
     zeros : array_like
         Array containing the location of zeros.
     poles : array_like
-        Array containing the location of zeros.
+        Array containing the location of poles.
     gain : float
         System gain
     dt : None, True or float, optional
