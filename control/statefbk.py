@@ -195,7 +195,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
     >>> B = [[0], [1]]
     >>> K = place_varga(A, B, [-2, -5])
 
-    See Also:
+    See Also
     --------
     place, acker
 
