@@ -1613,9 +1613,8 @@ def nyquist_plot(
         config.defaults['freqplot.number_of_samples'].  Ignored if data is
         not a list of systems.
     plot : bool, optional
-        (legacy) If given, `bode_plot` returns the legacy return values
-        of magnitude, phase, and frequency.  If False, just return the
-        values with no plot.
+        (legacy) If given, `nyquist_plot` returns the legacy return values
+        of (counts, contours).  If False, return the values with no plot.
     primary_style : [str, str], optional
         Linestyles for primary image of the Nyquist curve.  The first
         element is used for unscaled portions of the Nyquist curve,
