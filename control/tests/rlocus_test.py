@@ -181,10 +181,11 @@ def test_root_locus_plots(sys, grid, xlim, ylim, interactive):
 
 
 # Test deprecated keywords
-def test_root_locus_legacy():
+@pytest.mark.parametrize("keyword", ["kvect", "k"])
+def test_root_locus_legacy(keyword):
     sys = ct.rss(2, 1, 1)
-    with pytest.warns(DeprecationWarning, match="'kvect' is deprecated"):
-        ct.root_locus_plot(sys, kvect=[0, 1, 2])
+    with pytest.warns(DeprecationWarning, match=f"'{keyword}' is deprecated"):
+        ct.root_locus_plot(sys, **{keyword: [0, 1, 2]})
 
 
 # Generate plots used in documentation

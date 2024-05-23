@@ -150,22 +150,18 @@ def place_varga(A, B, p, dtime=False, alpha=None):
     """Place closed loop eigenvalues.
     K = place_varga(A, B, p, dtime=False, alpha=None)
 
-    Required Parameters
-    -------------------
+    Parameters
+    ----------
     A : 2D array_like
         Dynamics matrix
     B : 2D array_like
         Input matrix
     p : 1D array_like
         Desired eigenvalue locations
-
-    Optional Parameters
-    -------------------
-    dtime : bool
+    dtime : bool, optional
         False for continuous time pole placement or True for discrete time.
         The default is dtime=False.
-
-    alpha : double scalar
+    alpha : float, optional
         If `dtime` is false then place_varga will leave the eigenvalues with
         real part less than alpha untouched.  If `dtime` is true then
         place_varga will leave eigenvalues with modulus less than alpha
@@ -179,26 +175,27 @@ def place_varga(A, B, p, dtime=False, alpha=None):
     K : 2D array (or matrix)
         Gain such that A - B K has eigenvalues given in p.
 
-    Algorithm
-    ---------
+    See Also
+    --------
+    place, acker
+
+    Notes
+    -----
     This function is a wrapper for the slycot function sb01bd, which
-    implements the pole placement algorithm of Varga [1]. In contrast to the
+    implements the pole placement algorithm of Varga [1]_. In contrast to the
     algorithm used by place(), the Varga algorithm can place multiple poles at
     the same location. The placement, however, may not be as robust.
 
-    [1] Varga A. "A Schur method for pole assignment."  IEEE Trans. Automatic
-        Control, Vol. AC-26, pp. 517-519, 1981.
+    References
+    ----------
+    .. [1] Varga A. "A Schur method for pole assignment."  IEEE Trans. Automatic
+       Control, Vol. AC-26, pp. 517-519, 1981.
 
     Examples
     --------
     >>> A = [[-1, -1], [0, 1]]
     >>> B = [[0], [1]]
     >>> K = ct.place_varga(A, B, [-2, -5])
-
-    See Also
-    --------
-    place, acker
-
     """
 
     # Make sure that SLICOT is installed
