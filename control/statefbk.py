@@ -151,7 +151,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
     K = place_varga(A, B, p, dtime=False, alpha=None)
 
     Required Parameters
-    ----------
+    -------------------
     A : 2D array_like
         Dynamics matrix
     B : 2D array_like
@@ -160,7 +160,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
         Desired eigenvalue locations
 
     Optional Parameters
-    ---------------
+    -------------------
     dtime : bool
         False for continuous time pole placement or True for discrete time.
         The default is dtime=False.
@@ -193,7 +193,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
     --------
     >>> A = [[-1, -1], [0, 1]]
     >>> B = [[0], [1]]
-    >>> K = place_varga(A, B, [-2, -5])
+    >>> K = ct.place_varga(A, B, [-2, -5])
 
     See Also
     --------
