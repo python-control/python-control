@@ -266,6 +266,10 @@ def acker(A, B, poles):
     -------
     K : 2D array (or matrix)
         Gains such that A - B K has given eigenvalues
+    
+    See Also
+    --------
+    place, place_varga
 
     """
     # Convert the inputs to matrices
