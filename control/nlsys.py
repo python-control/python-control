@@ -143,6 +143,9 @@ class NonlinearIOSystem(InputOutputSystem):
                 self.outfcn = lambda t, x, u, params: np.zeros(0)
             elif self.noutputs is None and self.nstates is not None:
                 self.noutputs = self.nstates
+                if len(self.output_index) == 0:
+                    # Use state names for outputs
+                    self.output_index = self.state_index
             elif self.noutputs is not None and self.noutputs == self.nstates:
                 # Number of outputs = number of states => all is OK
                 pass
