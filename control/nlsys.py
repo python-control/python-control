@@ -537,8 +537,8 @@ class NonlinearIOSystem(InputOutputSystem):
         u0 = _concatenate_list_elements(u0, 'u0')
 
         # Figure out dimensions if they were not specified.
-        nstates = _find_size(self.nstates, x0, "states")
-        ninputs = _find_size(self.ninputs, u0, "inputs")
+        nstates = _find_size(self.nstates, x0, "x0")
+        ninputs = _find_size(self.ninputs, u0, "u0")
 
         # Convert x0, u0 to arrays, if needed
         if np.isscalar(x0):
@@ -1468,7 +1468,8 @@ def input_output_response(
         # Use the input time points as the output time points
         t_eval = T
 
-    # If we were passed a list of input, concatenate them (w/ broadcast)
+    # If we were passed a list of inputs, concatenate them (w/ broadcast)
+    # TODO: call _concatenate_list_elements
     if isinstance(U, (tuple, list)) and len(U) != ntimepts:
         U_elements = []
         for i, u in enumerate(U):
@@ -1492,11 +1493,21 @@ def input_output_response(
         # Save the newly created input vector
         U = np.vstack(U_elements)
 
+    # Figure out the number of inputs
+    # TODO: call _concatenate_list_elements?
+    if sys.ninputs is None:
+        if isinstance(U, np.ndarray):
+            ninputs = U.shape[0] if U.size > 1 else U.size
+        else:
+            ninputs = 1
+    else:
+        ninputs = sys.ninputs
+
     # Make sure the input has the right shape
-    if sys.ninputs is None or sys.ninputs == 1:
+    if ninputs is None or ninputs == 1:
         legal_shapes = [(ntimepts,), (1, ntimepts)]
     else:
-        legal_shapes = [(sys.ninputs, ntimepts)]
+        legal_shapes = [(ninputs, ntimepts)]
 
     U = _check_convert_array(
         U, legal_shapes, 'Parameter ``U``: ', squeeze=False)
@@ -1522,15 +1533,19 @@ def input_output_response(
     X0 = _check_convert_array(
         X0, [(nstates,), (nstates, 1)], 'Parameter ``X0``: ', squeeze=True)
 
-    # Figure out the number of outputs
-    if sys.noutputs is None:
-        # Evaluate the output function to find number of outputs
-        noutputs = np.shape(sys._out(T[0], X0, U[:, 0]))[0]
-    else:
-        noutputs = sys.noutputs
-
-    # Update the parameter values
+    # Update the parameter values (prior to evaluating outfcn)
     sys._update_params(params)
+
+    # Figure out the number of outputs
+    if sys.outfcn is None:
+        noutputs = nstates if sys.noutputs is None else sys.noutputs
+    else:
+        noutputs = np.shape(sys._out(T[0], X0, U[:, 0]))[0]
+
+    if sys.noutputs is not None and sys.noutputs != noutputs:
+        raise RuntimeError(
+            f"inconsistent size of outputs; system specified {sys.noutputs}, "
+            f"output function returned {noutputs}")
 
     #
     # Define a function to evaluate the input at an arbitrary time
@@ -1737,9 +1752,9 @@ def find_eqpt(sys, x0, u0=None, y0=None, t=0, params=None,
     from scipy.optimize import root
 
     # Figure out the number of states, inputs, and outputs
-    nstates = _find_size(sys.nstates, x0, "states")
-    ninputs = _find_size(sys.ninputs, u0, "inputs")
-    noutputs = _find_size(sys.noutputs, y0, "outputs")
+    nstates = _find_size(sys.nstates, x0, "x0")
+    ninputs = _find_size(sys.ninputs, u0, "u0")
+    noutputs = _find_size(sys.noutputs, y0, "y0")
 
     # Convert x0, u0, y0 to arrays, if needed
     if np.isscalar(x0):
@@ -1982,7 +1997,7 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
     return sys.linearize(xeq, ueq, t=t, params=params, **kw)
 
 
-def _find_size(sysval, vecval, label):
+def _find_size(sysval, vecval, name="system component"):
     """Utility function to find the size of a system parameter
 
     If both parameters are not None, they must be consistent.
@@ -1990,7 +2005,8 @@ def _find_size(sysval, vecval, label):
     if hasattr(vecval, '__len__'):
         if sysval is not None and sysval != len(vecval):
             raise ValueError(
-                f"inconsistent information for number of {label}")
+                f"inconsistent information to determine size of {name}; "
+                f"expected {sysval} values, received {len(vecval)}")
         return len(vecval)
     # None or 0, which is a valid value for "a (sysval, ) vector of zeros".
     if not vecval:
@@ -1998,7 +2014,7 @@ def _find_size(sysval, vecval, label):
     elif sysval == 1:
         # (1, scalar) is also a valid combination from legacy code
         return 1
-    raise ValueError(f"can't determine number of {label}")
+    raise ValueError(f"can't determine size of {name}")
 
 
 # Function to create an interconnected system

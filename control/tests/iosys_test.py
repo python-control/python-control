@@ -1422,7 +1422,7 @@ class TestIOSys:
     def test_neg_badsize(self):
         # Create a system of unspecified size
         sys = ct.NonlinearIOSystem(lambda t, x, u, params: -x)
-        with pytest.raises(ValueError, match="Can't determine"):
+        with pytest.raises(ValueError, match="Can't determine number"):
             -sys
 
     def test_bad_signal_list(self):
@@ -2077,6 +2077,7 @@ def test_find_eqpt(x0, ix, u0, iu, y0, iy, dx0, idx, dt, x_expect, u_expect):
     np.testing.assert_allclose(np.array(xeq), x_expect, atol=1e-6)
     np.testing.assert_allclose(np.array(ueq), u_expect, atol=1e-6)
 
+
 def test_iosys_sample():
     csys = ct.rss(2, 1, 1)
     dsys = csys.sample(0.1)
@@ -2087,3 +2088,42 @@ def test_iosys_sample():
     dsys = ct.sample_system(csys, 0.1)
     assert isinstance(dsys, ct.StateSpace)
     assert dsys.dt == 0.1
+
+
+# Make sure that we can determine system sizes automatically
+def test_find_size():
+    # Create a nonlinear system with no size information
+    sys = ct.nlsys(
+        lambda t, x, u, params: -x + u,
+        lambda t, x, u, params: x[:1])
+
+    # Run a simulation with size set by parameters
+    timepts = np.linspace(0, 1)
+    resp = ct.input_output_response(sys, timepts, [0, 1], X0=[0, 0])
+    assert resp.states.shape[0] == 2
+    assert resp.inputs.shape[0] == 2
+    assert resp.outputs.shape[0] == 1
+
+    #
+    # Make sure we get warnings if things are inconsistent
+    #
+
+    # Define a system of fixed size
+    sys = ct.nlsys(
+        lambda t, x, u, params: -x + u,
+        lambda t, x, u, params: x[:1],
+        inputs=2, states=2)
+    
+    with pytest.raises(ValueError, match="inconsistent .* size of X0"):
+        resp = ct.input_output_response(sys, timepts, [0, 1], X0=[0, 0, 1])
+
+    with pytest.raises(ValueError, match=".*U.* Wrong shape"):
+        resp = ct.input_output_response(sys, timepts, [0, 1, 2], X0=[0, 0])
+
+    with pytest.raises(RuntimeError, match="inconsistent size of outputs"):
+        sys = ct.nlsys(
+            lambda t, x, u, params: -x + u,
+            lambda t, x, u, params: x[:1],
+            inputs=2, states=2, outputs=2)
+        resp = ct.input_output_response(sys, timepts, [0, 1], X0=[0, 0])
+    
