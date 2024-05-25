@@ -517,7 +517,7 @@ class NonlinearIOSystem(InputOutputSystem):
         return newsys
 
     def linearize(self, x0, u0, t=0, params=None, eps=1e-6,
-                  name=None, copy_names=False, **kwargs):
+                  copy_names=False, **kwargs):
         """Linearize an input/output system at a given state and input.
 
         Return the linearization of an input/output system at a given state
@@ -582,8 +582,6 @@ class NonlinearIOSystem(InputOutputSystem):
         # Set the system name, inputs, outputs, and states
         if copy_names:
             linsys._copy_names(self, prefix_suffix_name='linearized')
-            if name is not None:
-                linsys.name = name
 
         # re-init to include desired signal names if names were provided
         return StateSpace(linsys, **kwargs)

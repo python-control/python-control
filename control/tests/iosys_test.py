@@ -234,8 +234,8 @@ class TestIOSys:
     @pytest.mark.usefixtures("editsdefaults")
     def test_linearize_named_signals(self, kincar):
         # Full form of the call
-        linearized = kincar.linearize([0, 0, 0], [0, 0], copy_names=True,
-                                      name='linearized')
+        linearized = kincar.linearize(
+            [0, 0, 0], [0, 0], copy_names=True, name='linearized')
         assert linearized.name == 'linearized'
         assert linearized.find_input('v') == 0
         assert linearized.find_input('phi') == 1
@@ -256,8 +256,8 @@ class TestIOSys:
         assert lin_nocopy.find_state('x') is None
 
         # if signal names are provided, they should override those of kincar
-        linearized_newnames = kincar.linearize([0, 0, 0], [0, 0],
-            name='linearized',
+        linearized_newnames = kincar.linearize(
+            [0, 0, 0], [0, 0], name='linearized',
             copy_names=True, inputs=['v2', 'phi2'], outputs=['x2','y2'])
         assert linearized_newnames.name == 'linearized'
         assert linearized_newnames.find_input('v2') == 0
@@ -268,6 +268,11 @@ class TestIOSys:
         assert linearized_newnames.find_output('y2') == 1
         assert linearized_newnames.find_output('x') is None
         assert linearized_newnames.find_output('y') is None
+
+        # if system name is provided but copy_names is false, override name
+        linearized_newsysname = kincar.linearize(
+            [0, 0, 0], [0, 0], name='newname', copy_names=False)
+        assert linearized_newsysname.name == 'newname'
 
         # Test legacy version as well
         with pytest.warns(UserWarning, match="NumPy matrix class no longer"):
