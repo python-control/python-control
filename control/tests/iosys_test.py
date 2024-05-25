@@ -231,6 +231,15 @@ class TestIOSys:
             linearized.C, [[1, 0, 0], [0, 1, 0]])
         np.testing.assert_array_almost_equal(linearized.D, np.zeros((2,2)))
 
+        # Pass fewer than the required elements
+        padded = iosys.linearize([0, 0], np.array([0]))
+        assert padded.nstates == linearized.nstates
+        assert padded.ninputs == linearized.ninputs
+
+        # Check for warning if last element before padding is nonzero
+        with pytest.warns(UserWarning, match="x0 too short; padding"):
+            padded = iosys.linearize([0, 1], np.array([0]))
+
     @pytest.mark.usefixtures("editsdefaults")
     def test_linearize_named_signals(self, kincar):
         # Full form of the call
@@ -1886,7 +1895,7 @@ def test_input_output_broadcasting():
     np.testing.assert_equal(resp_cov0.states, resp_init.states)
 
     # Specify only some of the initial conditions
-    with pytest.warns(UserWarning, match="initial state too short; padding"):
+    with pytest.warns(UserWarning, match="X0 too short; padding"):
         resp_short = ct.input_output_response(sys, T, [U[0], [0, 1]], [X0, 1])
 
     # Make sure that inconsistent settings don't work

@@ -532,25 +532,15 @@ class NonlinearIOSystem(InputOutputSystem):
         # numerical linearization use the `_rhs()` and `_out()` member
         # functions.
         #
-        # If x0 and u0 are specified as lists, concatenate the elements
-        x0 = _concatenate_list_elements(x0, 'x0')
-        u0 = _concatenate_list_elements(u0, 'u0')
+        # Process nominal states and inputs
+        x0, nstates = _process_vector_argument(x0, "x0", self.nstates)
+        u0, ninputs = _process_vector_argument(u0, "u0", self.ninputs)
 
-        # Figure out dimensions if they were not specified.
-        nstates = _find_size(self.nstates, x0, "x0")
-        ninputs = _find_size(self.ninputs, u0, "u0")
-
-        # Convert x0, u0 to arrays, if needed
-        if np.isscalar(x0):
-            x0 = np.ones((nstates,)) * x0
-        if np.isscalar(u0):
-            u0 = np.ones((ninputs,)) * u0
+        # Update the current parameters (prior to calling _out())
+        self._update_params(params)
 
         # Compute number of outputs by evaluating the output function
         noutputs = _find_size(self.noutputs, self._out(t, x0, u0), "outputs")
-
-        # Update the current parameters
-        self._update_params(params)
 
         # Compute the nominal value of the update law and output
         F0 = self._rhs(t, x0, u0)
@@ -1468,8 +1458,16 @@ def input_output_response(
         # Use the input time points as the output time points
         t_eval = T
 
+    #
+    # Process input argument
+    #
+    # The input argument is interpreted very flexibly, allowing the
+    # use of listsa and/or tuples of mixed scalar and vector elements.
+    #
+    # Much of the processing here is similar to the processing in
+    # _process_vector_argument, but applied to a time series.
+
     # If we were passed a list of inputs, concatenate them (w/ broadcast)
-    # TODO: call _concatenate_list_elements
     if isinstance(U, (tuple, list)) and len(U) != ntimepts:
         U_elements = []
         for i, u in enumerate(U):
@@ -1494,7 +1492,6 @@ def input_output_response(
         U = np.vstack(U_elements)
 
     # Figure out the number of inputs
-    # TODO: call _concatenate_list_elements?
     if sys.ninputs is None:
         if isinstance(U, np.ndarray):
             ninputs = U.shape[0] if U.size > 1 else U.size
@@ -1516,22 +1513,8 @@ def input_output_response(
     U = U.reshape(-1, ntimepts)
     ninputs = U.shape[0]
 
-    # If we were passed a list of initial states, concatenate them
-    X0 = _concatenate_list_elements(X0, 'X0')
-
-    # If the initial state is too short, make it longer (NB: sys.nstates
-    # could be None if nstates comes from size of initial condition)
-    if sys.nstates and isinstance(X0, np.ndarray) and X0.size < sys.nstates:
-        if X0[-1] != 0:
-            warn("initial state too short; padding with zeros")
-        X0 = np.hstack([X0, np.zeros(sys.nstates - X0.size)])
-
-    # Compute the number of states
-    nstates = _find_size(sys.nstates, X0, "states")
-
-    # create X0 if not given, test if X0 has correct shape
-    X0 = _check_convert_array(
-        X0, [(nstates,), (nstates, 1)], 'Parameter ``X0``: ', squeeze=True)
+    # Process initial states
+    X0, nstates = _process_vector_argument(X0, "X0", sys.nstates)
 
     # Update the parameter values (prior to evaluating outfcn)
     sys._update_params(params)
@@ -1752,17 +1735,9 @@ def find_eqpt(sys, x0, u0=None, y0=None, t=0, params=None,
     from scipy.optimize import root
 
     # Figure out the number of states, inputs, and outputs
-    nstates = _find_size(sys.nstates, x0, "x0")
-    ninputs = _find_size(sys.ninputs, u0, "u0")
-    noutputs = _find_size(sys.noutputs, y0, "y0")
-
-    # Convert x0, u0, y0 to arrays, if needed
-    if np.isscalar(x0):
-        x0 = np.ones((nstates,)) * x0
-    if np.isscalar(u0):
-        u0 = np.ones((ninputs,)) * u0
-    if np.isscalar(y0):
-        y0 = np.ones((ninputs,)) * y0
+    x0, nstates = _process_vector_argument(x0, "x0", sys.nstates)
+    u0, ninputs = _process_vector_argument(u0, "u0", sys.ninputs)
+    y0, noutputs = _process_vector_argument(y0, "y0", sys.noutputs)
 
     # Make sure the input arguments match the sizes of the system
     if len(x0) != nstates or \
@@ -2572,18 +2547,55 @@ def interconnect(
     return newsys
 
 
-# Utility function to allow lists of states, inputs
-def _concatenate_list_elements(X, name='X'):
-    # If we were passed a list, concatenate the elements together
-    if isinstance(X, (tuple, list)):
-        X_list = []
-        for i, x in enumerate(X):
-            x = np.array(x).reshape(-1)         # convert everyting to 1D array
-            X_list += x.tolist()                # add elements to initial state
-        return np.array(X_list)
+def _process_vector_argument(arg, name, size):
+    """Utility function to process vector elements (states, inputs)
 
-    # Otherwise, do nothing
-    return X
+    Process state and input arguments to turn them into lists of the
+    appropriate length.
+
+    Parameters
+    ----------
+    arg : array_like
+        Value of the parameter passed to the function.  Can be a list,
+        tuple, ndarray, scalar, or None.
+    name : string
+        Name of the argument being processed.  Used in errors/warnings.
+    size : int or None
+        Size of the element.  If None, size is determined by arg.
+
+    Returns
+    -------
+    val : array or None
+        Value of the element, zero-padded to proper length.
+    nelem : int or None
+        Number of elements in the returned value.
+
+    Warns
+    -----
+    UserWarning : "{name} too short; padding with zeros"
+        If argument is too short and last value in arg is not 0.
+
+    """
+    # Allow and expand list
+    if isinstance(arg, (tuple, list)):
+        val_list = []
+        for i, v in enumerate(arg):
+            v = np.array(v).reshape(-1)             # convert to 1D array
+            val_list += v.tolist()                  # add elements to list
+        val = np.array(val_list)
+    elif np.isscalar(arg) and size is not None:     # extend scalars
+        val = np.ones((size, )) * arg
+    else:
+        val = arg                                   # return what we were given
+
+    if size is not None and isinstance(val, np.ndarray) and val.size < size:
+        # If needed, extend the size of the vector to match desired size
+        if val[-1] != 0:
+            warn(f"{name} too short; padding with zeros")
+        val = np.hstack([val, np.zeros(size - val.size)])
+
+    nelem = _find_size(size, val, name)                 # determine size
+    return val, nelem
 
 
 # Utility function to create an I/O system from a static gain
