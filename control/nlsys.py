@@ -1498,8 +1498,8 @@ def input_output_response(
     else:
         legal_shapes = [(sys.ninputs, ntimepts)]
 
-    U = _check_convert_array(U, legal_shapes,
-                             'Parameter ``U``: ', squeeze=False)
+    U = _check_convert_array(
+        U, legal_shapes, 'Parameter ``U``: ', squeeze=False)
 
     # Always store the input as a 2D array
     U = U.reshape(-1, ntimepts)
@@ -1515,29 +1515,12 @@ def input_output_response(
             warn("initial state too short; padding with zeros")
         X0 = np.hstack([X0, np.zeros(sys.nstates - X0.size)])
 
-    # If we were passed a list of initial states, concatenate them
-    if isinstance(X0, (tuple, list)):
-        X0_list = []
-        for i, x0 in enumerate(X0):
-            x0 = np.array(x0).reshape(-1)       # convert everyting to 1D array
-            X0_list += x0.tolist()              # add elements to initial state
-
-        # Save the newly created input vector
-        X0 = np.array(X0_list)
-
-    # If the initial state is too short, make it longer (NB: sys.nstates
-    # could be None if nstates comes from size of initial condition)
-    if sys.nstates and isinstance(X0, np.ndarray) and X0.size < sys.nstates:
-        if X0[-1] != 0:
-            warn("initial state too short; padding with zeros")
-        X0 = np.hstack([X0, np.zeros(sys.nstates - X0.size)])
-
     # Compute the number of states
     nstates = _find_size(sys.nstates, X0, "states")
 
     # create X0 if not given, test if X0 has correct shape
-    X0 = _check_convert_array(X0, [(nstates,), (nstates, 1)],
-                              'Parameter ``X0``: ', squeeze=True)
+    X0 = _check_convert_array(
+        X0, [(nstates,), (nstates, 1)], 'Parameter ``X0``: ', squeeze=True)
 
     # Figure out the number of outputs
     if sys.noutputs is None:
