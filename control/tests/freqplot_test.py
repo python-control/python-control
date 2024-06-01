@@ -346,6 +346,59 @@ def test_freqplot_omega_limits(plt_fcn):
         _get_visible_limits(ax.reshape(-1)[0]), np.array([1, 100]))
 
 
+def test_freqplot_trace_labels():
+    sys1 = ct.rss(2, 1, 1, name='sys1')
+    sys2 = ct.rss(3, 1, 1, name='sys2')
+
+    # Make sure default labels are as expected
+    out = ct.bode_plot([sys1, sys2])
+    axs = ct.get_plot_axes(out)
+    legend = axs[0, 0].get_legend().get_texts()
+    assert legend[0].get_text() == 'sys1'
+    assert legend[1].get_text() == 'sys2'
+    plt.close()
+
+    # Override labels all at once
+    out = ct.bode_plot([sys1, sys2], label=['line1', 'line2'])
+    axs = ct.get_plot_axes(out)
+    legend = axs[0, 0].get_legend().get_texts()
+    assert legend[0].get_text() == 'line1'
+    assert legend[1].get_text() == 'line2'
+    plt.close()
+
+    # Override labels one at a time
+    out = ct.bode_plot(sys1, label='line1')
+    out = ct.bode_plot(sys2, label='line2')
+    axs = ct.get_plot_axes(out)
+    legend = axs[0, 0].get_legend().get_texts()
+    assert legend[0].get_text() == 'line1'
+    assert legend[1].get_text() == 'line2'
+    plt.close()
+
+    # Multi-dimensional data
+    sys1 = ct.rss(2, 2, 2, name='sys1')
+    sys2 = ct.rss(3, 2, 2, name='sys2')
+
+    # Check out some errors first
+    with pytest.raises(ValueError, match="number of labels must match"):
+        ct.bode_plot([sys1, sys2], label=['line1'])
+    with pytest.raises(ValueError, match="labels must be given for each"):
+        ct.bode_plot(sys1, label=['line1'])
+
+    # Now do things that should work
+    out = ct.bode_plot(
+        [sys1, sys2],
+        label=[
+            [['line1', 'line1'], ['line1', 'line1']],
+            [['line2', 'line2'], ['line2', 'line2']],
+        ])
+    axs = ct.get_plot_axes(out)
+    legend = axs[0, -1].get_legend().get_texts()
+    assert legend[0].get_text() == 'line1'
+    assert legend[1].get_text() == 'line2'
+    plt.close()
+
+
 @pytest.mark.parametrize("plt_fcn", [ct.bode_plot, ct.singular_values_plot])
 def test_freqplot_errors(plt_fcn):
     if plt_fcn == ct.bode_plot:

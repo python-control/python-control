@@ -93,7 +93,7 @@ def bode_plot(
         data, omega=None, *fmt, ax=None, omega_limits=None, omega_num=None,
         plot=None, plot_magnitude=True, plot_phase=None,
         overlay_outputs=None, overlay_inputs=None, phase_label=None,
-        magnitude_label=None, display_margins=None,
+        magnitude_label=None, label=None, display_margins=None,
         margins_method='best', legend_map=None, legend_loc=None,
         sharex=None, sharey=None, title=None, **kwargs):
     """Bode plot for a system.
@@ -149,6 +149,10 @@ def bode_plot(
         value specified.  Units are in either degrees or radians, depending on
         the `deg` parameter. Default is -180 if wrap_phase is False, 0 if
         wrap_phase is True.
+    label : str or array-like of str
+        If present, replace automatically generated label(s) with the given
+        label(s).  If sysdata is a list, strings should be specified for each
+        system.  If MIMO, strings required for each system, output, and input.
     omega_limits : array_like of two values
         Set limits for plotted frequency range. If Hz=True the limits
         are in Hz otherwise in rad/s.
@@ -624,6 +628,9 @@ def bode_plot(
         for j in range(ncols):
             out[i, j] = []      # unique list in each element
 
+    # Process label keyword
+    line_labels = _process_line_labels(label, len(data), ninputs, noutputs)
+
     # Utility function for creating line label
     def _make_line_label(response, output_index, input_index):
         label = ""              # start with an empty label
@@ -664,7 +671,10 @@ def bode_plot(
             phase_plot = phase[i, j] * 180. / math.pi if deg else phase[i, j]
 
             # Generate a label
-            label = _make_line_label(response, i, j)
+            if line_labels is None:
+                label = _make_line_label(response, i, j)
+            else:
+                label = line_labels[index, i, j]
 
             # Magnitude
             if plot_magnitude:
@@ -824,7 +834,7 @@ def bode_plot(
     # on shared axes.  It needs to come *after* the plots are generated,
     # in order to handle two things:
     #
-    # * manually generated labels and grids need to reflect the limts for
+    # * manually generated labels and grids need to reflect the limits for
     #   shared axes, which we don't know until we have plotted everything;
     #
     # * the loglog and semilog functions regenerate the labels (not quite
@@ -2640,6 +2650,34 @@ def _get_line_labels(ax, use_color=True):
             labels.append(label)
 
     return lines, labels
+
+
+# Turn label keyword into array indexed by trace, output, input
+def _process_line_labels(label, nsys, ninput, noutput):
+    if label is None:
+        return None
+
+    if isinstance(label, str):
+        label = [[[label]]]
+
+    # Convert to an ndarray, if not done aleady
+    try:
+        line_labels = np.asarray(label)
+    except:
+        raise ValueError("label must be a string or array_like")
+
+    # Turn the data into a 3D array of appropriate shape
+    # TODO: allow more sophisticated broadcasting
+    try:
+        line_labels = line_labels.reshape(nsys, ninput, noutput)
+    except:
+        if line_labels.shape[0] != nsys:
+            raise ValueError("number of labels must match number of traces")
+        else:
+            raise ValueError("labels must be given for each input/output pair")
+
+    return line_labels
+
 
 #
 # Utility functions to create nice looking labels (KLD 5/23/11)
