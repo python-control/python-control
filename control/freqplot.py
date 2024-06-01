@@ -1501,7 +1501,7 @@ def nyquist_response(
 
 
 def nyquist_plot(
-        data, omega=None, plot=None, label_freq=0, color=None,
+        data, omega=None, plot=None, label_freq=0, color=None, label=None,
         return_contour=None, title=None, legend_loc='upper right', **kwargs):
     """Nyquist plot for a system.
 
@@ -1589,6 +1589,11 @@ def nyquist_plot(
         Amount to indent the Nyquist contour around poles on or near the
         imaginary axis. Portions of the Nyquist plot corresponding to indented
         portions of the contour are plotted using a different line style.
+
+    label : str or array-like of str
+        If present, replace automatically generated label(s) with the given
+        label(s).  If sysdata is a list, strings should be specified for each
+        system.
 
     label_freq : int, optiona
         Label every nth frequency on the plot.  If not specified, no labels
@@ -1739,6 +1744,9 @@ def nyquist_plot(
     if not isinstance(data, (list, tuple)):
         data = [data]
 
+    # Process label keyword
+    line_labels = _process_line_labels(label, len(data))
+
     # If we are passed a list of systems, compute response first
     if all([isinstance(
             sys, (StateSpace, TransferFunction, FrequencyResponseData))
@@ -1804,12 +1812,14 @@ def nyquist_plot(
             reg_mask, abs(resp) > max_curve_magnitude)
         resp[rescale] *= max_curve_magnitude / abs(resp[rescale])
 
+        # Get the label to use for the line
+        label = response.sysname if line_labels is None else line_labels[idx]
+
         # Plot the regular portions of the curve (and grab the color)
         x_reg = np.ma.masked_where(reg_mask, resp.real)
         y_reg = np.ma.masked_where(reg_mask, resp.imag)
         p = plt.plot(
-            x_reg, y_reg, primary_style[0], color=color,
-            label=response.sysname, **kwargs)
+            x_reg, y_reg, primary_style[0], color=color, label=label, **kwargs)
         c = p[0].get_color()
         out[idx] += p
 
@@ -2211,7 +2221,7 @@ def singular_values_response(
 
 def singular_values_plot(
         data, omega=None, *fmt, plot=None, omega_limits=None, omega_num=None,
-        title=None, legend_loc='center right', **kwargs):
+        label=None, title=None, legend_loc='center right', **kwargs):
     """Plot the singular values for a system.
 
     Plot the singular values as a function of frequency for a system or
@@ -2257,6 +2267,10 @@ def singular_values_plot(
     grid : bool
         If True, plot grid lines on gain and phase plots.  Default is set by
         `config.defaults['freqplot.grid']`.
+    label : str or array-like of str
+        If present, replace automatically generated label(s) with the given
+        label(s).  If sysdata is a list, strings should be specified for each
+        system.
     omega_limits : array_like of two values
         Set limits for plotted frequency range. If Hz=True the limits
         are in Hz otherwise in rad/s.
@@ -2305,6 +2319,9 @@ def singular_values_plot(
             raise ValueError(f"invalid limits: {omega_limits=}")
 
         responses = data
+
+    # Process label keyword
+    line_labels = _process_line_labels(label, len(data))
 
     # Process (legacy) plot keyword
     if plot is not None:
@@ -2385,11 +2402,14 @@ def singular_values_plot(
             with plt.rc_context(freqplot_rcParams):
                 out[idx_sys] = ax_sigma.semilogx(
                     omega, 20 * np.log10(sigma), *fmt,
-                    label=sysname, **color_arg, **kwargs)
+                    label=label, **color_arg, **kwargs)
         else:
             with plt.rc_context(freqplot_rcParams):
                 out[idx_sys] = ax_sigma.loglog(
-                    omega, sigma, label=sysname, *fmt, **color_arg, **kwargs)
+                    omega, sigma, label=label, *fmt, **color_arg, **kwargs)
+
+        # Get the label to use for the line
+        label = sysname if line_labels is None else line_labels[idx]
 
         # Plot the Nyquist frequency
         if nyq_freq is not None:
@@ -2653,7 +2673,7 @@ def _get_line_labels(ax, use_color=True):
 
 
 # Turn label keyword into array indexed by trace, output, input
-def _process_line_labels(label, nsys, ninput, noutput):
+def _process_line_labels(label, nsys, ninputs=0, noutputs=0):
     if label is None:
         return None
 
@@ -2669,7 +2689,8 @@ def _process_line_labels(label, nsys, ninput, noutput):
     # Turn the data into a 3D array of appropriate shape
     # TODO: allow more sophisticated broadcasting
     try:
-        line_labels = line_labels.reshape(nsys, ninput, noutput)
+        if ninputs > 0 and noutputs > 0:
+            line_labels = line_labels.reshape(nsys, ninputs, noutputs)
     except:
         if line_labels.shape[0] != nsys:
             raise ValueError("number of labels must match number of traces")
