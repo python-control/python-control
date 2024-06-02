@@ -2397,6 +2397,9 @@ def singular_values_plot(
         sysname = response.sysname if response.sysname is not None \
             else f"Unknown-{idx_sys}"
 
+        # Get the label to use for the line
+        label = sysname if line_labels is None else line_labels[idx_sys]
+
         # Plot the data
         if dB:
             with plt.rc_context(freqplot_rcParams):
@@ -2407,9 +2410,6 @@ def singular_values_plot(
             with plt.rc_context(freqplot_rcParams):
                 out[idx_sys] = ax_sigma.loglog(
                     omega, sigma, label=label, *fmt, **color_arg, **kwargs)
-
-        # Get the label to use for the line
-        label = sysname if line_labels is None else line_labels[idx]
 
         # Plot the Nyquist frequency
         if nyq_freq is not None:
@@ -2678,7 +2678,7 @@ def _process_line_labels(label, nsys, ninputs=0, noutputs=0):
         return None
 
     if isinstance(label, str):
-        label = [[[label]]]
+        label = [label]
 
     # Convert to an ndarray, if not done aleady
     try:
@@ -2687,10 +2687,13 @@ def _process_line_labels(label, nsys, ninputs=0, noutputs=0):
         raise ValueError("label must be a string or array_like")
 
     # Turn the data into a 3D array of appropriate shape
-    # TODO: allow more sophisticated broadcasting
+    # TODO: allow more sophisticated broadcasting (and error checking)
     try:
         if ninputs > 0 and noutputs > 0:
-            line_labels = line_labels.reshape(nsys, ninputs, noutputs)
+            if line_labels.ndim == 1:
+                line_labels = line_labels.reshape(nsys, 1, 1)
+            line_labels = np.broadcast_to(
+                line_labels,(nsys, ninputs, noutputs))
     except:
         if line_labels.shape[0] != nsys:
             raise ValueError("number of labels must match number of traces")

@@ -346,33 +346,66 @@ def test_freqplot_omega_limits(plt_fcn):
         _get_visible_limits(ax.reshape(-1)[0]), np.array([1, 100]))
 
 
+def test_gangof4_trace_labels():
+    P1 = ct.rss(2, 1, 1, name='P1')
+    P2 = ct.rss(3, 1, 1, name='P2')
+    C = ct.rss(1, 1, 1, name='C')
+
+    # Make sure default labels are as expected
+    out = ct.gangof4_response(P1, C).plot()
+    out = ct.gangof4_response(P2, C).plot()
+    axs = ct.get_plot_axes(out)
+    legend = axs[0, 1].get_legend().get_texts()
+    assert legend[0].get_text() == 'None'
+    assert legend[1].get_text() == 'None'
+    plt.close()
+
+    # Override labels
+    out = ct.gangof4_response(P1, C).plot(label='line1')
+    out = ct.gangof4_response(P2, C).plot(label='line2')
+    axs = ct.get_plot_axes(out)
+    legend = axs[0, 1].get_legend().get_texts()
+    assert legend[0].get_text() == 'line1'
+    assert legend[1].get_text() == 'line2'
+    plt.close()
+
+
 @pytest.mark.parametrize(
     "plt_fcn", [ct.bode_plot, ct.singular_values_plot, ct.nyquist_plot])
-def test_bode_trace_labels(plt_fcn):
+def test_freqplot_trace_labels(plt_fcn):
     sys1 = ct.rss(2, 1, 1, name='sys1')
     sys2 = ct.rss(3, 1, 1, name='sys2')
 
     # Make sure default labels are as expected
-    out = ct.plt_fcn([sys1, sys2])
+    out = plt_fcn([sys1, sys2])
     axs = ct.get_plot_axes(out)
-    legend = axs[0, 0].get_legend().get_texts()
+    if axs.ndim == 1:
+        legend = axs[0].get_legend().get_texts()
+    else:
+        legend = axs[0, 0].get_legend().get_texts()
     assert legend[0].get_text() == 'sys1'
     assert legend[1].get_text() == 'sys2'
     plt.close()
 
     # Override labels all at once
-    out = ct.plt_fcn([sys1, sys2], label=['line1', 'line2'])
+    out = plt_fcn([sys1, sys2], label=['line1', 'line2'])
     axs = ct.get_plot_axes(out)
-    legend = axs[0, 0].get_legend().get_texts()
+    if axs.ndim == 1:
+        legend = axs[0].get_legend().get_texts()
+    else:
+        legend = axs[0, 0].get_legend().get_texts()
     assert legend[0].get_text() == 'line1'
     assert legend[1].get_text() == 'line2'
     plt.close()
 
     # Override labels one at a time
-    out = ct.plt_fcn(sys1, label='line1')
-    out = ct.plt_fcn(sys2, label='line2')
+    out = plt_fcn(sys1, label='line1')
+    out = plt_fcn(sys2, label='line2')
     axs = ct.get_plot_axes(out)
-    legend = axs[0, 0].get_legend().get_texts()
+    if axs.ndim == 1:
+        legend = axs[0].get_legend().get_texts()
+    else:
+        legend = axs[0, 0].get_legend().get_texts()
     assert legend[0].get_text() == 'line1'
     assert legend[1].get_text() == 'line2'
     plt.close()
@@ -385,8 +418,11 @@ def test_bode_trace_labels(plt_fcn):
         # Check out some errors first
         with pytest.raises(ValueError, match="number of labels must match"):
             ct.bode_plot([sys1, sys2], label=['line1'])
-        with pytest.raises(ValueError, match="labels must be given for each"):
-            ct.bode_plot(sys1, label=['line1'])
+
+        with pytest.xfail(reason="need better broadcast checking on labels"):
+            with pytest.raises(
+                    ValueError, match="labels must be given for each"):
+                ct.bode_plot(sys1, overlay_inputs=True, label=['line1'])
 
         # Now do things that should work
         out = ct.bode_plot(

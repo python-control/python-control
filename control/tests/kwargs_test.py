@@ -193,9 +193,9 @@ def test_matplotlib_kwargs(function, nsysargs, moreargs, kwargs, mplcleanup):
 def test_response_plot_kwargs(data_fcn, plot_fcn, mimo):
     # Create a system for testing
     if mimo:
-        response = data_fcn(control.rss(4, 2, 2))
+        response = data_fcn(control.rss(4, 2, 2, strictly_proper=True))
     else:
-        response = data_fcn(control.rss(4, 1, 1))
+        response = data_fcn(control.rss(4, 1, 1, strictly_proper=True))
 
     # Make sure that calling the data function with unknown keyword errs
     with pytest.raises(
