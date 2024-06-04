@@ -2160,7 +2160,8 @@ def test_update_names():
         sys.update_names(states=3)
 
     with pytest.raises(ValueError, match="number of states does not match"):
-        ct.tf(sys).update_names(states=2)
+        siso = ct.tf([1], [1, 2, 1])
+        ct.tf(siso).update_names(states=2)
 
     with pytest.raises(TypeError, match="unrecognized keywords"):
         sys.update_names(dt=1)
