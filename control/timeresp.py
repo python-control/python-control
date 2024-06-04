@@ -1280,8 +1280,9 @@ def _process_time_response(
     return tout, yout
 
 
-def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
-                  transpose=False, return_x=False, squeeze=None, params=None):
+def step_response(
+        sysdata, T=None, X0=0, input=None, output=None, T_num=None,
+        transpose=False, return_x=False, squeeze=None, params=None):
     # pylint: disable=W0622
     """Compute the step response for a linear system.
 
@@ -1296,8 +1297,8 @@ def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
 
     Parameters
     ----------
-    sys : StateSpace or TransferFunction
-        LTI system to simulate
+    sysdata : I/O system or list of I/O systems
+        I/O system(s) for which step response is computed.
 
     T : array_like or float, optional
         Time vector, or simulation time duration if a number. If T is not
@@ -1390,6 +1391,15 @@ def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
     from .lti import LTI
     from .statesp import _convert_to_statespace
     from .xferfcn import TransferFunction
+
+    # Convert the first argument to a list
+    syslist = sysdata if isinstance(sysdata, (list, tuple)) else [sysdata]
+
+    # TODO: implement step responses for multiple systems
+    if len(syslist) > 1:
+        raise NotImplementedError(
+            "step responses for multiple systems not yet implemented")
+    sys = syslist[0]
 
     # Create the time and input vectors
     if T is None or np.asarray(T).size == 1:
@@ -1681,8 +1691,9 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
     return ret[0][0] if retsiso else ret
 
 
-def initial_response(sys, T=None, X0=0, output=None, T_num=None, params=None,
-                     transpose=False, return_x=False, squeeze=None):
+def initial_response(
+        sysdata, T=None, X0=0, output=None, T_num=None, params=None,
+        transpose=False, return_x=False, squeeze=None):
     # pylint: disable=W0622
     """Compute the initial condition response for a linear system.
 
@@ -1695,6 +1706,9 @@ def initial_response(sys, T=None, X0=0, output=None, T_num=None, params=None,
 
     Parameters
     ----------
+    sysdata : I/O system or list of I/O systems
+        I/O system(s) for which initial response is computed.
+
     sys : StateSpace or TransferFunction
         LTI system to simulate
 
@@ -1773,6 +1787,15 @@ def initial_response(sys, T=None, X0=0, output=None, T_num=None, params=None,
     """
     from .lti import LTI
 
+    # Convert the first argument to a list
+    syslist = sysdata if isinstance(sysdata, (list, tuple)) else [sysdata]
+
+    # TODO: implement step responses for multiple systems
+    if len(syslist) > 1:
+        raise NotImplementedError(
+            "step responses for multiple systems not yet implemented")
+    sys = syslist[0]
+
     # Create the time and input vectors
     if T is None or np.asarray(T).size == 1:
         T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=False)
@@ -1800,8 +1823,9 @@ def initial_response(sys, T=None, X0=0, output=None, T_num=None, params=None,
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
-def impulse_response(sys, T=None, input=None, output=None, T_num=None,
-                     transpose=False, return_x=False, squeeze=None):
+def impulse_response(
+        sysdata, T=None, input=None, output=None, T_num=None,
+        transpose=False, return_x=False, squeeze=None):
     # pylint: disable=W0622
     """Compute the impulse response for a linear system.
 
@@ -1816,8 +1840,8 @@ def impulse_response(sys, T=None, input=None, output=None, T_num=None,
 
     Parameters
     ----------
-    sys : StateSpace, TransferFunction
-        LTI system to simulate
+    sysdata : I/O system or list of I/O systems
+        I/O system(s) for which impluse response is computed.
 
     T : array_like or float, optional
         Time vector, or simulation time duration if a scalar (time vector is
@@ -1895,6 +1919,15 @@ def impulse_response(sys, T=None, input=None, output=None, T_num=None,
     """
     from .lti import LTI
     from .statesp import _convert_to_statespace
+
+    # Convert the first argument to a list
+    syslist = sysdata if isinstance(sysdata, (list, tuple)) else [sysdata]
+
+    # TODO: implement step responses for multiple systems
+    if len(syslist) > 1:
+        raise NotImplementedError(
+            "step responses for multiple systems not yet implemented")
+    sys = syslist[0]
 
     # Make sure we have an LTI system
     if not isinstance(sys, LTI):

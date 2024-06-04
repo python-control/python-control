@@ -313,6 +313,14 @@ def test_combine_time_responses():
         combresp6 = ct.combine_time_responses([resp1, resp])
 
 
+def test_list_responses():
+    sys1 = ct.rss(2, 2, 2)
+    sys2 = ct.rss(2, 2, 2)
+
+    resp = ct.step_response([sys1, sys2]).plot()
+    assert resp.ntraces == 2
+
+
 @slycotonly
 def test_linestyles():
     # Check to make sure we can change line styles

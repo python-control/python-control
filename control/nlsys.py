@@ -1317,7 +1317,7 @@ def nlsys(
 
 
 def input_output_response(
-        sys, T, U=0., X0=0, params=None, ignore_errors=False,
+        sysdata, T, U=0., X0=0, params=None, ignore_errors=False,
         transpose=False, return_x=False, squeeze=None,
         solve_ivp_kwargs=None, t_eval='T', **kwargs):
     """Compute the output response of a system to a given input.
@@ -1327,8 +1327,8 @@ def input_output_response(
 
     Parameters
     ----------
-    sys : InputOutputSystem
-        Input/output system to simulate.
+    sysdata : I/O system or list of I/O systems
+        I/O system(s) for which input/output response is simulated.
 
     T : array-like
         Time steps at which the input is defined; values must be evenly spaced.
@@ -1447,6 +1447,15 @@ def input_output_response(
     # Make sure there were no extraneous keywords
     if kwargs:
         raise TypeError("unrecognized keyword(s): ", str(kwargs))
+
+    # Convert the first argument to a list
+    syslist = sysdata if isinstance(sysdata, (list, tuple)) else [sysdata]
+
+    # TODO: implement step responses for multiple systems
+    if len(syslist) > 1:
+        raise NotImplementedError(
+            "step responses for multiple systems not yet implemented")
+    sys = syslist[0]
 
     # Sanity checking on the input
     if not isinstance(sys, NonlinearIOSystem):
