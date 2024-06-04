@@ -361,12 +361,12 @@ def test_gangof4_trace_labels():
     plt.close()
 
     # Override labels
-    out = ct.gangof4_response(P1, C).plot(label='line1')
-    out = ct.gangof4_response(P2, C).plot(label='line2')
+    out = ct.gangof4_response(P1, C).plot(label='xxx, line1, yyy')
+    out = ct.gangof4_response(P2, C).plot(label='xxx, line2, yyy')
     axs = ct.get_plot_axes(out)
     legend = axs[0, 1].get_legend().get_texts()
-    assert legend[0].get_text() == 'line1'
-    assert legend[1].get_text() == 'line2'
+    assert legend[0].get_text() == 'xxx, line1, yyy'
+    assert legend[1].get_text() == 'xxx, line2, yyy'
     plt.close()
 
 

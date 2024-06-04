@@ -1046,7 +1046,9 @@ def bode_plot(
             # Get the labels to use, removing common strings
             lines = [line for line in ax.get_lines()
                      if line.get_label()[0] != '_']
-            labels = _make_legend_labels([line.get_label() for line in lines])
+            labels = _make_legend_labels(
+                [line.get_label() for line in lines],
+                ignore_common=line_labels is not None)
 
             # Generate the label, if needed
             if len(labels) > 1 and legend_map[i, j] != None:
