@@ -2122,7 +2122,7 @@ def test_find_size():
         lambda t, x, u, params: -x + u,
         lambda t, x, u, params: x[:1],
         inputs=2, states=2)
-    
+
     with pytest.raises(ValueError, match="inconsistent .* size of X0"):
         resp = ct.input_output_response(sys, timepts, [0, 1], X0=[0, 0, 1])
 
@@ -2135,4 +2135,35 @@ def test_find_size():
             lambda t, x, u, params: x[:1],
             inputs=2, states=2, outputs=2)
         resp = ct.input_output_response(sys, timepts, [0, 1], X0=[0, 0])
-    
+
+
+def test_update_names():
+    sys = ct.rss(['x1', 'x2'], 2, 2)
+    sys.update_names(
+        name='new', states=2, inputs=['u1', 'u2'],
+        outputs=2, output_prefix='yy')
+    assert sys.name == 'new'
+    assert sys.ninputs == 2
+    assert sys.input_labels == ['u1', 'u2']
+    assert sys.ninputs == 2
+    assert sys.output_labels == ['yy[0]', 'yy[1]']
+    assert sys.state_labels == ['x[0]', 'x[1]']
+
+    # Generate some error conditions
+    with pytest.raises(ValueError, match="number of inputs does not match"):
+        sys.update_names(inputs=3)
+
+    with pytest.raises(ValueError, match="number of outputs does not match"):
+        sys.update_names(outputs=3)
+
+    with pytest.raises(ValueError, match="number of states does not match"):
+        sys.update_names(states=3)
+
+    with pytest.raises(ValueError, match="number of states does not match"):
+        ct.tf(sys).update_names(states=2)
+
+    with pytest.raises(TypeError, match="unrecognized keywords"):
+        sys.update_names(dt=1)
+
+    with pytest.raises(TypeError, match=".* takes 1 positional argument"):
+        sys.update_names(5)

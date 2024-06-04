@@ -6,10 +6,12 @@
 # FrequencyResponseData, InterconnectedSystem and other similar classes
 # that allow naming of signals.
 
-import numpy as np
+import re
 from copy import deepcopy
 from warnings import warn
-import re
+
+import numpy as np
+
 from . import config
 
 __all__ = ['InputOutputSystem', 'issiso', 'timebase', 'common_timebase',
@@ -365,6 +367,44 @@ class InputOutputSystem(object):
     state_labels = property(
         lambda self: list(self.state_index.keys()),     # getter
         set_states)                                     # setter
+
+    def update_names(self, **kwargs):
+        """Update signal and system names for an I/O system.
+
+        Parameters
+        ----------
+        inputs : int, list of str, or None
+            Description of the system inputs.
+        outputs : int, list of str, or None
+            Description of the system outputs.
+        states : int, list of str, or None
+            Description of the system states.
+
+        """
+        self.name = kwargs.pop('name', self.name)
+        if kwargs.get('inputs', None):
+            ninputs, input_index = _process_signal_list(
+                kwargs.pop('inputs'), prefix=kwargs.pop('input_prefix', 'u'))
+            if self.ninputs and self.ninputs != ninputs:
+                raise ValueError("number of inputs does not match system size")
+            self.input_index = input_index
+        if kwargs.get('outputs', None):
+            noutputs, output_index = _process_signal_list(
+                kwargs.pop('outputs'), prefix=kwargs.pop('output_prefix', 'y'))
+            if self.noutputs and self.noutputs != noutputs:
+                raise ValueError("number of outputs does not match system size")
+            self.output_index = output_index
+        if kwargs.get('states', None):
+            nstates, state_index = _process_signal_list(
+                kwargs.pop('states'), prefix=kwargs.pop('state_prefix', 'x'))
+            if self.nstates != nstates:
+                raise ValueError("number of states does not match system size")
+            self.state_index = state_index
+
+        # Make sure we processed all of the arguments
+        if kwargs:
+            raise TypeError("unrecognized keywords: ", str(kwargs))
+
 
     def isctime(self, strict=False):
         """
@@ -824,6 +864,7 @@ def _process_labels(labels, name, default):
 # system signals, and the gain to use for that set of signals.
 #
 import re
+
 
 def _parse_spec(syslist, spec, signame, dictname=None):
     """Parse a signal specification, returning system and signal index."""

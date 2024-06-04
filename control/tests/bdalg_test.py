@@ -316,3 +316,49 @@ class TestFeedback:
                 connect(sys, Q, [2], [1, 0])
             with pytest.raises(IndexError):
                 connect(sys, Q, [2], [1, -1])
+
+
+@pytest.mark.parametrize(
+    "op, nsys, ninputs, noutputs, nstates", [
+        (ctrl.series, 2, 1, 1, 4),
+        (ctrl.parallel, 2, 1, 1, 4),
+        (ctrl.feedback, 2, 1, 1, 4),
+        (ctrl.append, 2, 2, 2, 4),
+        (ctrl.negate, 1, 1, 1, 2),
+    ])
+def test_bdalg_update_names(op, nsys, ninputs, noutputs, nstates):
+    syslist = [ctrl.rss(2, 1, 1), ctrl.rss(2, 1, 1)]
+    inputs = ['in1', 'in2']
+    outputs = ['out1', 'out2']
+    states = ['x1', 'x2', 'x3', 'x4']
+
+    newsys = op(
+        *syslist[:nsys], name='newsys', inputs=inputs[:ninputs],
+        outputs=outputs[:noutputs], states=states[:nstates])
+    assert newsys.name == 'newsys'
+    assert newsys.ninputs == ninputs
+    assert newsys.input_labels == inputs[:ninputs]
+    assert newsys.noutputs == noutputs
+    assert newsys.output_labels == outputs[:noutputs]
+    assert newsys.nstates == nstates
+    assert newsys.state_labels == states[:nstates]
+
+
+def test_bdalg_udpate_names_errors():
+    sys1 = ctrl.rss(2, 1, 1)
+    sys2 = ctrl.rss(2, 1, 1)
+
+    with pytest.raises(ValueError, match="number of inputs does not match"):
+        sys = ctrl.series(sys1, sys2, inputs=2)
+
+    with pytest.raises(ValueError, match="number of outputs does not match"):
+        sys = ctrl.series(sys1, sys2, outputs=2)
+
+    with pytest.raises(ValueError, match="number of states does not match"):
+        sys = ctrl.series(sys1, sys2, states=2)
+
+    with pytest.raises(ValueError, match="number of states does not match"):
+        sys = ctrl.series(ctrl.tf(sys1), ctrl.tf(sys2), states=2)
+
+    with pytest.raises(TypeError, match="unrecognized keywords"):
+        sys = ctrl.series(sys1, sys2, dt=1)
