@@ -1963,8 +1963,21 @@ def _add_arrows_to_line2D(
     if transform is None:
         transform = axes.transData
 
+    # Figure out the size of the axes (length of diagonal)
+    xlim, ylim = axes.get_xlim(), axes.get_ylim()
+    ul, lr = np.array([xlim[0], ylim[0]]), np.array([xlim[1], ylim[1]])
+    diag = np.linalg.norm(ul - lr)
+
     # Compute the arc length along the curve
     s = np.cumsum(np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2))
+
+    # Truncate the number of arrows if the curve is short
+    # TODO: figure out a smarter way to do this
+    frac = min(s[-1] / diag, 1)
+    if len(arrow_locs) and frac < 0.05:
+        arrow_locs = []         # too short; no arrows at all
+    elif len(arrow_locs) and frac < 0.2:
+        arrow_locs = [0.5]      # single arrow in the middle
 
     arrows = []
     for loc in arrow_locs:

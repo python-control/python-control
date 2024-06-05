@@ -375,7 +375,7 @@ def streamlines(
             sys, revsys, timepts, X0, params, dir,
             gridtype=gridtype, gridspec=gridspec, xlim=xlim, ylim=ylim)
 
-        # Plot the trajectory
+        # Plot the trajectory (if there is one)
         if traj.shape[1] > 1:
             out.append(
                 ax.plot(traj[0], traj[1], color=color))
@@ -596,6 +596,7 @@ def separatrices(
                     color = unstable_color
                     linestyle = '-'
 
+                # Plot the trajectory (if there is one)
                 if traj.shape[1] > 1:
                     out.append(ax.plot(
                         traj[0], traj[1], color=color, linestyle=linestyle))
@@ -883,12 +884,13 @@ def _create_trajectory(
         gridtype=None, gridspec=None, xlim=None, ylim=None):
     # Comput ethe forward trajectory
     if dir == 'forward' or dir == 'both':
-        fwdresp = input_output_response(sys, timepts, X0=X0, params=params)
+        fwdresp = input_output_response(
+            sys, timepts, X0=X0, params=params, ignore_error=True)
 
     # Compute the reverse trajectory
     if dir == 'reverse' or dir == 'both':
         revresp = input_output_response(
-            revsys, timepts, X0=X0, params=params)
+            revsys, timepts, X0=X0, params=params, ignore_error=True)
 
     # Create the trace to plot
     if dir == 'forward':
@@ -898,7 +900,14 @@ def _create_trajectory(
     elif dir == 'both':
         traj = np.hstack([revresp.states[:, :1:-1], fwdresp.states])
 
-    return traj
+    # Remove points outside the window (keep first point beyond boundary)
+    inrange = np.asarray(
+        (traj[0] >= xlim[0]) & (traj[0] <= xlim[1]) &
+        (traj[1] >= ylim[0]) & (traj[1] <= ylim[1]))
+    inrange[:-1] = inrange[:-1] | inrange[1:]   # keep if next point in range
+    inrange[1:] = inrange[1:] | inrange[:-1]    # keep if prev point in range
+
+    return traj[:, inrange]
 
 
 def _make_timepts(timepts, i):

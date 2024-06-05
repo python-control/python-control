@@ -1317,7 +1317,7 @@ def nlsys(
 
 
 def input_output_response(
-        sys, T, U=0., X0=0, params=None,
+        sys, T, U=0., X0=0, params=None, ignore_error=False,
         transpose=False, return_x=False, squeeze=None,
         solve_ivp_kwargs=None, t_eval='T', **kwargs):
     """Compute the output response of a system to a given input.
@@ -1593,7 +1593,7 @@ def input_output_response(
         soln = sp.integrate.solve_ivp(
             ivp_rhs, (T0, Tf), X0, t_eval=t_eval,
             vectorized=False, **solve_ivp_kwargs)
-        if not soln.success:
+        if not ignore_error and not soln.success:
             raise RuntimeError("solve_ivp failed: " + soln.message)
 
         # Compute inputs and outputs for each time point
