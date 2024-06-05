@@ -9,14 +9,16 @@ individual test by itself and then type show(), it should pop open
 the figures so that you can check them visually.
 """
 
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy import pi
 import pytest
-from control import phase_plot
+from math import pi
+
 import control as ct
 import control.phaseplot as pp
+from control import phase_plot
 
 
 # Legacy tests
@@ -156,7 +158,22 @@ def test_phaseplane_errors():
         ct.phase_plane_plot(
             invpend_ode, [-5, 5, 2, 2], params={'stuff': (1, 1, 0.2, 1)})
 
-        
+    # Warning messages for invalid solutions: nonlinear spring mass system
+    sys = ct.nlsys(
+        lambda t, x, u, params: np.array(
+            [x[1], -0.25 * (x[0] - 0.01 * x[0]**3) - 0.1 * x[1]]),
+        states=2, inputs=0)
+    with pytest.warns(UserWarning, match=r"X0=array\(.*\), solve_ivp failed"):
+        ct.phase_plane_plot(
+            sys, [-12, 12, -10, 10], 15, gridspec=[2, 9],
+            plot_separatrices=False)
+
+    # Turn warnings off
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        ct.phase_plane_plot(
+            sys, [-12, 12, -10, 10], 15, gridspec=[2, 9],
+            plot_separatrices=False, suppress_warnings=True)
 
 
 def test_basic_phase_plots(savefigs=False):

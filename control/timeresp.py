@@ -71,18 +71,17 @@ $Id$
 """
 
 import warnings
+from copy import copy
 
 import numpy as np
 import scipy as sp
 from numpy import einsum, maximum, minimum
 from scipy.linalg import eig, eigvals, matrix_balance, norm
-from copy import copy
 
 from . import config
 from .exception import pandas_check
 from .iosys import isctime, isdtime
 from .timeplot import time_response_plot
-
 
 __all__ = ['forced_response', 'step_response', 'step_info',
            'initial_response', 'impulse_response', 'TimeResponseData']
@@ -230,7 +229,8 @@ class TimeResponseData:
             output_labels=None, state_labels=None, input_labels=None,
             title=None, transpose=False, return_x=False, squeeze=None,
             multi_trace=False, trace_labels=None, trace_types=None,
-            plot_inputs=True, sysname=None, params=None
+            plot_inputs=True, sysname=None, params=None, success=True,
+            message=None
     ):
         """Create an input/output time response object.
 
@@ -306,6 +306,13 @@ class TimeResponseData:
             If ``True``, then 2D input array represents multiple traces.  For
             a MIMO system, the ``input`` attribute should then be set to
             indicate which trace is being specified.  Default is ``False``.
+
+        success : bool, optional
+            If ``False``, result may not be valid (see
+            :func:`~control.input_output_response`).
+
+        message : str, optional
+            Informational message if ``success`` is ``False``.
 
         """
         #
@@ -459,6 +466,10 @@ class TimeResponseData:
 
         # Store legacy keyword values (only needed for legacy interface)
         self.return_x = return_x
+
+        # Information on the whether the simulation result may be incorrect
+        self.success = success
+        self.message = message
 
     def __call__(self, **kwargs):
         """Change value of processing keywords.
@@ -978,9 +989,9 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, params=None,
     :ref:`package-configuration-parameters`.
 
     """
+    from .nlsys import NonlinearIOSystem, input_output_response
     from .statesp import StateSpace, _convert_to_statespace
     from .xferfcn import TransferFunction
-    from .nlsys import NonlinearIOSystem, input_output_response
 
     if not isinstance(sys, (StateSpace, TransferFunction)):
         if isinstance(sys, NonlinearIOSystem):
@@ -1370,8 +1381,8 @@ def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
 
     """
     from .lti import LTI
-    from .xferfcn import TransferFunction
     from .statesp import _convert_to_statespace
+    from .xferfcn import TransferFunction
 
     # Create the time and input vectors
     if T is None or np.asarray(T).size == 1:
@@ -1543,9 +1554,9 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
     PeakTime: 4.242
     SteadyStateValue: -1.0
     """
+    from .nlsys import NonlinearIOSystem
     from .statesp import StateSpace
     from .xferfcn import TransferFunction
-    from .nlsys import NonlinearIOSystem
 
     if isinstance(sysdata, (StateSpace, TransferFunction, NonlinearIOSystem)):
         T, Yout = step_response(sysdata, T, squeeze=False, params=params)
@@ -1875,8 +1886,8 @@ def impulse_response(sys, T=None, input=None, output=None, T_num=None,
     >>> T, yout = ct.impulse_response(G)
 
     """
-    from .statesp import _convert_to_statespace
     from .lti import LTI
+    from .statesp import _convert_to_statespace
 
     # Make sure we have an LTI system
     if not isinstance(sys, LTI):

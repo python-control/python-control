@@ -18,16 +18,17 @@ points and linearizations.
 
 """
 
-import numpy as np
-import scipy as sp
 import copy
 from warnings import warn
 
+import numpy as np
+import scipy as sp
+
 from . import config
-from .iosys import InputOutputSystem, _process_signal_list, \
-    _process_iosys_keywords, isctime, isdtime, common_timebase, _parse_spec
-from .timeresp import _check_convert_array, _process_time_response, \
-    TimeResponseData
+from .iosys import (InputOutputSystem, _parse_spec, _process_iosys_keywords,
+                    _process_signal_list, common_timebase, isctime, isdtime)
+from .timeresp import (TimeResponseData, _check_convert_array,
+                       _process_time_response)
 
 __all__ = ['NonlinearIOSystem', 'InterconnectedSystem', 'nlsys',
            'input_output_response', 'find_eqpt', 'linearize',
@@ -528,7 +529,6 @@ class NonlinearIOSystem(InputOutputSystem):
         # numerical linearization use the `_rhs()` and `_out()` member
         # functions.
         #
-
         # If x0 and u0 are specified as lists, concatenate the elements
         x0 = _concatenate_list_elements(x0, 'x0')
         u0 = _concatenate_list_elements(u0, 'u0')
@@ -1317,7 +1317,7 @@ def nlsys(
 
 
 def input_output_response(
-        sys, T, U=0., X0=0, params=None, ignore_error=False,
+        sys, T, U=0., X0=0, params=None, ignore_errors=False,
         transpose=False, return_x=False, squeeze=None,
         solve_ivp_kwargs=None, t_eval='T', **kwargs):
     """Compute the output response of a system to a given input.
@@ -1393,6 +1393,11 @@ def input_output_response(
         to 'RK45'.
     solve_ivp_kwargs : dict, optional
         Pass additional keywords to :func:`scipy.integrate.solve_ivp`.
+    ignore_errors : bool, optional
+        If ``False`` (default), errors during computation of the trajectory
+        will raise a ``RuntimeError`` exception.  If ``True``, do not raise
+        an exception and instead set ``results.success`` to ``False`` and
+        place an error message in ``results.message``.
 
     Raises
     ------
@@ -1593,8 +1598,12 @@ def input_output_response(
         soln = sp.integrate.solve_ivp(
             ivp_rhs, (T0, Tf), X0, t_eval=t_eval,
             vectorized=False, **solve_ivp_kwargs)
-        if not ignore_error and not soln.success:
-            raise RuntimeError("solve_ivp failed: " + soln.message)
+        if not soln.success:
+            message = "solve_ivp failed: " + soln.message
+            if not ignore_errors:
+                raise RuntimeError(message)
+        else:
+            message = None
 
         # Compute inputs and outputs for each time point
         u = np.zeros((ninputs, len(soln.t)))
@@ -1650,7 +1659,7 @@ def input_output_response(
         u = np.transpose(np.array(u))
 
         # Mark solution as successful
-        soln.success = True     # No way to fail
+        soln.success, message = True, None      # No way to fail
 
     else:                       # Neither ctime or dtime??
         raise TypeError("Can't determine system type")
@@ -1660,7 +1669,8 @@ def input_output_response(
         output_labels=sys.output_labels, input_labels=sys.input_labels,
         state_labels=sys.state_labels, sysname=sys.name,
         title="Input/output response for " + sys.name,
-        transpose=transpose, return_x=return_x, squeeze=squeeze)
+        transpose=transpose, return_x=return_x, squeeze=squeeze,
+        success=soln.success, message=message)
 
 
 def find_eqpt(sys, x0, u0=None, y0=None, t=0, params=None,
@@ -2252,7 +2262,7 @@ def interconnect(
     `outputs`, for more natural naming of SISO systems.
 
     """
-    from .statesp import StateSpace, LinearICSystem, _convert_to_statespace
+    from .statesp import LinearICSystem, StateSpace, _convert_to_statespace
     from .xferfcn import TransferFunction
 
     dt = kwargs.pop('dt', None)         # bypass normal 'dt' processing

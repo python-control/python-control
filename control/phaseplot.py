@@ -52,7 +52,7 @@ _phaseplot_defaults = {
 def phase_plane_plot(
         sys, pointdata=None, timedata=None, gridtype=None, gridspec=None,
         plot_streamlines=True, plot_vectorfield=False, plot_equilpoints=True,
-        plot_separatrices=True, ax=None, **kwargs
+        plot_separatrices=True, ax=None, suppress_warnings=False, **kwargs
 ):
     """Plot phase plane diagram.
 
@@ -88,22 +88,6 @@ def phase_plane_plot(
         Parameters to pass to system. For an I/O system, `params` should be
         a dict of parameters and values. For a callable, `params` should be
         dict with key 'args' and value given by a tuple (passed to callable).
-    plot_streamlines : bool or dict
-        If `True` (default) then plot streamlines based on the pointdata
-        and gridtype.  If set to a dict, pass on the key-value pairs in
-        the dict as keywords to :func:`~control.phaseplot.streamlines`.
-    plot_vectorfield : bool or dict
-        If `True` (default) then plot the vector field based on the pointdata
-        and gridtype.  If set to a dict, pass on the key-value pairs in
-        the dict as keywords to :func:`~control.phaseplot.vectorfield`.
-    plot_equilpoints : bool or dict
-        If `True` (default) then plot equilibrium points based in the phase
-        plot boundary. If set to a dict, pass on the key-value pairs in the
-        dict as keywords to :func:`~control.phaseplot.equilpoints`.
-    plot_separatrices : bool or dict
-        If `True` (default) then plot separatrices starting from each
-        equilibrium point.  If set to a dict, pass on the key-value pairs
-        in the dict as keywords to :func:`~control.phaseplot.separatrices`.
     color : str
         Plot all elements in the given color (use `plot_<fcn>={'color': c}`
         to set the color in one element of the phase plot.
@@ -116,6 +100,27 @@ def phase_plane_plot(
         out[0] = list of Line2D objects (streamlines and separatrices)
         out[1] = Quiver object (vector field arrows)
         out[2] = list of Line2D objects (equilibrium points)
+
+    Other parameters
+    ----------------
+    plot_streamlines : bool or dict, optional
+        If `True` (default) then plot streamlines based on the pointdata
+        and gridtype.  If set to a dict, pass on the key-value pairs in
+        the dict as keywords to :func:`~control.phaseplot.streamlines`.
+    plot_vectorfield : bool or dict, optional
+        If `True` (default) then plot the vector field based on the pointdata
+        and gridtype.  If set to a dict, pass on the key-value pairs in
+        the dict as keywords to :func:`~control.phaseplot.vectorfield`.
+    plot_equilpoints : bool or dict, optional
+        If `True` (default) then plot equilibrium points based in the phase
+        plot boundary. If set to a dict, pass on the key-value pairs in the
+        dict as keywords to :func:`~control.phaseplot.equilpoints`.
+    plot_separatrices : bool or dict, optional
+        If `True` (default) then plot separatrices starting from each
+        equilibrium point.  If set to a dict, pass on the key-value pairs
+        in the dict as keywords to :func:`~control.phaseplot.separatrices`.
+    suppress_warnings : bool, optional
+        If set to `True`, suppress warning messages in generating trajectories.
 
     """
     # Process arguments
@@ -149,7 +154,8 @@ def phase_plane_plot(
             kwargs, plot_streamlines, gridspec=gridspec, gridtype=gridtype,
             ax=ax)
         out[0] += streamlines(
-            sys, pointdata, timedata, check_kwargs=False, **kwargs_local)
+            sys, pointdata, timedata, check_kwargs=False,
+            suppress_warnings=suppress_warnings, **kwargs_local)
 
         # Get rid of keyword arguments handled by streamlines
         for kw in ['arrows', 'arrow_size', 'arrow_style', 'color',
@@ -203,7 +209,8 @@ def phase_plane_plot(
 
 
 def vectorfield(
-        sys, pointdata, gridspec=None, ax=None, check_kwargs=True, **kwargs):
+        sys, pointdata, gridspec=None, ax=None, suppress_warnings=False,
+        check_kwargs=True, **kwargs):
     """Plot a vector field in the phase plane.
 
     This function plots a vector field for a two-dimensional state
@@ -244,6 +251,11 @@ def vectorfield(
     -------
     out : Quiver
 
+    Other parameters
+    ----------------
+    suppress_warnings : bool, optional
+        If set to `True`, suppress warning messages in generating trajectories.
+
     """
     # Get system parameters
     params = kwargs.pop('params', None)
@@ -283,8 +295,8 @@ def vectorfield(
 
 
 def streamlines(
-        sys, pointdata, timedata=1, gridspec=None, gridtype=None,
-        dir=None, ax=None, check_kwargs=True, **kwargs):
+        sys, pointdata, timedata=1, gridspec=None, gridtype=None, dir=None,
+        ax=None, check_kwargs=True, suppress_warnings=False, **kwargs):
     """Plot stream lines in the phase plane.
 
     This function plots stream lines for a two-dimensional state space
@@ -327,6 +339,11 @@ def streamlines(
     Returns
     -------
     out : list of Line2D objects
+
+    Other parameters
+    ----------------
+    suppress_warnings : bool, optional
+        If set to `True`, suppress warning messages in generating trajectories.
 
     """
     # Get system parameters
@@ -373,7 +390,8 @@ def streamlines(
         timepts = _make_timepts(timedata, i)
         traj = _create_trajectory(
             sys, revsys, timepts, X0, params, dir,
-            gridtype=gridtype, gridspec=gridspec, xlim=xlim, ylim=ylim)
+            gridtype=gridtype, gridspec=gridspec, xlim=xlim, ylim=ylim,
+            suppress_warnings=suppress_warnings)
 
         # Plot the trajectory (if there is one)
         if traj.shape[1] > 1:
@@ -465,7 +483,7 @@ def equilpoints(
 
 def separatrices(
         sys, pointdata, timedata=None, gridspec=None, ax=None,
-        check_kwargs=True, **kwargs):
+        check_kwargs=True, suppress_warnings=False, **kwargs):
     """Plot separatrices in the phase plane.
 
     This function plots separatrices for a two-dimensional state space
@@ -508,6 +526,11 @@ def separatrices(
     Returns
     -------
     out : list of Line2D objects
+
+    Other parameters
+    ----------------
+    suppress_warnings : bool, optional
+        If set to `True`, suppress warning messages in generating trajectories.
 
     """
     # Get system parameters
@@ -586,13 +609,15 @@ def separatrices(
                 if evals[j].real < 0:
                     traj = _create_trajectory(
                         sys, revsys, timepts, x0, params, 'reverse',
-                        gridtype='boxgrid', xlim=xlim, ylim=ylim)
+                        gridtype='boxgrid', xlim=xlim, ylim=ylim,
+                        suppress_warnings=suppress_warnings)
                     color = stable_color
                     linestyle = '--'
                 elif evals[j].real > 0:
                     traj = _create_trajectory(
                         sys, revsys, timepts, x0, params, 'forward',
-                        gridtype='boxgrid', xlim=xlim, ylim=ylim)
+                        gridtype='boxgrid', xlim=xlim, ylim=ylim,
+                        suppress_warnings=suppress_warnings)
                     color = unstable_color
                     linestyle = '-'
 
@@ -880,17 +905,21 @@ def _get_color(kwargs, ax=None):
 
 
 def _create_trajectory(
-        sys, revsys, timepts, X0, params, dir,
+        sys, revsys, timepts, X0, params, dir, suppress_warnings=False,
         gridtype=None, gridspec=None, xlim=None, ylim=None):
     # Comput ethe forward trajectory
     if dir == 'forward' or dir == 'both':
         fwdresp = input_output_response(
-            sys, timepts, X0=X0, params=params, ignore_error=True)
+            sys, timepts, X0=X0, params=params, ignore_errors=True)
+        if not fwdresp.success and not suppress_warnings:
+            warnings.warn(f"{X0=}, {fwdresp.message}")
 
     # Compute the reverse trajectory
     if dir == 'reverse' or dir == 'both':
         revresp = input_output_response(
-            revsys, timepts, X0=X0, params=params, ignore_error=True)
+            revsys, timepts, X0=X0, params=params, ignore_errors=True)
+        if not revresp.success and not suppress_warnings:
+            warnings.warn(f"{X0=}, {revresp.message}")
 
     # Create the trace to plot
     if dir == 'forward':
@@ -1212,6 +1241,3 @@ def _find(condition):
     Private implementation of deprecated matplotlib.mlab.find
     """
     return np.nonzero(np.ravel(condition))[0]
-
-        
-
