@@ -300,6 +300,15 @@ def test_nyquist_indent_do(indentsys):
     np.testing.assert_allclose(contour[:50].real**2 + contour[:50].imag**2,
                                0.01**2)
 
+    # Make sure that the command also works if called directly as _plot()
+    plt.figure()
+    with pytest.warns(DeprecationWarning, match=".* use nyquist_response()"):
+        count, contour = ct.nyquist_plot(
+            indentsys, indent_radius=0.01, return_contour=True)
+    assert _Z(indentsys) == count + _P(indentsys)
+    np.testing.assert_allclose(
+        contour[:50].real**2 + contour[:50].imag**2, 0.01**2)
+
 
 def test_nyquist_indent_left(indentsys):
     plt.figure();

@@ -1536,9 +1536,6 @@ def nyquist_plot(
     color : string, optional
         Used to specify the color of the line and arrowhead.
 
-    return_contour : bool, optional
-        If 'True', return the contour used to evaluate the Nyquist plot.
-
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords (passed to `matplotlib`)
 
@@ -1629,6 +1626,10 @@ def nyquist_plot(
         the second element is used for portions that are scaled (using
         max_curve_magnitude).  Default linestyle (['-', '-.']) is
         determined by config.defaults['nyquist.mirror_style'].
+
+    return_contour : bool, optional
+        (legacy) If 'True', return the encirclement count and Nyquist
+        contour used to generate the Nyquist plot.
 
     start_marker : str, optional
         Matplotlib marker to use to mark the starting point of the Nyquist
@@ -1760,6 +1761,7 @@ def nyquist_plot(
             omega_num=kwargs.pop('omega_num', None),
             warn_encirclements=kwargs.pop('warn_encirclements', True),
             warn_nyquist=kwargs.pop('warn_nyquist', True),
+            indent_radius=kwargs.pop('indent_radius', None),
             check_kwargs=False, **kwargs)
     else:
         nyquist_responses = data
