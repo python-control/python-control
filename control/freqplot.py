@@ -1985,12 +1985,16 @@ def _add_arrows_to_line2D(
 
         # Figure out what direction to paint the arrow
         if dir == 1:
-            arrow_tail = (x[n], y[n])
-            arrow_head = (np.mean(x[n:n + 2]), np.mean(y[n:n + 2]))
+            n = 1 if n == 0 else n      # move arrow forward if at start
+            arrow_tail = (x[n - 1], y[n - 1])
+            arrow_head = (np.mean(x[n - 1:n + 1]), np.mean(y[n - 1:n + 1]))
+
         elif dir == -1:
             # Orient the arrow in the other direction on the segment
+            n = s.size - 2 if n == s.size - 1 else n    # move backward at end
             arrow_tail = (x[n + 1], y[n + 1])
             arrow_head = (np.mean(x[n:n + 2]), np.mean(y[n:n + 2]))
+
         else:
             raise ValueError("unknown value for keyword 'dir'")
 
