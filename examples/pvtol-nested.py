@@ -61,8 +61,6 @@ ct.gangof4(Pi, Ci)
 Hi = ct.parallel(ct.feedback(Ci, Pi), -m * g *ct.feedback(Ci * Pi, 1))
 
 plt.figure(4)
-plt.clf()
-plt.subplot(221)
 ct.bode_plot(Hi)
 
 # Now design the lateral control system
@@ -129,7 +127,7 @@ plt.ylabel('Phase [deg]')
 #
 plt.figure(7)
 plt.clf()
-ct.nyquist_plot(L, (0.0001, 1000))
+ct.nyquist_plot(L)
 
 # Add a box in the region we are going to expand
 plt.plot([-2, -2, 1, 1, -2], [-4, 4, 4, -4, -4], 'r-')

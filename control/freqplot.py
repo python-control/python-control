@@ -1991,7 +1991,6 @@ def _add_arrows_to_line2D(
 
         elif dir == -1:
             # Orient the arrow in the other direction on the segment
-            n = s.size - 2 if n == s.size - 1 else n    # move backward at end
             arrow_tail = (x[n + 1], y[n + 1])
             arrow_head = (np.mean(x[n:n + 2]), np.mean(y[n:n + 2]))
 
