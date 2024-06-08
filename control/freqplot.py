@@ -1919,7 +1919,7 @@ def nyquist_plot(
 # Internal function to add arrows to a curve
 def _add_arrows_to_line2D(
         axes, line, arrow_locs=[0.2, 0.4, 0.6, 0.8],
-        arrowstyle='-|>', arrowsize=1, dir=1, transform=None):
+        arrowstyle='-|>', arrowsize=1, dir=1):
     """
     Add arrows to a matplotlib.lines.Line2D at selected locations.
 
@@ -1930,7 +1930,6 @@ def _add_arrows_to_line2D(
     arrow_locs: list of locations where to insert arrows, % of total length
     arrowstyle: style of the arrow
     arrowsize: size of the arrow
-    transform: a matplotlib transform instance, default to data coordinates
 
     Returns:
     --------
@@ -1939,13 +1938,13 @@ def _add_arrows_to_line2D(
     Based on https://stackoverflow.com/questions/26911898/
 
     """
+    # Get the coordinates of the line, in plot coordinates
     if not isinstance(line, mpl.lines.Line2D):
         raise ValueError("expected a matplotlib.lines.Line2D object")
     x, y = line.get_xdata(), line.get_ydata()
 
-    arrow_kw = {
-        "arrowstyle": arrowstyle,
-    }
+    # Determine the arrow properties
+    arrow_kw = {"arrowstyle": arrowstyle}
 
     color = line.get_color()
     use_multicolor_lines = isinstance(color, np.ndarray)
@@ -1959,9 +1958,6 @@ def _add_arrows_to_line2D(
         raise NotImplementedError("multiwidth lines not supported")
     else:
         arrow_kw['linewidth'] = linewidth
-
-    if transform is None:
-        transform = axes.transData
 
     # Figure out the size of the axes (length of diagonal)
     xlim, ylim = axes.get_xlim(), axes.get_ylim()
@@ -1979,31 +1975,25 @@ def _add_arrows_to_line2D(
     elif len(arrow_locs) and frac < 0.2:
         arrow_locs = [0.5]      # single arrow in the middle
 
+    # Plot the arrows (and return list if patches)
     arrows = []
     for loc in arrow_locs:
         n = np.searchsorted(s, s[-1] * loc)
 
-        # Figure out what direction to paint the arrow
-        if dir == 1:
-            n = 1 if n == 0 else n      # move arrow forward if at start
-            arrow_tail = (x[n - 1], y[n - 1])
-            arrow_head = (np.mean(x[n - 1:n + 1]), np.mean(y[n - 1:n + 1]))
+        if dir == 1 and n == 0:
+            # Move the arrow forward by one if it is at start of a segment
+            n = 1
 
-        elif dir == -1:
-            # Orient the arrow in the other direction on the segment
-            arrow_tail = (x[n + 1], y[n + 1])
-            arrow_head = (np.mean(x[n:n + 2]), np.mean(y[n:n + 2]))
-
-        else:
-            raise ValueError("unknown value for keyword 'dir'")
+        # Place the head of the arrow at the desired location
+        arrow_head = [x[n], y[n]]
+        arrow_tail = [x[n - dir], y[n - dir]]
 
         p = mpl.patches.FancyArrowPatch(
-            arrow_tail, arrow_head, transform=transform, lw=0,
+            arrow_tail, arrow_head, transform=axes.transData, lw=0,
             **arrow_kw)
         axes.add_patch(p)
         arrows.append(p)
     return arrows
-
 
 
 #
