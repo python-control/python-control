@@ -25,10 +25,10 @@ import numpy as np
 import scipy as sp
 
 from . import config
-from .iosys import (InputOutputSystem, _parse_spec, _process_iosys_keywords,
-                    _process_signal_list, common_timebase, isctime, isdtime)
-from .timeresp import (TimeResponseData, _check_convert_array,
-                       _process_time_response)
+from .iosys import InputOutputSystem, _parse_spec, _process_iosys_keywords, \
+    _process_signal_list, common_timebase, isctime, isdtime
+from .timeresp import TimeResponseData, _check_convert_array, \
+    _process_time_response
 
 __all__ = ['NonlinearIOSystem', 'InterconnectedSystem', 'nlsys',
            'input_output_response', 'find_eqpt', 'linearize',
