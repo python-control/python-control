@@ -201,7 +201,7 @@ def phase_plane_plot(
         raise TypeError("unrecognized keywords: ", str(initial_kwargs))
 
     if fig is not None:
-        fig.suptitle(f"Phase portrait for {sys.name}")
+        ax.set_title(f"Phase portrait for {sys.name}")
         ax.set_xlabel(sys.state_labels[0])
         ax.set_ylabel(sys.state_labels[1])
 
