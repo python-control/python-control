@@ -2469,6 +2469,14 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num,
     omega_range_given = True
 
     if omega_in is None:
+        for sys in syslist:
+            if isinstance(sys, FrequencyResponseData):
+                # FRD already has predetermined frequencies
+                if omega_in is not None and not np.all(omega_in == sys.omega):
+                    raise ValueError("List of FrequencyResponseData systems can only have a single frequency range between them")
+                omega_in = sys.omega
+
+    if omega_in is None:
         if omega_limits is None:
             omega_range_given = False
             # Select a default range if none is provided
