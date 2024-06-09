@@ -438,6 +438,33 @@ def test_discrete_nyquist():
     ct.nyquist_response(sys)
 
 
+def test_freqresp_omega_limits():
+    sys = ct.rss(4, 1, 1)
+
+    # Generate a standard frequency response (no limits specified)
+    resp0 = ct.nyquist_response(sys)
+    assert resp0.contour.size > 2
+
+    # Regenerate the response using omega_limits
+    resp1 = ct.nyquist_response(
+        sys, omega_limits=[resp0.contour[1].imag, resp0.contour[-1].imag])
+    assert resp1.contour.size > 2
+    assert np.isclose(resp1.contour[0], resp0.contour[1])
+    assert np.isclose(resp1.contour[-1], resp0.contour[-1])
+
+    # Regenerate the response using omega as a list of two elements
+    resp2 = ct.nyquist_response(
+        sys, [resp0.contour[1].imag, resp0.contour[-1].imag])
+    np.testing.assert_equal(resp1.contour, resp2.contour)
+
+    # Make sure that generating response using array does the right thing
+    resp3 = ct.nyquist_response(
+        sys, np.array([resp0.contour[1].imag, resp0.contour[-1].imag]))
+    np.testing.assert_equal(
+        resp3.contour,
+        np.array([resp0.contour[1], resp0.contour[-1]]))
+
+
 if __name__ == "__main__":
     #
     # Interactive mode: generate plots for manual viewing

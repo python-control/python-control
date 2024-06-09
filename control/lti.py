@@ -386,16 +386,18 @@ def frequency_response(
     sysdata : LTI system or list of LTI systems
         Linear system(s) for which frequency response is computed.
     omega : float or 1D array_like, optional
-        A list of frequencies in radians/sec at which the system should be
-        evaluated. The list can be either a Python list or a numpy array
-        and will be sorted before evaluation.  If None (default), a common
-        set of frequencies that works across all given systems is computed.
+        Frequencies in radians/sec at which the system should be
+        evaluated. Can be a single frequency or array of frequencies, which
+        will be sorted before evaluation.  If None (default), a common set
+        of frequencies that works across all given systems is computed.
     omega_limits : array_like of two values, optional
-        Limits to the range of frequencies, in rad/sec. Ignored if
-        omega is provided, and auto-generated if omitted.
+        Limits to the range of frequencies, in rad/sec. Specifying
+        ``omega`` as a list of two elements is equivalent to providing
+        ``omega_limits``.  Ignored if omega is provided.
     omega_num : int, optional
-        Number of frequency samples to plot.  Defaults to
-        config.defaults['freqplot.number_of_samples'].
+        Number of frequency samples at which to compute the response.
+        Defaults to config.defaults['freqplot.number_of_samples'].  Ignored
+        if omega is provided.
 
     Returns
     -------

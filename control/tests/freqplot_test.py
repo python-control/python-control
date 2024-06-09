@@ -181,6 +181,12 @@ def test_basic_freq_plots(savefigs=False):
     if savefigs:
         plt.savefig('freqplot-siso_bode-default.png')
 
+    plt.figure()
+    omega = np.logspace(-2, 2, 500)
+    ct.frequency_response([sys1, sys2], omega).plot(initial_phase=0)
+    if savefigs:
+        plt.savefig('freqplot-siso_bode-omega.png')
+
     # Basic MIMO Bode plot
     plt.figure()
     sys_mimo = ct.tf(
@@ -212,6 +218,24 @@ def test_basic_freq_plots(savefigs=False):
     ct.nichols_plot(response)
     if savefigs:
         plt.savefig('freqplot-siso_nichols-default.png')
+
+    # Nyquist plot - default settings
+    plt.figure()
+    sys = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='sys')
+    ct.nyquist(sys)
+    if savefigs:
+        plt.savefig('freqplot-nyquist-default.png')
+
+    # Nyquist plot - custom settings
+    plt.figure()
+    sys = ct.tf([1, 0.2], [1, 0, 1]) * ct.tf([1], [1, 0])
+    nyqresp = ct.nyquist_response(sys)
+    nyqresp.plot(
+        max_curve_magnitude=6, max_curve_offset=1,
+        arrows=[0, 0.15, 0.3, 0.6, 0.7, 0.925], label='sys')
+    print("Encirclements =", nyqresp.count)
+    if savefigs:
+        plt.savefig('freqplot-nyquist-custom.png')
 
 
 def test_gangof4_plots(savefigs=False):

@@ -107,13 +107,13 @@ each other).  The following plot shows the use of `plot_inputs='overlay'`
 as well as the ability to reposition the legends using the `legend_map`
 keyword::
 
-    timepts = np.linspace(0, 10, 100)
-    U = np.vstack([np.sin(timepts), np.cos(2*timepts)])
-    ct.input_output_response(sys_mimo, timepts, U).plot(
-        plot_inputs='overlay',
-        legend_map=np.array([['lower right'], ['lower right']]),
-        title="I/O response for 2x2 MIMO system " +
-        "[plot_inputs='overlay', legend_map]")
+  timepts = np.linspace(0, 10, 100)
+  U = np.vstack([np.sin(timepts), np.cos(2*timepts)])
+  ct.input_output_response(sys_mimo, timepts, U).plot(
+      plot_inputs='overlay',
+      legend_map=np.array([['lower right'], ['lower right']]),
+      title="I/O response for 2x2 MIMO system " +
+      "[plot_inputs='overlay', legend_map]")
 
 .. image:: timeplot-mimo_ioresp-ov_lm.png
 
@@ -122,17 +122,17 @@ instead of plotting the outputs on the top and inputs on the bottom, the
 inputs are plotted on the left and outputs on the right, as shown in the
 following figure::
 
-    U1 = np.vstack([np.sin(timepts), np.cos(2*timepts)])
-    resp1 = ct.input_output_response(sys_mimo, timepts, U1)
+  U1 = np.vstack([np.sin(timepts), np.cos(2*timepts)])
+  resp1 = ct.input_output_response(sys_mimo, timepts, U1)
 
-    U2 = np.vstack([np.cos(2*timepts), np.sin(timepts)])
-    resp2 = ct.input_output_response(sys_mimo, timepts, U2)
+  U2 = np.vstack([np.cos(2*timepts), np.sin(timepts)])
+  resp2 = ct.input_output_response(sys_mimo, timepts, U2)
 
-    ct.combine_time_responses(
-        [resp1, resp2], trace_labels=["Scenario #1", "Scenario #2"]).plot(
-            transpose=True,
-            title="I/O responses for 2x2 MIMO system, multiple traces "
-            "[transpose]")
+  ct.combine_time_responses(
+      [resp1, resp2], trace_labels=["Scenario #1", "Scenario #2"]).plot(
+          transpose=True,
+          title="I/O responses for 2x2 MIMO system, multiple traces "
+          "[transpose]")
 
 .. image:: timeplot-mimo_ioresp-mt_tr.png
 
@@ -146,11 +146,11 @@ Additional customization is possible using the `input_props`,
 `output_props`, and `trace_props` keywords to set complementary line colors
 and styles for various signals and traces::
 
-    out = ct.step_response(sys_mimo).plot(
-        plot_inputs='overlay', overlay_signals=True, overlay_traces=True,
-        output_props=[{'color': c} for c in ['blue', 'orange']],
-        input_props=[{'color': c} for c in ['red', 'green']],
-        trace_props=[{'linestyle': s} for s in ['-', '--']])
+  out = ct.step_response(sys_mimo).plot(
+      plot_inputs='overlay', overlay_signals=True, overlay_traces=True,
+      output_props=[{'color': c} for c in ['blue', 'orange']],
+      input_props=[{'color': c} for c in ['red', 'green']],
+      trace_props=[{'linestyle': s} for s in ['-', '--']])
 
 .. image:: timeplot-mimo_step-linestyle.png
 
@@ -196,7 +196,7 @@ overlaying the inputs or outputs::
 
 .. image:: freqplot-mimo_bode-magonly.png
 
-The :func:`~ct.singular_values_response` function can be used to
+The :func:`~control.singular_values_response` function can be used to
 generate Bode plots that show the singular values of a transfer
 function::
 
@@ -213,15 +213,68 @@ plot, use `plot_type='nichols'`::
 .. image:: freqplot-siso_nichols-default.png
 
 Another response function that can be used to generate Bode plots is
-the :func:`~ct.gangof4` function, which computes the four primary
+the :func:`~control.gangof4` function, which computes the four primary
 sensitivity functions for a feedback control system in standard form::
 
-    proc = ct.tf([1], [1, 1, 1], name="process")
-    ctrl = ct.tf([100], [1, 5], name="control")
-    response = rect.gangof4_response(proc, ctrl)
-    ct.bode_plot(response)	# or response.plot()
+  proc = ct.tf([1], [1, 1, 1], name="process")
+  ctrl = ct.tf([100], [1, 5], name="control")
+  response = rect.gangof4_response(proc, ctrl)
+  ct.bode_plot(response)	# or response.plot()
 
 .. image:: freqplot-gangof4.png
+
+Nyquist analysys can be done using the :func:`~control.nyquist_response`
+function, which evaluates an LTI system along the Nyquist contour, and
+the :func:`~control.nyquist_plot` function, which generates a Nyquist plot::
+
+  sys = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='sys')
+  nyquist_plot(sys)
+
+.. image:: freqplot-nyquist-default.png
+
+The :func:`~control.nyquist_response` function can be used to compute
+the number of encirclement of the -1 point and can return the Nyquist
+contour that was used to generate the Nyquist curve.
+
+By default, the Nyquist response will generate small semicircles around
+poles that are on the imaginary axis.  In addition, portions of the Nyquist
+curve that far from the origin are scaled to a maximum value, with the line
+style is changed to reflect the scaling, and it is possible to offset the
+scaled portions to separate out the portions of the Nyquist curve at
+<math>\infty</math>.  A number of keyword parameters for both are available
+for :func:`~control.nyquist_response`and :func:`~control.nyquist_plot` to
+tune the computation of the Nyquist curve and the way the data are
+plotted::
+
+  sys = ct.tf([1, 0.2], [1, 0, 1]) * ct.tf([1], [1, 0])
+  nyqresp = ct.nyquist_response(sys)
+  nyqresp.plot(
+      max_curve_magnitude=6, max_curve_offset=1,
+      arrows=[0, 0.15, 0.3, 0.6, 0.7, 0.925], label='sys')
+  print("Encirclements =", nyqresp.count)
+
+.. image:: freqplot-nyquist-custom.png
+
+All frequency domain plotting functions will automatically compute the
+range of frequencies to plot based on the poles and zeros of the frequency
+response.  Frequency points can be explicitly specified by including an
+array of frequencies as a second argument (after the list of systems)::
+
+  sys1 = ct.tf([1], [1, 2, 1], name='sys1')
+  sys2 = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='sys2')
+  omega = np.logspace(-2, 2, 500)
+  ct.frequency_response([sys1, sys2], omega).plot(initial_phase=0)
+
+.. image:: freqplot-siso_bode-omega.png
+
+Alternatively. frequency ranges can be specified by passing a list of the
+form ``[wmin, wmax]``, where ``wmin`` and ``wmax`` are the minimum and
+maximum frequencies in the (log-spaced) frequency range::
+
+  response = ct.frequency_response([sys1, sys2], [1e-2, 1e2])
+
+The number of (log-spaced) points in the frequency can be specified using
+the ``omega_num`` keyword parameter.
 
 
 Pole/zero data
@@ -288,7 +341,7 @@ The default method for generating a phase plane plot is to provide a
 2D dynamical system along with a range of coordinates and time limit::
 
     sys = ct.nlsys(
-        lambda t, x, u, params: np.array([[0, 1], [-1, -1]]) @ x, 
+        lambda t, x, u, params: np.array([[0, 1], [-1, -1]]) @ x,
         states=['position', 'velocity'], inputs=0, name='damped oscillator')
     axis_limits = [-1, 1, -1, 1]
     T = 8
@@ -310,7 +363,7 @@ an inverted pendulum system, which is created using a mesh grid::
         m, l, b, g = params['m'], params['l'], params['b'], params['g']
         return [x[1], -b/m * x[1] + (g * l / m) * np.sin(x[0]) + u[0]/m]
     invpend = ct.nlsys(invpend_update, states=2, inputs=1, name='invpend')
-        
+
     ct.phase_plane_plot(
         invpend, [-2*pi, 2*pi, -2, 2], 5,
         gridtype='meshgrid', gridspec=[5, 8], arrows=3,
@@ -318,7 +371,7 @@ an inverted pendulum system, which is created using a mesh grid::
         params={'m': 1, 'l': 1, 'b': 0.2, 'g': 1})
     plt.xlabel(r"$\theta$ [rad]")
     plt.ylabel(r"$\dot\theta$ [rad/sec]")
-    
+
 .. image:: phaseplot-invpend-meshgrid.png
 
 This figure shows several features of more complex phase plane plots:
@@ -341,7 +394,7 @@ are part of the :mod:`~control.phaseplot` (pp) module::
                 -x[0] + x[1] * (1 - x[0]**2 - x[1]**2)]
     oscillator = ct.nlsys(
         oscillator_update, states=2, inputs=0, name='nonlinear oscillator')
-  
+
     ct.phase_plane_plot(oscillator, [-1.5, 1.5, -1.5, 1.5], 0.9)
     pp.streamlines(
         oscillator, np.array([[0, 0]]), 1.5,

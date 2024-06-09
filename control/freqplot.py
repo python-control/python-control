@@ -107,7 +107,7 @@ def bode_plot(
         List of LTI systems or :class:`FrequencyResponseData` objects.  A
         single system or frequency response can also be passed.
     omega : array_like, optoinal
-        List of frequencies in rad/sec over to plot over.  If not specified,
+        Set of frequencies in rad/sec over to plot over.  If not specified,
         this will be determined from the proporties of the systems.  Ignored
         if `data` is not a list of systems.
     *fmt : :func:`matplotlib.pyplot.plot` format string, optional
@@ -126,8 +126,6 @@ def bode_plot(
         graphs and display the margins at the top of the graph.  If set to
         'overlay', the values for the gain and phase margin are placed on
         the graph.  Setting display_margins turns off the axes grid.
-    margins_method : str, optional
-        Method to use in computing margins (see :func:`stability_margins`).
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
@@ -153,12 +151,16 @@ def bode_plot(
         If present, replace automatically generated label(s) with the given
         label(s).  If sysdata is a list, strings should be specified for each
         system.  If MIMO, strings required for each system, output, and input.
+    margins_method : str, optional
+        Method to use in computing margins (see :func:`stability_margins`).
     omega_limits : array_like of two values
-        Set limits for plotted frequency range. If Hz=True the limits
-        are in Hz otherwise in rad/s.
+        Set limits for plotted frequency range. If Hz=True the limits are
+        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
+        elements is equivalent to providing ``omega_limits``. Ignored if
+        data is not a list of systems.
     omega_num : int
         Number of samples to use for the frequeny range.  Defaults to
-        config.defaults['freqplot.number_of_samples'].  Ignore if data is
+        config.defaults['freqplot.number_of_samples'].  Ignored if data is
         not a list of systems.
     plot : bool, optional
         (legacy) If given, `bode_plot` returns the legacy return values
@@ -178,6 +180,10 @@ def bode_plot(
 
     The default values for Bode plot configuration parameters can be reset
     using the `config.defaults` dictionary, with module name 'bode'.
+
+    See Also
+    --------
+    frequency_response
 
     Notes
     -----
@@ -1182,12 +1188,6 @@ def nyquist_response(
         curves for each system are plotted on the same graph.
     omega : array_like, optional
         Set of frequencies to be evaluated, in rad/sec.
-    omega_limits : array_like of two values, optional
-        Limits to the range of frequencies. Ignored if omega is provided, and
-        auto-generated if omitted.
-    omega_num : int, optional
-        Number of frequency samples to plot.  Defaults to
-        config.defaults['freqplot.number_of_samples'].
 
     Returns
     -------
@@ -1208,23 +1208,25 @@ def nyquist_response(
         Define the threshold for generating a warning if the number of net
         encirclements is a non-integer value.  Default value is 0.05 and can
         be set using config.defaults['nyquist.encirclement_threshold'].
-
     indent_direction : str, optional
         For poles on the imaginary axis, set the direction of indentation to
         be 'right' (default), 'left', or 'none'.
-
     indent_points : int, optional
         Number of points to insert in the Nyquist contour around poles that
         are at or near the imaginary axis.
-
     indent_radius : float, optional
         Amount to indent the Nyquist contour around poles on or near the
         imaginary axis. Portions of the Nyquist plot corresponding to indented
         portions of the contour are plotted using a different line style.
-
+    omega_limits : array_like of two values
+        Set limits for plotted frequency range. If Hz=True the limits are
+        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
+        elements is equivalent to providing ``omega_limits``.
+    omega_num : int, optional
+        Number of samples to use for the frequeny range.  Defaults to
+        config.defaults['freqplot.number_of_samples'].
     warn_nyquist : bool, optional
         If set to 'False', turn off warnings about frequencies above Nyquist.
-
     warn_encirclements : bool, optional
         If set to 'False', turn off warnings about number of encirclements not
         meeting the Nyquist criterion.
@@ -1256,6 +1258,10 @@ def nyquist_response(
     4. If the legacy keyword `return_contour` is specified as True, the
        response object can be iterated over to return `count, contour`.
        This behavior is deprecated and will be removed in a future release.
+
+    See Also
+    --------
+    nyquist_plot
 
     Examples
     --------
@@ -1504,7 +1510,8 @@ def nyquist_response(
 
 def nyquist_plot(
         data, omega=None, plot=None, label_freq=0, color=None, label=None,
-        return_contour=None, title=None, legend_loc='upper right', **kwargs):
+        return_contour=None, title=None, legend_loc='upper right',
+        ax=None, **kwargs):
     """Nyquist plot for a system.
 
     Generates a Nyquist plot for the system over a (optional) frequency
@@ -1521,18 +1528,10 @@ def nyquist_plot(
         List of linear input/output systems (single system is OK) or
         Nyquist ersponses (computed using :func:`~control.nyquist_response`).
         Nyquist curves for each system are plotted on the same graph.
-
     omega : array_like, optional
-        Set of frequencies to be evaluated, in rad/sec.
-
-    omega_limits : array_like of two values, optional
-        Limits to the range of frequencies. Ignored if omega is provided, and
-        auto-generated if omitted.
-
-    omega_num : int, optional
-        Number of frequency samples to plot.  Defaults to
-        config.defaults['freqplot.number_of_samples'].
-
+        Set of frequencies to be evaluated, in rad/sec. Specifying
+        ``omega`` as a list of two elements is equivalent to providing
+        ``omega_limits``.
     color : string, optional
         Used to specify the color of the line and arrowhead.
 
@@ -1563,89 +1562,83 @@ def nyquist_plot(
         a 2D array is passed, the first row will be used to specify arrow
         locations for the primary curve and the second row will be used for
         the mirror image.
-
     arrow_size : float, optional
         Arrowhead width and length (in display coordinates).  Default value is
         8 and can be set using config.defaults['nyquist.arrow_size'].
-
     arrow_style : matplotlib.patches.ArrowStyle, optional
         Define style used for Nyquist curve arrows (overrides `arrow_size`).
-
     encirclement_threshold : float, optional
         Define the threshold for generating a warning if the number of net
         encirclements is a non-integer value.  Default value is 0.05 and can
         be set using config.defaults['nyquist.encirclement_threshold'].
-
     indent_direction : str, optional
         For poles on the imaginary axis, set the direction of indentation to
         be 'right' (default), 'left', or 'none'.
-
     indent_points : int, optional
         Number of points to insert in the Nyquist contour around poles that
         are at or near the imaginary axis.
-
     indent_radius : float, optional
         Amount to indent the Nyquist contour around poles on or near the
         imaginary axis. Portions of the Nyquist plot corresponding to indented
         portions of the contour are plotted using a different line style.
-
     label : str or array-like of str
         If present, replace automatically generated label(s) with the given
         label(s).  If sysdata is a list, strings should be specified for each
         system.
-
     label_freq : int, optiona
         Label every nth frequency on the plot.  If not specified, no labels
         are generated.
-
     max_curve_magnitude : float, optional
         Restrict the maximum magnitude of the Nyquist plot to this value.
         Portions of the Nyquist plot whose magnitude is restricted are
         plotted using a different line style.
-
     max_curve_offset : float, optional
         When plotting scaled portion of the Nyquist plot, increase/decrease
         the magnitude by this fraction of the max_curve_magnitude to allow
         any overlaps between the primary and mirror curves to be avoided.
-
     mirror_style : [str, str] or False
         Linestyles for mirror image of the Nyquist curve.  The first element
         is used for unscaled portions of the Nyquist curve, the second element
         is used for portions that are scaled (using max_curve_magnitude).  If
         `False` then omit completely.  Default linestyle (['--', ':']) is
         determined by config.defaults['nyquist.mirror_style'].
-
+    omega_limits : array_like of two values
+        Set limits for plotted frequency range. If Hz=True the limits are
+        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
+        elements is equivalent to providing ``omega_limits``.
+    omega_num : int, optional
+        Number of samples to use for the frequeny range.  Defaults to
+        config.defaults['freqplot.number_of_samples'].  Ignored if data is
+        not a list of systems.
     plot : bool, optional
         (legacy) If given, `bode_plot` returns the legacy return values
         of magnitude, phase, and frequency.  If False, just return the
         values with no plot.
-
     primary_style : [str, str], optional
         Linestyles for primary image of the Nyquist curve.  The first
         element is used for unscaled portions of the Nyquist curve,
         the second element is used for portions that are scaled (using
         max_curve_magnitude).  Default linestyle (['-', '-.']) is
         determined by config.defaults['nyquist.mirror_style'].
-
     return_contour : bool, optional
         (legacy) If 'True', return the encirclement count and Nyquist
         contour used to generate the Nyquist plot.
-
     start_marker : str, optional
         Matplotlib marker to use to mark the starting point of the Nyquist
         plot.  Defaults value is 'o' and can be set using
         config.defaults['nyquist.start_marker'].
-
     start_marker_size : float, optional
         Start marker size (in display coordinates).  Default value is
         4 and can be set using config.defaults['nyquist.start_marker_size'].
-
     warn_nyquist : bool, optional
         If set to 'False', turn off warnings about frequencies above Nyquist.
-
     warn_encirclements : bool, optional
         If set to 'False', turn off warnings about number of encirclements not
         meeting the Nyquist criterion.
+
+    See Also
+    --------
+    nyquist_response
 
     Notes
     -----
@@ -1787,6 +1780,12 @@ def nyquist_plot(
         # Return counts and (optionally) the contour we used
         return (counts, contours) if return_contour else counts
 
+    # Get the figure and axes to use
+    if ax is None:
+        fig, ax = plt.gcf(), plt.gca()
+    else:
+        fig = ax.figure
+
     # Create a list of lines for the output
     out = np.empty(len(nyquist_responses), dtype=object)
     for i in range(out.shape[0]):
@@ -1912,7 +1911,6 @@ def nyquist_plot(
                          prefix + 'Hz')
 
     # Label the axes
-    fig, ax = plt.gcf(), plt.gca()
     ax.set_xlabel("Real axis")
     ax.set_ylabel("Imaginary axis")
     ax.grid(color="lightgray")
@@ -2080,7 +2078,8 @@ def _compute_curve_offset(resp, mask, max_offset):
 #
 # Gang of Four plot
 #
-def gangof4_response(P, C, omega=None, Hz=False):
+def gangof4_response(
+        P, C, omega=None, omega_limits=None, omega_num=None, Hz=False):
     """Compute the response of the "Gang of 4" transfer functions for a system.
 
     Generates a 2x2 frequency response for the "Gang of 4" sensitivity
@@ -2089,9 +2088,9 @@ def gangof4_response(P, C, omega=None, Hz=False):
     Parameters
     ----------
     P, C : LTI
-        Linear input/output systems (process and control)
+        Linear input/output systems (process and control).
     omega : array
-        Range of frequencies (list or bounds) in rad/sec
+        Range of frequencies (list or bounds) in rad/sec.
 
     Returns
     -------
@@ -2119,8 +2118,8 @@ def gangof4_response(P, C, omega=None, Hz=False):
 
     # Select a default range if none is provided
     # TODO: This needs to be made more intelligent
-    if omega is None:
-        omega = _default_frequency_range((P, C, S), Hz=Hz)
+    omega, _ = _determine_omega_vector(
+        [P, C, S], omega, omega_limits, omega_num, Hz=Hz)
 
     #
     # bode_plot based implementation
@@ -2144,9 +2143,12 @@ def gangof4_response(P, C, omega=None, Hz=False):
         title=f"Gang of Four for P={P.name}, C={C.name}", plot_phase=False)
 
 
-def gangof4_plot(P, C, omega=None, **kwargs):
+def gangof4_plot(
+        P, C, omega=None, omega_limits=None, omega_num=None, **kwargs):
     """Legacy Gang of 4 plot; use gangof4_response().plot() instead."""
-    return gangof4_response(P, C).plot(**kwargs)
+    return gangof4_response(
+        P, C, omega=omega, omega_limits=omega_limits,
+        omega_num=omega_num).plot(**kwargs)
 
 #
 # Singular values plot
@@ -2164,21 +2166,29 @@ def singular_values_response(
         List of linear input/output systems (single system is OK).
     omega : array_like
         List of frequencies in rad/sec to be used for frequency response.
-    omega_limits : array_like of two values
-        Limits of the frequency vector to generate, in rad/s.
-    omega_num : int
-        Number of samples to plot. Default value (1000) set by
-        config.defaults['freqplot.number_of_samples'].
     Hz : bool, optional
         If True, when computing frequency limits automatically set
-        limits to full decades in Hz instead of rad/s. Omega is always
-        returned in rad/sec.
+        limits to full decades in Hz instead of rad/s.
 
     Returns
     -------
     response : FrequencyResponseData
         Frequency response with the number of outputs equal to the
         number of singular values in the response, and a single input.
+
+    Other Parameters
+    ----------------
+    omega_limits : array_like of two values
+        Set limits for plotted frequency range. If Hz=True the limits are
+        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
+        elements is equivalent to providing ``omega_limits``.
+    omega_num : int, optional
+        Number of samples to use for the frequeny range.  Defaults to
+        config.defaults['freqplot.number_of_samples'].
+
+    See Also
+    --------
+    singular_values_plot
 
     Examples
     --------
@@ -2247,14 +2257,14 @@ def singular_values_plot(
     Hz : bool
         If True, plot frequency in Hz (omega must be provided in rad/sec).
         Default value (False) set by config.defaults['freqplot.Hz'].
-    legend_loc : str, optional
-        For plots with multiple lines, a legend will be included in the
-        given location.  Default is 'center right'.  Use False to supress.
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
     Returns
     -------
+    legend_loc : str, optional
+        For plots with multiple lines, a legend will be included in the
+        given location.  Default is 'center right'.  Use False to supress.
     lines : array of Line2D
         1-D array of Line2D objects.  The size of the array matches
         the number of systems and the value of the array is a list of
@@ -2276,11 +2286,12 @@ def singular_values_plot(
         label(s).  If sysdata is a list, strings should be specified for each
         system.
     omega_limits : array_like of two values
-        Set limits for plotted frequency range. If Hz=True the limits
-        are in Hz otherwise in rad/s.
-    omega_num : int
+        Set limits for plotted frequency range. If Hz=True the limits are
+        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
+        elements is equivalent to providing ``omega_limits``.
+    omega_num : int, optional
         Number of samples to use for the frequeny range.  Defaults to
-        config.defaults['freqplot.number_of_samples'].  Ignore if data is
+        config.defaults['freqplot.number_of_samples'].  Ignored if data is
         not a list of systems.
     plot : bool, optional
         (legacy) If given, `singular_values_plot` returns the legacy return
@@ -2289,6 +2300,10 @@ def singular_values_plot(
     rcParams : dict
         Override the default parameters used for generating plots.
         Default is set up config.default['freqplot.rcParams'].
+
+    See Also
+    --------
+    singular_values_response
 
     """
     # Keyword processing
@@ -2474,24 +2489,32 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num,
     on omega_num points according to a default logic defined by
     _default_frequency_range and tailored for the list of systems syslist, and
     omega_range_given is set to False.
+
     If omega_in is None but omega_limits is an array-like of 2 elements, then
     omega_out is computed with the function np.logspace on omega_num points
     within the interval [min, max] =  [omega_limits[0], omega_limits[1]], and
     omega_range_given is set to True.
-    If omega_in is not None, then omega_out is set to omega_in,
-    and omega_range_given is set to True
+
+    If omega_in is a list or tuple of length 2, it is interpreted as a
+    range and handled like omega_limits.  If omega_in is a list or tuple of
+    length 3, it is interpreted a range plus number of points and handled
+    like omega_limits and omega_num.
+
+    If omega_in is an array or a list/tuple of length greater than
+    two, then omega_out is set to omega_in (as an array), and
+    omega_range_given is set to True
 
     Parameters
     ----------
     syslist : list of LTI
-        List of linear input/output systems (single system is OK)
+        List of linear input/output systems (single system is OK).
     omega_in : 1D array_like or None
-        Frequency range specified by the user
+        Frequency range specified by the user.
     omega_limits : 1D array_like or None
-        Frequency limits specified by the user
+        Frequency limits specified by the user.
     omega_num : int
-        Number of points to be used for the frequency
-        range (if the frequency range is not user-specified)
+        Number of points to be used for the frequency range (if the
+        frequency range is not user-specified).
     Hz : bool, optional
         If True, the limits (first and last value) of the frequencies
         are set to full decades in Hz so it fits plotting with logarithmic
@@ -2500,22 +2523,34 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num,
     Returns
     -------
     omega_out : 1D array
-        Frequency range to be used
+        Frequency range to be used.
     omega_range_given : bool
         True if the frequency range was specified by the user, either through
         omega_in or through omega_limits. False if both omega_in
         and omega_limits are None.
-    """
-    omega_range_given = True
 
+    """
+    # Special processing for FRD systems
+    # TODO: allow different ranges of frequencies
     if omega_in is None:
         for sys in syslist:
             if isinstance(sys, FrequencyResponseData):
                 # FRD already has predetermined frequencies
                 if omega_in is not None and not np.all(omega_in == sys.omega):
-                    raise ValueError("List of FrequencyResponseData systems can only have a single frequency range between them")
+                    raise ValueError(
+                        "List of FrequencyResponseData systems can only have "
+                        "a single frequency range between them")
                 omega_in = sys.omega
 
+    # Handle the special case of a range of frequencies
+    if omega_in is not None and omega_limits is not None:
+        warnings.warn(
+            "omega and omega_limits both specified; ignoring limits")
+    elif isinstance(omega_in, (list, tuple)) and len(omega_in) == 2:
+        omega_limits = omega_in
+        omega_in = None
+
+    omega_range_given = True
     if omega_in is None:
         if omega_limits is None:
             omega_range_given = False
