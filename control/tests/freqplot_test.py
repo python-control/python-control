@@ -462,6 +462,37 @@ def test_freqplot_trace_labels(plt_fcn):
         plt.close()
 
 
+
+@pytest.mark.parametrize(
+    "plt_fcn", [ct.bode_plot, ct.singular_values_plot, ct.nyquist_plot])
+@pytest.mark.parametrize(
+    "ninputs, noutputs", [(1, 1), (1, 2), (2, 1), (2, 3)])
+def test_freqplot_ax_keyword(plt_fcn, ninputs, noutputs):
+    if plt_fcn == ct.nyquist_plot and (ninputs != 1 or noutputs != 1):
+        pytest.skip("MIMO not implemented for Nyquist")
+
+    # System to use
+    sys = ct.rss(4, ninputs, noutputs)
+
+    # Create an initial figure
+    out1 = plt_fcn(sys)
+
+    # Draw again on the same figure, using array
+    axs = ct.get_plot_axes(out1)
+    out2 = plt_fcn(sys, ax=axs)
+    np.testing.assert_equal(ct.get_plot_axes(out1), ct.get_plot_axes(out2))
+
+    # Pass things in as a list instead
+    axs_list = axs.tolist()
+    out3 = plt_fcn(sys, ax=axs)
+    np.testing.assert_equal(ct.get_plot_axes(out1), ct.get_plot_axes(out3))
+
+    # Flatten the list
+    axs_list = axs.squeeze().tolist()
+    out3 = plt_fcn(sys, ax=axs_list)
+    np.testing.assert_equal(ct.get_plot_axes(out1), ct.get_plot_axes(out3))
+
+
 @pytest.mark.parametrize("plt_fcn", [ct.bode_plot, ct.singular_values_plot])
 def test_freqplot_errors(plt_fcn):
     if plt_fcn == ct.bode_plot:

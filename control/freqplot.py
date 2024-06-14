@@ -458,47 +458,13 @@ def bode_plot(
             (noutputs if plot_phase else 0)
         ncols = ninputs
 
-    # See if we can use the current figure axes
-    fig = plt.gcf()         # get current figure (or create new one)
-    if ax is None and plt.get_fignums():
-        ax = fig.get_axes()
-        if len(ax) == nrows * ncols:
-            # Assume that the shape is right (no easy way to infer this)
-            ax = np.array(ax).reshape(nrows, ncols)
-
-            # Clear out any old text from the current figure
-            for text in fig.texts:
-                text.set_visible(False)         # turn off the text
-                del text                        # get rid of it completely
-
-        elif len(ax) != 0:
-            # Need to generate a new figure
-            fig, ax = plt.figure(), None
-
-        else:
-            # Blank figure, just need to recreate axes
-            ax = None
-
-    # Create new axes, if needed, and customize them
     if ax is None:
-        with plt.rc_context(_freqplot_rcParams):
-            ax_array = fig.subplots(nrows, ncols, squeeze=False)
-            fig.set_layout_engine('tight')
-            fig.align_labels()
-
         # Set up default sharing of axis limits if not specified
         for kw in ['share_magnitude', 'share_phase', 'share_frequency']:
             if kw not in kwargs or kwargs[kw] is None:
                 kwargs[kw] = config.defaults['freqplot.' + kw]
 
-    else:
-        # Make sure the axes are the right shape
-        if ax.shape != (nrows, ncols):
-            raise ValueError(
-                "specified axes are not the right shape; "
-                f"got {ax.shape} but expecting ({nrows}, {ncols})")
-        ax_array = ax
-        fig = ax_array[0, 0].figure     # just in case this is not gcf()
+    fig, ax_array = _process_ax_keyword(ax, (nrows, ncols), squeeze=False)
 
     # Get the values for sharing axes limits
     share_magnitude = kwargs.pop('share_magnitude', None)
@@ -1780,11 +1746,8 @@ def nyquist_plot(
         # Return counts and (optionally) the contour we used
         return (counts, contours) if return_contour else counts
 
-    # Get the figure and axes to use
-    if ax is None:
-        fig, ax = plt.gcf(), plt.gca()
-    else:
-        fig = ax.figure
+    fig, ax = _process_ax_keyword(
+        ax, shape=(1, 1), squeeze=True, rcParams=_freqplot_rcParams)
 
     # Create a list of lines for the output
     out = np.empty(len(nyquist_responses), dtype=object)
@@ -2235,7 +2198,7 @@ def singular_values_response(
 
 def singular_values_plot(
         data, omega=None, *fmt, plot=None, omega_limits=None, omega_num=None,
-        label=None, title=None, legend_loc='center right', **kwargs):
+        ax=None, label=None, title=None, legend_loc='center right', **kwargs):
     """Plot the singular values for a system.
 
     Plot the singular values as a function of frequency for a system or
@@ -2364,22 +2327,8 @@ def singular_values_plot(
         else:
             return sigmas, omegas
 
-    fig = plt.gcf()             # get current figure (or create new one)
-    ax_sigma = None             # axes for plotting singular values
-
-    # Get the current axes if they already exist
-    for ax in fig.axes:
-        if ax.get_label() == 'control-sigma':
-            ax_sigma = ax
-
-    # If no axes present, create them from scratch
-    if ax_sigma is None:
-        if len(fig.axes) > 0:
-            # Create a new figure to avoid overwriting in the old one
-            fig = plt.figure()
-
-        with plt.rc_context(_freqplot_rcParams):
-            ax_sigma = plt.subplot(111, label='control-sigma')
+    fig, ax_sigma = _process_ax_keyword(ax, shape=(1, 1), squeeze=True)
+    ax_sigma.set_label('control-sigma')         # TODO: deprecate?
 
     # Handle color cycle manually as all singular values
     # of the same systems are expected to be of the same color
@@ -2475,7 +2424,7 @@ def singular_values_plot(
 # Utility functions
 #
 # This section of the code contains some utility functions for
-# generating frequency domain plots
+# generating frequency domain plots.
 #
 
 
@@ -2741,6 +2690,57 @@ def _process_line_labels(label, nsys, ninputs=0, noutputs=0):
 
     return line_labels
 
+
+def _process_ax_keyword(axs, shape=(1, 1), rcParams=None, squeeze=False):
+    """Utility function to process ax keyword to plotting commands.
+
+    This function processes the `ax` keyword to plotting commands.  If no
+    ax keyword is passed, the current figure is checked to see if it has
+    the correct shape.  If the shape matches the desired shape, then the
+    current figure and axes are returned.  Otherwise a new figure is
+    created with axes of the desired shape.
+
+    Legacy behavior: some of the older plotting commands use a axes label
+    to identify the proper axes for plotting.  This behavior is supported
+    through the use of the label keyword, but will only work if shape ==
+    (1, 1) and squeeze == True.
+
+    """
+    if axs is None:
+        fig = plt.gcf()         # get current figure (or create new one)
+        axs = fig.get_axes()
+
+        # Check to see if axes are the right shape; if not, create new figure
+        # Note: can't actually check the shape, just the total number of axes
+        if len(axs) != np.prod(shape):
+            with plt.rc_context(rcParams):
+                if len(axs) != 0:
+                    # Create a new figure
+                    fig, axs = plt.subplots(*shape, squeeze=False)
+                else:
+                    # Create new axes on (empty) figure
+                    axs = fig.subplots(*shape, squeeze=False)
+            fig.set_layout_engine('tight')
+            fig.align_labels()
+        else:
+            # Use the existing axes, properly reshaped
+            axs = np.asarray(axs).reshape(*shape)
+    else:
+        try:
+            axs = np.asarray(axs).reshape(shape)
+        except ValueError:
+            raise ValueError(
+                "specified axes are not the right shape; "
+                f"got {axs.shape} but expecting {shape}")
+        fig = axs[0, 0].figure
+
+    # Process the squeeze keyword
+    if squeeze and shape == (1, 1):
+        axs = axs[0, 0]         # Just return the single axes object
+    elif squeeze:
+        axs = axs.squeeze()
+
+    return fig, axs
 
 #
 # Utility functions to create nice looking labels (KLD 5/23/11)
