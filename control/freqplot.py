@@ -227,7 +227,7 @@ def bode_plot(
         'freqplot', 'wrap_phase', kwargs, _freqplot_defaults, pop=True)
     initial_phase = config._get_param(
         'freqplot', 'initial_phase', kwargs, None, pop=True)
-    freqplot_rcParams = config._get_param(
+    rcParams = config._get_param(
         'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
 
     # Set the default labels
@@ -464,7 +464,8 @@ def bode_plot(
             if kw not in kwargs or kwargs[kw] is None:
                 kwargs[kw] = config.defaults['freqplot.' + kw]
 
-    fig, ax_array = _process_ax_keyword(ax, (nrows, ncols), squeeze=False)
+    fig, ax_array = _process_ax_keyword(ax, (
+        nrows, ncols), squeeze=False, rcParams=rcParams, clear_text=True)
 
     # Get the values for sharing axes limits
     share_magnitude = kwargs.pop('share_magnitude', None)
@@ -787,7 +788,7 @@ def bode_plot(
                 axes_title = ax.get_title()
                 if axes_title is not None and axes_title != "":
                     axes_title += "\n"
-                with plt.rc_context(_freqplot_rcParams):
+                with plt.rc_context(rcParams):
                     ax.set_title(
                         axes_title + f"{sysname}: "
                         "Gm = %.2f %s(at %.2f %s), "
@@ -907,7 +908,7 @@ def bode_plot(
                 new_title = old_title + separator + new_title[common_len:]
 
         # Add the title
-        with plt.rc_context(freqplot_rcParams):
+        with plt.rc_context(rcParams):
             fig.suptitle(new_title)
 
     #
@@ -927,7 +928,7 @@ def bode_plot(
         # If we have more than one column, label the individual responses
         if (noutputs > 1 and not overlay_outputs or ninputs > 1) \
            and not overlay_inputs:
-            with plt.rc_context(_freqplot_rcParams):
+            with plt.rc_context(rcParams):
                 ax_array[0, j].set_title(f"From {data[0].input_labels[j]}")
 
         # Label the frequency axis
@@ -973,7 +974,7 @@ def bode_plot(
                 fig.text(
                     0.8 * xpos, ypos, f"To {data[0].output_labels[i]}\n",
                     rotation=90, ha='left', va='center',
-                    fontsize=_freqplot_rcParams['axes.titlesize'])
+                    fontsize=rcParams['axes.titlesize'])
             else:
                 # Only a single axes => add label to the left
                 ax_array[i, 0].set_ylabel(
@@ -1024,7 +1025,7 @@ def bode_plot(
 
             # Generate the label, if needed
             if len(labels) > 1 and legend_map[i, j] != None:
-                with plt.rc_context(freqplot_rcParams):
+                with plt.rc_context(rcParams):
                     ax.legend(lines, labels, loc=legend_map[i, j])
 
     #
@@ -1586,6 +1587,9 @@ def nyquist_plot(
         the second element is used for portions that are scaled (using
         max_curve_magnitude).  Default linestyle (['-', '-.']) is
         determined by config.defaults['nyquist.mirror_style'].
+    rcParams : dict
+        Override the default parameters used for generating plots.
+        Default is set by config.default['freqplot.rcParams'].
     return_contour : bool, optional
         (legacy) If 'True', return the encirclement count and Nyquist
         contour used to generate the Nyquist plot.
@@ -1661,6 +1665,8 @@ def nyquist_plot(
         'nyquist', 'max_curve_magnitude', kwargs, _nyquist_defaults, pop=True)
     max_curve_offset = config._get_param(
         'nyquist', 'max_curve_offset', kwargs, _nyquist_defaults, pop=True)
+    rcParams = config._get_param(
+        'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
     start_marker = config._get_param(
         'nyquist', 'start_marker', kwargs, _nyquist_defaults, pop=True)
     start_marker_size = config._get_param(
@@ -1747,7 +1753,7 @@ def nyquist_plot(
         return (counts, contours) if return_contour else counts
 
     fig, ax = _process_ax_keyword(
-        ax, shape=(1, 1), squeeze=True, rcParams=_freqplot_rcParams)
+        ax, shape=(1, 1), squeeze=True, rcParams=rcParams)
 
     # Create a list of lines for the output
     out = np.empty(len(nyquist_responses), dtype=object)
@@ -1888,7 +1894,8 @@ def nyquist_plot(
     # Add the title
     if title is None:
         title = "Nyquist plot for " + ", ".join(labels)
-    fig.suptitle(title)
+    with plt.rc_context(rcParams):
+        fig.suptitle(title)
 
     # Legacy return pocessing
     if plot is True or return_contour is not None:
@@ -2276,7 +2283,7 @@ def singular_values_plot(
         'freqplot', 'Hz', kwargs, _freqplot_defaults, pop=True)
     grid = config._get_param(
         'freqplot', 'grid', kwargs, _freqplot_defaults, pop=True)
-    freqplot_rcParams = config._get_param(
+    rcParams = config._get_param(
         'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
 
     # If argument was a singleton, turn it into a tuple
@@ -2327,7 +2334,8 @@ def singular_values_plot(
         else:
             return sigmas, omegas
 
-    fig, ax_sigma = _process_ax_keyword(ax, shape=(1, 1), squeeze=True)
+    fig, ax_sigma = _process_ax_keyword(
+        ax, shape=(1, 1), squeeze=True, rcParams=rcParams)
     ax_sigma.set_label('control-sigma')         # TODO: deprecate?
 
     # Handle color cycle manually as all singular values
@@ -2370,14 +2378,12 @@ def singular_values_plot(
 
         # Plot the data
         if dB:
-            with plt.rc_context(freqplot_rcParams):
-                out[idx_sys] = ax_sigma.semilogx(
-                    omega, 20 * np.log10(sigma), *fmt,
-                    label=label, **color_arg, **kwargs)
+            out[idx_sys] = ax_sigma.semilogx(
+                omega, 20 * np.log10(sigma), *fmt,
+                label=label, **color_arg, **kwargs)
         else:
-            with plt.rc_context(freqplot_rcParams):
-                out[idx_sys] = ax_sigma.loglog(
-                    omega, sigma, label=label, *fmt, **color_arg, **kwargs)
+            out[idx_sys] = ax_sigma.loglog(
+                omega, sigma, label=label, *fmt, **color_arg, **kwargs)
 
         # Plot the Nyquist frequency
         if nyq_freq is not None:
@@ -2392,23 +2398,23 @@ def singular_values_plot(
     # Add a grid to the plot + labeling
     if grid:
         ax_sigma.grid(grid, which='both')
-    with plt.rc_context(freqplot_rcParams):
-        ax_sigma.set_ylabel(
-            "Singular Values [dB]" if dB else "Singular Values")
-        ax_sigma.set_xlabel("Frequency [Hz]" if Hz else "Frequency [rad/sec]")
+        
+    ax_sigma.set_ylabel(
+        "Singular Values [dB]" if dB else "Singular Values")
+    ax_sigma.set_xlabel("Frequency [Hz]" if Hz else "Frequency [rad/sec]")
 
     # List of systems that are included in this plot
     lines, labels = _get_line_labels(ax_sigma)
 
     # Add legend if there is more than one system plotted
     if len(labels) > 1 and legend_loc is not False:
-        with plt.rc_context(freqplot_rcParams):
+        with plt.rc_context(rcParams):
             ax_sigma.legend(lines, labels, loc=legend_loc)
 
     # Add the title
     if title is None:
         title = "Singular values for " + ", ".join(labels)
-    with plt.rc_context(freqplot_rcParams):
+    with plt.rc_context(rcParams):
         fig.suptitle(title)
 
     # Legacy return processing
@@ -2691,7 +2697,8 @@ def _process_line_labels(label, nsys, ninputs=0, noutputs=0):
     return line_labels
 
 
-def _process_ax_keyword(axs, shape=(1, 1), rcParams=None, squeeze=False):
+def _process_ax_keyword(
+        axs, shape=(1, 1), rcParams=None, squeeze=False, clear_text=False):
     """Utility function to process ax keyword to plotting commands.
 
     This function processes the `ax` keyword to plotting commands.  If no
@@ -2725,6 +2732,12 @@ def _process_ax_keyword(axs, shape=(1, 1), rcParams=None, squeeze=False):
         else:
             # Use the existing axes, properly reshaped
             axs = np.asarray(axs).reshape(*shape)
+
+            if clear_text:
+                # Clear out any old text from the current figure
+                for text in fig.texts:
+                    text.set_visible(False)     # turn off the text
+                    del text                    # get rid of it completely
     else:
         try:
             axs = np.asarray(axs).reshape(shape)
