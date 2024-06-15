@@ -56,7 +56,7 @@ _freqplot_defaults = {
     'freqplot.Hz': False,  # Plot frequency in Hertz
     'freqplot.grid': True,  # Turn on grid for gain and phase
     'freqplot.wrap_phase': False,  # Wrap the phase plot at a given value
-    'freqplot.freq_label': "Frequency [%s]",
+    'freqplot.freq_label': "Frequency [{units}]",
     'freqplot.share_magnitude': 'row',
     'freqplot.share_phase': 'row',
     'freqplot.share_frequency': 'col',
@@ -894,7 +894,8 @@ def bode_plot(
                 ax_array[0, j].set_title(f"From {data[0].input_labels[j]}")
 
         # Label the frequency axis
-        ax_array[-1, j].set_xlabel(freq_label % ("Hz" if Hz else "rad/s",))
+        ax_array[-1, j].set_xlabel(
+            freq_label.format(units="Hz" if Hz else "rad/s"))
 
     # Label the rows
     for i in range(noutputs if not overlay_outputs else 1):
