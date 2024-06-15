@@ -8,24 +8,26 @@
 # charts is in nichols.py.  The code for pole-zero diagrams is in pzmap.py
 # and rlocus.py.
 
-import numpy as np
-import matplotlib as mpl
-import matplotlib.pyplot as plt
+import itertools
 import math
 import warnings
-import itertools
 from os.path import commonprefix
 
-from .ctrlutil import unwrap
-from .bdalg import feedback
-from .margins import stability_margins
-from .exception import ControlMIMONotImplemented
-from .statesp import StateSpace
-from .lti import LTI, frequency_response, _process_frequency_response
-from .xferfcn import TransferFunction
-from .frdata import FrequencyResponseData
-from .timeplot import _make_legend_labels
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+
 from . import config
+from .bdalg import feedback
+from .ctrlutil import unwrap
+from .exception import ControlMIMONotImplemented
+from .frdata import FrequencyResponseData
+from .lti import LTI, _process_frequency_response, frequency_response
+from .margins import stability_margins
+from .plotutil import suptitle, _find_axes_center
+from .statesp import StateSpace
+from .timeplot import _make_legend_labels
+from .xferfcn import TransferFunction
 
 __all__ = ['bode_plot', 'NyquistResponseData', 'nyquist_response',
            'nyquist_plot', 'singular_values_response',
@@ -33,6 +35,7 @@ __all__ = ['bode_plot', 'NyquistResponseData', 'nyquist_response',
            'bode', 'nyquist', 'gangof4']
 
 # Default font dictionary
+# TODO: move common plotting params to 'ctrlplot' (in plotutil)
 _freqplot_rcParams = mpl.rcParams.copy()
 _freqplot_rcParams.update({
     'axes.labelsize': 'small',
@@ -57,6 +60,7 @@ _freqplot_defaults = {
     'freqplot.share_magnitude': 'row',
     'freqplot.share_phase': 'row',
     'freqplot.share_frequency': 'col',
+    'freqplot.suptitle_frame': 'axes',
 }
 
 #
@@ -229,6 +233,8 @@ def bode_plot(
         'freqplot', 'initial_phase', kwargs, None, pop=True)
     rcParams = config._get_param(
         'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
+    suptitle_frame = config._get_param(
+        'freqplot', 'suptitle_frame', kwargs, _freqplot_defaults, pop=True)
 
     # Set the default labels
     freq_label = config._get_param(
@@ -803,7 +809,7 @@ def bode_plot(
     #
     # Finishing handling axes limit sharing
     #
-    # This code handles labels on phase plots and also removes tick labels
+    # This code handles labels on Bode plots and also removes tick labels
     # on shared axes.  It needs to come *after* the plots are generated,
     # in order to handle two things:
     #
@@ -868,6 +874,66 @@ def bode_plot(
             ax_array[i, j].set_xlim(omega_limits)
 
     #
+    # Label the axes (including header labels)
+    #
+    # Once the data are plotted, we label the axes.  The horizontal axes is
+    # always frequency and this is labeled only on the bottom most row.  The
+    # vertical axes can consist either of a single signal or a combination
+    # of signals (when overlay_inputs or overlay_outputs is True)
+    #
+    # Input/output signals are give at the top of columns and left of rows
+    # when these are individually plotted.
+    #
+
+    # Label the columns (do this first to get row labels in the right spot)
+    for j in range(ncols):
+        # If we have more than one column, label the individual responses
+        if (noutputs > 1 and not overlay_outputs or ninputs > 1) \
+           and not overlay_inputs:
+            with plt.rc_context(rcParams):
+                ax_array[0, j].set_title(f"From {data[0].input_labels[j]}")
+
+        # Label the frequency axis
+        ax_array[-1, j].set_xlabel(freq_label % ("Hz" if Hz else "rad/s",))
+
+    # Label the rows
+    for i in range(noutputs if not overlay_outputs else 1):
+        if plot_magnitude:
+            ax_mag = ax_array[mag_map[i, 0]]
+            ax_mag.set_ylabel(magnitude_label)
+        if plot_phase:
+            ax_phase = ax_array[phase_map[i, 0]]
+            ax_phase.set_ylabel(phase_label)
+
+        if (noutputs > 1 or ninputs > 1) and not overlay_outputs:
+            if plot_magnitude and plot_phase:
+                # Get existing ylabel for left column and add a blank line
+                ax_mag.set_ylabel("\n" + ax_mag.get_ylabel())
+                ax_phase.set_ylabel("\n" + ax_phase.get_ylabel())
+
+                # Find the midpoint between the row axes (+ tight_layout)
+                _, ypos = _find_axes_center(fig, [ax_mag, ax_phase])
+
+                # Get the bounding box including the labels
+                inv_transform = fig.transFigure.inverted()
+                mag_bbox = inv_transform.transform(
+                    ax_mag.get_tightbbox(fig.canvas.get_renderer()))
+
+                # Figure out location for the text (center left in figure frame)
+                xpos = mag_bbox[0, 0]               # left edge
+
+                # Put a centered label as text outside the box
+                fig.text(
+                    0.8 * xpos, ypos, f"To {data[0].output_labels[i]}\n",
+                    rotation=90, ha='left', va='center',
+                    fontsize=rcParams['axes.titlesize'])
+            else:
+                # Only a single axes => add label to the left
+                ax_array[i, 0].set_ylabel(
+                    f"To {data[0].output_labels[i]}\n" +
+                    ax_array[i, 0].get_ylabel())
+
+    #
     # Update the plot title (= figure suptitle)
     #
     # If plots are built up by multiple calls to plot() and the title is
@@ -908,78 +974,7 @@ def bode_plot(
                 new_title = old_title + separator + new_title[common_len:]
 
         # Add the title
-        with plt.rc_context(rcParams):
-            fig.suptitle(new_title)
-
-    #
-    # Label the axes (including header labels)
-    #
-    # Once the data are plotted, we label the axes.  The horizontal axes is
-    # always frequency and this is labeled only on the bottom most row.  The
-    # vertical axes can consist either of a single signal or a combination
-    # of signals (when overlay_inputs or overlay_outputs is True)
-    #
-    # Input/output signals are give at the top of columns and left of rows
-    # when these are individually plotted.
-    #
-
-    # Label the columns (do this first to get row labels in the right spot)
-    for j in range(ncols):
-        # If we have more than one column, label the individual responses
-        if (noutputs > 1 and not overlay_outputs or ninputs > 1) \
-           and not overlay_inputs:
-            with plt.rc_context(rcParams):
-                ax_array[0, j].set_title(f"From {data[0].input_labels[j]}")
-
-        # Label the frequency axis
-        ax_array[-1, j].set_xlabel(freq_label % ("Hz" if Hz else "rad/s",))
-
-    # Label the rows
-    for i in range(noutputs if not overlay_outputs else 1):
-        if plot_magnitude:
-            ax_mag = ax_array[mag_map[i, 0]]
-            ax_mag.set_ylabel(magnitude_label)
-        if plot_phase:
-            ax_phase = ax_array[phase_map[i, 0]]
-            ax_phase.set_ylabel(phase_label)
-
-        if (noutputs > 1 or ninputs > 1) and not overlay_outputs:
-            if plot_magnitude and plot_phase:
-                # Get existing ylabel for left column and add a blank line
-                ax_mag.set_ylabel("\n" + ax_mag.get_ylabel())
-                ax_phase.set_ylabel("\n" + ax_phase.get_ylabel())
-
-                # TODO: remove?
-                # Redraw the figure to get the proper locations for everything
-                # fig.tight_layout()
-
-                # Get the bounding box including the labels
-                inv_transform = fig.transFigure.inverted()
-                mag_bbox = inv_transform.transform(
-                    ax_mag.get_tightbbox(fig.canvas.get_renderer()))
-                phase_bbox = inv_transform.transform(
-                    ax_phase.get_tightbbox(fig.canvas.get_renderer()))
-
-                # Get the axes limits without labels for use in the y position
-                mag_bot = inv_transform.transform(
-                    ax_mag.transAxes.transform((0, 0)))[1]
-                phase_top = inv_transform.transform(
-                    ax_phase.transAxes.transform((0, 1)))[1]
-
-                # Figure out location for the text (center left in figure frame)
-                xpos = mag_bbox[0, 0]               # left edge
-                ypos = (mag_bot + phase_top) / 2    # centered between axes
-
-                # Put a centered label as text outside the box
-                fig.text(
-                    0.8 * xpos, ypos, f"To {data[0].output_labels[i]}\n",
-                    rotation=90, ha='left', va='center',
-                    fontsize=rcParams['axes.titlesize'])
-            else:
-                # Only a single axes => add label to the left
-                ax_array[i, 0].set_ylabel(
-                    f"To {data[0].output_labels[i]}\n" +
-                    ax_array[i, 0].get_ylabel())
+        suptitle(title, fig=fig, rcParams=rcParams, frame=suptitle_frame)
 
     #
     # Create legends
@@ -1671,6 +1666,8 @@ def nyquist_plot(
         'nyquist', 'start_marker', kwargs, _nyquist_defaults, pop=True)
     start_marker_size = config._get_param(
         'nyquist', 'start_marker_size', kwargs, _nyquist_defaults, pop=True)
+    suptitle_frame = config._get_param(
+        'freqplot', 'suptitle_frame', kwargs, _freqplot_defaults, pop=True)
 
     # Set line styles for the curves
     def _parse_linestyle(style_name, allow_false=False):
@@ -1894,8 +1891,7 @@ def nyquist_plot(
     # Add the title
     if title is None:
         title = "Nyquist plot for " + ", ".join(labels)
-    with plt.rc_context(rcParams):
-        fig.suptitle(title)
+    suptitle(title, fig=fig, rcParams=rcParams, frame=suptitle_frame)
 
     # Legacy return pocessing
     if plot is True or return_contour is not None:
@@ -2285,6 +2281,8 @@ def singular_values_plot(
         'freqplot', 'grid', kwargs, _freqplot_defaults, pop=True)
     rcParams = config._get_param(
         'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
+    suptitle_frame = config._get_param(
+        'freqplot', 'suptitle_frame', kwargs, _freqplot_defaults, pop=True)
 
     # If argument was a singleton, turn it into a tuple
     data = data if isinstance(data, (list, tuple)) else (data,)
@@ -2398,7 +2396,7 @@ def singular_values_plot(
     # Add a grid to the plot + labeling
     if grid:
         ax_sigma.grid(grid, which='both')
-        
+
     ax_sigma.set_ylabel(
         "Singular Values [dB]" if dB else "Singular Values")
     ax_sigma.set_xlabel("Frequency [Hz]" if Hz else "Frequency [rad/sec]")
@@ -2414,8 +2412,7 @@ def singular_values_plot(
     # Add the title
     if title is None:
         title = "Singular values for " + ", ".join(labels)
-    with plt.rc_context(rcParams):
-        fig.suptitle(title)
+    suptitle(title, fig=fig, rcParams=rcParams, frame=suptitle_frame)
 
     # Legacy return processing
     if plot is not None:
@@ -2754,6 +2751,7 @@ def _process_ax_keyword(
         axs = axs.squeeze()
 
     return fig, axs
+
 
 #
 # Utility functions to create nice looking labels (KLD 5/23/11)

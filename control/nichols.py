@@ -13,17 +13,18 @@ nichols.nichols_plot aliased as nichols.nichols
 nichols.nichols_grid
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.transforms
+import numpy as np
 
+from . import config
 from .ctrlutil import unwrap
 from .freqplot import _default_frequency_range, _freqplot_defaults, \
-    _get_line_labels
+    _get_line_labels, _process_ax_keyword
 from .lti import frequency_response
+from .plotutil import suptitle
 from .statesp import StateSpace
 from .xferfcn import TransferFunction
-from . import config
 
 __all__ = ['nichols_plot', 'nichols', 'nichols_grid']
 
@@ -34,7 +35,7 @@ _nichols_defaults = {
 
 
 def nichols_plot(
-        data, omega=None, *fmt, grid=None, title=None,
+        data, omega=None, *fmt, grid=None, title=None, ax=None,
         legend_loc='upper left', **kwargs):
     """Nichols plot for a system.
 
@@ -67,7 +68,7 @@ def nichols_plot(
     """
     # Get parameter values
     grid = config._get_param('nichols', 'grid', grid, True)
-    freqplot_rcParams = config._get_param(
+    rcParams = config._get_param(
         'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
 
     # If argument was a singleton, turn it into a list
@@ -82,6 +83,8 @@ def nichols_plot(
     # Make sure that all systems are SISO
     if any([resp.ninputs > 1 or resp.noutputs > 1 for resp in data]):
         raise NotImplementedError("MIMO Nichols plots not implemented")
+
+    fig, ax_nichols = _process_ax_keyword(ax, rcParams=rcParams, squeeze=True)
 
     # Create a list of lines for the output
     out = np.empty(len(data), dtype=object)
@@ -102,8 +105,7 @@ def nichols_plot(
             else f"Unknown-{idx_sys}"
 
         # Generate the plot
-        with plt.rc_context(freqplot_rcParams):
-            out[idx] = plt.plot(x, y, *fmt, label=sysname, **kwargs)
+        out[idx] = ax_nichols.plot(x, y, *fmt, label=sysname, **kwargs)
 
     # Label the plot axes
     plt.xlabel('Phase [deg]')
@@ -117,19 +119,17 @@ def nichols_plot(
         nichols_grid()
 
     # List of systems that are included in this plot
-    ax_nichols = plt.gca()
     lines, labels = _get_line_labels(ax_nichols)
 
     # Add legend if there is more than one system plotted
     if len(labels) > 1 and legend_loc is not False:
-        with plt.rc_context(freqplot_rcParams):
+        with plt.rc_context(rcParams):
             ax_nichols.legend(lines, labels, loc=legend_loc)
 
     # Add the title
     if title is None:
         title = "Nichols plot for " + ", ".join(labels)
-    with plt.rc_context(freqplot_rcParams):
-        plt.suptitle(title)
+    suptitle(title, fig=fig, rcParams=rcParams)
 
     return out
 

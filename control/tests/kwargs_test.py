@@ -21,6 +21,7 @@ import control.flatsys
 # List of all of the test modules where kwarg unit tests are defined
 import control.tests.flatsys_test as flatsys_test
 import control.tests.frd_test as frd_test
+import control.tests.freqplot_test as freqplot_test
 import control.tests.interconnect_test as interconnect_test
 import control.tests.optimal_test as optimal_test
 import control.tests.statefbk_test as statefbk_test
@@ -269,6 +270,7 @@ kwarg_unittest = {
     'ss2io': test_unrecognized_kwargs,
     'ss2tf': test_unrecognized_kwargs,
     'summing_junction': interconnect_test.test_interconnect_exceptions,
+    'suptitle': freqplot_test.test_suptitle,
     'tf': test_unrecognized_kwargs,
     'tf2io' : test_unrecognized_kwargs,
     'tf2ss' : test_unrecognized_kwargs,

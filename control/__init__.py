@@ -92,6 +92,7 @@ from .mateqn import *
 from .modelsimp import *
 from .nichols import *
 from .phaseplot import *
+from .plotutil import *
 from .pzmap import *
 from .rlocus import *
 from .statefbk import *
