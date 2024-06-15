@@ -18,11 +18,11 @@ import matplotlib.transforms
 import numpy as np
 
 from . import config
+from .ctrlplot import suptitle
 from .ctrlutil import unwrap
 from .freqplot import _default_frequency_range, _freqplot_defaults, \
     _get_line_labels, _process_ax_keyword
 from .lti import frequency_response
-from .plotutil import suptitle
 from .statesp import StateSpace
 from .xferfcn import TransferFunction
 

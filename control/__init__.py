@@ -83,6 +83,7 @@ from .timeresp import *
 from .timeplot import *
 
 from .bdalg import *
+from .ctrlplot import *
 from .delay import *
 from .descfcn import *
 from .dtime import *
@@ -92,7 +93,6 @@ from .mateqn import *
 from .modelsimp import *
 from .nichols import *
 from .phaseplot import *
-from .plotutil import *
 from .pzmap import *
 from .rlocus import *
 from .statefbk import *

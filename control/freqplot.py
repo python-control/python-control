@@ -19,12 +19,12 @@ import numpy as np
 
 from . import config
 from .bdalg import feedback
+from .ctrlplot import suptitle, _find_axes_center
 from .ctrlutil import unwrap
 from .exception import ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
 from .lti import LTI, _process_frequency_response, frequency_response
 from .margins import stability_margins
-from .plotutil import suptitle, _find_axes_center
 from .statesp import StateSpace
 from .timeplot import _make_legend_labels
 from .xferfcn import TransferFunction
@@ -35,7 +35,7 @@ __all__ = ['bode_plot', 'NyquistResponseData', 'nyquist_response',
            'bode', 'nyquist', 'gangof4']
 
 # Default font dictionary
-# TODO: move common plotting params to 'ctrlplot' (in plotutil)
+# TODO: move common plotting params to 'ctrlplot'
 _freqplot_rcParams = mpl.rcParams.copy()
 _freqplot_rcParams.update({
     'axes.labelsize': 'small',

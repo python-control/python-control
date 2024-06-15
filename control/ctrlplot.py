@@ -1,4 +1,4 @@
-# plotutil.py - utility functions for plotting
+# ctrlplot.py - utility functions for plotting
 # Richard M. Murray, 14 Jun 2024
 #
 # Collection of functions that are used by various plotting functions.
