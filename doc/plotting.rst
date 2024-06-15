@@ -459,6 +459,7 @@ Plotting functions
    ~control.bode_plot
    ~control.describing_function_plot
    ~control.nichols_plot
+   ~control.nyquist_plot
    ~control.phase_plane_plot
    ~control.phaseplot.equilpoints
    ~control.phaseplot.separatrices
@@ -481,6 +482,7 @@ returned values from plotting routines.
 
    ~control.combine_time_responses
    ~control.get_plot_axes
+   ~control.suptitle
 
 
 Response classes

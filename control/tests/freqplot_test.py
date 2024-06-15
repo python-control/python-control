@@ -610,6 +610,9 @@ if __name__ == "__main__":
     for args in test_cases:
         test_response_plots(*args, ovlinp=False, ovlout=False, clear=False)
 
+    # Reset suptitle_frame to the default value
+    ct.reset_defaults()
+
     # Define and run a selected set of interesting tests
     # TODO: TBD (see timeplot_test.py for format)
 
