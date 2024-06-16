@@ -284,7 +284,7 @@ def bode_plot(
     #
 
     # If we were passed a list of systems, convert to data
-    if all([isinstance(
+    if any([isinstance(
             sys, (StateSpace, TransferFunction)) for sys in data]):
         data = frequency_response(
             data, omega=omega, omega_limits=omega_limits,
@@ -1276,7 +1276,11 @@ def nyquist_response(
                 "Nyquist plot currently only supports SISO systems.")
 
         # Figure out the frequency range
-        omega_sys = np.asarray(omega)
+        if isinstance(sys, FrequencyResponseData) and sys.ifunc is None \
+           and not omega_range_given:
+            omega_sys = sys.omega               # use system frequencies
+        else:
+            omega_sys = np.asarray(omega)       # use common omega vector
 
         # Determine the contour used to evaluate the Nyquist curve
         if sys.isdtime(strict=True):
@@ -2483,18 +2487,6 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num,
         and omega_limits are None.
 
     """
-    # Special processing for FRD systems
-    # TODO: allow different ranges of frequencies
-    if omega_in is None:
-        for sys in syslist:
-            if isinstance(sys, FrequencyResponseData):
-                # FRD already has predetermined frequencies
-                if omega_in is not None and not np.all(omega_in == sys.omega):
-                    raise ValueError(
-                        "List of FrequencyResponseData systems can only have "
-                        "a single frequency range between them")
-                omega_in = sys.omega
-
     # Handle the special case of a range of frequencies
     if omega_in is not None and omega_limits is not None:
         warnings.warn(
@@ -2579,6 +2571,15 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
         syslist = (syslist,)
 
     for sys in syslist:
+        # For FRD systems, just use the response frequencies
+        if isinstance(sys, FrequencyResponseData):
+            # Add the min and max frequency, minus periphery decades
+            # (keeps frequency ranges from artificially expanding)
+            features = np.concatenate([features, np.array([
+                np.min(sys.omega) * 10**feature_periphery_decades,
+                np.max(sys.omega) / 10**feature_periphery_decades])])
+            continue
+
         try:
             # Add new features to the list
             if sys.isctime():
@@ -2593,7 +2594,8 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
                 # TODO: What distance to the Nyquist frequency is appropriate?
                 freq_interesting.append(fn * 0.9)
 
-                features_ = np.concatenate((sys.poles(), sys.zeros()))
+                features_ = np.concatenate(
+                    (np.abs(sys.poles()), np.abs(sys.zeros())))
                 # Get rid of poles and zeros on the real axis (imag==0)
                 # * origin and real < 0
                 # * at 1.: would result in omega=0. (logaritmic plot!)
@@ -2608,8 +2610,9 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
                 # TODO
                 raise NotImplementedError(
                     "type of system in not implemented now")
-            features = np.concatenate((features, features_))
+            features = np.concatenate([features, features_])
         except NotImplementedError:
+            # Don't add any features for anything we don't understand
             pass
 
     # Make sure there is at least one point in the range

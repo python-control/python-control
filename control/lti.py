@@ -475,6 +475,7 @@ def frequency_response(
         #>>> # s = 0.1i, i, 10i.
 
     """
+    from .frdata import FrequencyResponseData
     from .freqplot import _determine_omega_vector
 
     # Process keyword arguments
@@ -489,13 +490,18 @@ def frequency_response(
 
     responses = []
     for sys_ in syslist:
-        # Add the Nyquist frequency for discrete time systems
-        omega_sys = omega_syslist.copy()
-        if sys_.isdtime(strict=True):
-            nyquistfrq = math.pi / sys_.dt
-            if not omega_range_given:
-                # Limit up to the Nyquist frequency
-                omega_sys = omega_sys[omega_sys < nyquistfrq]
+        if isinstance(sys_, FrequencyResponseData) and sys_.ifunc is None and \
+           not omega_range_given:
+            omega_sys = sys_.omega              # use system properties
+        else:
+            omega_sys = omega_syslist.copy()    # use common omega vector
+
+            # Add the Nyquist frequency for discrete time systems
+            if sys_.isdtime(strict=True):
+                nyquistfrq = math.pi / sys_.dt
+                if not omega_range_given:
+                    # Limit up to the Nyquist frequency
+                    omega_sys = omega_sys[omega_sys < nyquistfrq]
 
         # Compute the frequency response
         responses.append(sys_.frequency_response(omega_sys, squeeze=squeeze))

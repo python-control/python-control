@@ -523,6 +523,34 @@ def test_freqplot_ax_keyword(plt_fcn, ninputs, noutputs):
     np.testing.assert_equal(ct.get_plot_axes(out1), ct.get_plot_axes(out3))
 
 
+def test_mixed_systypes():
+    s = ct.tf('s')
+    sys_tf = ct.tf(
+        (0.02 * s**3 - 0.1 * s) / (s**4 + s**3 + s**2 + 0.25 * s + 0.04),
+        name='tf')
+    sys_ss = ct.ss(sys_tf * 2, name='ss')
+    sys_frd1 = ct.frd(sys_tf / 2, np.logspace(-1, 1, 15), name='frd1')
+    sys_frd2 = ct.frd(sys_tf / 4, np.logspace(-3, 2, 20), name='frd2')
+
+    # Simple case: compute responses separately and plot
+    resp_tf = ct.frequency_response(sys_tf)
+    resp_ss = ct.frequency_response(sys_ss)
+    plt.figure()
+    ct.bode_plot([resp_tf, resp_ss, sys_frd1, sys_frd2], plot_phase=False)
+    ct.suptitle("bode_plot([resp_tf, resp_ss, sys_frd1, sys_frd2])")
+
+    # Same thing, but using frequency response
+    plt.figure()
+    resp = ct.frequency_response([sys_tf, sys_ss, sys_frd1, sys_frd2])
+    resp.plot(plot_phase=False)
+    ct.suptitle("frequency_response([sys_tf, sys_ss, sys_frd1, sys_frd2])")
+
+    # Same thing, but using bode_plot
+    plt.figure()
+    resp = ct.bode_plot([sys_tf, sys_ss, sys_frd1, sys_frd2], plot_phase=False)
+    ct.suptitle("bode_plot([sys_tf, sys_ss, sys_frd1, sys_frd2])")
+
+
 def test_suptitle():
     sys = ct.rss(2, 2, 2)
 
@@ -623,5 +651,4 @@ if __name__ == "__main__":
     # Run a few more special cases to show off capabilities (and save some
     # of them for use in the documentation).
     #
-
-    pass
+    test_mixed_systypes()
