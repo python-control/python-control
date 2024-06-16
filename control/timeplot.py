@@ -150,6 +150,7 @@ def time_response_plot(
        config.defaults[''timeplot.rcParams'].
 
     """
+    from .freqplot import _process_ax_keyword
     from .iosys import InputOutputSystem
     from .timeresp import TimeResponseData
 
@@ -160,7 +161,7 @@ def time_response_plot(
     # Set up defaults
     time_label = config._get_param(
         'timeplot', 'time_label', kwargs, _timeplot_defaults, pop=True)
-    timeplot_rcParams = config._get_param(
+    rcParams = config._get_param(
         'timeplot', 'rcParams', kwargs, _timeplot_defaults, pop=True)
 
     if kwargs.get('input_props', None) and len(fmt) > 0:
@@ -275,33 +276,7 @@ def time_response_plot(
         nrows, ncols = ncols, nrows
 
     # See if we can use the current figure axes
-    fig = plt.gcf()         # get current figure (or create new one)
-    if ax is None and plt.get_fignums():
-        ax = fig.get_axes()
-        if len(ax) == nrows * ncols:
-            # Assume that the shape is right (no easy way to infer this)
-            ax = np.array(ax).reshape(nrows, ncols)
-        elif len(ax) != 0:
-            # Need to generate a new figure
-            fig, ax = plt.figure(), None
-        else:
-            # Blank figure, just need to recreate axes
-            ax = None
-
-    # Create new axes, if needed, and customize them
-    if ax is None:
-        with plt.rc_context(timeplot_rcParams):
-            ax_array = fig.subplots(nrows, ncols, sharex=True, squeeze=False)
-            fig.set_layout_engine('tight')
-            fig.align_labels()
-
-    else:
-        # Make sure the axes are the right shape
-        if ax.shape != (nrows, ncols):
-            raise ValueError(
-                "specified axes are not the right shape; "
-                f"got {ax.shape} but expecting ({nrows}, {ncols})")
-        ax_array = ax
+    fig, ax_array = _process_ax_keyword(ax, (nrows, ncols), rcParams=rcParams)
 
     #
     # Map inputs/outputs and traces to axes
@@ -506,7 +481,7 @@ def time_response_plot(
                 else:
                     label = f"Trace {trace}"
 
-                with plt.rc_context(timeplot_rcParams):
+                with plt.rc_context(rcParams):
                     ax_array[0, trace].set_title(label)
 
         # Label the outputs
@@ -608,7 +583,7 @@ def time_response_plot(
 
             # Update the labels to remove common strings
             if len(labels) > 1 and legend_map[i, j] != None:
-                with plt.rc_context(timeplot_rcParams):
+                with plt.rc_context(rcParams):
                     ax.legend(labels, loc=legend_map[i, j])
 
 
@@ -643,7 +618,7 @@ def time_response_plot(
                 new_title = old_title + separator + new_title[common_len:]
 
         # Add the title
-        with plt.rc_context(timeplot_rcParams):
+        with plt.rc_context(rcParams):
             fig.suptitle(new_title)
 
     return out

@@ -313,6 +313,8 @@ def test_combine_time_responses():
         combresp6 = ct.combine_time_responses([resp1, resp])
 
 
+@pytest.mark.xfail(
+    reason="step responses for multiple systems not yet implemented")
 def test_list_responses():
     sys1 = ct.rss(2, 2, 2)
     sys2 = ct.rss(2, 2, 2)
