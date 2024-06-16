@@ -547,7 +547,7 @@ def test_suptitle():
         ct.suptitle("New title", frame='nowhere')
 
     # Bad keyword
-    with pytest.raises(AttributeError, match=".* no property 'unknown'"):
+    with pytest.raises(AttributeError, match="unexpected keyword|no property"):
         ct.suptitle("New title", unknown=None)
 
 
