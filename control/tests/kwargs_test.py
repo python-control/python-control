@@ -243,6 +243,7 @@ kwarg_unittest = {
     'dlqr': test_unrecognized_kwargs,
     'drss': test_unrecognized_kwargs,
     'flatsys.flatsys': test_unrecognized_kwargs,
+    'frd': frd_test.TestFRD.test_unrecognized_keyword,
     'gangof4': test_matplotlib_kwargs,
     'gangof4_plot': test_matplotlib_kwargs,
     'input_output_response': test_unrecognized_kwargs,

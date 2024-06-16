@@ -279,8 +279,8 @@ def feedback(sys1, sys2=1, sign=-1):
         if isinstance(sys2, (int, float, complex, np.number, np.ndarray,
                              tf.TransferFunction)):
             sys1 = tf._convert_to_transfer_function(sys1)
-        elif isinstance(sys2, frd.FRD):
-            sys1 = frd._convert_to_FRD(sys1, sys2.omega)
+        elif isinstance(sys2, frd.FrequencyResponseData):
+            sys1 = frd._convert_to_frd(sys1, sys2.omega)
         else:
             sys1 = ss._convert_to_statespace(sys1)
 

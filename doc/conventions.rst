@@ -61,20 +61,21 @@ Transfer functions can be manipulated using standard arithmetic operations
 as well as the :func:`feedback`, :func:`parallel`, and :func:`series`
 function.  A full list of functions can be found in :ref:`function-ref`.
 
-FRD (frequency response data) systems
+Frequency response data (FRD) systems
 -------------------------------------
 The :class:`FrequencyResponseData` (FRD) class is used to represent systems in
 frequency response data form.
 
 The main data members are `omega` and `fresp`, where `omega` is a 1D array
 with the frequency points of the response, and `fresp` is a 3D array, with
-the first dimension corresponding to the output index of the FRD, the second
-dimension corresponding to the input index, and the 3rd dimension
+the first dimension corresponding to the output index of the system, the
+second dimension corresponding to the input index, and the 3rd dimension
 corresponding to the frequency points in omega.
 
-FRD systems have a somewhat more limited set of functions that are
-available, although all of the standard algebraic manipulations can be
-performed.
+FRD systems can be created with the :func:`~control.frd` factory function.
+Frequency response data systems have a somewhat more limited set of
+functions that are available, although all of the standard algebraic
+manipulations can be performed.
 
 The FRD class is also used as the return type for the
 :func:`frequency_response` function (and the equivalent method for the
