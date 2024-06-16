@@ -3,12 +3,14 @@
 #
 # Collection of functions that are used by various plotting functions.
 
+from os.path import commonprefix
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 from . import config
 
-__all__ = ['suptitle']
+__all__ = ['suptitle', 'get_plot_axes']
 
 
 def suptitle(
@@ -54,6 +56,94 @@ def suptitle(
 
     else:
         raise ValueError(f"unknown frame '{frame}'")
+
+
+# Create vectorized function to find axes from lines
+def get_plot_axes(line_array):
+    """Get a list of axes from an array of lines.
+
+    This function can be used to return the set of axes corresponding to
+    the line array that is returned by `time_response_plot`.  This is useful for
+    generating an axes array that can be passed to subsequent plotting
+    calls.
+
+    Parameters
+    ----------
+    line_array : array of list of Line2D
+        A 2D array with elements corresponding to a list of lines appearing
+        in an axes, matching the return type of a time response data plot.
+
+    Returns
+    -------
+    axes_array : array of list of Axes
+        A 2D array with elements corresponding to the Axes assocated with
+        the lines in `line_array`.
+
+    Notes
+    -----
+    Only the first element of each array entry is used to determine the axes.
+
+    """
+    _get_axes = np.vectorize(lambda lines: lines[0].axes)
+    return _get_axes(line_array)
+
+#
+# Utility functions
+#
+
+
+# Utility function to make legend labels
+def _make_legend_labels(labels, ignore_common=False):
+
+    # Look for a common prefix (up to a space)
+    common_prefix = commonprefix(labels)
+    last_space = common_prefix.rfind(', ')
+    if last_space < 0 or ignore_common:
+        common_prefix = ''
+    elif last_space > 0:
+        common_prefix = common_prefix[:last_space]
+    prefix_len = len(common_prefix)
+
+    # Look for a common suffice (up to a space)
+    common_suffix = commonprefix(
+        [label[::-1] for label in labels])[::-1]
+    suffix_len = len(common_suffix)
+    # Only chop things off after a comma or space
+    while suffix_len > 0 and common_suffix[-suffix_len] != ',':
+        suffix_len -= 1
+
+    # Strip the labels of common information
+    if suffix_len > 0 and not ignore_common:
+        labels = [label[prefix_len:-suffix_len] for label in labels]
+    else:
+        labels = [label[prefix_len:] for label in labels]
+
+    return labels
+
+
+def _update_suptitle(fig, title, rcParams=None, frame='axes'):
+    if fig is not None and isinstance(title, str):
+        # Get the current title, if it exists
+        old_title = None if fig._suptitle is None else fig._suptitle._text
+        new_title = title
+
+        if old_title is not None:
+            # Find the common part of the titles
+            common_prefix = commonprefix([old_title, new_title])
+
+            # Back up to the last space
+            last_space = common_prefix.rfind(' ')
+            if last_space > 0:
+                common_prefix = common_prefix[:last_space]
+            common_len = len(common_prefix)
+
+            # Add the new part of the title (usually the system name)
+            if old_title[common_len:] != new_title[common_len:]:
+                separator = ',' if len(common_prefix) > 0 else ';'
+                new_title = old_title + separator + new_title[common_len:]
+
+        # Add the title
+        suptitle(title, fig=fig, rcParams=rcParams, frame=frame)
 
 
 def _find_axes_center(fig, axs):

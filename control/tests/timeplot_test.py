@@ -191,7 +191,7 @@ def test_response_plots(
 
 
 def test_axes_setup():
-    get_plot_axes = ct.timeplot.get_plot_axes
+    get_plot_axes = ct.get_plot_axes
 
     sys_2x3 = ct.rss(4, 2, 3)
     sys_2x3b = ct.rss(4, 2, 3)
@@ -377,7 +377,7 @@ def test_rcParams():
     assert ax.title.get_fontsize() == 10
     assert ax.xaxis._get_tick_label_size('x') == 10
     assert ax.yaxis._get_tick_label_size('y') == 10
-    assert fig._suptitle.get_fontsize() == 12
+    assert fig._suptitle.get_fontsize() == 10
 
 def test_relabel():
     sys1 = ct.rss(2, inputs='u', outputs='y')
