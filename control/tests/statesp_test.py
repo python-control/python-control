@@ -463,8 +463,22 @@ class TestStateSpace:
         np.testing.assert_array_almost_equal(sys3c.A[:3, 3:], np.zeros((3, 2)))
         np.testing.assert_array_almost_equal(sys3c.A[3:, :3], np.zeros((2, 3)))
 
-    def test_array_access_ss(self):
+    def test_array_access_ss_failure(self):
+        sys1 = StateSpace(
+            [[1., 2.], [3., 4.]],
+            [[5., 6.], [6., 8.]],
+            [[9., 10.], [11., 12.]],
+            [[13., 14.], [15., 16.]], 1,
+            inputs=['u0', 'u1'], outputs=['y0', 'y1'])
+        with pytest.raises(IOError):
+            sys1[0]
 
+    @pytest.mark.parametrize("outdx, inpdx", 
+                             [(0, 1),
+                              (slice(0, 1, 1), 1),
+                              (0, slice(1, 2, 1)),
+                              (slice(0, 1, 1), slice(1, 2, 1))])
+    def test_array_access_ss(self, outdx, inpdx):
         sys1 = StateSpace(
             [[1., 2.], [3., 4.]],
             [[5., 6.], [6., 8.]],
@@ -472,7 +486,7 @@ class TestStateSpace:
             [[13., 14.], [15., 16.]], 1,
             inputs=['u0', 'u1'], outputs=['y0', 'y1'])
 
-        sys1_01 = sys1[0, 1]
+        sys1_01 = sys1[outdx, inpdx]
         np.testing.assert_array_almost_equal(sys1_01.A,
                                              sys1.A)
         np.testing.assert_array_almost_equal(sys1_01.B,
@@ -480,7 +494,7 @@ class TestStateSpace:
         np.testing.assert_array_almost_equal(sys1_01.C,
                                              sys1.C[0:1, :])
         np.testing.assert_array_almost_equal(sys1_01.D,
-                                             sys1.D[0, 1])
+                                             sys1.D[0:1, 1:2])
 
         assert sys1.dt == sys1_01.dt
         assert sys1_01.input_labels == ['u1']

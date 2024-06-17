@@ -47,6 +47,8 @@ $Id$
 
 """
 
+from collections.abc import Iterable
+
 # External function declarations
 import numpy as np
 from numpy import angle, array, empty, finfo, ndarray, ones, \
@@ -758,7 +760,12 @@ class TransferFunction(LTI):
             return (TransferFunction([1], [1]) / self) * (self**(other + 1))
 
     def __getitem__(self, key):
+        if not isinstance(key, Iterable) or len(key) != 2:
+            raise IOError('must provide indices of length 2 for state space')
+        
         key1, key2 = key
+        if not isinstance(key1, (int, slice)) or not isinstance(key2, (int, slice)):
+            raise TypeError(f"system indices must be integers or slices")
 
         # pre-process
         if isinstance(key1, int):
