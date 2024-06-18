@@ -27,8 +27,8 @@ import scipy as sp
 from . import config
 from .iosys import InputOutputSystem, _parse_spec, _process_iosys_keywords, \
     _process_signal_list, common_timebase, isctime, isdtime
-from .timeresp import TimeResponseData, _check_convert_array, \
-    _process_time_response
+from .timeresp import _check_convert_array, _process_time_response, \
+    TimeResponseData, TimeResponseList
 
 __all__ = ['NonlinearIOSystem', 'InterconnectedSystem', 'nlsys',
            'input_output_response', 'find_eqpt', 'linearize',
@@ -1448,14 +1448,17 @@ def input_output_response(
     if kwargs:
         raise TypeError("unrecognized keyword(s): ", str(kwargs))
 
-    # Convert the first argument to a list
-    syslist = sysdata if isinstance(sysdata, (list, tuple)) else [sysdata]
-
-    # TODO: implement step responses for multiple systems
-    if len(syslist) > 1:
-        raise NotImplementedError(
-            "step responses for multiple systems not yet implemented")
-    sys = syslist[0]
+    # If passed a list, recursively call individual responses with given T
+    if isinstance(sysdata, (list, tuple)):
+        responses = []
+        for sys in sysdata:
+            responses.append(input_output_response(
+                sys, T, U=U, X0=X0, params=params, transpose=transpose,
+                return_x=return_x, squeeze=squeeze, t_eval=t_eval,
+                solve_ivp_kwargs=solve_ivp_kwargs, **kwargs))
+        return TimeResponseList(responses)
+    else:
+        sys = sysdata
 
     # Sanity checking on the input
     if not isinstance(sys, NonlinearIOSystem):

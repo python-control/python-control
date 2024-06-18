@@ -313,14 +313,52 @@ def test_combine_time_responses():
         combresp6 = ct.combine_time_responses([resp1, resp])
 
 
-@pytest.mark.xfail(
-    reason="step responses for multiple systems not yet implemented")
-def test_list_responses():
-    sys1 = ct.rss(2, 2, 2)
-    sys2 = ct.rss(2, 2, 2)
+@pytest.mark.parametrize("resp_fcn", [
+    ct.step_response, ct.initial_response, ct.impulse_response,
+    ct.forced_response, ct.input_output_response])
+def test_list_responses(resp_fcn):
+    sys1 = ct.rss(2, 2, 2, strictly_proper=True)
+    sys2 = ct.rss(2, 2, 2, strictly_proper=True)
 
-    resp = ct.step_response([sys1, sys2]).plot()
-    assert resp.ntraces == 2
+    # Figure out the expected shape of the system
+    match resp_fcn:
+        case ct.step_response | ct.impulse_response:
+            shape = (2, 2)
+            kwargs = {}
+        case ct.initial_response:
+            shape = (2, 1)
+            kwargs = {}
+        case ct.forced_response | ct.input_output_response:
+            shape = (4, 1)      # outputs and inputs both plotted
+            T = np.linspace(0, 10)
+            U = [np.sin(T), np.cos(T)]
+            kwargs = {'T': T, 'U': U}
+
+    resp1 = resp_fcn(sys1, **kwargs)
+    resp2 = resp_fcn(sys2, **kwargs)
+
+    # Sequential plotting results in colors rotating
+    plt.figure()
+    out1 = resp1.plot()
+    out2 = resp2.plot()
+    assert out1.shape == shape
+    assert out2.shape == shape
+    for row in range(2):        # just look at the outputs
+        for col in range(shape[1]):
+            assert out1[row, col][0].get_color() == 'tab:blue'
+            assert out2[row, col][0].get_color() == 'tab:orange'
+
+    plt.figure()
+    resp_combined = resp_fcn([sys1, sys2], **kwargs)
+    assert isinstance(resp_combined, ct.timeresp.TimeResponseList)
+    assert resp_combined[0].time[-1] == max(resp1.time[-1], resp2.time[-1])
+    assert resp_combined[1].time[-1] == max(resp1.time[-1], resp2.time[-1])
+    out = resp_combined.plot()
+    assert out.shape == shape
+    for row in range(2):        # just look at the outputs
+        for col in range(shape[1]):
+            assert out[row, col][0].get_color() == 'tab:blue'
+            assert out[row, col][1].get_color() == 'tab:orange'
 
 
 @slycotonly
@@ -421,6 +459,12 @@ def test_errors():
             out = stepresp.plot('k-', **propkw)
             assert out[0, 0][0].get_color() == 'k'
 
+    # Make sure TimeResponseLists also work
+    stepresp = ct.step_response([sys, sys])
+    with pytest.raises(AttributeError,
+                       match="(has no property|unexpected keyword)"):
+        stepresp.plot(unknown=None)
+
 if __name__ == "__main__":
     #
     # Interactive mode: generate plots for manual viewing
@@ -519,3 +563,28 @@ if __name__ == "__main__":
     input_props=[{'color': c} for c in ['red', 'green']],
     trace_props=[{'linestyle': s} for s in ['-', '--']])
     plt.savefig('timeplot-mimo_step-linestyle.png')
+
+    sys1 = ct.rss(4, 2, 2)
+    sys2 = ct.rss(4, 2, 2)
+    resp_list = ct.step_response([sys1, sys2])
+
+    fig = plt.figure()
+    ct.combine_time_responses(
+        [ct.step_response(sys1, resp_list[0].time),
+         ct.step_response(sys2, resp_list[1].time)]
+    ).plot(overlay_traces=True)
+    ct.suptitle("[Combine] " + fig._suptitle._text)
+
+    fig = plt.figure()
+    ct.step_response(sys1).plot()
+    ct.step_response(sys2).plot()
+    ct.suptitle("[Sequential] " + fig._suptitle._text)
+
+    fig = plt.figure()
+    ct.step_response(sys1).plot(color='b')
+    ct.step_response(sys2).plot(color='r')
+    ct.suptitle("[Seq w/color] " + fig._suptitle._text)
+
+    fig = plt.figure()
+    ct.step_response([sys1, sys2]).plot()
+    ct.suptitle("[List] " + fig._suptitle._text)

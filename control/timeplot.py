@@ -44,6 +44,7 @@ _timeplot_defaults = {
     'timeplot.time_label': "Time [s]",
 }
 
+
 # Plot the input/output response of a system
 def time_response_plot(
         data, *fmt, ax=None, plot_inputs=None, plot_outputs=True,
@@ -364,6 +365,16 @@ def time_response_plot(
 
         return label
 
+    #
+    # Store the color offsets with the figure to allow color/style cycling
+    #
+    # To allow repeated calls to time_response_plot() to cycle through
+    # colors, we store an offset in the figure object that we can
+    # retrieve at a later date, if needed.
+    #
+    output_offset = fig._output_offset = getattr(fig, '_output_offset', 0)
+    input_offset = fig._input_offset = getattr(fig, '_input_offset', 0)
+
     # Go through each trace and each input/output
     for trace in range(ntraces):
         # Plot the output
@@ -373,7 +384,8 @@ def time_response_plot(
             # Set up line properties for this output, trace
             if len(fmt) == 0:
                 line_props = output_props[
-                    i % oprop_len if overlay_signals else 0].copy()
+                    (i + output_offset) % oprop_len if overlay_signals
+                    else output_offset].copy()
                 line_props.update(
                     trace_props[trace % tprop_len if overlay_traces else 0])
                 line_props.update(kwargs)
@@ -397,7 +409,8 @@ def time_response_plot(
             # Set up line properties for this output, trace
             if len(fmt) == 0:
                 line_props = input_props[
-                    i % iprop_len if overlay_signals else 0].copy()
+                    (i + input_offset) % iprop_len if overlay_signals
+                    else input_offset].copy()
                 line_props.update(
                     trace_props[trace % tprop_len if overlay_traces else 0])
                 line_props.update(kwargs)
@@ -406,6 +419,12 @@ def time_response_plot(
 
             out[input_map[i, trace]] += ax_array[input_map[i, trace]].plot(
                 x, y, *fmt, label=label, **line_props)
+
+    # Update the offsets so that we start at a new color/style the next time
+    fig._output_offset = (
+        output_offset + (noutputs if overlay_signals else 1)) % oprop_len
+    fig._input_offset = (
+        input_offset + (ninputs if overlay_signals else 1)) % iprop_len
 
     # Stop here if the user wants to control everything
     if not relabel:

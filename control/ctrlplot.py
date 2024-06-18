@@ -125,11 +125,10 @@ def _update_suptitle(fig, title, rcParams=None, frame='axes'):
     if fig is not None and isinstance(title, str):
         # Get the current title, if it exists
         old_title = None if fig._suptitle is None else fig._suptitle._text
-        new_title = title
 
         if old_title is not None:
             # Find the common part of the titles
-            common_prefix = commonprefix([old_title, new_title])
+            common_prefix = commonprefix([old_title, title])
 
             # Back up to the last space
             last_space = common_prefix.rfind(' ')
@@ -138,9 +137,9 @@ def _update_suptitle(fig, title, rcParams=None, frame='axes'):
             common_len = len(common_prefix)
 
             # Add the new part of the title (usually the system name)
-            if old_title[common_len:] != new_title[common_len:]:
+            if old_title[common_len:] != title[common_len:]:
                 separator = ',' if len(common_prefix) > 0 else ';'
-                new_title = old_title + separator + new_title[common_len:]
+                title = old_title + separator + title[common_len:]
 
         # Add the title
         suptitle(title, fig=fig, rcParams=rcParams, frame=frame)
