@@ -395,14 +395,19 @@ def test_rcParams():
     sys = ct.rss(2, 2, 2)
 
     # Create new set of rcParams
-    my_rcParams = {
-        'axes.labelsize': 10,
-        'axes.titlesize': 10,
-        'figure.titlesize': 12,
-        'legend.fontsize': 10,
-        'xtick.labelsize': 10,
-        'ytick.labelsize': 10,
-    }
+    my_rcParams = {}
+    for key in [
+            'axes.labelsize', 'axes.titlesize', 'figure.titlesize',
+            'legend.fontsize', 'xtick.labelsize', 'ytick.labelsize']:
+        match plt.rcParams[key]:
+            case 8 | 9 | 10:
+                my_rcParams[key] = plt.rcParams[key] + 1
+            case 'medium':
+                my_rcParams[key] = 11.5
+            case 'large':
+                my_rcParams[key] = 9.5
+            case _:
+                raise ValueError(f"unknown rcParam type for {key}")
 
     # Generate a figure with the new rcParams
     out = ct.step_response(sys).plot(rcParams=my_rcParams)
@@ -410,12 +415,14 @@ def test_rcParams():
     fig = ax.figure
 
     # Check to make sure new settings were used
-    assert ax.xaxis.get_label().get_fontsize() == 10
-    assert ax.yaxis.get_label().get_fontsize() == 10
-    assert ax.title.get_fontsize() == 10
-    assert ax.xaxis._get_tick_label_size('x') == 10
-    assert ax.yaxis._get_tick_label_size('y') == 10
-    assert fig._suptitle.get_fontsize() == 10
+    assert ax.xaxis.get_label().get_fontsize() == my_rcParams['axes.labelsize']
+    assert ax.yaxis.get_label().get_fontsize() == my_rcParams['axes.labelsize']
+    assert ax.title.get_fontsize() == my_rcParams['axes.titlesize']
+    assert ax.get_xticklabels()[0].get_fontsize() == \
+        my_rcParams['xtick.labelsize']
+    assert ax.get_yticklabels()[0].get_fontsize() == \
+        my_rcParams['ytick.labelsize']
+    assert fig._suptitle.get_fontsize() == my_rcParams['figure.titlesize']
 
 def test_relabel():
     sys1 = ct.rss(2, inputs='u', outputs='y')
@@ -558,10 +565,10 @@ if __name__ == "__main__":
 
     plt.figure()
     out = ct.step_response(sys_mimo).plot(
-    plot_inputs='overlay', overlay_signals=True, overlay_traces=True,
-    output_props=[{'color': c} for c in ['blue', 'orange']],
-    input_props=[{'color': c} for c in ['red', 'green']],
-    trace_props=[{'linestyle': s} for s in ['-', '--']])
+        plot_inputs='overlay', overlay_signals=True, overlay_traces=True,
+        output_props=[{'color': c} for c in ['blue', 'orange']],
+        input_props=[{'color': c} for c in ['red', 'green']],
+        trace_props=[{'linestyle': s} for s in ['-', '--']])
     plt.savefig('timeplot-mimo_step-linestyle.png')
 
     sys1 = ct.rss(4, 2, 2)

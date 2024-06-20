@@ -46,7 +46,6 @@ def suptitle(
 
     elif frame == 'axes':
         # TODO: move common plotting params to 'ctrlplot'
-        rcParams = config._get_param('freqplot', 'rcParams', rcParams)
         with plt.rc_context(rcParams):
             plt.tight_layout()          # Put the figure into proper layout
             xc, _ = _find_axes_center(fig, fig.get_axes())
