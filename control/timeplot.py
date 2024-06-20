@@ -653,6 +653,7 @@ def combine_time_responses(response_list, trace_labels=None, title=None):
     ntraces = max(1, base.ntraces)
 
     # Initial pass through trace list to count things up and do error checks
+    nstates = base.nstates
     for response in response_list[1:]:
         # Make sure the time vector is the same
         if not np.allclose(base.t, response.t):
@@ -660,17 +661,20 @@ def combine_time_responses(response_list, trace_labels=None, title=None):
 
         # Make sure the dimensions are all the same
         if base.ninputs != response.ninputs or \
-           base.noutputs != response.noutputs or \
-           base.nstates != response.nstates:
+           base.noutputs != response.noutputs:
             raise ValueError("all responses must have the same number of "
                             "inputs, outputs, and states")
+
+        if nstates != response.nstates:
+            warn("responses have different state dimensions; dropping states")
+            nstates = 0
 
         ntraces += max(1, response.ntraces)
 
     # Create data structures for the new time response data object
     inputs = np.empty((base.ninputs, ntraces, base.t.size))
     outputs = np.empty((base.noutputs, ntraces, base.t.size))
-    states = np.empty((base.nstates, ntraces, base.t.size))
+    states = np.empty((nstates, ntraces, base.t.size))
 
     # See whether we should create labels or not
     if trace_labels is None:
@@ -689,7 +693,8 @@ def combine_time_responses(response_list, trace_labels=None, title=None):
             # Single trace
             inputs[:, offset, :] = response.u
             outputs[:, offset, :] = response.y
-            states[:, offset, :] = response.x
+            if nstates:
+                states[:, offset, :] = response.x
             offset += 1
 
             # Add on trace label and trace type
@@ -703,7 +708,8 @@ def combine_time_responses(response_list, trace_labels=None, title=None):
             for i in range(response.ntraces):
                 inputs[:, offset, :] = response.u[:, i, :]
                 outputs[:, offset, :] = response.y[:, i, :]
-                states[:, offset, :] = response.x[:, i, :]
+                if nstates:
+                    states[:, offset, :] = response.x[:, i, :]
 
                 # Save the trace labels
                 if generate_trace_labels:
@@ -721,9 +727,10 @@ def combine_time_responses(response_list, trace_labels=None, title=None):
                 trace_types += [None] * response.ntraces
 
     return TimeResponseData(
-        base.t, outputs, states, inputs, issiso=base.issiso,
+        base.t, outputs, states if nstates else None, inputs,
         output_labels=base.output_labels, input_labels=base.input_labels,
-        state_labels=base.state_labels, title=title, transpose=base.transpose,
-        return_x=base.return_x, squeeze=base.squeeze, sysname=base.sysname,
+        state_labels=base.state_labels if nstates else None,
+        title=title, transpose=base.transpose, return_x=base.return_x,
+        issiso=base.issiso, squeeze=base.squeeze, sysname=base.sysname,
         trace_labels=trace_labels, trace_types=trace_types,
         plot_inputs=base.plot_inputs)
