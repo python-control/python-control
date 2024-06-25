@@ -424,6 +424,113 @@ def test_rcParams():
         my_rcParams['ytick.labelsize']
     assert fig._suptitle.get_fontsize() == my_rcParams['figure.titlesize']
 
+
+@pytest.mark.parametrize("resp_fcn", [
+    ct.step_response, ct.initial_response, ct.impulse_response,
+    ct.forced_response, ct.input_output_response])
+@pytest.mark.usefixtures("editsdefaults")
+def test_timeplot_trace_labels(resp_fcn):
+    plt.close('all')
+    sys1 = ct.rss(2, 2, 2, strictly_proper=True, name='sys1')
+    sys2 = ct.rss(2, 2, 2, strictly_proper=True, name='sys2')
+
+    # Figure out the expected shape of the system
+    match resp_fcn:
+        case ct.step_response | ct.impulse_response:
+            shape = (2, 2)
+            kwargs = {}
+        case ct.initial_response:
+            shape = (2, 1)
+            kwargs = {}
+        case ct.forced_response | ct.input_output_response:
+            shape = (4, 1)      # outputs and inputs both plotted
+            T = np.linspace(0, 10)
+            U = [np.sin(T), np.cos(T)]
+            kwargs = {'T': T, 'U': U}
+
+    # Use figure frame for suptitle to speed things up
+    ct.set_defaults('freqplot', suptitle_frame='figure')
+
+    # Make sure default labels are as expected
+    out = resp_fcn([sys1, sys2], **kwargs).plot()
+    axs = ct.get_plot_axes(out)
+    if axs.ndim == 1:
+        legend = axs[0].get_legend().get_texts()
+    else:
+        legend = axs[0, -1].get_legend().get_texts()
+    assert legend[0].get_text() == 'sys1'
+    assert legend[1].get_text() == 'sys2'
+    plt.close()
+
+    # Override labels all at once
+    out = resp_fcn([sys1, sys2], **kwargs).plot(label=['line1', 'line2'])
+    axs = ct.get_plot_axes(out)
+    if axs.ndim == 1:
+        legend = axs[0].get_legend().get_texts()
+    else:
+        legend = axs[0, -1].get_legend().get_texts()
+    assert legend[0].get_text() == 'line1'
+    assert legend[1].get_text() == 'line2'
+    plt.close()
+
+    # Override labels one at a time
+    out = resp_fcn(sys1, **kwargs).plot(label='line1')
+    out = resp_fcn(sys2, **kwargs).plot(label='line2')
+    axs = ct.get_plot_axes(out)
+    if axs.ndim == 1:
+        legend = axs[0].get_legend().get_texts()
+    else:
+        legend = axs[0, -1].get_legend().get_texts()
+    assert legend[0].get_text() == 'line1'
+    assert legend[1].get_text() == 'line2'
+    plt.close()
+
+
+def test_full_label_override():
+    sys1 = ct.rss(2, 2, 2, strictly_proper=True, name='sys1')
+    sys2 = ct.rss(2, 2, 2, strictly_proper=True, name='sys2')
+
+    labels_2d = np.array([
+        ["outsys1u1y1", "outsys1u1y2", "outsys1u2y1", "outsys1u2y2",
+         "outsys2u1y1", "outsys2u1y2", "outsys2u2y1", "outsys2u2y2"],
+        ["inpsys1u1y1", "inpsys1u1y2", "inpsys1u2y1", "inpsys1u2y2",
+        "inpsys2u1y1", "inpsys2u1y2", "inpsys2u2y1", "inpsys2u2y2"]])
+
+
+    labels_4d = np.empty((2, 2, 2, 2), dtype=object)
+    for i, sys in enumerate(['sys1', 'sys2']):
+        for j, trace in enumerate(['u1', 'u2']):
+            for k, out in enumerate(['y1', 'y2']):
+                labels_4d[i, j, k, 0] = "out" + sys + trace + out
+                labels_4d[i, j, k, 1] = "inp" + sys + trace + out
+
+    # Test 4D labels
+    out = ct.step_response([sys1, sys2]).plot(
+        overlay_signals=True, overlay_traces=True, plot_inputs=True,
+        label=labels_4d)
+    axs = ct.get_plot_axes(out)
+    assert axs.shape == (2, 1)
+    legend_text = axs[0, 0].get_legend().get_texts()
+    for i, label in enumerate(labels_2d[0]):
+        assert legend_text[i].get_text() == label
+    legend_text = axs[1, 0].get_legend().get_texts()
+    for i, label in enumerate(labels_2d[1]):
+        assert legend_text[i].get_text() == label
+
+    # Test 2D labels
+    out = ct.step_response([sys1, sys2]).plot(
+        overlay_signals=True, overlay_traces=True, plot_inputs=True,
+        label=labels_2d)
+    axs = ct.get_plot_axes(out)
+    assert axs.shape == (2, 1)
+    legend_text = axs[0, 0].get_legend().get_texts()
+    for i, label in enumerate(labels_2d[0]):
+        assert legend_text[i].get_text() == label
+    legend_text = axs[1, 0].get_legend().get_texts()
+    for i, label in enumerate(labels_2d[1]):
+        assert legend_text[i].get_text() == label
+
+
 def test_relabel():
     sys1 = ct.rss(2, inputs='u', outputs='y')
     sys2 = ct.rss(1, 1, 1)      # uses default i/o labels

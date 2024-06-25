@@ -49,7 +49,7 @@ _timeplot_defaults = {
 def time_response_plot(
         data, *fmt, ax=None, plot_inputs=None, plot_outputs=True,
         transpose=False, overlay_traces=False, overlay_signals=False,
-        legend_map=None, legend_loc=None, add_initial_zero=True,
+        legend_map=None, legend_loc=None, add_initial_zero=True, label=None,
         trace_labels=None, title=None, relabel=True, **kwargs):
     """Plot the time response of an input/output system.
 
@@ -112,6 +112,11 @@ def time_response_plot(
     input_props : array of dicts
         List of line properties to use when plotting combined inputs.  The
         default values are set by config.defaults['timeplot.input_props'].
+    label : str or array_like of str
+        If present, replace automatically generated label(s) with the given
+        label(s).  If more than one line is being generated, an array of
+        labels should be provided with label[trace, :, 0] representing the
+        output labels and label[trace, :, 1] representing the input labels.
     legend_map : array of str, option
         Location of the legend for multi-trace plots.  Specifies an array
         of legend location strings matching the shape of the subplots, with
@@ -152,7 +157,7 @@ def time_response_plot(
        config.defaults[''timeplot.rcParams'].
 
     """
-    from .freqplot import _process_ax_keyword
+    from .freqplot import _process_ax_keyword, _process_line_labels
     from .iosys import InputOutputSystem
     from .timeresp import TimeResponseData
 
@@ -342,6 +347,7 @@ def time_response_plot(
             out[i, j] = []      # unique list in each element
 
     # Utility function for creating line label
+    # TODO: combine with freqplot version?
     def _make_line_label(signal_index, signal_labels, trace_index):
         label = ""              # start with an empty label
 
@@ -375,11 +381,22 @@ def time_response_plot(
     output_offset = fig._output_offset = getattr(fig, '_output_offset', 0)
     input_offset = fig._input_offset = getattr(fig, '_input_offset', 0)
 
+    #
+    # Plot the lines for the response
+    #
+
+    # Process labels
+    line_labels = _process_line_labels(
+        label, ntraces, max(ninputs, noutputs), 2)
+
     # Go through each trace and each input/output
     for trace in range(ntraces):
         # Plot the output
         for i in range(noutputs):
-            label = _make_line_label(i, data.output_labels, trace)
+            if line_labels is None:
+                label = _make_line_label(i, data.output_labels, trace)
+            else:
+                label = line_labels[trace, i, 0]
 
             # Set up line properties for this output, trace
             if len(fmt) == 0:
@@ -397,7 +414,10 @@ def time_response_plot(
 
         # Plot the input
         for i in range(ninputs):
-            label = _make_line_label(i, data.input_labels, trace)
+            if line_labels is None:
+                label = _make_line_label(i, data.input_labels, trace)
+            else:
+                label = line_labels[trace, i, 1]
 
             if add_initial_zero and data.ntraces > i \
                and data.trace_types[i] == 'step':
@@ -596,15 +616,14 @@ def time_response_plot(
     for i in range(nrows):
         for j in range(ncols):
             ax = ax_array[i, j]
-            # Get the labels to use
             labels = [line.get_label() for line in ax.get_lines()]
-            labels = _make_legend_labels(labels, plot_inputs == 'overlay')
+            if line_labels is None:
+                labels = _make_legend_labels(labels, plot_inputs == 'overlay')
 
             # Update the labels to remove common strings
             if len(labels) > 1 and legend_map[i, j] != None:
                 with plt.rc_context(rcParams):
                     ax.legend(labels, loc=legend_map[i, j])
-
 
     #
     # Update the plot title (= figure suptitle)

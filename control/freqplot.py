@@ -2647,12 +2647,13 @@ def _get_line_labels(ax, use_color=True):
 
 
 # Turn label keyword into array indexed by trace, output, input
-def _process_line_labels(label, nsys, ninputs=0, noutputs=0):
+# TODO: move to ctrlutil.py and update parameter names to reflect general use
+def _process_line_labels(label, ntraces, ninputs=0, noutputs=0):
     if label is None:
         return None
 
     if isinstance(label, str):
-        label = [label]
+        label = [label] * ntraces          # single label for all traces
 
     # Convert to an ndarray, if not done aleady
     try:
@@ -2664,12 +2665,14 @@ def _process_line_labels(label, nsys, ninputs=0, noutputs=0):
     # TODO: allow more sophisticated broadcasting (and error checking)
     try:
         if ninputs > 0 and noutputs > 0:
-            if line_labels.ndim == 1:
-                line_labels = line_labels.reshape(nsys, 1, 1)
-            line_labels = np.broadcast_to(
-                line_labels,(nsys, ninputs, noutputs))
+            if line_labels.ndim == 1 and line_labels.size == ntraces:
+                line_labels = line_labels.reshape(ntraces, 1, 1)
+                line_labels = np.broadcast_to(
+                    line_labels, (ntraces, ninputs, noutputs))
+            else:
+                line_labels = line_labels.reshape(ntraces, ninputs, noutputs)
     except:
-        if line_labels.shape[0] != nsys:
+        if line_labels.shape[0] != ntraces:
             raise ValueError("number of labels must match number of traces")
         else:
             raise ValueError("labels must be given for each input/output pair")

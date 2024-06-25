@@ -746,8 +746,10 @@ class TimeResponseList(list):
     """
     def plot(self, *args, **kwargs):
         out_full = None
-        for response in self:
-            out = TimeResponseData.plot(response, *args, **kwargs)
+        label = kwargs.pop('label', [None] * len(self))
+        for i, response in enumerate(self):
+            out = TimeResponseData.plot(
+                response, *args, label=label[i], **kwargs)
             if out_full is None:
                 out_full = out
             else:
