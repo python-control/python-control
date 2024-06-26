@@ -7,7 +7,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-from control.tests.conftest import slycotonly
+from control.tests.conftest import slycotonly, mplcleanup
 
 # Detailed test of (almost) all functionality
 #
@@ -67,6 +67,7 @@ from control.tests.conftest import slycotonly
                            True,      True,   False,  False,  False,  False),
      ])
 
+@pytest.mark.usefixtures('mplcleanup')
 def test_response_plots(
         fcn, sys, pltinp, pltout, cmbsig, cmbtrc,
         trpose, secsys, clear=True):
@@ -190,6 +191,7 @@ def test_response_plots(
         plt.clf()
 
 
+@pytest.mark.usefixtures('mplcleanup')
 def test_axes_setup():
     get_plot_axes = ct.get_plot_axes
 
@@ -238,6 +240,7 @@ def test_axes_setup():
 
 
 @slycotonly
+@pytest.mark.usefixtures('mplcleanup')
 def test_legend_map():
     sys_mimo = ct.tf2ss(
         [[[1], [0.1]], [[0.2], [1]]],
@@ -250,6 +253,7 @@ def test_legend_map():
         title='MIMO step response with custom legend placement')
 
 
+@pytest.mark.usefixtures('mplcleanup')
 def test_combine_time_responses():
     sys_mimo = ct.rss(4, 2, 2)
     timepts = np.linspace(0, 10, 100)
@@ -316,6 +320,7 @@ def test_combine_time_responses():
 @pytest.mark.parametrize("resp_fcn", [
     ct.step_response, ct.initial_response, ct.impulse_response,
     ct.forced_response, ct.input_output_response])
+@pytest.mark.usefixtures('mplcleanup')
 def test_list_responses(resp_fcn):
     sys1 = ct.rss(2, 2, 2, strictly_proper=True)
     sys2 = ct.rss(2, 2, 2, strictly_proper=True)
@@ -362,6 +367,7 @@ def test_list_responses(resp_fcn):
 
 
 @slycotonly
+@pytest.mark.usefixtures('mplcleanup')
 def test_linestyles():
     # Check to make sure we can change line styles
     sys_mimo = ct.tf2ss(
@@ -391,6 +397,7 @@ def test_linestyles():
     assert lines[7].get_color() == 'green' and lines[7].get_linestyle() == '--'
 
 
+@pytest.mark.usefixtures('mplcleanup')
 def test_rcParams():
     sys = ct.rss(2, 2, 2)
 
@@ -428,7 +435,7 @@ def test_rcParams():
 @pytest.mark.parametrize("resp_fcn", [
     ct.step_response, ct.initial_response, ct.impulse_response,
     ct.forced_response, ct.input_output_response])
-@pytest.mark.usefixtures("editsdefaults")
+@pytest.mark.usefixtures('editsdefaults', 'mplcleanup')
 def test_timeplot_trace_labels(resp_fcn):
     plt.close('all')
     sys1 = ct.rss(2, 2, 2, strictly_proper=True, name='sys1')
@@ -486,6 +493,7 @@ def test_timeplot_trace_labels(resp_fcn):
     plt.close()
 
 
+@pytest.mark.usefixtures('mplcleanup')
 def test_full_label_override():
     sys1 = ct.rss(2, 2, 2, strictly_proper=True, name='sys1')
     sys2 = ct.rss(2, 2, 2, strictly_proper=True, name='sys2')
@@ -531,6 +539,7 @@ def test_full_label_override():
         assert legend_text[i].get_text() == label
 
 
+@pytest.mark.usefixtures('mplcleanup')
 def test_relabel():
     sys1 = ct.rss(2, inputs='u', outputs='y')
     sys2 = ct.rss(1, 1, 1)      # uses default i/o labels
