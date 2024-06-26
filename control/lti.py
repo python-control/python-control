@@ -525,7 +525,7 @@ def dcgain(sys):
     --------
     >>> G = ct.tf([1], [1, 2])
     >>> ct.dcgain(G)                                            # doctest: +SKIP
-    0.5
+    np.float(0.5)
 
     """
     return sys.dcgain()

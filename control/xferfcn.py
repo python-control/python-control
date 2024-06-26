@@ -1241,7 +1241,7 @@ class TransferFunction(LTI):
         --------
         >>> G = ct.tf([1], [1, 4])
         >>> G.dcgain()
-        0.25
+        np.float64(0.25)
 
         """
         return self._dcgain(warn_infinite)

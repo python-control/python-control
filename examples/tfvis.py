@@ -45,13 +45,8 @@ import sys
 import Pmw
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from numpy.lib.polynomial import polymul
-from numpy.lib.type_check import real
-from numpy.core.multiarray import array
-from numpy.core.fromnumeric import size
-# from numpy.lib.function_base import logspace
 from control.matlab import logspace
-from numpy import conj
+from numpy import array, conj, polymul, real, size
 
 
 def make_poly(facts):

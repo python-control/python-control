@@ -201,11 +201,11 @@ def negate(sys):
     --------
     >>> G = ct.tf([2], [1, 1])
     >>> G.dcgain()
-    2.0
+    np.float64(2.0)
 
     >>> Gn = ct.negate(G) # Same as sys2 = -sys1.
     >>> Gn.dcgain()
-    -2.0
+    np.float64(-2.0)
 
     """
     return -sys
