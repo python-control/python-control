@@ -87,7 +87,7 @@ def hsvd(sys):
     >>> G = ct.tf2ss([1], [1, 2])
     >>> H = ct.hsvd(G)
     >>> H[0]
-    0.25
+    np.float64(0.25)
 
     """
     # TODO: implement for discrete time systems

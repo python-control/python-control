@@ -73,7 +73,7 @@ def h2syn(P, nmeas, ncon):
     --------
     >>> # Unstable first order SISI system
     >>> G = ct.tf([1], [1, -1], inputs=['u'], outputs=['y'])
-    >>> max(G.poles()) < 0  # Is G stable?
+    >>> all(G.poles() < 0)  # Is G stable?
     False
 
     >>> # Create partitioned system with trivial unity systems
@@ -87,7 +87,7 @@ def h2syn(P, nmeas, ncon):
     >>> # Synthesize H2 optimal stabilizing controller
     >>> K = ct.h2syn(P, nmeas=1, ncon=1)
     >>> T = ct.feedback(G, K, sign=1)
-    >>> max(T.poles()) < 0  # Is T stable?
+    >>> all(T.poles() < 0)  # Is T stable?
     True
 
     """
@@ -154,7 +154,7 @@ def hinfsyn(P, nmeas, ncon):
     --------
     >>> # Unstable first order SISI system
     >>> G = ct.tf([1], [1,-1], inputs=['u'], outputs=['y'])
-    >>> max(G.poles()) < 0
+    >>> all(G.poles() < 0)
     False
 
     >>> # Create partitioned system with trivial unity systems
@@ -167,7 +167,7 @@ def hinfsyn(P, nmeas, ncon):
     >>> # Synthesize Hinf optimal stabilizing controller
     >>> K, CL, gam, rcond = ct.hinfsyn(P, nmeas=1, ncon=1)
     >>> T = ct.feedback(G, K, sign=1)
-    >>> max(T.poles()) < 0
+    >>> all(T.poles() < 0)
     True
 
     """

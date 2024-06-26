@@ -525,11 +525,11 @@ class saturation_nonlinearity(DescribingFunctionNonlinearity):
     --------
     >>> nl = ct.saturation_nonlinearity(5)
     >>> nl(1)
-    1
+    np.int64(1)
     >>> nl(10)
-    5
+    np.int64(5)
     >>> nl(-10)
-    -5
+    np.int64(-5)
 
     """
     def __init__(self, ub=1, lb=None):

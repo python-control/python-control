@@ -117,7 +117,7 @@ def norm(system, p=2, tol=1e-6, print_warning=True, method=None):
     >>> round(ct.norm(Gc, 2), 3)
     0.5
     >>> round(ct.norm(Gc, 'inf', tol=1e-5, method='scipy'), 3)
-    1.0
+    np.float64(1.0)
     """
            
     if not isinstance(system, (ct.StateSpace, ct.TransferFunction)):
