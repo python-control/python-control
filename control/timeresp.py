@@ -169,6 +169,13 @@ class TimeResponseData:
     input_labels, output_labels, state_labels : array of str
         Names for the input, output, and state variables.
 
+    success : bool, optional
+        If ``False``, result may not be valid (see
+        :func:`~control.input_output_response`).  Defaults to ``True``.
+
+    message : str, optional
+        Informational message if ``success`` is ``False``.
+
     sysname : str, optional
         Name of the system that created the data.
 
