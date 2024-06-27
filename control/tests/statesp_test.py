@@ -477,28 +477,39 @@ class TestStateSpace:
                              [(0, 1),
                               (slice(0, 1, 1), 1),
                               (0, slice(1, 2, 1)),
+                              (slice(0, 1, 1), slice(1, 2, 1)),
+                              (slice(None, None, -1), 1),
+                              (0, slice(None, None, -1)),
+                              (slice(None, 2, None), 1),
+                              (slice(None, None, 1), slice(None, None, 2)),
+                              (0, slice(1, 2, 1)),
                               (slice(0, 1, 1), slice(1, 2, 1))])
     def test_array_access_ss(self, outdx, inpdx):
         sys1 = StateSpace(
             [[1., 2.], [3., 4.]],
-            [[5., 6.], [6., 8.]],
+            [[5., 6.], [7., 8.]],
             [[9., 10.], [11., 12.]],
             [[13., 14.], [15., 16.]], 1,
             inputs=['u0', 'u1'], outputs=['y0', 'y1'])
 
         sys1_01 = sys1[outdx, inpdx]
+        
+        # Convert int to slice to ensure that numpy doesn't drop the dimension
+        if isinstance(outdx, int): outdx = slice(outdx, outdx+1, 1)
+        if isinstance(inpdx, int): inpdx = slice(inpdx, inpdx+1, 1)
+        
         np.testing.assert_array_almost_equal(sys1_01.A,
                                              sys1.A)
         np.testing.assert_array_almost_equal(sys1_01.B,
-                                             sys1.B[:, 1:2])
+                                             sys1.B[:, inpdx])
         np.testing.assert_array_almost_equal(sys1_01.C,
-                                             sys1.C[0:1, :])
+                                             sys1.C[outdx, :])
         np.testing.assert_array_almost_equal(sys1_01.D,
-                                             sys1.D[0:1, 1:2])
+                                             sys1.D[outdx, inpdx])
 
         assert sys1.dt == sys1_01.dt
-        assert sys1_01.input_labels == ['u1']
-        assert sys1_01.output_labels == ['y0']
+        assert sys1_01.input_labels == sys1.input_labels[inpdx]
+        assert sys1_01.output_labels == sys1.output_labels[outdx]
         assert sys1_01.name == sys1.name + "$indexed"
 
     def test_dc_gain_cont(self):
