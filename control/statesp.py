@@ -50,6 +50,7 @@ $Id$
 import math
 from copy import deepcopy
 from warnings import warn
+from collections.abc import Iterable
 
 import numpy as np
 import scipy as sp
@@ -289,9 +290,9 @@ class StateSpace(NonlinearIOSystem, LTI):
             raise ValueError("A and B must have the same number of rows.")
         if self.nstates != C.shape[1]:
             raise ValueError("A and C must have the same number of columns.")
-        if self.ninputs != B.shape[1]:
+        if self.ninputs != B.shape[1] or self.ninputs != D.shape[1]:
             raise ValueError("B and D must have the same number of columns.")
-        if self.noutputs != C.shape[0]:
+        if self.noutputs != C.shape[0] or self.noutputs != D.shape[0]:
             raise ValueError("C and D must have the same number of rows.")
 
         #
@@ -1215,17 +1216,23 @@ class StateSpace(NonlinearIOSystem, LTI):
 
     def __getitem__(self, indices):
         """Array style access"""
-        if len(indices) != 2:
+        if not isinstance(indices, Iterable) or len(indices) != 2:
             raise IOError('must provide indices of length 2 for state space')
-        outdx = indices[0] if isinstance(indices[0], list) else [indices[0]]
-        inpdx = indices[1] if isinstance(indices[1], list) else [indices[1]]
+        outdx, inpdx = indices
+        
+        # Convert int to slice to ensure that numpy doesn't drop the dimension
+        if isinstance(outdx, int): outdx = slice(outdx, outdx+1, 1)
+        if isinstance(inpdx, int): inpdx = slice(inpdx, inpdx+1, 1)
+
+        if not isinstance(outdx, slice) or not isinstance(inpdx, slice):
+            raise TypeError(f"system indices must be integers or slices")
+
         sysname = config.defaults['iosys.indexed_system_name_prefix'] + \
             self.name + config.defaults['iosys.indexed_system_name_suffix']
         return StateSpace(
             self.A, self.B[:, inpdx], self.C[outdx, :], self.D[outdx, inpdx],
-            self.dt, name=sysname,
-            inputs=[self.input_labels[i] for i in list(inpdx)],
-            outputs=[self.output_labels[i] for i in list(outdx)])
+            self.dt, name=sysname, 
+            inputs=self.input_labels[inpdx], outputs=self.output_labels[outdx])
 
     def sample(self, Ts, method='zoh', alpha=None, prewarp_frequency=None,
                name=None, copy_names=True, **kwargs):
