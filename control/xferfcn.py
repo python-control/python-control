@@ -761,7 +761,7 @@ class TransferFunction(LTI):
 
     def __getitem__(self, key):
         if not isinstance(key, Iterable) or len(key) != 2:
-            raise IOError('must provide indices of length 2 for state space')
+            raise IOError('must provide indices of length 2 for transfer functions')
         
         key1, key2 = key
         if not isinstance(key1, (int, slice)) or not isinstance(key2, (int, slice)):

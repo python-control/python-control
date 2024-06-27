@@ -1219,13 +1219,15 @@ class StateSpace(NonlinearIOSystem, LTI):
         if not isinstance(indices, Iterable) or len(indices) != 2:
             raise IOError('must provide indices of length 2 for state space')
         outdx, inpdx = indices
-        if not isinstance(outdx, (int, slice)) or not isinstance(inpdx, (int, slice)):
+        if not isinstance(outdx, (int, slice)) \
+            or not isinstance(inpdx, (int, slice)):
             raise TypeError(f"system indices must be integers or slices")
         sysname = config.defaults['iosys.indexed_system_name_prefix'] + \
             self.name + config.defaults['iosys.indexed_system_name_suffix']
         return StateSpace(
             self.A, self.B[:, inpdx], self.C[outdx, :], self.D[outdx, inpdx],
-            self.dt, name=sysname, inputs=self.input_labels[inpdx], outputs=self.output_labels[outdx])
+            self.dt, name=sysname, 
+            inputs=self.input_labels[inpdx], outputs=self.output_labels[outdx])
 
     def sample(self, Ts, method='zoh', alpha=None, prewarp_frequency=None,
                name=None, copy_names=True, **kwargs):
