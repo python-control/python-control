@@ -290,9 +290,9 @@ class StateSpace(NonlinearIOSystem, LTI):
             raise ValueError("A and B must have the same number of rows.")
         if self.nstates != C.shape[1]:
             raise ValueError("A and C must have the same number of columns.")
-        if self.ninputs != B.shape[1]:
+        if self.ninputs != B.shape[1] or self.ninputs != D.shape[1]:
             raise ValueError("B and D must have the same number of columns.")
-        if self.noutputs != C.shape[0]:
+        if self.noutputs != C.shape[0] or self.noutputs != D.shape[0]:
             raise ValueError("C and D must have the same number of rows.")
 
         #
@@ -1219,9 +1219,14 @@ class StateSpace(NonlinearIOSystem, LTI):
         if not isinstance(indices, Iterable) or len(indices) != 2:
             raise IOError('must provide indices of length 2 for state space')
         outdx, inpdx = indices
-        if not isinstance(outdx, (int, slice)) \
-            or not isinstance(inpdx, (int, slice)):
+        
+        # Convert int to slice to ensure that numpy doesn't drop the dimension
+        if isinstance(outdx, int): outdx = slice(outdx, outdx+1, 1)
+        if isinstance(inpdx, int): inpdx = slice(inpdx, inpdx+1, 1)
+
+        if not isinstance(outdx, slice) or not isinstance(inpdx, slice):
             raise TypeError(f"system indices must be integers or slices")
+
         sysname = config.defaults['iosys.indexed_system_name_prefix'] + \
             self.name + config.defaults['iosys.indexed_system_name_suffix']
         return StateSpace(
