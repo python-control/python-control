@@ -15,24 +15,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from . import config
-from .ctrlplot import _make_legend_labels, _update_suptitle
+from .ctrlplot import _ctrlplot_rcParams, _make_legend_labels, _update_suptitle
 
 __all__ = ['time_response_plot', 'combine_time_responses']
 
-# Default font dictionary
-_timeplot_rcParams = mpl.rcParams.copy()
-_timeplot_rcParams.update({
-    'axes.labelsize': 'small',
-    'axes.titlesize': 'small',
-    'figure.titlesize': 'medium',
-    'legend.fontsize': 'x-small',
-    'xtick.labelsize': 'small',
-    'ytick.labelsize': 'small',
-})
-
 # Default values for module parameter variables
 _timeplot_defaults = {
-    'timeplot.rcParams': _timeplot_rcParams,
+    'timeplot.rcParams': _ctrlplot_rcParams,
     'timeplot.trace_props': [
         {'linestyle': s} for s in ['-', '--', ':', '-.']],
     'timeplot.output_props': [
@@ -162,7 +151,7 @@ def time_response_plot(
        config.defaults[''timeplot.rcParams'].
 
     """
-    from .freqplot import _process_ax_keyword, _process_line_labels
+    from .ctrlplot import _process_ax_keyword, _process_line_labels
     from .iosys import InputOutputSystem
     from .timeresp import TimeResponseData
 

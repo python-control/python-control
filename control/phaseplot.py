@@ -36,8 +36,8 @@ import numpy as np
 from scipy.integrate import odeint
 
 from . import config
+from .ctrlplot import _add_arrows_to_line2D
 from .exception import ControlNotImplemented
-from .freqplot import _add_arrows_to_line2D
 from .nlsys import NonlinearIOSystem, find_eqpt, input_output_response
 
 __all__ = ['phase_plane_plot', 'phase_plot', 'box_grid']
