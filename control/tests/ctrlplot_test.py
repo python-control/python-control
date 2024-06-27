@@ -1,9 +1,11 @@
 # ctrlplot_test.py - test out control plotting utilities
 # RMM, 27 Jun 2024
 
-import pytest
-import control as ct
 import matplotlib.pyplot as plt
+import pytest
+
+import control as ct
+
 
 @pytest.mark.usefixtures('mplcleanup')
 def test_rcParams():
@@ -26,8 +28,7 @@ def test_rcParams():
 
     # Generate a figure with the new rcParams
     out = ct.step_response(sys).plot(rcParams=my_rcParams)
-    ax = out[0, 0][0].axes
-    fig = ax.figure
+    ax, fig = out.axes[0, 0], out.figure
 
     # Check to make sure new settings were used
     assert ax.xaxis.get_label().get_fontsize() == my_rcParams['axes.labelsize']
@@ -40,3 +41,8 @@ def test_rcParams():
     assert fig._suptitle.get_fontsize() == my_rcParams['figure.titlesize']
 
 
+def test_deprecation_warning():
+    sys = ct.rss(2, 2, 2)
+    lines = ct.step_response(sys).plot(overlay_traces=True)
+    with pytest.warns(FutureWarning, match="deprecated"):
+        assert len(lines[0, 0]) == 2

@@ -36,7 +36,7 @@ import numpy as np
 from scipy.integrate import odeint
 
 from . import config
-from .ctrlplot import _add_arrows_to_line2D
+from .ctrlplot import ControlPlot, _add_arrows_to_line2D
 from .exception import ControlNotImplemented
 from .nlsys import NonlinearIOSystem, find_eqpt, input_output_response
 
@@ -96,10 +96,24 @@ def phase_plane_plot(
 
     Returns
     -------
-    out : list of list of Artists
-        out[0] = list of Line2D objects (streamlines and separatrices)
-        out[1] = Quiver object (vector field arrows)
-        out[2] = list of Line2D objects (equilibrium points)
+    cplt : :class:`ControlPlot` object
+        Object containing the data that were plotted:
+
+          * cplt.lines: list of list of :class:`matplotlib.artist.Artist`
+            objects:
+
+              - lines[0] = list of Line2D objects (streamlines, separatrices).
+              - lines[1] = Quiver object (vector field arrows).
+              - lines[2] = list of Line2D objects (equilibrium points).
+
+          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+
+          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+
+          * cplt.legend: legend object(s) contained in the plot
+
+        See :class:`ControlPlot` for more detailed information.
+
 
     Other parameters
     ----------------
@@ -205,7 +219,7 @@ def phase_plane_plot(
         ax.set_xlabel(sys.state_labels[0])
         ax.set_ylabel(sys.state_labels[1])
 
-    return out
+    return ControlPlot(out, ax, fig)
 
 
 def vectorfield(

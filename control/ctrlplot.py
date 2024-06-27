@@ -3,6 +3,7 @@
 #
 # Collection of functions that are used by various plotting functions.
 
+import warnings
 from os.path import commonprefix
 
 import matplotlib as mpl
@@ -11,7 +12,7 @@ import numpy as np
 
 from . import config
 
-__all__ = ['suptitle', 'get_plot_axes']
+__all__ = ['ControlPlot', 'suptitle', 'get_plot_axes']
 
 #
 # Style parameters
@@ -26,6 +27,66 @@ _ctrlplot_rcParams.update({
     'xtick.labelsize': 'small',
     'ytick.labelsize': 'small',
 })
+
+
+#
+# Control figure
+#
+
+class ControlPlot(object):
+    """A class for returning control figures.
+
+    This class is used as the return type for control plotting functions.
+    It contains the information required to access portions of the plot
+    that the user might want to adjust, as well as providing methods to
+    modify some of the properties of the plot.
+
+    A control figure consists of a :class:`matplotlib.figure.Figure` with
+    an array of :class:`matplotlib.axes.Axes`.  Each axes in the figure has
+    a number of lines that repreesnt the data for the plot.  There may also
+    be a legend present in one or more of the axes.
+
+    Attributes
+    ----------
+    lines : array of list of :class:`matplotlib:Line2D`
+        Array of Line2D objects for each line in the plot.  Generally, The
+        shape of the array matches the subplots shape and the value of the
+        array is a list of Line2D objects in that subplot.  Some plotting
+        functions will reeturn variants of this structure, as described in
+        the individual documentation for the functions.
+    axes : 2D array of :class:`matplotlib:Axes`
+        Array of Axes objects for each subplot in the plot.
+    figure : :class:`matplotlib:Figure`
+        Figure on which the Axes are drawn.
+    legend : :class:`matplotlib:Legend` or array of :class:`matplotlib:Legend`
+        Legend object(s) for the plat.  If more than :class:`matplotlib:Legend`
+        is included, this will be an array with each entry being either
+        None (for no legend) or a legend object.
+
+    """
+    def __init__(self, lines, axes=None, figure=None):
+        self.lines = lines
+        if axes is None:
+            axes = get_plot_axes(lines)
+        self.axes = np.atleast_2d(axes)
+        if figure is None:
+            figure = self.axes[0, 0].figure
+        self.figure = figure
+
+    # Implement methods and properties to allow legacy interface (np.array)
+    __iter__ = lambda self: self.lines
+    __len__ = lambda self: len(self.lines)
+    def __getitem__(self, item):
+        warnings.warn(
+            "return of Line2D objects from plot function is deprecated in "
+            "favor of ControlPlot; use out.lines to access Line2D objects",
+            category=FutureWarning)
+        return self.lines[item]
+    def __setitem__(self, item, val):
+        self.lines[item] = val
+    shape = property(lambda self: self.lines.shape, None)
+    def reshape(self, *args):
+        return self.lines.reshape(*args)
 
 
 #
@@ -105,7 +166,10 @@ def get_plot_axes(line_array):
 
     """
     _get_axes = np.vectorize(lambda lines: lines[0].axes)
-    return _get_axes(line_array)
+    if isinstance(line_array, ControlPlot):
+        return _get_axes(line_array.lines)
+    else:
+        return _get_axes(line_array)
 
 #
 # Utility functions

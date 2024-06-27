@@ -18,7 +18,7 @@ import numpy as np
 from numpy import cos, exp, imag, linspace, real, sin, sqrt
 
 from . import config
-from .ctrlplot import _get_line_labels
+from .ctrlplot import ControlPlot, _get_line_labels
 from .freqplot import _freqplot_defaults
 from .grid import nogrid, sgrid, zgrid
 from .iosys import isctime, isdtime
@@ -207,14 +207,25 @@ def pole_zero_plot(
 
     Returns
     -------
-    lines : array of list of Line2D
-        Array of Line2D objects for each set of markers in the plot. The
-        shape of the array is given by (nsys, 2) where nsys is the number
-        of systems or responses passed to the function.  The second index
-        specifies the pzmap object type:
+    cplt : :class:`ControlPlot` object
+        Object containing the data that were plotted:
 
-        * lines[idx, 0]: poles
-        * lines[idx, 1]: zeros
+          * cplt.lines: Array of :class:`matplotlib.lines.Line2D` objects
+            for each set of markers in the plot. The shape of the array is
+            given by (`nsys`, 2) where `nsys` is the number of systems or
+            responses passed to the function.  The second index specifies
+            the pzmap object type:
+
+              - lines[idx, 0]: poles
+              - lines[idx, 1]: zeros
+
+          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+
+          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+
+          * cplt.legend: legend object(s) contained in the plot
+
+        See :class:`ControlPlot` for more detailed information.
 
     poles, zeros: list of arrays
         (legacy) If the `plot` keyword is given, the system poles and zeros
@@ -489,7 +500,7 @@ def pole_zero_plot(
         else:
             TypeError("system lists not supported with legacy return values")
 
-    return out
+    return ControlPlot(out, np.asarray(axs), fig)
 
 
 # Utility function to find gain corresponding to a click event

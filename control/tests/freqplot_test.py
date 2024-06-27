@@ -1,13 +1,14 @@
 # freqplot_test.py - test out frequency response plots
 # RMM, 23 Jun 2023
 
-import pytest
-import control as ct
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import pytest
 
-from control.tests.conftest import slycotonly, editsdefaults
+import control as ct
+from control.tests.conftest import editsdefaults, slycotonly
+
 pytestmark = pytest.mark.usefixtures("mplcleanup")
 
 #
@@ -82,21 +83,22 @@ def test_response_plots(
 
     # Plot the frequency response
     plt.figure()
-    out = response.plot(**kwargs)
+    cplt = response.plot(**kwargs)
 
     # Check the shape
     if ovlout and ovlinp:
-        assert out.shape == (pltmag + pltphs, 1)
+        assert cplt.lines.shape == (pltmag + pltphs, 1)
     elif ovlout:
-        assert out.shape == (pltmag + pltphs, sys.ninputs)
+        assert cplt.lines.shape == (pltmag + pltphs, sys.ninputs)
     elif ovlinp:
-        assert out.shape == (sys.noutputs * (pltmag + pltphs), 1)
+        assert cplt.lines.shape == (sys.noutputs * (pltmag + pltphs), 1)
     else:
-        assert out.shape == (sys.noutputs * (pltmag + pltphs), sys.ninputs)
+        assert cplt.lines.shape == \
+            (sys.noutputs * (pltmag + pltphs), sys.ninputs)
 
     # Make sure all of the outputs are of the right type
     nlines_plotted = 0
-    for ax_lines in np.nditer(out, flags=["refs_ok"]):
+    for ax_lines in np.nditer(cplt.lines, flags=["refs_ok"]):
         for line in ax_lines.item() or []:
             assert isinstance(line, mpl.lines.Line2D)
             nlines_plotted += 1
@@ -124,9 +126,8 @@ def test_response_plots(
             assert len(ax.get_lines()) > 1
 
     # Update the title so we can see what is going on
-    fig = out[0, 0][0].axes.figure
     ct.suptitle(
-        fig._suptitle._text +
+        cplt.figure._suptitle._text +
         f" [{sys.noutputs}x{sys.ninputs}, pm={pltmag}, pp={pltphs},"
         f" sm={shrmag}, sp={shrphs}, sf={shrfrq}]",     # TODO: ", "
         # f"oo={ovlout}, oi={ovlinp}, ss={secsys}]",    # TODO: add back
@@ -417,7 +418,7 @@ def test_gangof4_trace_labels():
 @pytest.mark.parametrize(
     "plt_fcn", [ct.bode_plot, ct.singular_values_plot, ct.nyquist_plot])
 @pytest.mark.usefixtures("editsdefaults")
-def test_freqplot_trace_labels(plt_fcn):
+def test_freqplot_line_labels(plt_fcn):
     sys1 = ct.rss(2, 1, 1, name='sys1')
     sys2 = ct.rss(3, 1, 1, name='sys2')
 
@@ -458,33 +459,29 @@ def test_freqplot_trace_labels(plt_fcn):
     assert legend[1].get_text() == 'line2'
     plt.close()
 
-    if plt_fcn == ct.bode_plot:
-        # Multi-dimensional data
-        sys1 = ct.rss(2, 2, 2, name='sys1')
-        sys2 = ct.rss(3, 2, 2, name='sys2')
 
-        # Check out some errors first
-        with pytest.raises(ValueError, match="number of labels must match"):
-            ct.bode_plot([sys1, sys2], label=['line1'])
+@pytest.mark.skip(reason="line label override not yet implemented")
+@pytest.mark.parametrize("kwargs, labels", [
+    ({}, ['sys1', 'sys2']),
+    ({'overlay_outputs': True}, [
+        'x sys1 out1 y', 'x sys1 out2 y', 'x sys2 out1 y', 'x sys2 out2 y']),
+])
+def test_line_labels_bode(kwargs, labels):
+    # Multi-dimensional data
+    sys1 = ct.rss(2, 2, 2)
+    sys2 = ct.rss(3, 2, 2)
 
-        with pytest.xfail(reason="need better broadcast checking on labels"):
-            with pytest.raises(
-                    ValueError, match="labels must be given for each"):
-                ct.bode_plot(sys1, overlay_inputs=True, label=['line1'])
+    # Check out some errors first
+    with pytest.raises(ValueError, match="number of labels must match"):
+        ct.bode_plot([sys1, sys2], label=['line1'])
 
-        # Now do things that should work
-        out = ct.bode_plot(
-            [sys1, sys2],
-            label=[
-                [['line1', 'line1'], ['line1', 'line1']],
-                [['line2', 'line2'], ['line2', 'line2']],
-            ])
-        axs = ct.get_plot_axes(out)
-        legend = axs[0, -1].get_legend().get_texts()
-        assert legend[0].get_text() == 'line1'
-        assert legend[1].get_text() == 'line2'
-        plt.close()
-
+    out = ct.bode_plot([sys1, sys2], label=labels, **kwargs)
+    axs = ct.get_plot_axes(out)
+    legend_texts = axs[0, -1].get_legend().get_texts()
+    for i, legend in enumerate(legend_texts):
+        assert legend.get_text() == labels[i]
+    plt.close()
+    
 
 @pytest.mark.parametrize(
     "plt_fcn", [
@@ -597,6 +594,15 @@ def test_freqplot_errors(plt_fcn):
     # Bad frequency limits
     with pytest.raises(ValueError, match="invalid limits"):
         plt_fcn(response, omega_limits=[1e2, 1e-2])
+
+def test_freqresplist_unknown_kw():
+    sys1 = ct.rss(2, 1, 1)
+    sys2 = ct.rss(2, 1, 1)
+    resp = ct.frequency_response([sys1, sys2])
+    assert isinstance(resp, ct.FrequencyResponseList)
+
+    with pytest.raises(AttributeError, match="unexpected keyword"):
+        resp.plot(unknown=True)
 
 
 if __name__ == "__main__":

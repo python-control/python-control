@@ -19,7 +19,7 @@ import numpy as np
 
 from . import config
 from .bdalg import feedback
-from .ctrlplot import _add_arrows_to_line2D, _ctrlplot_rcParams, \
+from .ctrlplot import ControlPlot, _add_arrows_to_line2D, _ctrlplot_rcParams, \
     _find_axes_center, _get_line_labels, _make_legend_labels, \
     _process_ax_keyword, _process_line_labels, _update_suptitle, suptitle
 from .ctrlutil import unwrap
@@ -33,7 +33,7 @@ from .xferfcn import TransferFunction
 __all__ = ['bode_plot', 'NyquistResponseData', 'nyquist_response',
            'nyquist_plot', 'singular_values_response',
            'singular_values_plot', 'gangof4_plot', 'gangof4_response',
-           'bode', 'nyquist', 'gangof4']
+           'bode', 'nyquist', 'gangof4', 'FrequencyResponseList']
 
 # Default values for module parameter variables
 _freqplot_defaults = {
@@ -124,10 +124,21 @@ def bode_plot(
 
     Returns
     -------
-    lines : array of Line2D
-        Array of Line2D objects for each line in the plot.  The shape of
-        the array matches the subplots shape and the value of the array is a
-        list of Line2D objects in that subplot.
+    cplt : :class:`ControlPlot` object
+        Object containing the data that were plotted:
+
+          * cplt.lines: Array of :class:`matplotlib.lines.Line2D` objects
+            for each line in the plot.  The shape of the array matches the
+            subplots shape and the value of the array is a list of Line2D
+            objects in that subplot.
+
+          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+
+          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+
+          * cplt.legend: legend object(s) contained in the plot
+
+        See :class:`ControlPlot` for more detailed information.
 
     Other Parameters
     ----------------
@@ -1008,7 +1019,7 @@ def bode_plot(
         else:
             return mag_data, phase_data, omega_data
 
-    return out
+    return ControlPlot(out, ax_array, fig)
 
 
 #
@@ -1483,16 +1494,27 @@ def nyquist_plot(
 
     Returns
     -------
-    lines : array of Line2D
-        2D array of Line2D objects for each line in the plot.  The shape of
-        the array is given by (nsys, 4) where nsys is the number of systems
-        or Nyquist responses passed to the function.  The second index
-        specifies the segment type:
+    cplt : :class:`ControlPlot` object
+        Object containing the data that were plotted:
 
-        * lines[idx, 0]: unscaled portion of the primary curve
-        * lines[idx, 1]: scaled portion of the primary curve
-        * lines[idx, 2]: unscaled portion of the mirror curve
-        * lines[idx, 3]: scaled portion of the mirror curve
+          * cplt.lines: 2D array of :class:`matplotlib.lines.Line2D`
+            objects for each line in the plot.  The shape of the array is
+            given by (nsys, 4) where nsys is the number of systems or
+            Nyquist responses passed to the function.  The second index
+            specifies the segment type:
+
+              - lines[idx, 0]: unscaled portion of the primary curve
+              - lines[idx, 1]: scaled portion of the primary curve
+              - lines[idx, 2]: unscaled portion of the mirror curve
+              - lines[idx, 3]: scaled portion of the mirror curve
+
+          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+
+          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+
+          * cplt.legend: legend object(s) contained in the plot
+
+        See :class:`ControlPlot` for more detailed information.
 
     Other Parameters
     ----------------
@@ -1923,7 +1945,7 @@ def nyquist_plot(
         # Return counts and (optionally) the contour we used
         return (counts, contours) if return_contour else counts
 
-    return out
+    return ControlPlot(out, ax, fig)
 
 
 #
@@ -2170,19 +2192,20 @@ def singular_values_plot(
 
     Returns
     -------
-    legend_loc : str, optional
-        For plots with multiple lines, a legend will be included in the
-        given location.  Default is 'center right'.  Use False to suppress.
-    lines : array of Line2D
-        1-D array of Line2D objects.  The size of the array matches
-        the number of systems and the value of the array is a list of
-        Line2D objects for that system.
-    mag : ndarray (or list of ndarray if len(data) > 1))
-        If plot=False, magnitude of the response (deprecated).
-    phase : ndarray (or list of ndarray if len(data) > 1))
-        If plot=False, phase in radians of the response (deprecated).
-    omega : ndarray (or list of ndarray if len(data) > 1))
-        If plot=False, frequency in rad/sec (deprecated).
+    cplt : :class:`ControlPlot` object
+        Object containing the data that were plotted:
+
+          * cplt.lines: 1-D array of :class:`matplotlib.lines.Line2D` objects.
+            The size of the array matches the number of systems and the
+            value of the array is a list of Line2D objects for that system.
+
+          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+
+          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+
+          * cplt.legend: legend object(s) contained in the plot
+
+        See :class:`ControlPlot` for more detailed information.
 
     Other Parameters
     ----------------
@@ -2193,6 +2216,9 @@ def singular_values_plot(
         If present, replace automatically generated label(s) with the given
         label(s).  If sysdata is a list, strings should be specified for each
         system.
+    legend_loc : str, optional
+        For plots with multiple lines, a legend will be included in the
+        given location.  Default is 'center right'.  Use False to supress.
     omega_limits : array_like of two values
         Set limits for plotted frequency range. If Hz=True the limits are
         in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
@@ -2212,6 +2238,16 @@ def singular_values_plot(
     See Also
     --------
     singular_values_response
+
+    Notes
+    -----
+    1. If plot==False, the following legacy values are returned:
+         * mag : ndarray (or list of ndarray if len(data) > 1))
+             Magnitude of the response (deprecated).
+         * phase : ndarray (or list of ndarray if len(data) > 1))
+             Phase in radians of the response (deprecated).
+         * omega : ndarray (or list of ndarray if len(data) > 1))
+             Frequency in rad/sec (deprecated).
 
     """
     # Keyword processing
@@ -2363,7 +2399,7 @@ def singular_values_plot(
         else:
             return sigmas, omegas
 
-    return out
+    return ControlPlot(out, ax_sigma, fig)
 
 #
 # Utility functions

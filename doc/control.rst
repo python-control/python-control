@@ -74,7 +74,6 @@ Time domain simulation
     input_output_response
     phase_plot
     step_response
-    TimeResponseData
 
 Control system analysis
 =======================

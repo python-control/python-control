@@ -1,13 +1,14 @@
 # timeplot_test.py - test out time response plots
 # RMM, 23 Jun 2023
 
-import pytest
-import control as ct
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import pytest
 
-from control.tests.conftest import slycotonly, mplcleanup
+import control as ct
+from control.tests.conftest import mplcleanup, slycotonly
+
 
 # Detailed test of (almost) all functionality
 #
@@ -138,7 +139,7 @@ def test_response_plots(
 
     # Make sure all of the outputs are of the right type
     nlines_plotted = 0
-    for ax_lines in np.nditer(out, flags=["refs_ok"]):
+    for ax_lines in np.nditer(out.lines, flags=["refs_ok"]):
         for line in ax_lines.item():
             assert isinstance(line, mpl.lines.Line2D)
             nlines_plotted += 1
@@ -381,7 +382,7 @@ def test_linestyles():
         [[[1], [0.1]], [[0.2], [1]]],
         [[[1, 0.6, 1], [1, 1, 1]], [[1, 0.4, 1], [1, 2, 1]]], name="MIMO")
     out = ct.step_response(sys_mimo).plot('k--', plot_inputs=True)
-    for ax in np.nditer(out, flags=["refs_ok"]):
+    for ax in np.nditer(out.lines, flags=["refs_ok"]):
         for line in ax.item():
             assert line.get_color() == 'k'
             assert line.get_linestyle() == '--'

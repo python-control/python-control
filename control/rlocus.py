@@ -24,6 +24,7 @@ import scipy.signal  # signal processing toolbox
 from numpy import array, imag, poly1d, real, vstack, zeros_like
 
 from . import config
+from .ctrlplot import ControlPlot
 from .exception import ControlMIMONotImplemented
 from .iosys import isdtime
 from .lti import LTI
@@ -134,15 +135,26 @@ def root_locus_plot(
 
     Returns
     -------
-    lines : array of list of Line2D
-        Array of Line2D objects for each set of markers in the plot. The
-        shape of the array is given by (nsys, 3) where nsys is the number
-        of systems or responses passed to the function.  The second index
-        specifies the object type:
+    cplt : :class:`ControlPlot` object
+        Object containing the data that were plotted:
 
-        * lines[idx, 0]: poles
-        * lines[idx, 1]: zeros
-        * lines[idx, 2]: loci
+          * cplt.lines: Array of :class:`matplotlib.lines.Line2D` objects
+            for each set of markers in the plot. The shape of the array is
+            given by (nsys, 3) where nsys is the number of systems or
+            responses passed to the function.  The second index specifies
+            the object type:
+
+              - lines[idx, 0]: poles
+              - lines[idx, 1]: zeros
+              - lines[idx, 2]: loci
+
+          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+
+          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+
+          * cplt.legend: legend object(s) contained in the plot
+
+        See :class:`ControlPlot` for more detailed information.
 
     roots, gains : ndarray
         (legacy) If the `plot` keyword is given, returns the closed-loop
@@ -188,13 +200,13 @@ def root_locus_plot(
         return responses.loci, responses.gains
 
     # Plot the root loci
-    out = responses.plot(grid=grid, **kwargs)
+    ctrlplot = responses.plot(grid=grid, **kwargs)
 
     # Legacy processing: return locations of poles and zeros as a tuple
     if plot is True:
         return responses.loci, responses.gains
 
-    return out
+    return ControlPlot(ctrlplot.lines, ctrlplot.axes, ctrlplot.figure)
 
 
 def _default_gains(num, den, xlim, ylim):

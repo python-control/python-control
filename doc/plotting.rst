@@ -484,14 +484,15 @@ returned values from plotting routines.
    ~control.suptitle
 
 
-Response classes
-----------------
+Response and plotting classes
+-----------------------------
 
 The following classes are used in generating response data.
 
 .. autosummary::
    :toctree: generated/
 
+   ~control.ControlPlot
    ~control.DescribingFunctionResponse
    ~control.FrequencyResponseData
    ~control.FrequencyResponseList

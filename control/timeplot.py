@@ -15,7 +15,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from . import config
-from .ctrlplot import _ctrlplot_rcParams, _make_legend_labels, _update_suptitle
+from .ctrlplot import ControlPlot, _ctrlplot_rcParams, _make_legend_labels, \
+    _update_suptitle
 
 __all__ = ['time_response_plot', 'combine_time_responses']
 
@@ -89,10 +90,21 @@ def time_response_plot(
 
     Returns
     -------
-    out : array of list of Line2D
-        Array of Line2D objects for each line in the plot.  The shape of
-        the array matches the subplots shape and the value of the array is a
-        list of Line2D objects in that subplot.
+    cplt : :class:`ControlPlot` object
+        Object containing the data that were plotted:
+
+          * cplt.lines: Array of :class:`matplotlib.lines.Line2D` objects
+            for each line in the plot.  The shape of the array matches the
+            subplots shape and the value of the array is a list of Line2D
+            objects in that subplot.
+
+          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+
+          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+
+          * cplt.legend: legend object(s) contained in the plot
+
+        See :class:`ControlPlot` for more detailed information.
 
     Other Parameters
     ----------------
@@ -644,7 +656,7 @@ def time_response_plot(
 
     _update_suptitle(fig, title, rcParams=rcParams)
 
-    return out
+    return ControlPlot(out, ax_array, fig)
 
 
 def combine_time_responses(response_list, trace_labels=None, title=None):

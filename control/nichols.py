@@ -18,7 +18,8 @@ import matplotlib.transforms
 import numpy as np
 
 from . import config
-from .ctrlplot import _get_line_labels, _process_ax_keyword, suptitle
+from .ctrlplot import ControlPlot, _get_line_labels, _process_ax_keyword, \
+    suptitle
 from .ctrlutil import unwrap
 from .freqplot import _default_frequency_range, _freqplot_defaults
 from .lti import frequency_response
@@ -60,10 +61,23 @@ def nichols_plot(
 
     Returns
     -------
-    lines : array of Line2D
-        1-D array of Line2D objects.  The size of the array matches
-        the number of systems and the value of the array is a list of
-        Line2D objects for that system.
+  cplt : :class:`ControlPlot` object
+        Object containing the data that were plotted:
+
+          * cplt.lines: 1D array of :class:`matplotlib.lines.Line2D` objects.
+            The size of the array matches the number of systems and the
+            value of the array is a list of Line2D objects for that system.
+
+          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+
+          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+
+          * cplt.legend: legend object(s) contained in the plot
+
+        See :class:`ControlPlot` for more detailed information.
+
+      lines : array of Line2D
+
     """
     # Get parameter values
     grid = config._get_param('nichols', 'grid', grid, True)
@@ -130,7 +144,7 @@ def nichols_plot(
         title = "Nichols plot for " + ", ".join(labels)
     suptitle(title, fig=fig, rcParams=rcParams)
 
-    return out
+    return ControlPlot(out, ax_nichols, fig)
 
 
 def _inner_extents(ax):

@@ -7,14 +7,15 @@ well as some of the support functions associated with static nonlinearities.
 
 """
 
+import math
+
+import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 
-import numpy as np
 import control as ct
-import math
-import matplotlib.pyplot as plt
-from control.descfcn import saturation_nonlinearity, \
-    friction_backlash_nonlinearity, relay_hysteresis_nonlinearity
+from control.descfcn import friction_backlash_nonlinearity, \
+    relay_hysteresis_nonlinearity, saturation_nonlinearity
 
 
 # Static function via a class
@@ -231,3 +232,8 @@ def test_describing_function_exceptions():
     with pytest.raises(AttributeError, match="no property|unexpected keyword"):
         response = ct.describing_function_response(H_simple, F_saturation, amp)
         response.plot(unknown=None)
+
+    # Describing function plot for non-describing function object
+    resp = ct.frequency_response(H_simple)
+    with pytest.raises(TypeError, match="data must be DescribingFunction"):
+        cplt = ct.describing_function_plot(resp)
