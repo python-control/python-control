@@ -68,13 +68,11 @@ def suptitle(
             fig.suptitle(title, **kwargs)
 
     elif frame == 'axes':
-        # TODO: move common plotting params to 'ctrlplot'
         with plt.rc_context(rcParams):
-            plt.tight_layout()          # Put the figure into proper layout
+            fig.suptitle(title, **kwargs)           # Place title in center
+            plt.tight_layout()                      # Put everything into place
             xc, _ = _find_axes_center(fig, fig.get_axes())
-
-            fig.suptitle(title, x=xc, **kwargs)
-            plt.tight_layout()          # Update the layout
+            fig.suptitle(title, x=xc, **kwargs)     # Redraw title, centered
 
     else:
         raise ValueError(f"unknown frame '{frame}'")
