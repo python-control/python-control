@@ -7,7 +7,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-from control.tests.conftest import slycotonly
+from control.tests.conftest import slycotonly, editsdefaults
 pytestmark = pytest.mark.usefixtures("mplcleanup")
 
 #
@@ -55,15 +55,19 @@ manual_response = ct.FrequencyResponseData(
      (True,  True,   None,   'row',  True,   False,  False,  False),
      (True,  True,   'row',  None,   None,   False,  False,  True),
      ])
+@pytest.mark.usefixtures("editsdefaults")
 def test_response_plots(
         sys, pltmag, pltphs, shrmag, shrphs, shrfrq, secsys,
         ovlout, ovlinp, clear=True):
+
+    # Use figure frame for suptitle to speed things up
+    ct.set_defaults('freqplot', suptitle_frame='figure')
 
     # Save up the keyword arguments
     kwargs = dict(
         plot_magnitude=pltmag, plot_phase=pltphs,
         share_magnitude=shrmag, share_phase=shrphs, share_frequency=shrfrq,
-        overlay_outputs=ovlout, overlay_inputs=ovlinp
+        overlay_outputs=ovlout, overlay_inputs=ovlinp,
     )
 
     # Create the response
@@ -121,12 +125,12 @@ def test_response_plots(
 
     # Update the title so we can see what is going on
     fig = out[0, 0][0].axes.figure
-    fig.suptitle(
+    ct.suptitle(
         fig._suptitle._text +
         f" [{sys.noutputs}x{sys.ninputs}, pm={pltmag}, pp={pltphs},"
         f" sm={shrmag}, sp={shrphs}, sf={shrfrq}]",     # TODO: ", "
         # f"oo={ovlout}, oi={ovlinp}, ss={secsys}]",    # TODO: add back
-        fontsize='small')
+        frame='figure', fontsize='small')
 
     # Get rid of the figure to free up memory
     if clear:
@@ -150,7 +154,11 @@ def test_manual_response_limits():
 
 @pytest.mark.parametrize(
     "plt_fcn", [ct.bode_plot, ct.nichols_plot, ct.singular_values_plot])
+@pytest.mark.usefixtures("editsdefaults")
 def test_line_styles(plt_fcn):
+    # Use figure frame for suptitle to speed things up
+    ct.set_defaults('freqplot', suptitle_frame='figure')
+
     # Define a couple of systems for testing
     sys1 = ct.tf([1], [1, 2, 1], name='sys1')
     sys2 = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='sys2')
@@ -180,6 +188,12 @@ def test_basic_freq_plots(savefigs=False):
     ct.bode_plot(response, initial_phase=0)
     if savefigs:
         plt.savefig('freqplot-siso_bode-default.png')
+
+    plt.figure()
+    omega = np.logspace(-2, 2, 500)
+    ct.frequency_response([sys1, sys2], omega).plot(initial_phase=0)
+    if savefigs:
+        plt.savefig('freqplot-siso_bode-omega.png')
 
     # Basic MIMO Bode plot
     plt.figure()
@@ -213,6 +227,24 @@ def test_basic_freq_plots(savefigs=False):
     if savefigs:
         plt.savefig('freqplot-siso_nichols-default.png')
 
+    # Nyquist plot - default settings
+    plt.figure()
+    sys = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='sys')
+    ct.nyquist(sys)
+    if savefigs:
+        plt.savefig('freqplot-nyquist-default.png')
+
+    # Nyquist plot - custom settings
+    plt.figure()
+    sys = ct.tf([1, 0.2], [1, 0, 1]) * ct.tf([1], [1, 0])
+    nyqresp = ct.nyquist_response(sys)
+    nyqresp.plot(
+        max_curve_magnitude=6, max_curve_offset=1,
+        arrows=[0, 0.15, 0.3, 0.6, 0.7, 0.925], label='sys')
+    print("Encirclements =", nyqresp.count)
+    if savefigs:
+        plt.savefig('freqplot-nyquist-custom.png')
+
 
 def test_gangof4_plots(savefigs=False):
     proc = ct.tf([1], [1, 1, 1], name="process")
@@ -230,7 +262,11 @@ def test_gangof4_plots(savefigs=False):
     (ct.nyquist_response, ct.freqplot.NyquistResponseData),
     (ct.singular_values_response, ct.FrequencyResponseData),
 ])
+@pytest.mark.usefixtures("editsdefaults")
 def test_first_arg_listable(response_cmd, return_type):
+    # Use figure frame for suptitle to speed things up
+    ct.set_defaults('freqplot', suptitle_frame='figure')
+
     sys = ct.rss(2, 1, 1)
 
     # If we pass a single system, should get back a single system
@@ -262,7 +298,11 @@ def test_first_arg_listable(response_cmd, return_type):
     assert isinstance(result[0], return_type)
 
 
+@pytest.mark.usefixtures("editsdefaults")
 def test_bode_share_options():
+    # Use figure frame for suptitle to speed things up
+    ct.set_defaults('freqplot', suptitle_frame='figure')
+
     # Default sharing should share along rows and cols for mag and phase
     lines = ct.bode_plot(manual_response)
     axs = ct.get_plot_axes(lines)
@@ -321,7 +361,11 @@ def test_freqplot_plot_type(plot_type):
         assert lines.shape == (1, )
 
 @pytest.mark.parametrize("plt_fcn", [ct.bode_plot, ct.singular_values_plot])
+@pytest.mark.usefixtures("editsdefaults")
 def test_freqplot_omega_limits(plt_fcn):
+    # Use figure frame for suptitle to speed things up
+    ct.set_defaults('freqplot', suptitle_frame='figure')
+
     # Utility function to check visible limits
     def _get_visible_limits(ax):
         xticks = np.array(ax.get_xticks())
@@ -344,6 +388,195 @@ def test_freqplot_omega_limits(plt_fcn):
     ax = ct.get_plot_axes(lines)
     np.testing.assert_allclose(
         _get_visible_limits(ax.reshape(-1)[0]), np.array([1, 100]))
+
+
+def test_gangof4_trace_labels():
+    P1 = ct.rss(2, 1, 1, name='P1')
+    P2 = ct.rss(3, 1, 1, name='P2')
+    C = ct.rss(1, 1, 1, name='C')
+
+    # Make sure default labels are as expected
+    out = ct.gangof4_response(P1, C).plot()
+    out = ct.gangof4_response(P2, C).plot()
+    axs = ct.get_plot_axes(out)
+    legend = axs[0, 1].get_legend().get_texts()
+    assert legend[0].get_text() == 'None'
+    assert legend[1].get_text() == 'None'
+    plt.close()
+
+    # Override labels
+    out = ct.gangof4_response(P1, C).plot(label='xxx, line1, yyy')
+    out = ct.gangof4_response(P2, C).plot(label='xxx, line2, yyy')
+    axs = ct.get_plot_axes(out)
+    legend = axs[0, 1].get_legend().get_texts()
+    assert legend[0].get_text() == 'xxx, line1, yyy'
+    assert legend[1].get_text() == 'xxx, line2, yyy'
+    plt.close()
+
+
+@pytest.mark.parametrize(
+    "plt_fcn", [ct.bode_plot, ct.singular_values_plot, ct.nyquist_plot])
+@pytest.mark.usefixtures("editsdefaults")
+def test_freqplot_trace_labels(plt_fcn):
+    sys1 = ct.rss(2, 1, 1, name='sys1')
+    sys2 = ct.rss(3, 1, 1, name='sys2')
+
+    # Use figure frame for suptitle to speed things up
+    ct.set_defaults('freqplot', suptitle_frame='figure')
+
+    # Make sure default labels are as expected
+    out = plt_fcn([sys1, sys2])
+    axs = ct.get_plot_axes(out)
+    if axs.ndim == 1:
+        legend = axs[0].get_legend().get_texts()
+    else:
+        legend = axs[0, 0].get_legend().get_texts()
+    assert legend[0].get_text() == 'sys1'
+    assert legend[1].get_text() == 'sys2'
+    plt.close()
+
+    # Override labels all at once
+    out = plt_fcn([sys1, sys2], label=['line1', 'line2'])
+    axs = ct.get_plot_axes(out)
+    if axs.ndim == 1:
+        legend = axs[0].get_legend().get_texts()
+    else:
+        legend = axs[0, 0].get_legend().get_texts()
+    assert legend[0].get_text() == 'line1'
+    assert legend[1].get_text() == 'line2'
+    plt.close()
+
+    # Override labels one at a time
+    out = plt_fcn(sys1, label='line1')
+    out = plt_fcn(sys2, label='line2')
+    axs = ct.get_plot_axes(out)
+    if axs.ndim == 1:
+        legend = axs[0].get_legend().get_texts()
+    else:
+        legend = axs[0, 0].get_legend().get_texts()
+    assert legend[0].get_text() == 'line1'
+    assert legend[1].get_text() == 'line2'
+    plt.close()
+
+    if plt_fcn == ct.bode_plot:
+        # Multi-dimensional data
+        sys1 = ct.rss(2, 2, 2, name='sys1')
+        sys2 = ct.rss(3, 2, 2, name='sys2')
+
+        # Check out some errors first
+        with pytest.raises(ValueError, match="number of labels must match"):
+            ct.bode_plot([sys1, sys2], label=['line1'])
+
+        with pytest.xfail(reason="need better broadcast checking on labels"):
+            with pytest.raises(
+                    ValueError, match="labels must be given for each"):
+                ct.bode_plot(sys1, overlay_inputs=True, label=['line1'])
+
+        # Now do things that should work
+        out = ct.bode_plot(
+            [sys1, sys2],
+            label=[
+                [['line1', 'line1'], ['line1', 'line1']],
+                [['line2', 'line2'], ['line2', 'line2']],
+            ])
+        axs = ct.get_plot_axes(out)
+        legend = axs[0, -1].get_legend().get_texts()
+        assert legend[0].get_text() == 'line1'
+        assert legend[1].get_text() == 'line2'
+        plt.close()
+
+
+@pytest.mark.parametrize(
+    "plt_fcn", [
+        ct.bode_plot, ct.singular_values_plot, ct.nyquist_plot,
+        ct.nichols_plot])
+@pytest.mark.parametrize(
+    "ninputs, noutputs", [(1, 1), (1, 2), (2, 1), (2, 3)])
+@pytest.mark.usefixtures("editsdefaults")
+def test_freqplot_ax_keyword(plt_fcn, ninputs, noutputs):
+    if plt_fcn in [ct.nyquist_plot, ct.nichols_plot] and \
+       (ninputs != 1 or noutputs != 1):
+        pytest.skip("MIMO not implemented for Nyquist/Nichols")
+
+    # Use figure frame for suptitle to speed things up
+    ct.set_defaults('freqplot', suptitle_frame='figure')
+
+    # System to use
+    sys = ct.rss(4, ninputs, noutputs)
+
+    # Create an initial figure
+    out1 = plt_fcn(sys)
+
+    # Draw again on the same figure, using array
+    axs = ct.get_plot_axes(out1)
+    out2 = plt_fcn(sys, ax=axs)
+    np.testing.assert_equal(ct.get_plot_axes(out1), ct.get_plot_axes(out2))
+
+    # Pass things in as a list instead
+    axs_list = axs.tolist()
+    out3 = plt_fcn(sys, ax=axs)
+    np.testing.assert_equal(ct.get_plot_axes(out1), ct.get_plot_axes(out3))
+
+    # Flatten the list
+    axs_list = axs.squeeze().tolist()
+    out3 = plt_fcn(sys, ax=axs_list)
+    np.testing.assert_equal(ct.get_plot_axes(out1), ct.get_plot_axes(out3))
+
+
+def test_mixed_systypes():
+    s = ct.tf('s')
+    sys_tf = ct.tf(
+        (0.02 * s**3 - 0.1 * s) / (s**4 + s**3 + s**2 + 0.25 * s + 0.04),
+        name='tf')
+    sys_ss = ct.ss(sys_tf * 2, name='ss')
+    sys_frd1 = ct.frd(sys_tf / 2, np.logspace(-1, 1, 15), name='frd1')
+    sys_frd2 = ct.frd(sys_tf / 4, np.logspace(-3, 2, 20), name='frd2')
+
+    # Simple case: compute responses separately and plot
+    resp_tf = ct.frequency_response(sys_tf)
+    resp_ss = ct.frequency_response(sys_ss)
+    plt.figure()
+    ct.bode_plot([resp_tf, resp_ss, sys_frd1, sys_frd2], plot_phase=False)
+    ct.suptitle("bode_plot([resp_tf, resp_ss, sys_frd1, sys_frd2])")
+
+    # Same thing, but using frequency response
+    plt.figure()
+    resp = ct.frequency_response([sys_tf, sys_ss, sys_frd1, sys_frd2])
+    resp.plot(plot_phase=False)
+    ct.suptitle("frequency_response([sys_tf, sys_ss, sys_frd1, sys_frd2])")
+
+    # Same thing, but using bode_plot
+    plt.figure()
+    resp = ct.bode_plot([sys_tf, sys_ss, sys_frd1, sys_frd2], plot_phase=False)
+    ct.suptitle("bode_plot([sys_tf, sys_ss, sys_frd1, sys_frd2])")
+
+
+def test_suptitle():
+    sys = ct.rss(2, 2, 2)
+
+    # Default location: center of axes
+    out = ct.bode_plot(sys)
+    assert plt.gcf()._suptitle._x != 0.5
+
+    # Try changing the the title
+    ct.suptitle("New title")
+    assert plt.gcf()._suptitle._text == "New title"
+
+    # Change the location of the title
+    ct.suptitle("New title", frame='figure')
+    assert plt.gcf()._suptitle._x == 0.5
+
+    # Change the location of the title back
+    ct.suptitle("New title", frame='axes')
+    assert plt.gcf()._suptitle._x != 0.5
+
+    # Bad frame
+    with pytest.raises(ValueError, match="unknown"):
+        ct.suptitle("New title", frame='nowhere')
+
+    # Bad keyword
+    with pytest.raises(AttributeError, match="unexpected keyword|no property"):
+        ct.suptitle("New title", unknown=None)
 
 
 @pytest.mark.parametrize("plt_fcn", [ct.bode_plot, ct.singular_values_plot])
@@ -405,6 +638,9 @@ if __name__ == "__main__":
     for args in test_cases:
         test_response_plots(*args, ovlinp=False, ovlout=False, clear=False)
 
+    # Reset suptitle_frame to the default value
+    ct.reset_defaults()
+
     # Define and run a selected set of interesting tests
     # TODO: TBD (see timeplot_test.py for format)
 
@@ -415,5 +651,4 @@ if __name__ == "__main__":
     # Run a few more special cases to show off capabilities (and save some
     # of them for use in the documentation).
     #
-
-    pass
+    test_mixed_systypes()

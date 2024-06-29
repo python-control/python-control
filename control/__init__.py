@@ -83,6 +83,7 @@ from .timeresp import *
 from .timeplot import *
 
 from .bdalg import *
+from .ctrlplot import *
 from .delay import *
 from .descfcn import *
 from .dtime import *

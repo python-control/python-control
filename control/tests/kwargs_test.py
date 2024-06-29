@@ -21,6 +21,7 @@ import control.flatsys
 # List of all of the test modules where kwarg unit tests are defined
 import control.tests.flatsys_test as flatsys_test
 import control.tests.frd_test as frd_test
+import control.tests.freqplot_test as freqplot_test
 import control.tests.interconnect_test as interconnect_test
 import control.tests.optimal_test as optimal_test
 import control.tests.statefbk_test as statefbk_test
@@ -193,9 +194,9 @@ def test_matplotlib_kwargs(function, nsysargs, moreargs, kwargs, mplcleanup):
 def test_response_plot_kwargs(data_fcn, plot_fcn, mimo):
     # Create a system for testing
     if mimo:
-        response = data_fcn(control.rss(4, 2, 2))
+        response = data_fcn(control.rss(4, 2, 2, strictly_proper=True))
     else:
-        response = data_fcn(control.rss(4, 1, 1))
+        response = data_fcn(control.rss(4, 1, 1, strictly_proper=True))
 
     # Make sure that calling the data function with unknown keyword errs
     with pytest.raises(
@@ -242,6 +243,7 @@ kwarg_unittest = {
     'dlqr': test_unrecognized_kwargs,
     'drss': test_unrecognized_kwargs,
     'flatsys.flatsys': test_unrecognized_kwargs,
+    'frd': frd_test.TestFRD.test_unrecognized_keyword,
     'gangof4': test_matplotlib_kwargs,
     'gangof4_plot': test_matplotlib_kwargs,
     'input_output_response': test_unrecognized_kwargs,
@@ -269,6 +271,7 @@ kwarg_unittest = {
     'ss2io': test_unrecognized_kwargs,
     'ss2tf': test_unrecognized_kwargs,
     'summing_junction': interconnect_test.test_interconnect_exceptions,
+    'suptitle': freqplot_test.test_suptitle,
     'tf': test_unrecognized_kwargs,
     'tf2io' : test_unrecognized_kwargs,
     'tf2ss' : test_unrecognized_kwargs,

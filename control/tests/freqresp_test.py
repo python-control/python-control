@@ -709,3 +709,25 @@ def test_singular_values_plot_mpl_superimpose_nyq(ss_mimo_ct, ss_mimo_dt):
     assert(len(nyquist_line[0]) == 2)
     assert(nyquist_line[0][0] == nyquist_line[0][1])
     assert(nyquist_line[0][0] == np.pi/sys_dt.dt)
+
+
+def test_freqresp_omega_limits():
+    sys = ctrl.rss(4, 1, 1)
+
+    # Generate a standard frequency response (no limits specified)
+    resp0 = ctrl.frequency_response(sys)
+
+    # Regenerate the response using omega_limits
+    resp1 = ctrl.frequency_response(
+        sys, omega_limits=[resp0.omega[0], resp0.omega[-1]])
+    np.testing.assert_equal(resp0.omega, resp1.omega)
+
+    # Regenerate the response using omega as a list of two elements
+    resp2 = ctrl.frequency_response(sys, [resp0.omega[0], resp0.omega[-1]])
+    np.testing.assert_equal(resp0.omega, resp2.omega)
+    assert resp2.omega.size > 100
+
+    # Make sure that generating response using array does the right thing
+    resp3 = ctrl.frequency_response(
+        sys, np.array([resp0.omega[0], resp0.omega[-1]]))
+    np.testing.assert_equal(resp3.omega, [resp0.omega[0], resp0.omega[-1]])

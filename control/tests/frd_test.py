@@ -12,7 +12,7 @@ import pytest
 import control as ct
 from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
-from control.frdata import FRD, _convert_to_FRD, FrequencyResponseData
+from control.frdata import frd, _convert_to_frd, FrequencyResponseData
 from control import bdalg, evalfr, freqplot
 from control.tests.conftest import slycotonly
 from control.exception import pandas_check
@@ -25,35 +25,39 @@ class TestFRD:
     def testBadInputType(self):
         """Give the constructor invalid input types."""
         with pytest.raises(ValueError):
-            FRD()
+            frd()
         with pytest.raises(TypeError):
-            FRD([1])
+            frd([1])
 
     def testInconsistentDimension(self):
         with pytest.raises(TypeError):
-            FRD([1, 1], [1, 2, 3])
+            frd([1, 1], [1, 2, 3])
 
-    def testSISOtf(self):
+    @pytest.mark.parametrize(
+        "frd_fcn", [ct.frd, ct.FRD, ct.FrequencyResponseData])
+    def testSISOtf(self, frd_fcn):
         # get a SISO transfer function
         h = TransferFunction([1], [1, 2, 2])
         omega = np.logspace(-1, 2, 10)
-        frd = FRD(h, omega)
-        assert isinstance(frd, FRD)
+        sys = frd_fcn(h, omega)
+        assert isinstance(sys, FrequencyResponseData)
 
-        mag1, phase1, omega1 = frd.frequency_response([1.0])
+        mag1, phase1, omega1 = sys.frequency_response([1.0])
         mag2, phase2, omega2 = h.frequency_response([1.0])
         np.testing.assert_array_almost_equal(mag1, mag2)
         np.testing.assert_array_almost_equal(phase1, phase2)
         np.testing.assert_array_almost_equal(omega1, omega2)
 
-    def testOperators(self):
+    @pytest.mark.parametrize(
+        "frd_fcn", [ct.frd, ct.FRD, ct.FrequencyResponseData])
+    def testOperators(self, frd_fcn):
         # get two SISO transfer functions
         h1 = TransferFunction([1], [1, 2, 2])
         h2 = TransferFunction([1], [0.1, 1])
         omega = np.logspace(-1, 2, 10)
         chkpts = omega[::3]
-        f1 = FRD(h1, omega)
-        f2 = FRD(h2, omega)
+        f1 = frd_fcn(h1, omega)
+        f2 = frd_fcn(h2, omega)
 
         np.testing.assert_array_almost_equal(
             (f1 + f2).frequency_response(chkpts)[0],
@@ -90,14 +94,16 @@ class TestFRD:
             (1.3 / f2).frequency_response(chkpts)[1],
             (1.3 / h2).frequency_response(chkpts)[1])
 
-    def testOperatorsTf(self):
+    @pytest.mark.parametrize(
+        "frd_fcn", [ct.frd, ct.FRD, ct.FrequencyResponseData])
+    def testOperatorsTf(self, frd_fcn):
         # get two SISO transfer functions
         h1 = TransferFunction([1], [1, 2, 2])
         h2 = TransferFunction([1], [0.1, 1])
         omega = np.logspace(-1, 2, 10)
         chkpts = omega[::3]
-        f1 = FRD(h1, omega)
-        f2 = FRD(h2, omega)
+        f1 = frd_fcn(h1, omega)
+        f2 = frd_fcn(h2, omega)
         f2  # reference to avoid pyflakes error
 
         np.testing.assert_array_almost_equal(
@@ -121,14 +127,16 @@ class TestFRD:
             (h1 / h2).frequency_response(chkpts)[1])
         # the reverse does not work
 
-    def testbdalg(self):
+    @pytest.mark.parametrize(
+        "frd_fcn", [ct.frd, ct.FRD, ct.FrequencyResponseData])
+    def testbdalg(self, frd_fcn):
         # get two SISO transfer functions
         h1 = TransferFunction([1], [1, 2, 2])
         h2 = TransferFunction([1], [0.1, 1])
         omega = np.logspace(-1, 2, 10)
         chkpts = omega[::3]
-        f1 = FRD(h1, omega)
-        f2 = FRD(h2, omega)
+        f1 = frd_fcn(h1, omega)
+        f2 = frd_fcn(h2, omega)
 
         np.testing.assert_array_almost_equal(
             (bdalg.series(f1, f2)).frequency_response(chkpts)[0],
@@ -158,11 +166,13 @@ class TestFRD:
 #           (bdalg.connect(f3, Q, [2], [1])).frequency_response(chkpts)[0],
 #            (bdalg.connect(h3, Q, [2], [1])).frequency_response(chkpts)[0])
 
-    def testFeedback(self):
+    @pytest.mark.parametrize(
+        "frd_fcn", [ct.frd, ct.FRD, ct.FrequencyResponseData])
+    def testFeedback(self, frd_fcn):
         h1 = TransferFunction([1], [1, 2, 2])
         omega = np.logspace(-1, 2, 10)
         chkpts = omega[::3]
-        f1 = FRD(h1, omega)
+        f1 = frd_fcn(h1, omega)
         np.testing.assert_array_almost_equal(
             f1.feedback(1).frequency_response(chkpts)[0],
             h1.feedback(1).frequency_response(chkpts)[0])
@@ -179,15 +189,17 @@ class TestFRD:
 
     def testAuto(self):
         omega = np.logspace(-1, 2, 10)
-        f1 = _convert_to_FRD(1, omega)
-        f2 = _convert_to_FRD(np.array([[1, 0], [0.1, -1]]), omega)
-        f2 = _convert_to_FRD([[1, 0], [0.1, -1]], omega)
+        f1 = _convert_to_frd(1, omega)
+        f2 = _convert_to_frd(np.array([[1, 0], [0.1, -1]]), omega)
+        f2 = _convert_to_frd([[1, 0], [0.1, -1]], omega)
         f1, f2  # reference to avoid pyflakes error
 
-    def testNyquist(self):
+    @pytest.mark.parametrize(
+        "frd_fcn", [ct.frd, ct.FRD, ct.FrequencyResponseData])
+    def testNyquist(self, frd_fcn):
         h1 = TransferFunction([1], [1, 2, 2])
         omega = np.logspace(-1, 2, 40)
-        f1 = FRD(h1, omega, smooth=True)
+        f1 = frd_fcn(h1, omega, smooth=True)
         freqplot.nyquist(f1, np.logspace(-1, 2, 100))
         # plt.savefig('/dev/null', format='svg')
         plt.figure(2)
@@ -197,14 +209,16 @@ class TestFRD:
         # plt.savefig('/dev/null', format='svg')
 
     @slycotonly
-    def testMIMO(self):
+    @pytest.mark.parametrize(
+        "frd_fcn", [ct.frd, ct.FRD, ct.FrequencyResponseData])
+    def testMIMO(self, frd_fcn):
         sys = StateSpace([[-0.5, 0.0], [0.0, -1.0]],
                          [[1.0, 0.0], [0.0, 1.0]],
                          [[1.0, 0.0], [0.0, 1.0]],
                          [[0.0, 0.0], [0.0, 0.0]])
         omega = np.logspace(-1, 2, 10)
         chkpts = omega[::3]
-        f1 = FRD(sys, omega)
+        f1 = frd_fcn(sys, omega)
         np.testing.assert_array_almost_equal(
             sys.frequency_response(chkpts)[0],
             f1.frequency_response(chkpts)[0])
@@ -213,15 +227,17 @@ class TestFRD:
             f1.frequency_response(chkpts)[1])
 
     @slycotonly
-    def testMIMOfb(self):
+    @pytest.mark.parametrize(
+        "frd_fcn", [ct.frd, ct.FRD, ct.FrequencyResponseData])
+    def testMIMOfb(self, frd_fcn):
         sys = StateSpace([[-0.5, 0.0], [0.0, -1.0]],
                          [[1.0, 0.0], [0.0, 1.0]],
                          [[1.0, 0.0], [0.0, 1.0]],
                          [[0.0, 0.0], [0.0, 0.0]])
         omega = np.logspace(-1, 2, 10)
         chkpts = omega[::3]
-        f1 = FRD(sys, omega).feedback([[0.1, 0.3], [0.0, 1.0]])
-        f2 = FRD(sys.feedback([[0.1, 0.3], [0.0, 1.0]]), omega)
+        f1 = frd_fcn(sys, omega).feedback([[0.1, 0.3], [0.0, 1.0]])
+        f2 = frd_fcn(sys.feedback([[0.1, 0.3], [0.0, 1.0]]), omega)
         np.testing.assert_array_almost_equal(
             f1.frequency_response(chkpts)[0],
             f2.frequency_response(chkpts)[0])
@@ -230,7 +246,9 @@ class TestFRD:
             f2.frequency_response(chkpts)[1])
 
     @slycotonly
-    def testMIMOfb2(self):
+    @pytest.mark.parametrize(
+        "frd_fcn", [ct.frd, ct.FRD, ct.FrequencyResponseData])
+    def testMIMOfb2(self, frd_fcn):
         sys = StateSpace(np.array([[-2.0, 0, 0],
                                    [0, -1, 1],
                                    [0, 0, -3]]),
@@ -239,8 +257,8 @@ class TestFRD:
         omega = np.logspace(-1, 2, 10)
         chkpts = omega[::3]
         K = np.array([[1, 0.3, 0], [0.1, 0, 0]])
-        f1 = FRD(sys, omega).feedback(K)
-        f2 = FRD(sys.feedback(K), omega)
+        f1 = frd_fcn(sys, omega).feedback(K)
+        f2 = frd_fcn(sys.feedback(K), omega)
         np.testing.assert_array_almost_equal(
             f1.frequency_response(chkpts)[0],
             f2.frequency_response(chkpts)[0])
@@ -249,15 +267,17 @@ class TestFRD:
             f2.frequency_response(chkpts)[1])
 
     @slycotonly
-    def testMIMOMult(self):
+    @pytest.mark.parametrize(
+        "frd_fcn", [ct.frd, ct.FRD, ct.FrequencyResponseData])
+    def testMIMOMult(self, frd_fcn):
         sys = StateSpace([[-0.5, 0.0], [0.0, -1.0]],
                          [[1.0, 0.0], [0.0, 1.0]],
                          [[1.0, 0.0], [0.0, 1.0]],
                          [[0.0, 0.0], [0.0, 0.0]])
         omega = np.logspace(-1, 2, 10)
         chkpts = omega[::3]
-        f1 = FRD(sys, omega)
-        f2 = FRD(sys, omega)
+        f1 = frd_fcn(sys, omega)
+        f2 = frd_fcn(sys, omega)
         np.testing.assert_array_almost_equal(
             (f1*f2).frequency_response(chkpts)[0],
             (sys*sys).frequency_response(chkpts)[0])
@@ -266,7 +286,9 @@ class TestFRD:
             (sys*sys).frequency_response(chkpts)[1])
 
     @slycotonly
-    def testMIMOSmooth(self):
+    @pytest.mark.parametrize(
+        "frd_fcn", [ct.frd, ct.FRD, ct.FrequencyResponseData])
+    def testMIMOSmooth(self, frd_fcn):
         sys = StateSpace([[-0.5, 0.0], [0.0, -1.0]],
                          [[1.0, 0.0], [0.0, 1.0]],
                          [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]],
@@ -274,8 +296,8 @@ class TestFRD:
         sys2 = np.array([[1, 0, 0], [0, 1, 0]]) * sys
         omega = np.logspace(-1, 2, 10)
         chkpts = omega[::3]
-        f1 = FRD(sys, omega, smooth=True)
-        f2 = FRD(sys2, omega, smooth=True)
+        f1 = frd_fcn(sys, omega, smooth=True)
+        f2 = frd_fcn(sys2, omega, smooth=True)
         np.testing.assert_array_almost_equal(
             (f1*f2).frequency_response(chkpts)[0],
             (sys*sys2).frequency_response(chkpts)[0])
@@ -296,55 +318,55 @@ class TestFRD:
                          np.eye(3), np.zeros((3, 2)))
         omega = np.logspace(-1, 2, 10)
         chkpts = omega[::3]
-        f1 = FRD(sys, omega)
+        f1 = frd(sys, omega)
         np.testing.assert_array_almost_equal(
             (f1.frequency_response([1.0])[0] *
              np.exp(1j * f1.frequency_response([1.0])[1])).reshape(3, 2),
             np.array([[0.4 - 0.2j, 0], [0, 0.1 - 0.2j], [0, 0.3 - 0.1j]]))
 
     def test_string_representation(self, capsys):
-        sys = FRD([1, 2, 3], [4, 5, 6])
+        sys = frd([1, 2, 3], [4, 5, 6])
         print(sys)              # Just print without checking
 
     def test_frequency_mismatch(self, recwarn):
         # recwarn: there may be a warning before the error!
         # Overlapping but non-equal frequency ranges
-        sys1 = FRD([1, 2, 3], [4, 5, 6])
-        sys2 = FRD([2, 3, 4], [5, 6, 7])
+        sys1 = frd([1, 2, 3], [4, 5, 6])
+        sys2 = frd([2, 3, 4], [5, 6, 7])
         with pytest.raises(NotImplementedError):
-            FRD.__add__(sys1, sys2)
+            sys = sys1 + sys2
 
         # One frequency range is a subset of another
-        sys1 = FRD([1, 2, 3], [4, 5, 6])
-        sys2 = FRD([2, 3], [4, 5])
+        sys1 = frd([1, 2, 3], [4, 5, 6])
+        sys2 = frd([2, 3], [4, 5])
         with pytest.raises(NotImplementedError):
-            FRD.__add__(sys1, sys2)
+            sys = sys1 + sys2
 
     def test_size_mismatch(self):
-        sys1 = FRD(ct.rss(2, 2, 2), np.logspace(-1, 1, 10))
+        sys1 = frd(ct.rss(2, 2, 2), np.logspace(-1, 1, 10))
 
         # Different number of inputs
-        sys2 = FRD(ct.rss(3, 1, 2), np.logspace(-1, 1, 10))
+        sys2 = frd(ct.rss(3, 1, 2), np.logspace(-1, 1, 10))
         with pytest.raises(ValueError):
-            FRD.__add__(sys1, sys2)
+            sys = sys1 + sys2
 
         # Different number of outputs
-        sys2 = FRD(ct.rss(3, 2, 1), np.logspace(-1, 1, 10))
+        sys2 = frd(ct.rss(3, 2, 1), np.logspace(-1, 1, 10))
         with pytest.raises(ValueError):
-            FRD.__add__(sys1, sys2)
+            sys = sys1 + sys2
 
         # Inputs and outputs don't match
         with pytest.raises(ValueError):
-            FRD.__mul__(sys2, sys1)
+            sys = sys2 * sys1
 
         # Feedback mismatch
         with pytest.raises(ValueError):
-            FRD.feedback(sys2, sys1)
+            ct.feedback(sys2, sys1)
 
     def test_operator_conversion(self):
         sys_tf = ct.tf([1], [1, 2, 1])
-        frd_tf = FRD(sys_tf, np.logspace(-1, 1, 10))
-        frd_2 = FRD(2 * np.ones(10), np.logspace(-1, 1, 10))
+        frd_tf = frd(sys_tf, np.logspace(-1, 1, 10))
+        frd_2 = frd(2 * np.ones(10), np.logspace(-1, 1, 10))
 
         # Make sure that we can add, multiply, and feedback constants
         sys_add = frd_tf + 2
@@ -383,18 +405,18 @@ class TestFRD:
         np.testing.assert_array_almost_equal(sys_rdiv.fresp, chk_rdiv.fresp)
 
         sys_pow = frd_tf**2
-        chk_pow = FRD(sys_tf**2, np.logspace(-1, 1, 10))
+        chk_pow = frd(sys_tf**2, np.logspace(-1, 1, 10))
         np.testing.assert_array_almost_equal(sys_pow.omega, chk_pow.omega)
         np.testing.assert_array_almost_equal(sys_pow.fresp, chk_pow.fresp)
 
         sys_pow = frd_tf**-2
-        chk_pow = FRD(sys_tf**-2, np.logspace(-1, 1, 10))
+        chk_pow = frd(sys_tf**-2, np.logspace(-1, 1, 10))
         np.testing.assert_array_almost_equal(sys_pow.omega, chk_pow.omega)
         np.testing.assert_array_almost_equal(sys_pow.fresp, chk_pow.fresp)
 
         # Assertion error if we try to raise to a non-integer power
         with pytest.raises(ValueError):
-            FRD.__pow__(frd_tf, 0.5)
+            frd_tf**0.5
 
         # Selected testing on transfer function conversion
         sys_add = frd_2 + sys_tf
@@ -402,18 +424,18 @@ class TestFRD:
         np.testing.assert_array_almost_equal(sys_add.omega, chk_add.omega)
         np.testing.assert_array_almost_equal(sys_add.fresp, chk_add.fresp)
 
-        # Input/output mismatch size mismatch in  rmul
-        sys1 = FRD(ct.rss(2, 2, 2), np.logspace(-1, 1, 10))
+        # Input/output mismatch size mismatch in rmul
+        sys1 = frd(ct.rss(2, 2, 2), np.logspace(-1, 1, 10))
         with pytest.raises(ValueError):
-            FRD.__rmul__(frd_2, sys1)
+            FrequencyResponseData.__rmul__(frd_2, sys1)
 
         # Make sure conversion of something random generates exception
         with pytest.raises(TypeError):
-            FRD.__add__(frd_tf, 'string')
+            FrequencyResponseData.__add__(frd_tf, 'string')
 
     def test_eval(self):
         sys_tf = ct.tf([1], [1, 2, 1])
-        frd_tf = FRD(sys_tf, np.logspace(-1, 1, 3))
+        frd_tf = frd(sys_tf, np.logspace(-1, 1, 3))
         np.testing.assert_almost_equal(sys_tf(1j), frd_tf.eval(1))
         np.testing.assert_almost_equal(sys_tf(1j), frd_tf(1j))
 
@@ -431,45 +453,55 @@ class TestFRD:
 
     def test_freqresp_deprecated(self):
         sys_tf = ct.tf([1], [1, 2, 1])
-        frd_tf = FRD(sys_tf, np.logspace(-1, 1, 3))
+        frd_tf = frd(sys_tf, np.logspace(-1, 1, 3))
         with pytest.warns(DeprecationWarning):
             frd_tf.freqresp(1.)
 
     def test_repr_str(self):
         # repr printing
         array = np.array
-        sys0 = FrequencyResponseData([1.0, 0.9+0.1j, 0.1+2j, 0.05+3j],
-                                     [0.1, 1.0, 10.0, 100.0])
-        sys1 = FrequencyResponseData(sys0.fresp, sys0.omega, smooth=True)
+        sys0 = ct.frd(
+            [1.0, 0.9+0.1j, 0.1+2j, 0.05+3j],
+            [0.1, 1.0, 10.0, 100.0], name='sys0')
+        sys1 = ct.frd(
+            sys0.fresp, sys0.omega, smooth=True, name='sys1')
         ref0 = "FrequencyResponseData(" \
             "array([[[1.  +0.j , 0.9 +0.1j, 0.1 +2.j , 0.05+3.j ]]])," \
             " array([  0.1,   1. ,  10. , 100. ]))"
         ref1 = ref0[:-1] + ", smooth=True)"
-        sysm = FrequencyResponseData(
-            np.matmul(array([[1],[2]]), sys0.fresp), sys0.omega)
+        sysm = ct.frd(
+            np.matmul(array([[1], [2]]), sys0.fresp), sys0.omega, name='sysm')
 
         assert repr(sys0) == ref0
         assert repr(sys1) == ref1
+
         sys0r = eval(repr(sys0))
         np.testing.assert_array_almost_equal(sys0r.fresp, sys0.fresp)
         np.testing.assert_array_almost_equal(sys0r.omega, sys0.omega)
+
         sys1r = eval(repr(sys1))
         np.testing.assert_array_almost_equal(sys1r.fresp, sys1.fresp)
         np.testing.assert_array_almost_equal(sys1r.omega, sys1.omega)
         assert(sys1.ifunc is not None)
 
-        refs = """Frequency response data
+        refs = """<FrequencyResponseData>: {sysname}
+Inputs (1): ['u[0]']
+Outputs (1): ['y[0]']
+
 Freq [rad/s]  Response
 ------------  ---------------------
        0.100           1        +0j
        1.000         0.9      +0.1j
       10.000         0.1        +2j
      100.000        0.05        +3j"""
-        assert str(sys0) == refs
-        assert str(sys1) == refs
+        assert str(sys0) == refs.format(sysname='sys0')
+        assert str(sys1) == refs.format(sysname='sys1')
 
         # print multi-input system
-        refm = """Frequency response data
+        refm = """<FrequencyResponseData>: sysm
+Inputs (2): ['u[0]', 'u[1]']
+Outputs (1): ['y[0]']
+
 Input 1 to output 1:
 Freq [rad/s]  Response
 ------------  ---------------------
@@ -490,7 +522,9 @@ Freq [rad/s]  Response
         h = TransferFunction([1], [1, 2, 2])
         omega = np.logspace(-1, 2, 10)
         with pytest.raises(TypeError, match="unrecognized keyword"):
-            frd = FRD(h, omega, unknown=None)
+            sys = FrequencyResponseData(h, omega, unknown=None)
+        with pytest.raises(TypeError, match="unrecognized keyword"):
+            sys = ct.frd(h, omega, unknown=None)
 
 
 def test_named_signals():
@@ -498,8 +532,8 @@ def test_named_signals():
     h1 = TransferFunction([1], [1, 2, 2])
     h2 = TransferFunction([1], [0.1, 1])
     omega = np.logspace(-1, 2, 10)
-    f1 = FRD(h1, omega)
-    f2 = FRD(h2, omega)
+    f1 = frd(h1, omega)
+    f2 = frd(h2, omega)
 
     # Make sure that systems were properly named
     assert f1.name == 'sys[2]'
@@ -510,7 +544,7 @@ def test_named_signals():
     assert f1.output_labels == ['y[0]']
 
     # Change names
-    f1 = FRD(h1, omega, name='mysys', inputs='u0', outputs='y0')
+    f1 = frd(h1, omega, name='mysys', inputs='u0', outputs='y0')
     assert f1.name == 'mysys'
     assert f1.ninputs == 1
     assert f1.input_labels == ['u0']
@@ -523,7 +557,7 @@ def test_to_pandas():
     # Create a SISO frequency response
     h1 = TransferFunction([1], [1, 2, 2])
     omega = np.logspace(-1, 2, 10)
-    resp = FRD(h1, omega)
+    resp = frd(h1, omega)
 
     # Convert to pandas
     df = resp.to_pandas()

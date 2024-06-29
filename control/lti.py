@@ -386,16 +386,18 @@ def frequency_response(
     sysdata : LTI system or list of LTI systems
         Linear system(s) for which frequency response is computed.
     omega : float or 1D array_like, optional
-        A list of frequencies in radians/sec at which the system should be
-        evaluated. The list can be either a Python list or a numpy array
-        and will be sorted before evaluation.  If None (default), a common
-        set of frequencies that works across all given systems is computed.
+        Frequencies in radians/sec at which the system should be
+        evaluated. Can be a single frequency or array of frequencies, which
+        will be sorted before evaluation.  If None (default), a common set
+        of frequencies that works across all given systems is computed.
     omega_limits : array_like of two values, optional
-        Limits to the range of frequencies, in rad/sec. Ignored if
-        omega is provided, and auto-generated if omitted.
+        Limits to the range of frequencies, in rad/sec. Specifying
+        ``omega`` as a list of two elements is equivalent to providing
+        ``omega_limits``.  Ignored if omega is provided.
     omega_num : int, optional
-        Number of frequency samples to plot.  Defaults to
-        config.defaults['freqplot.number_of_samples'].
+        Number of frequency samples at which to compute the response.
+        Defaults to config.defaults['freqplot.number_of_samples'].  Ignored
+        if omega is provided.
 
     Returns
     -------
@@ -473,6 +475,7 @@ def frequency_response(
         #>>> # s = 0.1i, i, 10i.
 
     """
+    from .frdata import FrequencyResponseData
     from .freqplot import _determine_omega_vector
 
     # Process keyword arguments
@@ -487,13 +490,18 @@ def frequency_response(
 
     responses = []
     for sys_ in syslist:
-        # Add the Nyquist frequency for discrete time systems
-        omega_sys = omega_syslist.copy()
-        if sys_.isdtime(strict=True):
-            nyquistfrq = math.pi / sys_.dt
-            if not omega_range_given:
-                # Limit up to the Nyquist frequency
-                omega_sys = omega_sys[omega_sys < nyquistfrq]
+        if isinstance(sys_, FrequencyResponseData) and sys_.ifunc is None and \
+           not omega_range_given:
+            omega_sys = sys_.omega              # use system properties
+        else:
+            omega_sys = omega_syslist.copy()    # use common omega vector
+
+            # Add the Nyquist frequency for discrete time systems
+            if sys_.isdtime(strict=True):
+                nyquistfrq = math.pi / sys_.dt
+                if not omega_range_given:
+                    # Limit up to the Nyquist frequency
+                    omega_sys = omega_sys[omega_sys < nyquistfrq]
 
         # Compute the frequency response
         responses.append(sys_.frequency_response(omega_sys, squeeze=squeeze))

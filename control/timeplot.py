@@ -808,7 +808,7 @@ def _make_legend_labels(labels, ignore_common=False):
         suffix_len -= 1
 
     # Strip the labels of common information
-    if suffix_len > 0:
+    if suffix_len > 0 and not ignore_common:
         labels = [label[prefix_len:-suffix_len] for label in labels]
     else:
         labels = [label[prefix_len:] for label in labels]

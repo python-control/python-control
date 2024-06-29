@@ -8,24 +8,26 @@
 # charts is in nichols.py.  The code for pole-zero diagrams is in pzmap.py
 # and rlocus.py.
 
-import numpy as np
-import matplotlib as mpl
-import matplotlib.pyplot as plt
+import itertools
 import math
 import warnings
-import itertools
 from os.path import commonprefix
 
-from .ctrlutil import unwrap
-from .bdalg import feedback
-from .margins import stability_margins
-from .exception import ControlMIMONotImplemented
-from .statesp import StateSpace
-from .lti import LTI, frequency_response, _process_frequency_response
-from .xferfcn import TransferFunction
-from .frdata import FrequencyResponseData
-from .timeplot import _make_legend_labels
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+
 from . import config
+from .bdalg import feedback
+from .ctrlplot import suptitle, _find_axes_center
+from .ctrlutil import unwrap
+from .exception import ControlMIMONotImplemented
+from .frdata import FrequencyResponseData
+from .lti import LTI, _process_frequency_response, frequency_response
+from .margins import stability_margins
+from .statesp import StateSpace
+from .timeplot import _make_legend_labels
+from .xferfcn import TransferFunction
 
 __all__ = ['bode_plot', 'NyquistResponseData', 'nyquist_response',
            'nyquist_plot', 'singular_values_response',
@@ -33,6 +35,7 @@ __all__ = ['bode_plot', 'NyquistResponseData', 'nyquist_response',
            'bode', 'nyquist', 'gangof4']
 
 # Default font dictionary
+# TODO: move common plotting params to 'ctrlplot'
 _freqplot_rcParams = mpl.rcParams.copy()
 _freqplot_rcParams.update({
     'axes.labelsize': 'small',
@@ -53,10 +56,11 @@ _freqplot_defaults = {
     'freqplot.Hz': False,  # Plot frequency in Hertz
     'freqplot.grid': True,  # Turn on grid for gain and phase
     'freqplot.wrap_phase': False,  # Wrap the phase plot at a given value
-    'freqplot.freq_label': "Frequency [%s]",
+    'freqplot.freq_label': "Frequency [{units}]",
     'freqplot.share_magnitude': 'row',
     'freqplot.share_phase': 'row',
     'freqplot.share_frequency': 'col',
+    'freqplot.suptitle_frame': 'axes',
 }
 
 #
@@ -93,7 +97,7 @@ def bode_plot(
         data, omega=None, *fmt, ax=None, omega_limits=None, omega_num=None,
         plot=None, plot_magnitude=True, plot_phase=None,
         overlay_outputs=None, overlay_inputs=None, phase_label=None,
-        magnitude_label=None, display_margins=None,
+        magnitude_label=None, label=None, display_margins=None,
         margins_method='best', legend_map=None, legend_loc=None,
         sharex=None, sharey=None, title=None, **kwargs):
     """Bode plot for a system.
@@ -107,9 +111,9 @@ def bode_plot(
         List of LTI systems or :class:`FrequencyResponseData` objects.  A
         single system or frequency response can also be passed.
     omega : array_like, optoinal
-        List of frequencies in rad/sec over to plot over.  If not specified,
-        this will be determined from the proporties of the systems.  Ignored
-        if `data` is not a list of systems.
+        Set of frequencies in rad/sec to plot over.  If not specified, this
+        will be determined from the proporties of the systems.  Ignored if
+        `data` is not a list of systems.
     *fmt : :func:`matplotlib.pyplot.plot` format string, optional
         Passed to `matplotlib` as the format string for all lines in the plot.
         The `omega` parameter must be present (use omega=None if needed).
@@ -126,8 +130,6 @@ def bode_plot(
         graphs and display the margins at the top of the graph.  If set to
         'overlay', the values for the gain and phase margin are placed on
         the graph.  Setting display_margins turns off the axes grid.
-    margins_method : str, optional
-        Method to use in computing margins (see :func:`stability_margins`).
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
@@ -149,12 +151,20 @@ def bode_plot(
         value specified.  Units are in either degrees or radians, depending on
         the `deg` parameter. Default is -180 if wrap_phase is False, 0 if
         wrap_phase is True.
+    label : str or array-like of str
+        If present, replace automatically generated label(s) with the given
+        label(s).  If sysdata is a list, strings should be specified for each
+        system.  If MIMO, strings required for each system, output, and input.
+    margins_method : str, optional
+        Method to use in computing margins (see :func:`stability_margins`).
     omega_limits : array_like of two values
-        Set limits for plotted frequency range. If Hz=True the limits
-        are in Hz otherwise in rad/s.
+        Set limits for plotted frequency range. If Hz=True the limits are
+        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
+        elements is equivalent to providing ``omega_limits``. Ignored if
+        data is not a list of systems.
     omega_num : int
         Number of samples to use for the frequeny range.  Defaults to
-        config.defaults['freqplot.number_of_samples'].  Ignore if data is
+        config.defaults['freqplot.number_of_samples'].  Ignored if data is
         not a list of systems.
     plot : bool, optional
         (legacy) If given, `bode_plot` returns the legacy return values
@@ -174,6 +184,10 @@ def bode_plot(
 
     The default values for Bode plot configuration parameters can be reset
     using the `config.defaults` dictionary, with module name 'bode'.
+
+    See Also
+    --------
+    frequency_response
 
     Notes
     -----
@@ -217,8 +231,10 @@ def bode_plot(
         'freqplot', 'wrap_phase', kwargs, _freqplot_defaults, pop=True)
     initial_phase = config._get_param(
         'freqplot', 'initial_phase', kwargs, None, pop=True)
-    freqplot_rcParams = config._get_param(
+    rcParams = config._get_param(
         'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
+    suptitle_frame = config._get_param(
+        'freqplot', 'suptitle_frame', kwargs, _freqplot_defaults, pop=True)
 
     # Set the default labels
     freq_label = config._get_param(
@@ -268,7 +284,7 @@ def bode_plot(
     #
 
     # If we were passed a list of systems, convert to data
-    if all([isinstance(
+    if any([isinstance(
             sys, (StateSpace, TransferFunction)) for sys in data]):
         data = frequency_response(
             data, omega=omega, omega_limits=omega_limits,
@@ -448,47 +464,14 @@ def bode_plot(
             (noutputs if plot_phase else 0)
         ncols = ninputs
 
-    # See if we can use the current figure axes
-    fig = plt.gcf()         # get current figure (or create new one)
-    if ax is None and plt.get_fignums():
-        ax = fig.get_axes()
-        if len(ax) == nrows * ncols:
-            # Assume that the shape is right (no easy way to infer this)
-            ax = np.array(ax).reshape(nrows, ncols)
-
-            # Clear out any old text from the current figure
-            for text in fig.texts:
-                text.set_visible(False)         # turn off the text
-                del text                        # get rid of it completely
-
-        elif len(ax) != 0:
-            # Need to generate a new figure
-            fig, ax = plt.figure(), None
-
-        else:
-            # Blank figure, just need to recreate axes
-            ax = None
-
-    # Create new axes, if needed, and customize them
     if ax is None:
-        with plt.rc_context(_freqplot_rcParams):
-            ax_array = fig.subplots(nrows, ncols, squeeze=False)
-            fig.set_layout_engine('tight')
-            fig.align_labels()
-
         # Set up default sharing of axis limits if not specified
         for kw in ['share_magnitude', 'share_phase', 'share_frequency']:
             if kw not in kwargs or kwargs[kw] is None:
                 kwargs[kw] = config.defaults['freqplot.' + kw]
 
-    else:
-        # Make sure the axes are the right shape
-        if ax.shape != (nrows, ncols):
-            raise ValueError(
-                "specified axes are not the right shape; "
-                f"got {ax.shape} but expecting ({nrows}, {ncols})")
-        ax_array = ax
-        fig = ax_array[0, 0].figure     # just in case this is not gcf()
+    fig, ax_array = _process_ax_keyword(ax, (
+        nrows, ncols), squeeze=False, rcParams=rcParams, clear_text=True)
 
     # Get the values for sharing axes limits
     share_magnitude = kwargs.pop('share_magnitude', None)
@@ -624,6 +607,9 @@ def bode_plot(
         for j in range(ncols):
             out[i, j] = []      # unique list in each element
 
+    # Process label keyword
+    line_labels = _process_line_labels(label, len(data), ninputs, noutputs)
+
     # Utility function for creating line label
     def _make_line_label(response, output_index, input_index):
         label = ""              # start with an empty label
@@ -664,7 +650,10 @@ def bode_plot(
             phase_plot = phase[i, j] * 180. / math.pi if deg else phase[i, j]
 
             # Generate a label
-            label = _make_line_label(response, i, j)
+            if line_labels is None:
+                label = _make_line_label(response, i, j)
+            else:
+                label = line_labels[index, i, j]
 
             # Magnitude
             if plot_magnitude:
@@ -805,7 +794,7 @@ def bode_plot(
                 axes_title = ax.get_title()
                 if axes_title is not None and axes_title != "":
                     axes_title += "\n"
-                with plt.rc_context(_freqplot_rcParams):
+                with plt.rc_context(rcParams):
                     ax.set_title(
                         axes_title + f"{sysname}: "
                         "Gm = %.2f %s(at %.2f %s), "
@@ -820,11 +809,11 @@ def bode_plot(
     #
     # Finishing handling axes limit sharing
     #
-    # This code handles labels on phase plots and also removes tick labels
+    # This code handles labels on Bode plots and also removes tick labels
     # on shared axes.  It needs to come *after* the plots are generated,
     # in order to handle two things:
     #
-    # * manually generated labels and grids need to reflect the limts for
+    # * manually generated labels and grids need to reflect the limits for
     #   shared axes, which we don't know until we have plotted everything;
     #
     # * the loglog and semilog functions regenerate the labels (not quite
@@ -885,6 +874,67 @@ def bode_plot(
             ax_array[i, j].set_xlim(omega_limits)
 
     #
+    # Label the axes (including header labels)
+    #
+    # Once the data are plotted, we label the axes.  The horizontal axes is
+    # always frequency and this is labeled only on the bottom most row.  The
+    # vertical axes can consist either of a single signal or a combination
+    # of signals (when overlay_inputs or overlay_outputs is True)
+    #
+    # Input/output signals are give at the top of columns and left of rows
+    # when these are individually plotted.
+    #
+
+    # Label the columns (do this first to get row labels in the right spot)
+    for j in range(ncols):
+        # If we have more than one column, label the individual responses
+        if (noutputs > 1 and not overlay_outputs or ninputs > 1) \
+           and not overlay_inputs:
+            with plt.rc_context(rcParams):
+                ax_array[0, j].set_title(f"From {data[0].input_labels[j]}")
+
+        # Label the frequency axis
+        ax_array[-1, j].set_xlabel(
+            freq_label.format(units="Hz" if Hz else "rad/s"))
+
+    # Label the rows
+    for i in range(noutputs if not overlay_outputs else 1):
+        if plot_magnitude:
+            ax_mag = ax_array[mag_map[i, 0]]
+            ax_mag.set_ylabel(magnitude_label)
+        if plot_phase:
+            ax_phase = ax_array[phase_map[i, 0]]
+            ax_phase.set_ylabel(phase_label)
+
+        if (noutputs > 1 or ninputs > 1) and not overlay_outputs:
+            if plot_magnitude and plot_phase:
+                # Get existing ylabel for left column and add a blank line
+                ax_mag.set_ylabel("\n" + ax_mag.get_ylabel())
+                ax_phase.set_ylabel("\n" + ax_phase.get_ylabel())
+
+                # Find the midpoint between the row axes (+ tight_layout)
+                _, ypos = _find_axes_center(fig, [ax_mag, ax_phase])
+
+                # Get the bounding box including the labels
+                inv_transform = fig.transFigure.inverted()
+                mag_bbox = inv_transform.transform(
+                    ax_mag.get_tightbbox(fig.canvas.get_renderer()))
+
+                # Figure out location for the text (center left in figure frame)
+                xpos = mag_bbox[0, 0]               # left edge
+
+                # Put a centered label as text outside the box
+                fig.text(
+                    0.8 * xpos, ypos, f"To {data[0].output_labels[i]}\n",
+                    rotation=90, ha='left', va='center',
+                    fontsize=rcParams['axes.titlesize'])
+            else:
+                # Only a single axes => add label to the left
+                ax_array[i, 0].set_ylabel(
+                    f"To {data[0].output_labels[i]}\n" +
+                    ax_array[i, 0].get_ylabel())
+
+    #
     # Update the plot title (= figure suptitle)
     #
     # If plots are built up by multiple calls to plot() and the title is
@@ -925,78 +975,7 @@ def bode_plot(
                 new_title = old_title + separator + new_title[common_len:]
 
         # Add the title
-        with plt.rc_context(freqplot_rcParams):
-            fig.suptitle(new_title)
-
-    #
-    # Label the axes (including header labels)
-    #
-    # Once the data are plotted, we label the axes.  The horizontal axes is
-    # always frequency and this is labeled only on the bottom most row.  The
-    # vertical axes can consist either of a single signal or a combination
-    # of signals (when overlay_inputs or overlay_outputs is True)
-    #
-    # Input/output signals are give at the top of columns and left of rows
-    # when these are individually plotted.
-    #
-
-    # Label the columns (do this first to get row labels in the right spot)
-    for j in range(ncols):
-        # If we have more than one column, label the individual responses
-        if (noutputs > 1 and not overlay_outputs or ninputs > 1) \
-           and not overlay_inputs:
-            with plt.rc_context(_freqplot_rcParams):
-                ax_array[0, j].set_title(f"From {data[0].input_labels[j]}")
-
-        # Label the frequency axis
-        ax_array[-1, j].set_xlabel(freq_label % ("Hz" if Hz else "rad/s",))
-
-    # Label the rows
-    for i in range(noutputs if not overlay_outputs else 1):
-        if plot_magnitude:
-            ax_mag = ax_array[mag_map[i, 0]]
-            ax_mag.set_ylabel(magnitude_label)
-        if plot_phase:
-            ax_phase = ax_array[phase_map[i, 0]]
-            ax_phase.set_ylabel(phase_label)
-
-        if (noutputs > 1 or ninputs > 1) and not overlay_outputs:
-            if plot_magnitude and plot_phase:
-                # Get existing ylabel for left column and add a blank line
-                ax_mag.set_ylabel("\n" + ax_mag.get_ylabel())
-                ax_phase.set_ylabel("\n" + ax_phase.get_ylabel())
-
-                # TODO: remove?
-                # Redraw the figure to get the proper locations for everything
-                # fig.tight_layout()
-
-                # Get the bounding box including the labels
-                inv_transform = fig.transFigure.inverted()
-                mag_bbox = inv_transform.transform(
-                    ax_mag.get_tightbbox(fig.canvas.get_renderer()))
-                phase_bbox = inv_transform.transform(
-                    ax_phase.get_tightbbox(fig.canvas.get_renderer()))
-
-                # Get the axes limits without labels for use in the y position
-                mag_bot = inv_transform.transform(
-                    ax_mag.transAxes.transform((0, 0)))[1]
-                phase_top = inv_transform.transform(
-                    ax_phase.transAxes.transform((0, 1)))[1]
-
-                # Figure out location for the text (center left in figure frame)
-                xpos = mag_bbox[0, 0]               # left edge
-                ypos = (mag_bot + phase_top) / 2    # centered between axes
-
-                # Put a centered label as text outside the box
-                fig.text(
-                    0.8 * xpos, ypos, f"To {data[0].output_labels[i]}\n",
-                    rotation=90, ha='left', va='center',
-                    fontsize=_freqplot_rcParams['axes.titlesize'])
-            else:
-                # Only a single axes => add label to the left
-                ax_array[i, 0].set_ylabel(
-                    f"To {data[0].output_labels[i]}\n" +
-                    ax_array[i, 0].get_ylabel())
+        suptitle(title, fig=fig, rcParams=rcParams, frame=suptitle_frame)
 
     #
     # Create legends
@@ -1036,11 +1015,13 @@ def bode_plot(
             # Get the labels to use, removing common strings
             lines = [line for line in ax.get_lines()
                      if line.get_label()[0] != '_']
-            labels = _make_legend_labels([line.get_label() for line in lines])
+            labels = _make_legend_labels(
+                [line.get_label() for line in lines],
+                ignore_common=line_labels is not None)
 
             # Generate the label, if needed
             if len(labels) > 1 and legend_map[i, j] != None:
-                with plt.rc_context(freqplot_rcParams):
+                with plt.rc_context(rcParams):
                     ax.legend(lines, labels, loc=legend_map[i, j])
 
     #
@@ -1170,12 +1151,6 @@ def nyquist_response(
         curves for each system are plotted on the same graph.
     omega : array_like, optional
         Set of frequencies to be evaluated, in rad/sec.
-    omega_limits : array_like of two values, optional
-        Limits to the range of frequencies. Ignored if omega is provided, and
-        auto-generated if omitted.
-    omega_num : int, optional
-        Number of frequency samples to plot.  Defaults to
-        config.defaults['freqplot.number_of_samples'].
 
     Returns
     -------
@@ -1196,23 +1171,25 @@ def nyquist_response(
         Define the threshold for generating a warning if the number of net
         encirclements is a non-integer value.  Default value is 0.05 and can
         be set using config.defaults['nyquist.encirclement_threshold'].
-
     indent_direction : str, optional
         For poles on the imaginary axis, set the direction of indentation to
         be 'right' (default), 'left', or 'none'.
-
     indent_points : int, optional
         Number of points to insert in the Nyquist contour around poles that
         are at or near the imaginary axis.
-
     indent_radius : float, optional
         Amount to indent the Nyquist contour around poles on or near the
         imaginary axis. Portions of the Nyquist plot corresponding to indented
         portions of the contour are plotted using a different line style.
-
+    omega_limits : array_like of two values
+        Set limits for plotted frequency range. If Hz=True the limits are
+        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
+        elements is equivalent to providing ``omega_limits``.
+    omega_num : int, optional
+        Number of samples to use for the frequeny range.  Defaults to
+        config.defaults['freqplot.number_of_samples'].
     warn_nyquist : bool, optional
         If set to 'False', turn off warnings about frequencies above Nyquist.
-
     warn_encirclements : bool, optional
         If set to 'False', turn off warnings about number of encirclements not
         meeting the Nyquist criterion.
@@ -1244,6 +1221,10 @@ def nyquist_response(
     4. If the legacy keyword `return_contour` is specified as True, the
        response object can be iterated over to return `count, contour`.
        This behavior is deprecated and will be removed in a future release.
+
+    See Also
+    --------
+    nyquist_plot
 
     Examples
     --------
@@ -1295,7 +1276,11 @@ def nyquist_response(
                 "Nyquist plot currently only supports SISO systems.")
 
         # Figure out the frequency range
-        omega_sys = np.asarray(omega)
+        if isinstance(sys, FrequencyResponseData) and sys.ifunc is None \
+           and not omega_range_given:
+            omega_sys = sys.omega               # use system frequencies
+        else:
+            omega_sys = np.asarray(omega)       # use common omega vector
 
         # Determine the contour used to evaluate the Nyquist curve
         if sys.isdtime(strict=True):
@@ -1491,8 +1476,9 @@ def nyquist_response(
 
 
 def nyquist_plot(
-        data, omega=None, plot=None, label_freq=0, color=None,
-        return_contour=None, title=None, legend_loc='upper right', **kwargs):
+        data, omega=None, plot=None, label_freq=0, color=None, label=None,
+        return_contour=None, title=None, legend_loc='upper right',
+        ax=None, **kwargs):
     """Nyquist plot for a system.
 
     Generates a Nyquist plot for the system over a (optional) frequency
@@ -1509,23 +1495,12 @@ def nyquist_plot(
         List of linear input/output systems (single system is OK) or
         Nyquist ersponses (computed using :func:`~control.nyquist_response`).
         Nyquist curves for each system are plotted on the same graph.
-
     omega : array_like, optional
-        Set of frequencies to be evaluated, in rad/sec.
-
-    omega_limits : array_like of two values, optional
-        Limits to the range of frequencies. Ignored if omega is provided, and
-        auto-generated if omitted.
-
-    omega_num : int, optional
-        Number of frequency samples to plot.  Defaults to
-        config.defaults['freqplot.number_of_samples'].
-
+        Set of frequencies to be evaluated, in rad/sec. Specifying
+        ``omega`` as a list of two elements is equivalent to providing
+        ``omega_limits``.
     color : string, optional
         Used to specify the color of the line and arrowhead.
-
-    return_contour : bool, optional
-        If 'True', return the contour used to evaluate the Nyquist plot.
 
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords (passed to `matplotlib`)
@@ -1554,80 +1529,86 @@ def nyquist_plot(
         a 2D array is passed, the first row will be used to specify arrow
         locations for the primary curve and the second row will be used for
         the mirror image.
-
     arrow_size : float, optional
         Arrowhead width and length (in display coordinates).  Default value is
         8 and can be set using config.defaults['nyquist.arrow_size'].
-
     arrow_style : matplotlib.patches.ArrowStyle, optional
         Define style used for Nyquist curve arrows (overrides `arrow_size`).
-
     encirclement_threshold : float, optional
         Define the threshold for generating a warning if the number of net
         encirclements is a non-integer value.  Default value is 0.05 and can
         be set using config.defaults['nyquist.encirclement_threshold'].
-
     indent_direction : str, optional
         For poles on the imaginary axis, set the direction of indentation to
         be 'right' (default), 'left', or 'none'.
-
     indent_points : int, optional
         Number of points to insert in the Nyquist contour around poles that
         are at or near the imaginary axis.
-
     indent_radius : float, optional
         Amount to indent the Nyquist contour around poles on or near the
         imaginary axis. Portions of the Nyquist plot corresponding to indented
         portions of the contour are plotted using a different line style.
-
+    label : str or array-like of str
+        If present, replace automatically generated label(s) with the given
+        label(s).  If sysdata is a list, strings should be specified for each
+        system.
     label_freq : int, optiona
         Label every nth frequency on the plot.  If not specified, no labels
         are generated.
-
     max_curve_magnitude : float, optional
         Restrict the maximum magnitude of the Nyquist plot to this value.
         Portions of the Nyquist plot whose magnitude is restricted are
         plotted using a different line style.
-
     max_curve_offset : float, optional
         When plotting scaled portion of the Nyquist plot, increase/decrease
         the magnitude by this fraction of the max_curve_magnitude to allow
         any overlaps between the primary and mirror curves to be avoided.
-
     mirror_style : [str, str] or False
         Linestyles for mirror image of the Nyquist curve.  The first element
         is used for unscaled portions of the Nyquist curve, the second element
         is used for portions that are scaled (using max_curve_magnitude).  If
         `False` then omit completely.  Default linestyle (['--', ':']) is
         determined by config.defaults['nyquist.mirror_style'].
-
+    omega_limits : array_like of two values
+        Set limits for plotted frequency range. If Hz=True the limits are
+        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
+        elements is equivalent to providing ``omega_limits``.
+    omega_num : int, optional
+        Number of samples to use for the frequeny range.  Defaults to
+        config.defaults['freqplot.number_of_samples'].  Ignored if data is
+        not a list of systems.
     plot : bool, optional
         (legacy) If given, `bode_plot` returns the legacy return values
         of magnitude, phase, and frequency.  If False, just return the
         values with no plot.
-
     primary_style : [str, str], optional
         Linestyles for primary image of the Nyquist curve.  The first
         element is used for unscaled portions of the Nyquist curve,
         the second element is used for portions that are scaled (using
         max_curve_magnitude).  Default linestyle (['-', '-.']) is
         determined by config.defaults['nyquist.mirror_style'].
-
+    rcParams : dict
+        Override the default parameters used for generating plots.
+        Default is set by config.default['freqplot.rcParams'].
+    return_contour : bool, optional
+        (legacy) If 'True', return the encirclement count and Nyquist
+        contour used to generate the Nyquist plot.
     start_marker : str, optional
         Matplotlib marker to use to mark the starting point of the Nyquist
         plot.  Defaults value is 'o' and can be set using
         config.defaults['nyquist.start_marker'].
-
     start_marker_size : float, optional
         Start marker size (in display coordinates).  Default value is
         4 and can be set using config.defaults['nyquist.start_marker_size'].
-
     warn_nyquist : bool, optional
         If set to 'False', turn off warnings about frequencies above Nyquist.
-
     warn_encirclements : bool, optional
         If set to 'False', turn off warnings about number of encirclements not
         meeting the Nyquist criterion.
+
+    See Also
+    --------
+    nyquist_response
 
     Notes
     -----
@@ -1684,10 +1665,14 @@ def nyquist_plot(
         'nyquist', 'max_curve_magnitude', kwargs, _nyquist_defaults, pop=True)
     max_curve_offset = config._get_param(
         'nyquist', 'max_curve_offset', kwargs, _nyquist_defaults, pop=True)
+    rcParams = config._get_param(
+        'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
     start_marker = config._get_param(
         'nyquist', 'start_marker', kwargs, _nyquist_defaults, pop=True)
     start_marker_size = config._get_param(
         'nyquist', 'start_marker_size', kwargs, _nyquist_defaults, pop=True)
+    suptitle_frame = config._get_param(
+        'freqplot', 'suptitle_frame', kwargs, _freqplot_defaults, pop=True)
 
     # Set line styles for the curves
     def _parse_linestyle(style_name, allow_false=False):
@@ -1729,6 +1714,9 @@ def nyquist_plot(
     if not isinstance(data, (list, tuple)):
         data = [data]
 
+    # Process label keyword
+    line_labels = _process_line_labels(label, len(data))
+
     # If we are passed a list of systems, compute response first
     if all([isinstance(
             sys, (StateSpace, TransferFunction, FrequencyResponseData))
@@ -1740,6 +1728,7 @@ def nyquist_plot(
             omega_num=kwargs.pop('omega_num', None),
             warn_encirclements=kwargs.pop('warn_encirclements', True),
             warn_nyquist=kwargs.pop('warn_nyquist', True),
+            indent_radius=kwargs.pop('indent_radius', None),
             check_kwargs=False, **kwargs)
     else:
         nyquist_responses = data
@@ -1764,6 +1753,9 @@ def nyquist_plot(
 
         # Return counts and (optionally) the contour we used
         return (counts, contours) if return_contour else counts
+
+    fig, ax = _process_ax_keyword(
+        ax, shape=(1, 1), squeeze=True, rcParams=rcParams)
 
     # Create a list of lines for the output
     out = np.empty(len(nyquist_responses), dtype=object)
@@ -1794,12 +1786,14 @@ def nyquist_plot(
             reg_mask, abs(resp) > max_curve_magnitude)
         resp[rescale] *= max_curve_magnitude / abs(resp[rescale])
 
+        # Get the label to use for the line
+        label = response.sysname if line_labels is None else line_labels[idx]
+
         # Plot the regular portions of the curve (and grab the color)
         x_reg = np.ma.masked_where(reg_mask, resp.real)
         y_reg = np.ma.masked_where(reg_mask, resp.imag)
         p = plt.plot(
-            x_reg, y_reg, primary_style[0], color=color,
-            label=response.sysname, **kwargs)
+            x_reg, y_reg, primary_style[0], color=color, label=label, **kwargs)
         c = p[0].get_color()
         out[idx] += p
 
@@ -1888,7 +1882,6 @@ def nyquist_plot(
                          prefix + 'Hz')
 
     # Label the axes
-    fig, ax = plt.gcf(), plt.gca()
     ax.set_xlabel("Real axis")
     ax.set_ylabel("Imaginary axis")
     ax.grid(color="lightgray")
@@ -1903,7 +1896,7 @@ def nyquist_plot(
     # Add the title
     if title is None:
         title = "Nyquist plot for " + ", ".join(labels)
-    fig.suptitle(title)
+    suptitle(title, fig=fig, rcParams=rcParams, frame=suptitle_frame)
 
     # Legacy return pocessing
     if plot is True or return_contour is not None:
@@ -2056,7 +2049,8 @@ def _compute_curve_offset(resp, mask, max_offset):
 #
 # Gang of Four plot
 #
-def gangof4_response(P, C, omega=None, Hz=False):
+def gangof4_response(
+        P, C, omega=None, omega_limits=None, omega_num=None, Hz=False):
     """Compute the response of the "Gang of 4" transfer functions for a system.
 
     Generates a 2x2 frequency response for the "Gang of 4" sensitivity
@@ -2065,9 +2059,9 @@ def gangof4_response(P, C, omega=None, Hz=False):
     Parameters
     ----------
     P, C : LTI
-        Linear input/output systems (process and control)
+        Linear input/output systems (process and control).
     omega : array
-        Range of frequencies (list or bounds) in rad/sec
+        Range of frequencies (list or bounds) in rad/sec.
 
     Returns
     -------
@@ -2095,8 +2089,8 @@ def gangof4_response(P, C, omega=None, Hz=False):
 
     # Select a default range if none is provided
     # TODO: This needs to be made more intelligent
-    if omega is None:
-        omega = _default_frequency_range((P, C, S), Hz=Hz)
+    omega, _ = _determine_omega_vector(
+        [P, C, S], omega, omega_limits, omega_num, Hz=Hz)
 
     #
     # bode_plot based implementation
@@ -2120,9 +2114,12 @@ def gangof4_response(P, C, omega=None, Hz=False):
         title=f"Gang of Four for P={P.name}, C={C.name}", plot_phase=False)
 
 
-def gangof4_plot(P, C, omega=None, **kwargs):
+def gangof4_plot(
+        P, C, omega=None, omega_limits=None, omega_num=None, **kwargs):
     """Legacy Gang of 4 plot; use gangof4_response().plot() instead."""
-    return gangof4_response(P, C).plot(**kwargs)
+    return gangof4_response(
+        P, C, omega=omega, omega_limits=omega_limits,
+        omega_num=omega_num).plot(**kwargs)
 
 #
 # Singular values plot
@@ -2140,21 +2137,29 @@ def singular_values_response(
         List of linear input/output systems (single system is OK).
     omega : array_like
         List of frequencies in rad/sec to be used for frequency response.
-    omega_limits : array_like of two values
-        Limits of the frequency vector to generate, in rad/s.
-    omega_num : int
-        Number of samples to plot. Default value (1000) set by
-        config.defaults['freqplot.number_of_samples'].
     Hz : bool, optional
         If True, when computing frequency limits automatically set
-        limits to full decades in Hz instead of rad/s. Omega is always
-        returned in rad/sec.
+        limits to full decades in Hz instead of rad/s.
 
     Returns
     -------
     response : FrequencyResponseData
         Frequency response with the number of outputs equal to the
         number of singular values in the response, and a single input.
+
+    Other Parameters
+    ----------------
+    omega_limits : array_like of two values
+        Set limits for plotted frequency range. If Hz=True the limits are
+        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
+        elements is equivalent to providing ``omega_limits``.
+    omega_num : int, optional
+        Number of samples to use for the frequeny range.  Defaults to
+        config.defaults['freqplot.number_of_samples'].
+
+    See Also
+    --------
+    singular_values_plot
 
     Examples
     --------
@@ -2201,7 +2206,7 @@ def singular_values_response(
 
 def singular_values_plot(
         data, omega=None, *fmt, plot=None, omega_limits=None, omega_num=None,
-        title=None, legend_loc='center right', **kwargs):
+        ax=None, label=None, title=None, legend_loc='center right', **kwargs):
     """Plot the singular values for a system.
 
     Plot the singular values as a function of frequency for a system or
@@ -2223,14 +2228,14 @@ def singular_values_plot(
     Hz : bool
         If True, plot frequency in Hz (omega must be provided in rad/sec).
         Default value (False) set by config.defaults['freqplot.Hz'].
-    legend_loc : str, optional
-        For plots with multiple lines, a legend will be included in the
-        given location.  Default is 'center right'.  Use False to supress.
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
     Returns
     -------
+    legend_loc : str, optional
+        For plots with multiple lines, a legend will be included in the
+        given location.  Default is 'center right'.  Use False to suppress.
     lines : array of Line2D
         1-D array of Line2D objects.  The size of the array matches
         the number of systems and the value of the array is a list of
@@ -2247,12 +2252,17 @@ def singular_values_plot(
     grid : bool
         If True, plot grid lines on gain and phase plots.  Default is set by
         `config.defaults['freqplot.grid']`.
+    label : str or array-like of str
+        If present, replace automatically generated label(s) with the given
+        label(s).  If sysdata is a list, strings should be specified for each
+        system.
     omega_limits : array_like of two values
-        Set limits for plotted frequency range. If Hz=True the limits
-        are in Hz otherwise in rad/s.
-    omega_num : int
+        Set limits for plotted frequency range. If Hz=True the limits are
+        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
+        elements is equivalent to providing ``omega_limits``.
+    omega_num : int, optional
         Number of samples to use for the frequeny range.  Defaults to
-        config.defaults['freqplot.number_of_samples'].  Ignore if data is
+        config.defaults['freqplot.number_of_samples'].  Ignored if data is
         not a list of systems.
     plot : bool, optional
         (legacy) If given, `singular_values_plot` returns the legacy return
@@ -2262,6 +2272,10 @@ def singular_values_plot(
         Override the default parameters used for generating plots.
         Default is set up config.default['freqplot.rcParams'].
 
+    See Also
+    --------
+    singular_values_response
+
     """
     # Keyword processing
     dB = config._get_param(
@@ -2270,8 +2284,10 @@ def singular_values_plot(
         'freqplot', 'Hz', kwargs, _freqplot_defaults, pop=True)
     grid = config._get_param(
         'freqplot', 'grid', kwargs, _freqplot_defaults, pop=True)
-    freqplot_rcParams = config._get_param(
+    rcParams = config._get_param(
         'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
+    suptitle_frame = config._get_param(
+        'freqplot', 'suptitle_frame', kwargs, _freqplot_defaults, pop=True)
 
     # If argument was a singleton, turn it into a tuple
     data = data if isinstance(data, (list, tuple)) else (data,)
@@ -2296,6 +2312,9 @@ def singular_values_plot(
 
         responses = data
 
+    # Process label keyword
+    line_labels = _process_line_labels(label, len(data))
+
     # Process (legacy) plot keyword
     if plot is not None:
         warnings.warn(
@@ -2318,22 +2337,9 @@ def singular_values_plot(
         else:
             return sigmas, omegas
 
-    fig = plt.gcf()             # get current figure (or create new one)
-    ax_sigma = None             # axes for plotting singular values
-
-    # Get the current axes if they already exist
-    for ax in fig.axes:
-        if ax.get_label() == 'control-sigma':
-            ax_sigma = ax
-
-    # If no axes present, create them from scratch
-    if ax_sigma is None:
-        if len(fig.axes) > 0:
-            # Create a new figure to avoid overwriting in the old one
-            fig = plt.figure()
-
-        with plt.rc_context(_freqplot_rcParams):
-            ax_sigma = plt.subplot(111, label='control-sigma')
+    fig, ax_sigma = _process_ax_keyword(
+        ax, shape=(1, 1), squeeze=True, rcParams=rcParams)
+    ax_sigma.set_label('control-sigma')         # TODO: deprecate?
 
     # Handle color cycle manually as all singular values
     # of the same systems are expected to be of the same color
@@ -2370,16 +2376,17 @@ def singular_values_plot(
         sysname = response.sysname if response.sysname is not None \
             else f"Unknown-{idx_sys}"
 
+        # Get the label to use for the line
+        label = sysname if line_labels is None else line_labels[idx_sys]
+
         # Plot the data
         if dB:
-            with plt.rc_context(freqplot_rcParams):
-                out[idx_sys] = ax_sigma.semilogx(
-                    omega, 20 * np.log10(sigma), *fmt,
-                    label=sysname, **color_arg, **kwargs)
+            out[idx_sys] = ax_sigma.semilogx(
+                omega, 20 * np.log10(sigma), *fmt,
+                label=label, **color_arg, **kwargs)
         else:
-            with plt.rc_context(freqplot_rcParams):
-                out[idx_sys] = ax_sigma.loglog(
-                    omega, sigma, label=sysname, *fmt, **color_arg, **kwargs)
+            out[idx_sys] = ax_sigma.loglog(
+                omega, sigma, label=label, *fmt, **color_arg, **kwargs)
 
         # Plot the Nyquist frequency
         if nyq_freq is not None:
@@ -2394,24 +2401,23 @@ def singular_values_plot(
     # Add a grid to the plot + labeling
     if grid:
         ax_sigma.grid(grid, which='both')
-    with plt.rc_context(freqplot_rcParams):
-        ax_sigma.set_ylabel(
-            "Singular Values [dB]" if dB else "Singular Values")
-        ax_sigma.set_xlabel("Frequency [Hz]" if Hz else "Frequency [rad/sec]")
+
+    ax_sigma.set_ylabel(
+        "Singular Values [dB]" if dB else "Singular Values")
+    ax_sigma.set_xlabel("Frequency [Hz]" if Hz else "Frequency [rad/sec]")
 
     # List of systems that are included in this plot
     lines, labels = _get_line_labels(ax_sigma)
 
     # Add legend if there is more than one system plotted
     if len(labels) > 1 and legend_loc is not False:
-        with plt.rc_context(freqplot_rcParams):
+        with plt.rc_context(rcParams):
             ax_sigma.legend(lines, labels, loc=legend_loc)
 
     # Add the title
     if title is None:
         title = "Singular values for " + ", ".join(labels)
-    with plt.rc_context(freqplot_rcParams):
-        fig.suptitle(title)
+    suptitle(title, fig=fig, rcParams=rcParams, frame=suptitle_frame)
 
     # Legacy return processing
     if plot is not None:
@@ -2426,7 +2432,7 @@ def singular_values_plot(
 # Utility functions
 #
 # This section of the code contains some utility functions for
-# generating frequency domain plots
+# generating frequency domain plots.
 #
 
 
@@ -2440,24 +2446,32 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num,
     on omega_num points according to a default logic defined by
     _default_frequency_range and tailored for the list of systems syslist, and
     omega_range_given is set to False.
+
     If omega_in is None but omega_limits is an array-like of 2 elements, then
     omega_out is computed with the function np.logspace on omega_num points
     within the interval [min, max] =  [omega_limits[0], omega_limits[1]], and
     omega_range_given is set to True.
-    If omega_in is not None, then omega_out is set to omega_in,
-    and omega_range_given is set to True
+
+    If omega_in is a list or tuple of length 2, it is interpreted as a
+    range and handled like omega_limits.  If omega_in is a list or tuple of
+    length 3, it is interpreted a range plus number of points and handled
+    like omega_limits and omega_num.
+
+    If omega_in is an array or a list/tuple of length greater than
+    two, then omega_out is set to omega_in (as an array), and
+    omega_range_given is set to True
 
     Parameters
     ----------
     syslist : list of LTI
-        List of linear input/output systems (single system is OK)
+        List of linear input/output systems (single system is OK).
     omega_in : 1D array_like or None
-        Frequency range specified by the user
+        Frequency range specified by the user.
     omega_limits : 1D array_like or None
-        Frequency limits specified by the user
+        Frequency limits specified by the user.
     omega_num : int
-        Number of points to be used for the frequency
-        range (if the frequency range is not user-specified)
+        Number of points to be used for the frequency range (if the
+        frequency range is not user-specified).
     Hz : bool, optional
         If True, the limits (first and last value) of the frequencies
         are set to full decades in Hz so it fits plotting with logarithmic
@@ -2466,22 +2480,22 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num,
     Returns
     -------
     omega_out : 1D array
-        Frequency range to be used
+        Frequency range to be used.
     omega_range_given : bool
         True if the frequency range was specified by the user, either through
         omega_in or through omega_limits. False if both omega_in
         and omega_limits are None.
+
     """
+    # Handle the special case of a range of frequencies
+    if omega_in is not None and omega_limits is not None:
+        warnings.warn(
+            "omega and omega_limits both specified; ignoring limits")
+    elif isinstance(omega_in, (list, tuple)) and len(omega_in) == 2:
+        omega_limits = omega_in
+        omega_in = None
+
     omega_range_given = True
-
-    if omega_in is None:
-        for sys in syslist:
-            if isinstance(sys, FrequencyResponseData):
-                # FRD already has predetermined frequencies
-                if omega_in is not None and not np.all(omega_in == sys.omega):
-                    raise ValueError("List of FrequencyResponseData systems can only have a single frequency range between them")
-                omega_in = sys.omega
-
     if omega_in is None:
         if omega_limits is None:
             omega_range_given = False
@@ -2557,6 +2571,15 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
         syslist = (syslist,)
 
     for sys in syslist:
+        # For FRD systems, just use the response frequencies
+        if isinstance(sys, FrequencyResponseData):
+            # Add the min and max frequency, minus periphery decades
+            # (keeps frequency ranges from artificially expanding)
+            features = np.concatenate([features, np.array([
+                np.min(sys.omega) * 10**feature_periphery_decades,
+                np.max(sys.omega) / 10**feature_periphery_decades])])
+            continue
+
         try:
             # Add new features to the list
             if sys.isctime():
@@ -2571,7 +2594,8 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
                 # TODO: What distance to the Nyquist frequency is appropriate?
                 freq_interesting.append(fn * 0.9)
 
-                features_ = np.concatenate((sys.poles(), sys.zeros()))
+                features_ = np.concatenate(
+                    (np.abs(sys.poles()), np.abs(sys.zeros())))
                 # Get rid of poles and zeros on the real axis (imag==0)
                 # * origin and real < 0
                 # * at 1.: would result in omega=0. (logaritmic plot!)
@@ -2586,8 +2610,9 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
                 # TODO
                 raise NotImplementedError(
                     "type of system in not implemented now")
-            features = np.concatenate((features, features_))
+            features = np.concatenate([features, features_])
         except NotImplementedError:
+            # Don't add any features for anything we don't understand
             pass
 
     # Make sure there is at least one point in the range
@@ -2640,6 +2665,97 @@ def _get_line_labels(ax, use_color=True):
             labels.append(label)
 
     return lines, labels
+
+
+# Turn label keyword into array indexed by trace, output, input
+def _process_line_labels(label, nsys, ninputs=0, noutputs=0):
+    if label is None:
+        return None
+
+    if isinstance(label, str):
+        label = [label]
+
+    # Convert to an ndarray, if not done aleady
+    try:
+        line_labels = np.asarray(label)
+    except:
+        raise ValueError("label must be a string or array_like")
+
+    # Turn the data into a 3D array of appropriate shape
+    # TODO: allow more sophisticated broadcasting (and error checking)
+    try:
+        if ninputs > 0 and noutputs > 0:
+            if line_labels.ndim == 1:
+                line_labels = line_labels.reshape(nsys, 1, 1)
+            line_labels = np.broadcast_to(
+                line_labels,(nsys, ninputs, noutputs))
+    except:
+        if line_labels.shape[0] != nsys:
+            raise ValueError("number of labels must match number of traces")
+        else:
+            raise ValueError("labels must be given for each input/output pair")
+
+    return line_labels
+
+
+def _process_ax_keyword(
+        axs, shape=(1, 1), rcParams=None, squeeze=False, clear_text=False):
+    """Utility function to process ax keyword to plotting commands.
+
+    This function processes the `ax` keyword to plotting commands.  If no
+    ax keyword is passed, the current figure is checked to see if it has
+    the correct shape.  If the shape matches the desired shape, then the
+    current figure and axes are returned.  Otherwise a new figure is
+    created with axes of the desired shape.
+
+    Legacy behavior: some of the older plotting commands use a axes label
+    to identify the proper axes for plotting.  This behavior is supported
+    through the use of the label keyword, but will only work if shape ==
+    (1, 1) and squeeze == True.
+
+    """
+    if axs is None:
+        fig = plt.gcf()         # get current figure (or create new one)
+        axs = fig.get_axes()
+
+        # Check to see if axes are the right shape; if not, create new figure
+        # Note: can't actually check the shape, just the total number of axes
+        if len(axs) != np.prod(shape):
+            with plt.rc_context(rcParams):
+                if len(axs) != 0:
+                    # Create a new figure
+                    fig, axs = plt.subplots(*shape, squeeze=False)
+                else:
+                    # Create new axes on (empty) figure
+                    axs = fig.subplots(*shape, squeeze=False)
+            fig.set_layout_engine('tight')
+            fig.align_labels()
+        else:
+            # Use the existing axes, properly reshaped
+            axs = np.asarray(axs).reshape(*shape)
+
+            if clear_text:
+                # Clear out any old text from the current figure
+                for text in fig.texts:
+                    text.set_visible(False)     # turn off the text
+                    del text                    # get rid of it completely
+    else:
+        try:
+            axs = np.asarray(axs).reshape(shape)
+        except ValueError:
+            raise ValueError(
+                "specified axes are not the right shape; "
+                f"got {axs.shape} but expecting {shape}")
+        fig = axs[0, 0].figure
+
+    # Process the squeeze keyword
+    if squeeze and shape == (1, 1):
+        axs = axs[0, 0]         # Just return the single axes object
+    elif squeeze:
+        axs = axs.squeeze()
+
+    return fig, axs
+
 
 #
 # Utility functions to create nice looking labels (KLD 5/23/11)
