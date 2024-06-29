@@ -223,7 +223,7 @@ sensitivity functions for a feedback control system in standard form::
 
 .. image:: freqplot-gangof4.png
 
-Nyquist analysys can be done using the :func:`~control.nyquist_response`
+Nyquist analysis can be done using the :func:`~control.nyquist_response`
 function, which evaluates an LTI system along the Nyquist contour, and
 the :func:`~control.nyquist_plot` function, which generates a Nyquist plot::
 
@@ -233,18 +233,17 @@ the :func:`~control.nyquist_plot` function, which generates a Nyquist plot::
 .. image:: freqplot-nyquist-default.png
 
 The :func:`~control.nyquist_response` function can be used to compute
-the number of encirclement of the -1 point and can return the Nyquist
+the number of encirclements of the -1 point and can return the Nyquist
 contour that was used to generate the Nyquist curve.
 
 By default, the Nyquist response will generate small semicircles around
 poles that are on the imaginary axis.  In addition, portions of the Nyquist
-curve that far from the origin are scaled to a maximum value, with the line
-style is changed to reflect the scaling, and it is possible to offset the
-scaled portions to separate out the portions of the Nyquist curve at
-<math>\infty</math>.  A number of keyword parameters for both are available
-for :func:`~control.nyquist_response`and :func:`~control.nyquist_plot` to
-tune the computation of the Nyquist curve and the way the data are
-plotted::
+curve that are far from the origin are scaled to a maximum value, while the
+line style is changed to reflect the scaling, and it is possible to offset
+the scaled portions to separate out the portions of the Nyquist curve at
+:math:`\infty`.  A number of keyword parameters for both are available for
+:func:`~control.nyquist_response` and :func:`~control.nyquist_plot` to tune
+the computation of the Nyquist curve and the way the data are plotted::
 
   sys = ct.tf([1, 0.2], [1, 0, 1]) * ct.tf([1], [1, 0])
   nyqresp = ct.nyquist_response(sys)
@@ -267,7 +266,7 @@ array of frequencies as a second argument (after the list of systems)::
 
 .. image:: freqplot-siso_bode-omega.png
 
-Alternatively. frequency ranges can be specified by passing a list of the
+Alternatively, frequency ranges can be specified by passing a list of the
 form ``[wmin, wmax]``, where ``wmin`` and ``wmax`` are the minimum and
 maximum frequencies in the (log-spaced) frequency range::
 

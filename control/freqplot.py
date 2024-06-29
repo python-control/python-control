@@ -111,9 +111,9 @@ def bode_plot(
         List of LTI systems or :class:`FrequencyResponseData` objects.  A
         single system or frequency response can also be passed.
     omega : array_like, optoinal
-        Set of frequencies in rad/sec over to plot over.  If not specified,
-        this will be determined from the proporties of the systems.  Ignored
-        if `data` is not a list of systems.
+        Set of frequencies in rad/sec to plot over.  If not specified, this
+        will be determined from the proporties of the systems.  Ignored if
+        `data` is not a list of systems.
     *fmt : :func:`matplotlib.pyplot.plot` format string, optional
         Passed to `matplotlib` as the format string for all lines in the plot.
         The `omega` parameter must be present (use omega=None if needed).
@@ -2235,7 +2235,7 @@ def singular_values_plot(
     -------
     legend_loc : str, optional
         For plots with multiple lines, a legend will be included in the
-        given location.  Default is 'center right'.  Use False to supress.
+        given location.  Default is 'center right'.  Use False to suppress.
     lines : array of Line2D
         1-D array of Line2D objects.  The size of the array matches
         the number of systems and the value of the array is a list of

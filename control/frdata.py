@@ -806,7 +806,7 @@ def frd(*args, **kwargs):
     >>> F = ct.frd(response, omega)
 
     >>> G = ct.tf([1], [1, 1])
-    >>> freqs = [1, 10, 100]
+    >>> omega = [1, 10, 100]
     >>> F = ct.frd(G, omega)
 
     """
