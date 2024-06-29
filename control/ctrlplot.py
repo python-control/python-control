@@ -43,7 +43,7 @@ class ControlPlot(object):
 
     A control figure consists of a :class:`matplotlib.figure.Figure` with
     an array of :class:`matplotlib.axes.Axes`.  Each axes in the figure has
-    a number of lines that repreesnt the data for the plot.  There may also
+    a number of lines that represent the data for the plot.  There may also
     be a legend present in one or more of the axes.
 
     Attributes
@@ -52,19 +52,19 @@ class ControlPlot(object):
         Array of Line2D objects for each line in the plot.  Generally, The
         shape of the array matches the subplots shape and the value of the
         array is a list of Line2D objects in that subplot.  Some plotting
-        functions will reeturn variants of this structure, as described in
+        functions will return variants of this structure, as described in
         the individual documentation for the functions.
     axes : 2D array of :class:`matplotlib:Axes`
         Array of Axes objects for each subplot in the plot.
     figure : :class:`matplotlib:Figure`
         Figure on which the Axes are drawn.
-    legend : :class:`matplotlib:Legend` or array of :class:`matplotlib:Legend`
-        Legend object(s) for the plat.  If more than :class:`matplotlib:Legend`
-        is included, this will be an array with each entry being either
-        None (for no legend) or a legend object.
+    legend : :class:`matplotlib:.legend.Legend` (instance or ndarray)
+        Legend object(s) for the plat.  If more than one legend is
+        included, this will be an array with each entry being either None
+        (for no legend) or a legend object.
 
     """
-    def __init__(self, lines, axes=None, figure=None):
+    def __init__(self, lines, axes=None, figure=None, legend=None):
         self.lines = lines
         if axes is None:
             axes = get_plot_axes(lines)
@@ -72,6 +72,7 @@ class ControlPlot(object):
         if figure is None:
             figure = self.axes[0, 0].figure
         self.figure = figure
+        self.legend = legend
 
     # Implement methods and properties to allow legacy interface (np.array)
     __iter__ = lambda self: self.lines
@@ -92,7 +93,7 @@ class ControlPlot(object):
 #
 # User functions
 #
-# The functions below can be used by users to modify ctrl plots or get
+# The functions below can be used by users to modify control plots or get
 # information about them.
 #
 
@@ -157,7 +158,7 @@ def get_plot_axes(line_array):
     Returns
     -------
     axes_array : array of list of Axes
-        A 2D array with elements corresponding to the Axes assocated with
+        A 2D array with elements corresponding to the Axes associated with
         the lines in `line_array`.
 
     Notes
@@ -247,7 +248,7 @@ def _process_line_labels(label, ntraces, ninputs=0, noutputs=0):
     if isinstance(label, str):
         label = [label] * ntraces          # single label for all traces
 
-    # Convert to an ndarray, if not done aleady
+    # Convert to an ndarray, if not done already
     try:
         line_labels = np.asarray(label)
     except ValueError:

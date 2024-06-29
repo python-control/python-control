@@ -110,8 +110,6 @@ def phase_plane_plot(
 
           * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
 
-          * cplt.legend: legend object(s) contained in the plot
-
         See :class:`ControlPlot` for more detailed information.
 
 

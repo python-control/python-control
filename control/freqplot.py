@@ -988,9 +988,13 @@ def bode_plot(
         legend_map[0, -1] = legend_loc
 
     # Create axis legends
+    legend_array = np.full(ax_array.shape, None, dtype=object)
     for i in range(nrows):
         for j in range(ncols):
+            if legend_map[i, j] is None:
+                continue
             ax = ax_array[i, j]
+
             # Get the labels to use, removing common strings
             lines = [line for line in ax.get_lines()
                      if line.get_label()[0] != '_']
@@ -999,9 +1003,10 @@ def bode_plot(
                 ignore_common=line_labels is not None)
 
             # Generate the label, if needed
-            if len(labels) > 1 and legend_map[i, j] != None:
+            if len(labels) > 1:
                 with plt.rc_context(rcParams):
-                    ax.legend(lines, labels, loc=legend_map[i, j])
+                    legend_array[i, j] = ax.legend(
+                        lines, labels, loc=legend_map[i, j])
 
     #
     # Legacy return pocessing
@@ -1019,7 +1024,7 @@ def bode_plot(
         else:
             return mag_data, phase_data, omega_data
 
-    return ControlPlot(out, ax_array, fig)
+    return ControlPlot(out, ax_array, fig, legend=legend_array)
 
 
 #
@@ -1930,7 +1935,9 @@ def nyquist_plot(
 
     # Add legend if there is more than one system plotted
     if len(labels) > 1:
-        ax.legend(lines, labels, loc=legend_loc)
+        legend = ax.legend(lines, labels, loc=legend_loc)
+    else:
+        legend=None
 
     # Add the title
     if title is None:
@@ -1945,7 +1952,7 @@ def nyquist_plot(
         # Return counts and (optionally) the contour we used
         return (counts, contours) if return_contour else counts
 
-    return ControlPlot(out, ax, fig)
+    return ControlPlot(out, ax, fig, legend=legend)
 
 
 #
@@ -2385,7 +2392,9 @@ def singular_values_plot(
     # Add legend if there is more than one system plotted
     if len(labels) > 1 and legend_loc is not False:
         with plt.rc_context(rcParams):
-            ax_sigma.legend(lines, labels, loc=legend_loc)
+            legend = ax_sigma.legend(lines, labels, loc=legend_loc)
+    else:
+        legend = None
 
     # Add the title
     if title is None:
@@ -2399,7 +2408,7 @@ def singular_values_plot(
         else:
             return sigmas, omegas
 
-    return ControlPlot(out, ax_sigma, fig)
+    return ControlPlot(out, ax_sigma, fig, legend=legend)
 
 #
 # Utility functions

@@ -137,14 +137,16 @@ def nichols_plot(
     # Add legend if there is more than one system plotted
     if len(labels) > 1 and legend_loc is not False:
         with plt.rc_context(rcParams):
-            ax_nichols.legend(lines, labels, loc=legend_loc)
+            legend = ax_nichols.legend(lines, labels, loc=legend_loc)
+    else:
+        legend = None
 
     # Add the title
     if title is None:
         title = "Nichols plot for " + ", ".join(labels)
     suptitle(title, fig=fig, rcParams=rcParams)
 
-    return ControlPlot(out, ax_nichols, fig)
+    return ControlPlot(out, ax_nichols, fig, legend=legend)
 
 
 def _inner_extents(ax):

@@ -451,13 +451,15 @@ def pole_zero_plot(
             line_tuples.append(handle)
 
             with plt.rc_context(freqplot_rcParams):
-                ax.legend(
+                legend = ax.legend(
                     line_tuples, labels, loc=legend_loc,
                     handler_map={tuple: HandlerTuple(ndivide=None)})
         else:
             # Regular legend, with lines
             with plt.rc_context(freqplot_rcParams):
-                ax.legend(lines, labels, loc=legend_loc)
+                legend = ax.legend(lines, labels, loc=legend_loc)
+    else:
+        legend = None
 
     # Add the title
     if title is None:
@@ -500,7 +502,7 @@ def pole_zero_plot(
         else:
             TypeError("system lists not supported with legacy return values")
 
-    return ControlPlot(out, np.asarray(axs), fig)
+    return ControlPlot(out, np.asarray(axs), fig, legend=legend)
 
 
 # Utility function to find gain corresponding to a click event

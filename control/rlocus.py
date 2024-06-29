@@ -152,8 +152,6 @@ def root_locus_plot(
 
           * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
 
-          * cplt.legend: legend object(s) contained in the plot
-
         See :class:`ControlPlot` for more detailed information.
 
     roots, gains : ndarray

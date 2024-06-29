@@ -630,6 +630,7 @@ def time_response_plot(
         show_legend = True if show_legend is None else show_legend
 
     # Create axis legends
+    legend_array = np.full(ax_array.shape, None, dtype=object)
     for i in range(nrows):
         for j in range(ncols):
             ax = ax_array[i, j]
@@ -642,7 +643,8 @@ def time_response_plot(
                (len(labels) > 1 or show_legend) and \
                legend_map[i, j] != None:
                 with plt.rc_context(rcParams):
-                    ax.legend(labels, loc=legend_map[i, j])
+                    legend_array[i, j] = ax.legend(
+                        labels, loc=legend_map[i, j])
 
     #
     # Update the plot title (= figure suptitle)
@@ -656,7 +658,7 @@ def time_response_plot(
 
     _update_suptitle(fig, title, rcParams=rcParams)
 
-    return ControlPlot(out, ax_array, fig)
+    return ControlPlot(out, ax_array, fig, legend=legend_map)
 
 
 def combine_time_responses(response_list, trace_labels=None, title=None):
