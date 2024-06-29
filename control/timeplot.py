@@ -50,7 +50,8 @@ def time_response_plot(
         data, *fmt, ax=None, plot_inputs=None, plot_outputs=True,
         transpose=False, overlay_traces=False, overlay_signals=False,
         legend_map=None, legend_loc=None, add_initial_zero=True, label=None,
-        trace_labels=None, title=None, relabel=True, **kwargs):
+        trace_labels=None, title=None, relabel=True, show_legend=None,
+        **kwargs):
     """Plot the time response of an input/output system.
 
     This function creates a standard set of plots for the input/output
@@ -131,6 +132,10 @@ def time_response_plot(
     relabel : bool, optional
         By default, existing figures and axes are relabeled when new data
         are added.  If set to `False`, just plot new data on existing axes.
+    show_legend : bool, optional
+        Force legend to be shown if ``True`` or hidden if ``False``.  If
+        ``None``, then show legend when there is more than one line on an
+        axis or ``legend_loc`` or ``legend_map`` have been specified.
     time_label : str, optional
         Label to use for the time axis.
     trace_props : array of dicts
@@ -565,6 +570,9 @@ def time_response_plot(
         legend_map = np.full(ax_array.shape, None, dtype=object)
         if legend_loc == None:
             legend_loc = 'center right'
+        else:
+            show_legend = True if show_legend is None else show_legend
+
         if transpose:
             if (overlay_signals or plot_inputs == 'overlay') and overlay_traces:
                 # Put a legend in each plot for inputs and outputs
@@ -611,6 +619,14 @@ def time_response_plot(
             else:
                 # Put legend in the upper right
                 legend_map[0, -1] = legend_loc
+    else:
+        # Make sure the legend map is the right size
+        legend_map = np.atleast_2d(legend_map)
+        if legend_map.shape != ax_array.shape:
+            raise ValueError("legend_map shape just match axes shape")
+
+        # Turn legend on unless overridden by user
+        show_legend = True if show_legend is None else show_legend
 
     # Create axis legends
     for i in range(nrows):
@@ -621,7 +637,9 @@ def time_response_plot(
                 labels = _make_legend_labels(labels, plot_inputs == 'overlay')
 
             # Update the labels to remove common strings
-            if len(labels) > 1 and legend_map[i, j] != None:
+            if show_legend != False and \
+               (len(labels) > 1 or show_legend) and \
+               legend_map[i, j] != None:
                 with plt.rc_context(rcParams):
                     ax.legend(labels, loc=legend_map[i, j])
 

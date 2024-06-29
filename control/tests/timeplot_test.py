@@ -588,6 +588,39 @@ def test_errors():
                        match="(has no property|unexpected keyword)"):
         stepresp.plot(unknown=None)
 
+
+def test_legend_customization():
+    sys = ct.rss(4, 2, 1, name='sys')
+    timepts = np.linspace(0, 10)
+    U = np.sin(timepts)
+    resp = ct.input_output_response(sys, timepts, U)
+
+    # Generic input/output plot
+    out = resp.plot(overlay_signals=True)
+    axs = ct.get_plot_axes(out)
+    assert axs[0, 0].get_legend()._loc == 7                 # center right
+    assert len(axs[0, 0].get_legend().get_texts()) == 2
+    assert axs[1, 0].get_legend() == None
+    plt.close()
+
+    # Hide legend
+    out = resp.plot(overlay_signals=True, show_legend=False)
+    axs = ct.get_plot_axes(out)
+    assert axs[0, 0].get_legend() == None
+    assert axs[1, 0].get_legend() == None
+    plt.close()
+
+    # Put legend in both axes
+    out = resp.plot(
+        overlay_signals=True, legend_map=[['center left'], ['center right']])
+    axs = ct.get_plot_axes(out)
+    assert axs[0, 0].get_legend()._loc == 6                 # center left
+    assert len(axs[0, 0].get_legend().get_texts()) == 2
+    assert axs[1, 0].get_legend()._loc == 7                 # center right
+    assert len(axs[1, 0].get_legend().get_texts()) == 1
+    plt.close()
+
+
 if __name__ == "__main__":
     #
     # Interactive mode: generate plots for manual viewing
