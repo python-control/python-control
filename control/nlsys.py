@@ -2219,7 +2219,7 @@ def interconnect(
     ...     inplist=['C'], outlist=['P'])
 
     A feedback system can also be constructed using the
-    :func:`~control.summing_block` function and the ability to
+    :func:`~control.summing_junction` function and the ability to
     automatically interconnect signals with the same names:
 
     >>> P = ct.tf(1, [1, 0], inputs='u', outputs='y')
@@ -2425,15 +2425,22 @@ def interconnect(
             elif not found_system:
                 raise ValueError("could not find signal %s" % sname)
         else:
-            # Regular signal specification
-            if not isinstance(connection, list):
-                dprint(f"  converting item to list")
-                connection = [connection]
-            for spec in connection:
-                isys, indices, gain = _parse_spec(syslist, spec, 'input')
+            # TODO: refactor code to remove duplication
+            if isinstance(connection, list):
+                # Passed a list => create input map
+                dprint(f"  detected input list")
+                new_inplist.append([])
+                for spec in connection:
+                    isys, indices, gain = _parse_spec(syslist, spec, 'input')
+                    for isig in indices:
+                        new_inplist[-1].append((isys, isig, gain))
+                        dprint(f"    adding input {(isys, isig, gain)}")
+            else:
+                # Passed a single single => single input
+                isys, indices, gain = _parse_spec(syslist, connection, 'input')
                 for isig in indices:
-                    dprint(f"  adding input {(isys, isig, gain)}")
                     new_inplist.append((isys, isig, gain))
+                    dprint(f"  adding input {(isys, isig, gain)}")
     inplist, inputs = new_inplist, new_inputs
     dprint(f"  {inplist=}\n  {inputs=}")
 
@@ -2499,14 +2506,36 @@ def interconnect(
             elif not found_system:
                 raise ValueError("could not find signal %s" % sname)
         else:
-            # Regular signal specification
-            if not isinstance(connection, list):
-                dprint(f"  converting item to list")
-                connection = [connection]
-            for spec in connection:
+            # TODO: refactor code to remove duplication
+            if isinstance(connection, list):
+                # Passed a list => create input map
+                dprint(f"  detected output list")
+                new_outlist.append([])
+                for spec in connection:
+                    try:
+                        # First trying looking in the output signals
+                        osys, indices, gain = _parse_spec(
+                            syslist, spec, 'output')
+                        for osig in indices:
+                            dprint(f"  adding output {(osys, osig, gain)}")
+                            new_outlist[-1].append((osys, osig, gain))
+                    except ValueError:
+                        # If not, see if we can find it in inputs
+                        isys, indices, gain = _parse_spec(
+                            syslist, spec, 'input or output',
+                            dictname='input_index')
+                        for isig in indices:
+                            # Use string form to allow searching input list
+                            dprint(f"  adding input {(isys, isig, gain)}")
+                            new_outlist[-1].append(
+                                (syslist[isys].name,
+                                 syslist[isys].input_labels[isig], gain))
+            else:
+                spec = connection
                 try:
                     # First trying looking in the output signals
-                    osys, indices, gain = _parse_spec(syslist, spec, 'output')
+                    osys, indices, gain = _parse_spec(
+                        syslist, spec, 'output')
                     for osig in indices:
                         dprint(f"  adding output {(osys, osig, gain)}")
                         new_outlist.append((osys, osig, gain))
