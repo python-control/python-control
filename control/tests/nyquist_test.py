@@ -214,6 +214,22 @@ def test_nyquist_arrows(arrows):
     assert _Z(sys) == response.count + _P(sys)
 
 
+def test_sensitivity_circles():
+    A = np.array([
+        [-3.56355873, -1.22980795, -1.5626527 , -0.4626829],
+        [-8.52361371, -3.60331459, -3.71574266, -0.43839201],
+        [-2.50458726, -0.72361335, -1.77795489, -0.4038419],
+        [-0.281183  ,  0.23391825,  0.19096003, -0.9771515]])
+    B = np.array([[-0.], [-1.42827213], [ 0.76806551], [-1.07987454]])
+    C = np.array([[-0.,  0.35557249,  0.35941791, -0.]])
+    D = np.array([[0]])
+    sys1 = ct.ss(A, B, C, D)
+    sys2 = ct.ss(A, B, C, D, dt=0.1)
+    plt.figure()
+    ct.nyquist_plot(sys1, unit_circle=True, mt_circles=[0.9,1,1.1,1.2], ms_circles=[0.9,1,1.1,1.2])
+    ct.nyquist_plot(sys2, unit_circle=True, mt_circles=[0.9,1,1.1,1.2], ms_circles=[0.9,1,1.1,1.2])
+
+
 def test_nyquist_encirclements():
     # Example 14.14: effect of friction in a cart-pendulum system
     s = ct.tf('s')
@@ -517,6 +533,9 @@ if __name__ == "__main__":
     test_nyquist_arrows(1)
     test_nyquist_arrows(3)
     test_nyquist_arrows([0.1, 0.5, 0.9])
+
+    print("Test sensitivity circles")
+    test_sensitivity_circles()
 
     print("Stability checks")
     test_nyquist_encirclements()
