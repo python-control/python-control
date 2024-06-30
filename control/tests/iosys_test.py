@@ -231,11 +231,20 @@ class TestIOSys:
             linearized.C, [[1, 0, 0], [0, 1, 0]])
         np.testing.assert_array_almost_equal(linearized.D, np.zeros((2,2)))
 
+        # Pass fewer than the required elements
+        padded = iosys.linearize([0, 0], np.array([0]))
+        assert padded.nstates == linearized.nstates
+        assert padded.ninputs == linearized.ninputs
+
+        # Check for warning if last element before padding is nonzero
+        with pytest.warns(UserWarning, match="x0 too short; padding"):
+            padded = iosys.linearize([0, 1], np.array([0]))
+
     @pytest.mark.usefixtures("editsdefaults")
     def test_linearize_named_signals(self, kincar):
         # Full form of the call
-        linearized = kincar.linearize([0, 0, 0], [0, 0], copy_names=True,
-                                      name='linearized')
+        linearized = kincar.linearize(
+            [0, 0, 0], [0, 0], copy_names=True, name='linearized')
         assert linearized.name == 'linearized'
         assert linearized.find_input('v') == 0
         assert linearized.find_input('phi') == 1
@@ -256,8 +265,8 @@ class TestIOSys:
         assert lin_nocopy.find_state('x') is None
 
         # if signal names are provided, they should override those of kincar
-        linearized_newnames = kincar.linearize([0, 0, 0], [0, 0],
-            name='linearized',
+        linearized_newnames = kincar.linearize(
+            [0, 0, 0], [0, 0], name='linearized',
             copy_names=True, inputs=['v2', 'phi2'], outputs=['x2','y2'])
         assert linearized_newnames.name == 'linearized'
         assert linearized_newnames.find_input('v2') == 0
@@ -268,6 +277,11 @@ class TestIOSys:
         assert linearized_newnames.find_output('y2') == 1
         assert linearized_newnames.find_output('x') is None
         assert linearized_newnames.find_output('y') is None
+
+        # if system name is provided but copy_names is false, override name
+        linearized_newsysname = kincar.linearize(
+            [0, 0, 0], [0, 0], name='newname', copy_names=False)
+        assert linearized_newsysname.name == 'newname'
 
         # Test legacy version as well
         with pytest.warns(UserWarning, match="NumPy matrix class no longer"):
@@ -1417,7 +1431,7 @@ class TestIOSys:
     def test_neg_badsize(self):
         # Create a system of unspecified size
         sys = ct.NonlinearIOSystem(lambda t, x, u, params: -x)
-        with pytest.raises(ValueError, match="Can't determine"):
+        with pytest.raises(ValueError, match="Can't determine number"):
             -sys
 
     def test_bad_signal_list(self):
@@ -1881,7 +1895,7 @@ def test_input_output_broadcasting():
     np.testing.assert_equal(resp_cov0.states, resp_init.states)
 
     # Specify only some of the initial conditions
-    with pytest.warns(UserWarning, match="initial state too short; padding"):
+    with pytest.warns(UserWarning, match="X0 too short; padding"):
         resp_short = ct.input_output_response(sys, T, [U[0], [0, 1]], [X0, 1])
 
     # Make sure that inconsistent settings don't work
@@ -2072,6 +2086,7 @@ def test_find_eqpt(x0, ix, u0, iu, y0, iy, dx0, idx, dt, x_expect, u_expect):
     np.testing.assert_allclose(np.array(xeq), x_expect, atol=1e-6)
     np.testing.assert_allclose(np.array(ueq), u_expect, atol=1e-6)
 
+
 def test_iosys_sample():
     csys = ct.rss(2, 1, 1)
     dsys = csys.sample(0.1)
@@ -2082,3 +2097,74 @@ def test_iosys_sample():
     dsys = ct.sample_system(csys, 0.1)
     assert isinstance(dsys, ct.StateSpace)
     assert dsys.dt == 0.1
+
+
+# Make sure that we can determine system sizes automatically
+def test_find_size():
+    # Create a nonlinear system with no size information
+    sys = ct.nlsys(
+        lambda t, x, u, params: -x + u,
+        lambda t, x, u, params: x[:1])
+
+    # Run a simulation with size set by parameters
+    timepts = np.linspace(0, 1)
+    resp = ct.input_output_response(sys, timepts, [0, 1], X0=[0, 0])
+    assert resp.states.shape[0] == 2
+    assert resp.inputs.shape[0] == 2
+    assert resp.outputs.shape[0] == 1
+
+    #
+    # Make sure we get warnings if things are inconsistent
+    #
+
+    # Define a system of fixed size
+    sys = ct.nlsys(
+        lambda t, x, u, params: -x + u,
+        lambda t, x, u, params: x[:1],
+        inputs=2, states=2)
+
+    with pytest.raises(ValueError, match="inconsistent .* size of X0"):
+        resp = ct.input_output_response(sys, timepts, [0, 1], X0=[0, 0, 1])
+
+    with pytest.raises(ValueError, match=".*U.* Wrong shape"):
+        resp = ct.input_output_response(sys, timepts, [0, 1, 2], X0=[0, 0])
+
+    with pytest.raises(RuntimeError, match="inconsistent size of outputs"):
+        sys = ct.nlsys(
+            lambda t, x, u, params: -x + u,
+            lambda t, x, u, params: x[:1],
+            inputs=2, states=2, outputs=2)
+        resp = ct.input_output_response(sys, timepts, [0, 1], X0=[0, 0])
+
+
+def test_update_names():
+    sys = ct.rss(['x1', 'x2'], 2, 2)
+    sys.update_names(
+        name='new', states=2, inputs=['u1', 'u2'],
+        outputs=2, output_prefix='yy')
+    assert sys.name == 'new'
+    assert sys.ninputs == 2
+    assert sys.input_labels == ['u1', 'u2']
+    assert sys.ninputs == 2
+    assert sys.output_labels == ['yy[0]', 'yy[1]']
+    assert sys.state_labels == ['x[0]', 'x[1]']
+
+    # Generate some error conditions
+    with pytest.raises(ValueError, match="number of inputs does not match"):
+        sys.update_names(inputs=3)
+
+    with pytest.raises(ValueError, match="number of outputs does not match"):
+        sys.update_names(outputs=3)
+
+    with pytest.raises(ValueError, match="number of states does not match"):
+        sys.update_names(states=3)
+
+    with pytest.raises(ValueError, match="number of states does not match"):
+        siso = ct.tf([1], [1, 2, 1])
+        ct.tf(siso).update_names(states=2)
+
+    with pytest.raises(TypeError, match="unrecognized keywords"):
+        sys.update_names(dt=1)
+
+    with pytest.raises(TypeError, match=".* takes 1 positional argument"):
+        sys.update_names(5)

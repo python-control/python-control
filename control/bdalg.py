@@ -54,17 +54,19 @@ $Id$
 """
 
 from functools import reduce
-import numpy as np
 from warnings import warn
-from . import xferfcn as tf
-from . import statesp as ss
+
+import numpy as np
+
 from . import frdata as frd
+from . import statesp as ss
+from . import xferfcn as tf
 from .iosys import InputOutputSystem
 
 __all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect']
 
 
-def series(sys1, *sysn):
+def series(sys1, *sysn, **kwargs):
     r"""series(sys1, sys2, [..., sysn])
 
     Return the series connection (`sysn` \* ...\  \*) `sys2` \* `sys1`.
@@ -117,10 +119,12 @@ def series(sys1, *sysn):
     (2, 1, 5)
 
     """
-    return reduce(lambda x, y: y * x, sysn, sys1)
+    sys = reduce(lambda x, y: y * x, sysn, sys1)
+    sys.update_names(**kwargs)
+    return sys
 
 
-def parallel(sys1, *sysn):
+def parallel(sys1, *sysn, **kwargs):
     r"""parallel(sys1, sys2, [..., sysn])
 
     Return the parallel connection `sys1` + `sys2` (+ ...\  + `sysn`).
@@ -171,10 +175,11 @@ def parallel(sys1, *sysn):
     (3, 4, 7)
 
     """
-    return reduce(lambda x, y: x + y, sysn, sys1)
+    sys = reduce(lambda x, y: x + y, sysn, sys1)
+    sys.update_names(**kwargs)
+    return sys
 
-
-def negate(sys):
+def negate(sys, **kwargs):
     """
     Return the negative of a system.
 
@@ -208,11 +213,12 @@ def negate(sys):
     np.float64(-2.0)
 
     """
-    return -sys
+    sys = -sys
+    sys.update_names(**kwargs)
+    return sys
 
 #! TODO: expand to allow sys2 default to work in MIMO case?
-#! TODO: allow renaming of signals (for all bdalg operations)
-def feedback(sys1, sys2=1, sign=-1):
+def feedback(sys1, sys2=1, sign=-1, **kwargs):
     """Feedback interconnection between two I/O systems.
 
     Parameters
@@ -261,7 +267,7 @@ def feedback(sys1, sys2=1, sign=-1):
     # Allow anything with a feedback function to call that function
     # TODO: rewrite to allow __rfeedback__
     try:
-        return sys1.feedback(sys2, sign)
+        return sys1.feedback(sys2, sign, **kwargs)
     except (AttributeError, TypeError):
         pass
 
@@ -284,9 +290,11 @@ def feedback(sys1, sys2=1, sign=-1):
         else:
             sys1 = ss._convert_to_statespace(sys1)
 
-    return sys1.feedback(sys2, sign)
+    sys = sys1.feedback(sys2, sign)
+    sys.update_names(**kwargs)
+    return sys
 
-def append(*sys):
+def append(*sys, **kwargs):
     """append(sys1, sys2, [..., sysn])
 
     Group LTI state space models by appending their inputs and outputs.
@@ -327,6 +335,7 @@ def append(*sys):
     s1 = ss._convert_to_statespace(sys[0])
     for s in sys[1:]:
         s1 = s1.append(s)
+    s1.update_names(**kwargs)
     return s1
 
 def connect(sys, Q, inputv, outputv):

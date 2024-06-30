@@ -46,7 +46,7 @@ def test_nlsys_basic():
     ])
 def test_lti_nlsys_response(nin, nout, input, output):
     sys_ss = ct.rss(4, nin, nout, strictly_proper=True)
-    sys_ss.A = np.diag([-1, -2, -3, -4])        # avoid random noise errors
+    sys_ss.A = np.diag([-1, -2, -3, -4])        # avoid random numerical errors
     sys_nl = ct.nlsys(
         lambda t, x, u, params: sys_ss.A @ x + sys_ss.B @ u,
         lambda t, x, u, params: sys_ss.C @ x + sys_ss.D @ u,
