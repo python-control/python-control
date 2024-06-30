@@ -8,15 +8,16 @@
 # Note: It might eventually make sense to put the functions here
 # directly into timeresp.py.
 
-import numpy as np
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-from os.path import commonprefix
 from warnings import warn
 
-from . import config
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
 
-__all__ = ['time_response_plot', 'combine_time_responses', 'get_plot_axes']
+from . import config
+from .ctrlplot import _make_legend_labels, _update_suptitle
+
+__all__ = ['time_response_plot', 'combine_time_responses']
 
 # Default font dictionary
 _timeplot_rcParams = mpl.rcParams.copy()
@@ -43,12 +44,14 @@ _timeplot_defaults = {
     'timeplot.time_label': "Time [s]",
 }
 
+
 # Plot the input/output response of a system
 def time_response_plot(
         data, *fmt, ax=None, plot_inputs=None, plot_outputs=True,
         transpose=False, overlay_traces=False, overlay_signals=False,
-        legend_map=None, legend_loc=None, add_initial_zero=True,
-        trace_labels=None, title=None, relabel=True, **kwargs):
+        legend_map=None, legend_loc=None, add_initial_zero=True, label=None,
+        trace_labels=None, title=None, relabel=True, show_legend=None,
+        **kwargs):
     """Plot the time response of an input/output system.
 
     This function creates a standard set of plots for the input/output
@@ -110,6 +113,11 @@ def time_response_plot(
     input_props : array of dicts
         List of line properties to use when plotting combined inputs.  The
         default values are set by config.defaults['timeplot.input_props'].
+    label : str or array_like of str
+        If present, replace automatically generated label(s) with the given
+        label(s).  If more than one line is being generated, an array of
+        labels should be provided with label[trace, :, 0] representing the
+        output labels and label[trace, :, 1] representing the input labels.
     legend_map : array of str, option
         Location of the legend for multi-trace plots.  Specifies an array
         of legend location strings matching the shape of the subplots, with
@@ -124,6 +132,10 @@ def time_response_plot(
     relabel : bool, optional
         By default, existing figures and axes are relabeled when new data
         are added.  If set to `False`, just plot new data on existing axes.
+    show_legend : bool, optional
+        Force legend to be shown if ``True`` or hidden if ``False``.  If
+        ``None``, then show legend when there is more than one line on an
+        axis or ``legend_loc`` or ``legend_map`` have been specified.
     time_label : str, optional
         Label to use for the time axis.
     trace_props : array of dicts
@@ -150,17 +162,17 @@ def time_response_plot(
        config.defaults[''timeplot.rcParams'].
 
     """
+    from .freqplot import _process_ax_keyword, _process_line_labels
     from .iosys import InputOutputSystem
     from .timeresp import TimeResponseData
 
     #
     # Process keywords and set defaults
     #
-
     # Set up defaults
     time_label = config._get_param(
         'timeplot', 'time_label', kwargs, _timeplot_defaults, pop=True)
-    timeplot_rcParams = config._get_param(
+    rcParams = config._get_param(
         'timeplot', 'rcParams', kwargs, _timeplot_defaults, pop=True)
 
     if kwargs.get('input_props', None) and len(fmt) > 0:
@@ -275,33 +287,7 @@ def time_response_plot(
         nrows, ncols = ncols, nrows
 
     # See if we can use the current figure axes
-    fig = plt.gcf()         # get current figure (or create new one)
-    if ax is None and plt.get_fignums():
-        ax = fig.get_axes()
-        if len(ax) == nrows * ncols:
-            # Assume that the shape is right (no easy way to infer this)
-            ax = np.array(ax).reshape(nrows, ncols)
-        elif len(ax) != 0:
-            # Need to generate a new figure
-            fig, ax = plt.figure(), None
-        else:
-            # Blank figure, just need to recreate axes
-            ax = None
-
-    # Create new axes, if needed, and customize them
-    if ax is None:
-        with plt.rc_context(timeplot_rcParams):
-            ax_array = fig.subplots(nrows, ncols, sharex=True, squeeze=False)
-            fig.set_layout_engine('tight')
-            fig.align_labels()
-
-    else:
-        # Make sure the axes are the right shape
-        if ax.shape != (nrows, ncols):
-            raise ValueError(
-                "specified axes are not the right shape; "
-                f"got {ax.shape} but expecting ({nrows}, {ncols})")
-        ax_array = ax
+    fig, ax_array = _process_ax_keyword(ax, (nrows, ncols), rcParams=rcParams)
 
     #
     # Map inputs/outputs and traces to axes
@@ -366,6 +352,7 @@ def time_response_plot(
             out[i, j] = []      # unique list in each element
 
     # Utility function for creating line label
+    # TODO: combine with freqplot version?
     def _make_line_label(signal_index, signal_labels, trace_index):
         label = ""              # start with an empty label
 
@@ -389,16 +376,38 @@ def time_response_plot(
 
         return label
 
+    #
+    # Store the color offsets with the figure to allow color/style cycling
+    #
+    # To allow repeated calls to time_response_plot() to cycle through
+    # colors, we store an offset in the figure object that we can
+    # retrieve at a later date, if needed.
+    #
+    output_offset = fig._output_offset = getattr(fig, '_output_offset', 0)
+    input_offset = fig._input_offset = getattr(fig, '_input_offset', 0)
+
+    #
+    # Plot the lines for the response
+    #
+
+    # Process labels
+    line_labels = _process_line_labels(
+        label, ntraces, max(ninputs, noutputs), 2)
+
     # Go through each trace and each input/output
     for trace in range(ntraces):
         # Plot the output
         for i in range(noutputs):
-            label = _make_line_label(i, data.output_labels, trace)
+            if line_labels is None:
+                label = _make_line_label(i, data.output_labels, trace)
+            else:
+                label = line_labels[trace, i, 0]
 
             # Set up line properties for this output, trace
             if len(fmt) == 0:
                 line_props = output_props[
-                    i % oprop_len if overlay_signals else 0].copy()
+                    (i + output_offset) % oprop_len if overlay_signals
+                    else output_offset].copy()
                 line_props.update(
                     trace_props[trace % tprop_len if overlay_traces else 0])
                 line_props.update(kwargs)
@@ -410,7 +419,10 @@ def time_response_plot(
 
         # Plot the input
         for i in range(ninputs):
-            label = _make_line_label(i, data.input_labels, trace)
+            if line_labels is None:
+                label = _make_line_label(i, data.input_labels, trace)
+            else:
+                label = line_labels[trace, i, 1]
 
             if add_initial_zero and data.ntraces > i \
                and data.trace_types[i] == 'step':
@@ -422,7 +434,8 @@ def time_response_plot(
             # Set up line properties for this output, trace
             if len(fmt) == 0:
                 line_props = input_props[
-                    i % iprop_len if overlay_signals else 0].copy()
+                    (i + input_offset) % iprop_len if overlay_signals
+                    else input_offset].copy()
                 line_props.update(
                     trace_props[trace % tprop_len if overlay_traces else 0])
                 line_props.update(kwargs)
@@ -431,6 +444,12 @@ def time_response_plot(
 
             out[input_map[i, trace]] += ax_array[input_map[i, trace]].plot(
                 x, y, *fmt, label=label, **line_props)
+
+    # Update the offsets so that we start at a new color/style the next time
+    fig._output_offset = (
+        output_offset + (noutputs if overlay_signals else 1)) % oprop_len
+    fig._input_offset = (
+        input_offset + (ninputs if overlay_signals else 1)) % iprop_len
 
     # Stop here if the user wants to control everything
     if not relabel:
@@ -506,7 +525,7 @@ def time_response_plot(
                 else:
                     label = f"Trace {trace}"
 
-                with plt.rc_context(timeplot_rcParams):
+                with plt.rc_context(rcParams):
                     ax_array[0, trace].set_title(label)
 
         # Label the outputs
@@ -551,6 +570,9 @@ def time_response_plot(
         legend_map = np.full(ax_array.shape, None, dtype=object)
         if legend_loc == None:
             legend_loc = 'center right'
+        else:
+            show_legend = True if show_legend is None else show_legend
+
         if transpose:
             if (overlay_signals or plot_inputs == 'overlay') and overlay_traces:
                 # Put a legend in each plot for inputs and outputs
@@ -597,20 +619,29 @@ def time_response_plot(
             else:
                 # Put legend in the upper right
                 legend_map[0, -1] = legend_loc
+    else:
+        # Make sure the legend map is the right size
+        legend_map = np.atleast_2d(legend_map)
+        if legend_map.shape != ax_array.shape:
+            raise ValueError("legend_map shape just match axes shape")
+
+        # Turn legend on unless overridden by user
+        show_legend = True if show_legend is None else show_legend
 
     # Create axis legends
     for i in range(nrows):
         for j in range(ncols):
             ax = ax_array[i, j]
-            # Get the labels to use
             labels = [line.get_label() for line in ax.get_lines()]
-            labels = _make_legend_labels(labels, plot_inputs == 'overlay')
+            if line_labels is None:
+                labels = _make_legend_labels(labels, plot_inputs == 'overlay')
 
             # Update the labels to remove common strings
-            if len(labels) > 1 and legend_map[i, j] != None:
-                with plt.rc_context(timeplot_rcParams):
+            if show_legend != False and \
+               (len(labels) > 1 or show_legend) and \
+               legend_map[i, j] != None:
+                with plt.rc_context(rcParams):
                     ax.legend(labels, loc=legend_map[i, j])
-
 
     #
     # Update the plot title (= figure suptitle)
@@ -622,29 +653,7 @@ def time_response_plot(
     # list of systems (e.g., "Step response for sys[1], sys[2]").
     #
 
-    if fig is not None and title is not None:
-        # Get the current title, if it exists
-        old_title = None if fig._suptitle is None else fig._suptitle._text
-        new_title = title
-
-        if old_title is not None:
-            # Find the common part of the titles
-            common_prefix = commonprefix([old_title, new_title])
-
-            # Back up to the last space
-            last_space = common_prefix.rfind(' ')
-            if last_space > 0:
-                common_prefix = common_prefix[:last_space]
-            common_len = len(common_prefix)
-
-            # Add the new part of the title (usually the system name)
-            if old_title[common_len:] != new_title[common_len:]:
-                separator = ',' if len(common_prefix) > 0 else ';'
-                new_title = old_title + separator + new_title[common_len:]
-
-        # Add the title
-        with plt.rc_context(timeplot_rcParams):
-            fig.suptitle(new_title)
+    _update_suptitle(fig, title, rcParams=rcParams)
 
     return out
 
@@ -681,6 +690,7 @@ def combine_time_responses(response_list, trace_labels=None, title=None):
     ntraces = max(1, base.ntraces)
 
     # Initial pass through trace list to count things up and do error checks
+    nstates = base.nstates
     for response in response_list[1:]:
         # Make sure the time vector is the same
         if not np.allclose(base.t, response.t):
@@ -688,17 +698,20 @@ def combine_time_responses(response_list, trace_labels=None, title=None):
 
         # Make sure the dimensions are all the same
         if base.ninputs != response.ninputs or \
-           base.noutputs != response.noutputs or \
-           base.nstates != response.nstates:
+           base.noutputs != response.noutputs:
             raise ValueError("all responses must have the same number of "
                             "inputs, outputs, and states")
+
+        if nstates != response.nstates:
+            warn("responses have different state dimensions; dropping states")
+            nstates = 0
 
         ntraces += max(1, response.ntraces)
 
     # Create data structures for the new time response data object
     inputs = np.empty((base.ninputs, ntraces, base.t.size))
     outputs = np.empty((base.noutputs, ntraces, base.t.size))
-    states = np.empty((base.nstates, ntraces, base.t.size))
+    states = np.empty((nstates, ntraces, base.t.size))
 
     # See whether we should create labels or not
     if trace_labels is None:
@@ -717,7 +730,8 @@ def combine_time_responses(response_list, trace_labels=None, title=None):
             # Single trace
             inputs[:, offset, :] = response.u
             outputs[:, offset, :] = response.y
-            states[:, offset, :] = response.x
+            if nstates:
+                states[:, offset, :] = response.x
             offset += 1
 
             # Add on trace label and trace type
@@ -731,7 +745,8 @@ def combine_time_responses(response_list, trace_labels=None, title=None):
             for i in range(response.ntraces):
                 inputs[:, offset, :] = response.u[:, i, :]
                 outputs[:, offset, :] = response.y[:, i, :]
-                states[:, offset, :] = response.x[:, i, :]
+                if nstates:
+                    states[:, offset, :] = response.x[:, i, :]
 
                 # Save the trace labels
                 if generate_trace_labels:
@@ -749,68 +764,10 @@ def combine_time_responses(response_list, trace_labels=None, title=None):
                 trace_types += [None] * response.ntraces
 
     return TimeResponseData(
-        base.t, outputs, states, inputs, issiso=base.issiso,
+        base.t, outputs, states if nstates else None, inputs,
         output_labels=base.output_labels, input_labels=base.input_labels,
-        state_labels=base.state_labels, title=title, transpose=base.transpose,
-        return_x=base.return_x, squeeze=base.squeeze, sysname=base.sysname,
+        state_labels=base.state_labels if nstates else None,
+        title=title, transpose=base.transpose, return_x=base.return_x,
+        issiso=base.issiso, squeeze=base.squeeze, sysname=base.sysname,
         trace_labels=trace_labels, trace_types=trace_types,
         plot_inputs=base.plot_inputs)
-
-
-# Create vectorized function to find axes from lines
-def get_plot_axes(line_array):
-    """Get a list of axes from an array of lines.
-
-    This function can be used to return the set of axes corresponding to
-    the line array that is returned by `time_response_plot`.  This is useful for
-    generating an axes array that can be passed to subsequent plotting
-    calls.
-
-    Parameters
-    ----------
-    line_array : array of list of Line2D
-        A 2D array with elements corresponding to a list of lines appearing
-        in an axes, matching the return type of a time response data plot.
-
-    Returns
-    -------
-    axes_array : array of list of Axes
-        A 2D array with elements corresponding to the Axes assocated with
-        the lines in `line_array`.
-
-    Notes
-    -----
-    Only the first element of each array entry is used to determine the axes.
-
-    """
-    _get_axes = np.vectorize(lambda lines: lines[0].axes)
-    return _get_axes(line_array)
-
-
-# Utility function to make legend labels
-def _make_legend_labels(labels, ignore_common=False):
-
-    # Look for a common prefix (up to a space)
-    common_prefix = commonprefix(labels)
-    last_space = common_prefix.rfind(', ')
-    if last_space < 0 or ignore_common:
-        common_prefix = ''
-    elif last_space > 0:
-        common_prefix = common_prefix[:last_space]
-    prefix_len = len(common_prefix)
-
-    # Look for a common suffice (up to a space)
-    common_suffix = commonprefix(
-        [label[::-1] for label in labels])[::-1]
-    suffix_len = len(common_suffix)
-    # Only chop things off after a comma or space
-    while suffix_len > 0 and common_suffix[-suffix_len] != ',':
-        suffix_len -= 1
-
-    # Strip the labels of common information
-    if suffix_len > 0 and not ignore_common:
-        labels = [label[prefix_len:-suffix_len] for label in labels]
-    else:
-        labels = [label[prefix_len:] for label in labels]
-
-    return labels

@@ -494,6 +494,8 @@ The following classes are used in generating response data.
 
    ~control.DescribingFunctionResponse
    ~control.FrequencyResponseData
+   ~control.FrequencyResponseList
    ~control.NyquistResponseData
    ~control.PoleZeroData
    ~control.TimeResponseData
+   ~control.TimeResponseList

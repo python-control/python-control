@@ -79,12 +79,14 @@ from numpy import einsum, maximum, minimum
 from scipy.linalg import eig, eigvals, matrix_balance, norm
 
 from . import config
+from .ctrlplot import _update_suptitle
 from .exception import pandas_check
 from .iosys import isctime, isdtime
 from .timeplot import time_response_plot
 
 __all__ = ['forced_response', 'step_response', 'step_info',
-           'initial_response', 'impulse_response', 'TimeResponseData']
+           'initial_response', 'impulse_response', 'TimeResponseData',
+           'TimeResponseList']
 
 
 class TimeResponseData:
@@ -694,6 +696,12 @@ class TimeResponseData:
 
     # Convert to pandas
     def to_pandas(self):
+        """Convert response data to pandas data frame.
+
+        Creates a pandas data frame using the input, output, and state
+        labels for the time response.
+
+        """
         if not pandas_check():
             raise ImportError("pandas not installed")
         import pandas
@@ -714,7 +722,42 @@ class TimeResponseData:
 
     # Plot data
     def plot(self, *args, **kwargs):
+        """Plot the time response data objects.
+
+        This method calls :func:`time_response_plot`, passing all arguments
+        and keywords.
+
+        """
         return time_response_plot(self, *args, **kwargs)
+
+#
+# Time response data list class
+#
+# This class is a subclass of list that adds a plot() method, enabling
+# direct plotting from routines returning a list of TimeResponseData
+# objects.
+#
+
+class TimeResponseList(list):
+    """This class consist of a list of :class:`TimeResponseData` objects.
+    It is a subclass of the Python `list` class, with a `plot` method that
+    plots the individual :class:`TimeResponseData` objects.
+
+    """
+    def plot(self, *args, **kwargs):
+        out_full = None
+        label = kwargs.pop('label', [None] * len(self))
+        for i, response in enumerate(self):
+            out = TimeResponseData.plot(
+                response, *args, label=label[i], **kwargs)
+            if out_full is None:
+                out_full = out
+            else:
+                # Append the lines in the new plot to previous lines
+                for row in range(out.shape[0]):
+                    for col in range(out.shape[1]):
+                        out_full[row, col] += out[row, col]
+        return out_full
 
 
 # Process signal labels
@@ -878,7 +921,7 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
 
 
 # Forced response of a linear system
-def forced_response(sys, T=None, U=0., X0=0., transpose=False, params=None,
+def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
                     interpolate=False, return_x=None, squeeze=None):
     """Compute the output of a linear system given the input.
 
@@ -891,8 +934,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, params=None,
 
     Parameters
     ----------
-    sys : StateSpace or TransferFunction
-        LTI system to simulate
+    sysdata : I/O system or list of I/O systems
+        I/O system(s) for which forced response is computed.
 
     T : array_like, optional for discrete LTI `sys`
         Time steps at which the input is defined; values must be evenly spaced.
@@ -947,9 +990,10 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, params=None,
 
     Returns
     -------
-    results : TimeResponseData
-        Time response represented as a :class:`TimeResponseData` object
-        containing the following properties:
+    results : :class:`TimeResponseData` or :class:`TimeResponseList`
+        Time response represented as a :class:`TimeResponseData` object or
+        list of :class:`TimeResponseData` objects containing the following
+        properties:
 
         * time (array): Time values of the output.
 
@@ -963,9 +1007,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, params=None,
 
         * inputs (array): Input(s) to the system, indexed by input and time.
 
-        The return value of the system can also be accessed by assigning the
-        function to a tuple of length 2 (time, output) or of length 3 (time,
-        output, state) if ``return_x`` is ``True``.
+        The `plot()` method can be used to create a plot of the time
+        response(s) (see :func:`time_response_plot` for more information).
 
     See Also
     --------
@@ -986,6 +1029,10 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, params=None,
        that `forced_response` is specialized (and optimized) for linear
        systems.
 
+    4. (legacy) The return value of the system can also be accessed by
+        assigning the function to a tuple of length 2 (time, output) or of
+        length 3 (time, output, state) if ``return_x`` is ``True``.
+
     Examples
     --------
     >>> G = ct.rss(4)
@@ -999,6 +1046,17 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, params=None,
     from .nlsys import NonlinearIOSystem, input_output_response
     from .statesp import StateSpace, _convert_to_statespace
     from .xferfcn import TransferFunction
+
+    # If passed a list, recursively call individual responses with given T
+    if isinstance(sysdata, (list, tuple)):
+        responses = []
+        for sys in sysdata:
+            responses.append(forced_response(
+                sys, T, U=U, X0=X0, transpose=transpose, params=params,
+                interpolate=interpolate, return_x=return_x, squeeze=squeeze))
+        return TimeResponseList(responses)
+    else:
+        sys = sysdata
 
     if not isinstance(sys, (StateSpace, TransferFunction)):
         if isinstance(sys, NonlinearIOSystem):
@@ -1280,8 +1338,9 @@ def _process_time_response(
     return tout, yout
 
 
-def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
-                  transpose=False, return_x=False, squeeze=None, params=None):
+def step_response(
+        sysdata, T=None, X0=0, input=None, output=None, T_num=None,
+        transpose=False, return_x=False, squeeze=None, params=None):
     # pylint: disable=W0622
     """Compute the step response for a linear system.
 
@@ -1296,8 +1355,8 @@ def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
 
     Parameters
     ----------
-    sys : StateSpace or TransferFunction
-        LTI system to simulate
+    sysdata : I/O system or list of I/O systems
+        I/O system(s) for which step response is computed.
 
     T : array_like or float, optional
         Time vector, or simulation time duration if a number. If T is not
@@ -1350,27 +1409,10 @@ def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
 
     Returns
     -------
-    results : TimeResponseData
-        Time response represented as a :class:`TimeResponseData` object
-        containing the following properties:
-
-        * time (array): Time values of the output.
-
-        * outputs (array): Response of the system.  If the system is SISO and
-          squeeze is not True, the array is 1D (indexed by time).  If the
-          system is not SISO or ``squeeze`` is False, the array is 3D (indexed
-          by the output, trace, and time).
-
-        * states (array): Time evolution of the state vector, represented as
-          either a 2D array indexed by state and time (if SISO) or a 3D array
-          indexed by state, trace, and time.  Not affected by ``squeeze``.
-
-        * inputs (array): Input(s) to the system, indexed in the same manner
-          as ``outputs``.
-
-        The return value of the system can also be accessed by assigning the
-        function to a tuple of length 2 (time, output) or of length 3 (time,
-        output, state) if ``return_x`` is ``True``.
+    results : `TimeResponseData` or `TimeResponseList`
+        Time response represented as a :class:`TimeResponseData` object or
+        list of :class:`TimeResponseData` objects.  See
+        :func:`forced_response` for additional information.
 
     See Also
     --------
@@ -1393,10 +1435,22 @@ def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
 
     # Create the time and input vectors
     if T is None or np.asarray(T).size == 1:
-        T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=True)
+        T = _default_time_vector(sysdata, N=T_num, tfinal=T, is_step=True)
     T = np.atleast_1d(T).reshape(-1)
     if T.ndim != 1 and len(T) < 2:
         raise ValueError("invalid value of T for this type of system")
+
+    # If passed a list, recursively call individual responses with given T
+    if isinstance(sysdata, (list, tuple)):
+        responses = []
+        for sys in sysdata:
+            responses.append(step_response(
+                sys, T, X0=X0, input=input, output=output, T_num=T_num,
+                transpose=transpose, return_x=return_x, squeeze=squeeze,
+                params=params))
+        return TimeResponseList(responses)
+    else:
+        sys = sysdata
 
     # If we are passed a transfer function and X0 is non-zero, warn the user
     if isinstance(sys, TransferFunction) and np.any(X0 != 0):
@@ -1681,8 +1735,9 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
     return ret[0][0] if retsiso else ret
 
 
-def initial_response(sys, T=None, X0=0, output=None, T_num=None, params=None,
-                     transpose=False, return_x=False, squeeze=None):
+def initial_response(
+        sysdata, T=None, X0=0, output=None, T_num=None, params=None,
+        transpose=False, return_x=False, squeeze=None):
     # pylint: disable=W0622
     """Compute the initial condition response for a linear system.
 
@@ -1695,6 +1750,9 @@ def initial_response(sys, T=None, X0=0, output=None, T_num=None, params=None,
 
     Parameters
     ----------
+    sysdata : I/O system or list of I/O systems
+        I/O system(s) for which initial response is computed.
+
     sys : StateSpace or TransferFunction
         LTI system to simulate
 
@@ -1737,24 +1795,10 @@ def initial_response(sys, T=None, X0=0, output=None, T_num=None, params=None,
 
     Returns
     -------
-    results : TimeResponseData
-        Time response represented as a :class:`TimeResponseData` object
-        containing the following properties:
-
-        * time (array): Time values of the output.
-
-        * outputs (array): Response of the system.  If the system is SISO and
-          squeeze is not True, the array is 1D (indexed by time).  If the
-          system is not SISO or ``squeeze`` is False, the array is 2D (indexed
-          by the output and time).
-
-        * states (array): Time evolution of the state vector, represented as
-          either a 2D array indexed by state and time (if SISO).  Not affected
-          by ``squeeze``.
-
-        The return value of the system can also be accessed by assigning the
-        function to a tuple of length 2 (time, output) or of length 3 (time,
-        output, state) if ``return_x`` is ``True``.
+    results : `TimeResponseData` or `TimeResponseList`
+        Time response represented as a :class:`TimeResponseData` object or
+        list of :class:`TimeResponseData` objects.  See
+        :func:`forced_response` for additional information.
 
     See Also
     --------
@@ -1775,10 +1819,21 @@ def initial_response(sys, T=None, X0=0, output=None, T_num=None, params=None,
 
     # Create the time and input vectors
     if T is None or np.asarray(T).size == 1:
-        T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=False)
+        T = _default_time_vector(sysdata, N=T_num, tfinal=T, is_step=False)
     T = np.atleast_1d(T).reshape(-1)
     if T.ndim != 1 and len(T) < 2:
         raise ValueError("invalid value of T for this type of system")
+
+    # If passed a list, recursively call individual responses with given T
+    if isinstance(sysdata, (list, tuple)):
+        responses = []
+        for sys in sysdata:
+            responses.append(initial_response(
+                sys, T, X0=X0, output=output, T_num=T_num, transpose=transpose,
+                return_x=return_x, squeeze=squeeze, params=params))
+        return TimeResponseList(responses)
+    else:
+        sys = sysdata
 
     # Compute the forced response
     response = forced_response(sys, T, 0, X0, params=params)
@@ -1800,8 +1855,9 @@ def initial_response(sys, T=None, X0=0, output=None, T_num=None, params=None,
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
-def impulse_response(sys, T=None, input=None, output=None, T_num=None,
-                     transpose=False, return_x=False, squeeze=None):
+def impulse_response(
+        sysdata, T=None, input=None, output=None, T_num=None,
+        transpose=False, return_x=False, squeeze=None):
     # pylint: disable=W0622
     """Compute the impulse response for a linear system.
 
@@ -1816,8 +1872,8 @@ def impulse_response(sys, T=None, input=None, output=None, T_num=None,
 
     Parameters
     ----------
-    sys : StateSpace, TransferFunction
-        LTI system to simulate
+    sysdata : I/O system or list of I/O systems
+        I/O system(s) for which impluse response is computed.
 
     T : array_like or float, optional
         Time vector, or simulation time duration if a scalar (time vector is
@@ -1856,24 +1912,10 @@ def impulse_response(sys, T=None, input=None, output=None, T_num=None,
 
     Returns
     -------
-    results : TimeResponseData
-        Impulse response represented as a :class:`TimeResponseData` object
-        containing the following properties:
-
-        * time (array): Time values of the output.
-
-        * outputs (array): Response of the system.  If the system is SISO and
-          squeeze is not True, the array is 1D (indexed by time).  If the
-          system is not SISO or ``squeeze`` is False, the array is 3D (indexed
-          by the output, trace, and time).
-
-        * states (array): Time evolution of the state vector, represented as
-          either a 2D array indexed by state and time (if SISO) or a 3D array
-          indexed by state, trace, and time.  Not affected by ``squeeze``.
-
-        The return value of the system can also be accessed by assigning the
-        function to a tuple of length 2 (time, output) or of length 3 (time,
-        output, state) if ``return_x`` is ``True``.
+    results : `TimeResponseData` or `TimeResponseList`
+        Time response represented as a :class:`TimeResponseData` object or
+        list of :class:`TimeResponseData` objects.  See
+        :func:`forced_response` for additional information.
 
     See Also
     --------
@@ -1884,8 +1926,8 @@ def impulse_response(sys, T=None, input=None, output=None, T_num=None,
     This function uses the `forced_response` function to compute the time
     response. For continuous time systems, the initial condition is altered
     to account for the initial impulse. For discrete-time aystems, the
-    impulse is sized so that it has unit area.  Response for nonlinear
-    systems is computed using `input_output_response`.
+    impulse is sized so that it has unit area.  The impulse response for
+    nonlinear systems is not implemented.
 
     Examples
     --------
@@ -1896,16 +1938,27 @@ def impulse_response(sys, T=None, input=None, output=None, T_num=None,
     from .lti import LTI
     from .statesp import _convert_to_statespace
 
-    # Make sure we have an LTI system
-    if not isinstance(sys, LTI):
-        raise ValueError("system must be LTI system for impulse response")
-
     # Create the time and input vectors
     if T is None or np.asarray(T).size == 1:
-        T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=False)
+        T = _default_time_vector(sysdata, N=T_num, tfinal=T, is_step=False)
     T = np.atleast_1d(T).reshape(-1)
     if T.ndim != 1 and len(T) < 2:
         raise ValueError("invalid value of T for this type of system")
+
+    # If passed a list, recursively call individual responses with given T
+    if isinstance(sysdata, (list, tuple)):
+        responses = []
+        for sys in sysdata:
+            responses.append(impulse_response(
+                sys, T, input=input, output=output, T_num=T_num,
+                transpose=transpose, return_x=return_x, squeeze=squeeze))
+        return TimeResponseList(responses)
+    else:
+        sys = sysdata
+
+    # Make sure we have an LTI system
+    if not isinstance(sys, LTI):
+        raise ValueError("system must be LTI system for impulse response")
 
     # Convert to state space so that we can simulate
     if sys.nstates is None:
@@ -2148,10 +2201,21 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
     return tfinal, dt
 
 
-def _default_time_vector(sys, N=None, tfinal=None, is_step=True):
+def _default_time_vector(sysdata, N=None, tfinal=None, is_step=True):
     """Returns a time vector that has a reasonable number of points.
     if system is discrete-time, N is ignored """
     from .lti import LTI
+
+    if isinstance(sysdata, (list, tuple)):
+        tfinal_max = N_max = 0
+        for sys in sysdata:
+            timevec = _default_time_vector(
+                sys, N=N, tfinal=tfinal, is_step=is_step)
+            tfinal_max = max(tfinal_max, timevec[-1])
+            N_max = max(N_max, timevec.size)
+        return np.linspace(0, tfinal_max, N_max, endpoint=True)
+    else:
+        sys = sysdata
 
     # For non-LTI system, need tfinal
     if not isinstance(sys, LTI):
