@@ -1060,7 +1060,9 @@ _nyquist_defaults = {
     'nyquist.max_curve_magnitude': 20,          # clip large values
     'nyquist.max_curve_offset': 0.02,           # offset of primary/mirror
     'nyquist.start_marker': 'o',                # marker at start of curve
-    'nyquist.start_marker_size': 4,             # size of the maker
+    'nyquist.start_marker_size': 4,             # size of the marker
+    'nyquist.circle_style':                     # style for unit circles
+      {'color': 'black', 'linestyle': 'dashed', 'linewidth': 1}
 }
 
 
@@ -1504,9 +1506,9 @@ def nyquist_plot(
     unit_circle : bool, optional
         If ``True``, display the unit circle, to read gain crossover frequency.
     mt_circles : array_like, optional
-        Draws circles corresponding to the given magnitudes of sensitivity.
+        Draw circles corresponding to the given magnitudes of sensitivity.
     ms_circles : array_like, optional
-        Draws circles corresponding to the given magnitudes in complementary
+        Draw circles corresponding to the given magnitudes of complementary
         sensitivity.
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords (passed to `matplotlib`)
@@ -1861,22 +1863,29 @@ def nyquist_plot(
 
         # Mark the -1 point
         plt.plot([-1], [0], 'r+')
-        
+
+        #
+        # Draw circles for gain crossover and sensitivity functions
+        #
         theta = np.linspace(0, 2*np.pi, 100)
         cos = np.cos(theta)
         sin = np.sin(theta)
         label_pos = 15
 
+        # Display the unit circle, to read gain crossover frequency
         if unit_circle:
-            plt.plot(cos, sin, color="black", linestyle='dashed', linewidth=1)
+            plt.plot(cos, sin, **config.defaults['nyquist.circle_style'])
         
+        # Draw circles for given magnitudes of sensitivity
         if ms_circles is not None:
             for ms in ms_circles:
                 pos_x = -1 + (1/ms)*cos
                 pos_y = (1/ms)*sin
-                plt.plot(pos_x, pos_y, color="black", linestyle="dashed", linewidth=1)
+                plt.plot(
+                    pos_x, pos_y, **config.defaults['nyquist.circle_style'])
                 plt.text(pos_x[label_pos], pos_y[label_pos], ms)
 
+        # Draw circles for given magnitudes of complementary sensitivity
         if mt_circles is not None:
             for mt in mt_circles:
                 if mt != 1:
@@ -1884,15 +1893,19 @@ def nyquist_plot(
                     rt = mt/(mt**2-1)  # Mt radius
                     pos_x = ct+rt*cos
                     pos_y = rt*sin
-                    plt.plot(pos_x, pos_y, color="black", linestyle="dashed", linewidth=1)
+                    plt.plot(
+                        pos_x, pos_y,
+                        **config.defaults['nyquist.circle_style'])
                     plt.text(pos_x[label_pos], pos_y[label_pos], mt)
                 else:
                     _, _, ymin, ymax = plt.axis()
                     pos_y = np.linspace(ymin, ymax, 100)
-                    plt.vlines(-0.5, ymin=ymin, ymax=ymax, colors="black", linestyles="dashed", linewidth=1)
+                    plt.vlines(
+                        -0.5, ymin=ymin, ymax=ymax,
+                        **config.defaults['nyquist.circle_style'])
                     plt.text(-0.5, pos_y[label_pos], 1)
 
-        # Label the frequencies of the points
+        # Label the frequencies of the points on the Nyquist curve
         if label_freq:
             ind = slice(None, None, label_freq)
             omega_sys = np.imag(splane_contour[np.real(splane_contour) == 0])
