@@ -2086,10 +2086,8 @@ def interconnect(
 
     inplist : list of input connections, optional
         List of connections for how the inputs for the overall system are
-        mapped to the subsystem inputs.  The input specification is similar to
-        the form defined in the connection specification, except that
-        connections do not specify an input-spec, since these are the system
-        inputs. The entries for a connection are thus of the form:
+        mapped to the subsystem inputs.  The entries for a connection are
+        of the form:
 
             [input-spec1, input-spec2, ...]
 
@@ -2102,11 +2100,10 @@ def interconnect(
 
     outlist : list of output connections, optional
         List of connections for how the outputs from the subsystems are
-        mapped to overall system outputs.  The output connection
-        description is the same as the form defined in the inplist
-        specification (including the optional gain term).  Numbered outputs
-        must be chosen from the list of subsystem outputs, but named
-        outputs can also be contained in the list of subsystem inputs.
+        mapped to overall system outputs.  The entris for a connection are
+        of the form:
+
+            [output-spec1, output-spec2, ...]
 
         If an output connection contains more than one signal specification,
         then those signals are added together (multiplying by the any gain
