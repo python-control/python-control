@@ -496,7 +496,7 @@ def _find_root_locus_gain(event, sys, ax):
     # Get the current axis limits to set various thresholds
     xlim, ylim = ax.get_xlim(), ax.get_ylim()
 
-    # Catch type error when event click is in the figure but not in an axis
+    # Catch type error when event click is in the figure but not on curve
     try:
         s = complex(event.xdata, event.ydata)
         K = -1. / sys(s)
@@ -504,11 +504,9 @@ def _find_root_locus_gain(event, sys, ax):
             complex(event.xdata + 0.05 * abs(xlim[1] - xlim[0]), event.ydata))
         K_ylim = -1. / sys(
             complex(event.xdata, event.ydata + 0.05 * abs(ylim[1] - ylim[0])))
-
     except TypeError:
-        K = float('inf')
-        K_xlim = float('inf')
-        K_ylim = float('inf')
+        K, s = float('inf'), None
+        K_xlim = K_ylim = float('inf')
 
     #
     # Compute tolerances for deciding if we clicked on the root locus
@@ -526,9 +524,8 @@ def _find_root_locus_gain(event, sys, ax):
     if abs(K.real) > 1e-8 and abs(K.imag / K.real) < gain_tolerance and \
        event.inaxes == ax.axes and K.real > 0.:
         return K.real, s
-
     else:
-        return None, s
+        return None, None
 
 
 # Mark points corresponding to a given gain on root locus plot
