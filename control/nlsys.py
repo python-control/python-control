@@ -2100,7 +2100,7 @@ def interconnect(
 
     outlist : list of output connections, optional
         List of connections for how the outputs from the subsystems are
-        mapped to overall system outputs.  The entris for a connection are
+        mapped to overall system outputs.  The entries for a connection are
         of the form:
 
             [output-spec1, output-spec2, ...]
