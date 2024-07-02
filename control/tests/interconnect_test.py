@@ -689,3 +689,19 @@ def test_interconnect_params():
     timepts = np.linspace(0, 10)
     resp = ct.input_output_response(sys, timepts, 0, params={'a': -1})
     assert resp.states[0, -1].item() < 2 * math.exp(-10)
+
+
+# Bug identified in issue #1015
+def test_parallel_interconnect():
+    sys1 = ct.rss(2, 1, 1, name='S1')
+    sys2 = ct.rss(2, 1, 1, name='S2')
+
+    sys_bd = sys1 + sys2
+    sys_ic = ct.interconnect(
+        [sys1, sys2],
+        inplist=[['S1.u[0]', 'S2.u[0]']],
+        outlist=[['S1.y[0]', 'S2.y[0]']])
+    np.testing.assert_allclose(sys_bd.A, sys_ic.A)
+    np.testing.assert_allclose(sys_bd.B, sys_ic.B)
+    np.testing.assert_allclose(sys_bd.C, sys_ic.C)
+    np.testing.assert_allclose(sys_bd.D, sys_ic.D)
