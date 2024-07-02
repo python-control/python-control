@@ -2422,18 +2422,18 @@ def interconnect(
             elif not found_system:
                 raise ValueError("could not find signal %s" % sname)
         else:
-            # TODO: refactor code to remove duplication
             if isinstance(connection, list):
                 # Passed a list => create input map
                 dprint(f"  detected input list")
-                new_inplist.append([])
+                signal_list = []
                 for spec in connection:
                     isys, indices, gain = _parse_spec(syslist, spec, 'input')
                     for isig in indices:
-                        new_inplist[-1].append((isys, isig, gain))
-                        dprint(f"    adding input {(isys, isig, gain)}")
+                        signal_list.append((isys, isig, gain))
+                        dprint(f"    adding input {(isys, isig, gain)} to list")
+                new_inplist.append(signal_list)
             else:
-                # Passed a single single => single input
+                # Passed a single signal name => add individual input(s)
                 isys, indices, gain = _parse_spec(syslist, connection, 'input')
                 for isig in indices:
                     new_inplist.append((isys, isig, gain))
@@ -2503,39 +2503,15 @@ def interconnect(
             elif not found_system:
                 raise ValueError("could not find signal %s" % sname)
         else:
-            # TODO: refactor code to remove duplication
-            if isinstance(connection, list):
-                # Passed a list => create input map
-                dprint(f"  detected output list")
-                new_outlist.append([])
-                for spec in connection:
-                    try:
-                        # First trying looking in the output signals
-                        osys, indices, gain = _parse_spec(
-                            syslist, spec, 'output')
-                        for osig in indices:
-                            dprint(f"  adding output {(osys, osig, gain)}")
-                            new_outlist[-1].append((osys, osig, gain))
-                    except ValueError:
-                        # If not, see if we can find it in inputs
-                        isys, indices, gain = _parse_spec(
-                            syslist, spec, 'input or output',
-                            dictname='input_index')
-                        for isig in indices:
-                            # Use string form to allow searching input list
-                            dprint(f"  adding input {(isys, isig, gain)}")
-                            new_outlist[-1].append(
-                                (syslist[isys].name,
-                                 syslist[isys].input_labels[isig], gain))
-            else:
-                spec = connection
+            # Utility function to find named output or input signal
+            def _find_output_or_input_signal(spec):
+                signal_list = []
                 try:
                     # First trying looking in the output signals
-                    osys, indices, gain = _parse_spec(
-                        syslist, spec, 'output')
+                    osys, indices, gain = _parse_spec(syslist, spec, 'output')
                     for osig in indices:
-                        dprint(f"  adding output {(osys, osig, gain)}")
-                        new_outlist.append((osys, osig, gain))
+                            dprint(f"  adding output {(osys, osig, gain)}")
+                            signal_list.append((osys, osig, gain))
                 except ValueError:
                     # If not, see if we can find it in inputs
                     isys, indices, gain = _parse_spec(
@@ -2544,9 +2520,21 @@ def interconnect(
                     for isig in indices:
                         # Use string form to allow searching input list
                         dprint(f"  adding input {(isys, isig, gain)}")
-                        new_outlist.append(
+                        signal_list.append(
                             (syslist[isys].name,
                              syslist[isys].input_labels[isig], gain))
+                return signal_list
+                
+            if isinstance(connection, list):
+                # Passed a list => create input map
+                dprint(f"  detected output list")
+                signal_list = []
+                for spec in connection:
+                    signal_list += _find_output_or_input_signal(spec)
+                new_outlist.append(signal_list)
+            else:
+                new_outlist += _find_output_or_input_signal(connection)
+                
     outlist, outputs = new_outlist, new_outputs
     dprint(f"  {outlist=}\n  {outputs=}")
 
