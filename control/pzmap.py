@@ -391,12 +391,13 @@ def pole_zero_plot(
                 real(poles), imag(poles), marker='x', linestyle='',
                 markeredgecolor=color, markerfacecolor=color,
                 markersize=marker_size, markeredgewidth=marker_width,
-                label=label)
+                color=color, label=label)
         if len(zeros) > 0:
             out[idx, 1] = ax.plot(
                 real(zeros), imag(zeros), marker='o', linestyle='',
                 markeredgecolor=color, markerfacecolor='none',
-                markersize=marker_size, markeredgewidth=marker_width)
+                markersize=marker_size, markeredgewidth=marker_width,
+                color=color)
 
         # Plot the loci, if present
         if response.loci is not None:
@@ -447,8 +448,8 @@ def pole_zero_plot(
                     markeredgecolor=pole_line.get_markerfacecolor(),
                     markerfacecolor='none', markersize=marker_size,
                     markeredgewidth=marker_width)
-            handle = (pole_line, zero_line)
-            line_tuples.append(handle)
+                handle = (pole_line, zero_line)
+                line_tuples.append(handle)
 
             with plt.rc_context(freqplot_rcParams):
                 legend = ax.legend(

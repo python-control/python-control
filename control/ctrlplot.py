@@ -275,25 +275,24 @@ def _process_line_labels(label, ntraces, ninputs=0, noutputs=0):
 
 # Get labels for all lines in an axes
 def _get_line_labels(ax, use_color=True):
-    labels, lines = [], []
+    labels_colors, lines = [], []
     last_color, counter = None, 0       # label unknown systems
     for i, line in enumerate(ax.get_lines()):
         label = line.get_label()
+        color = line.get_color()
         if use_color and label.startswith("Unknown"):
             label = f"Unknown-{counter}"
-            if last_color is None:
-                last_color = line.get_color()
-            elif last_color != line.get_color():
+            if last_color != color:
                 counter += 1
-                last_color = line.get_color()
+            last_color = color
         elif label[0] == '_':
             continue
 
-        if label not in labels:
+        if (label, color) not in labels_colors:
             lines.append(line)
-            labels.append(label)
+            labels_colors.append((label, color))
 
-    return lines, labels
+    return lines, [label for label, color in labels_colors]
 
 
 # Utility function to make legend labels
