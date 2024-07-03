@@ -48,6 +48,7 @@ from .exception import ControlSlycot, ControlMIMONotImplemented, \
 from .iosys import isdtime, isctime
 from .statesp import StateSpace
 from .statefbk import gram
+from .timeresp import TimeResponseData
 
 __all__ = ['hsvd', 'balred', 'modred', 'era', 'markov', 'minreal']
 
@@ -402,9 +403,9 @@ def era(YY, m, n, nin, nout, r):
     raise NotImplementedError('This function is not implemented yet.')
 
 
-def markov(Y, U, m=None, transpose=False):
+def markov(data, m=None, dt=True, truncate=False):
     """Calculate the first `m` Markov parameters [D CB CAB ...]
-    from input `U`, output `Y`.
+    from data
 
     This function computes the Markov parameters for a discrete time system
 
@@ -420,23 +421,45 @@ def markov(Y, U, m=None, transpose=False):
 
     Parameters
     ----------
-    Y : array_like
-        Output data.  If the array is 1D, the system is assumed to be single
-        input.  If the array is 2D and transpose=False, the columns of `Y`
-        are taken as time points, otherwise the rows of `Y` are taken as
-        time points.
-    U : array_like
-        Input data, arranged in the same way as `Y`.
+    data : TimeResponseData
+        Response data from which the Markov parameters where estimated.
+        Input and output data must be 1D or 2D array.
     m : int, optional
         Number of Markov parameters to output.  Defaults to len(U).
-    transpose : bool, optional
-        Assume that input data is transposed relative to the standard
-        :ref:`time-series-convention`. Default value is False.
+    dt : (True of float, optional)
+        True indicates discrete time with unspecified sampling time,
+        positive number is discrete time with specified sampling time.
+        It can be used to scale the markov parameters in order to match
+        the impulse response of this library.
+        Default values is True.
+    truncate : bool, optional
+        Do not use first m equation for least least squares.
+        Default value is False.
 
     Returns
     -------
-    H : ndarray
-        First m Markov parameters, [D CB CAB ...]
+    H : TimeResponseData
+        Markov parameters / impulse response [D CB CAB ...] represented as
+        a :class:`TimeResponseData` object containing the following properties:
+
+        * time (array): Time values of the output.
+
+        * outputs (array): Response of the system.  If the system is SISO,
+          the array is 1D (indexed by time).  If the
+          system is not SISO, the array is 3D (indexed
+          by the output, trace, and time).
+
+        * inputs (array): Inputs of the system.  If the system is SISO,
+          the array is 1D (indexed by time).  If the
+          system is not SISO, the array is 3D (indexed
+          by the output, trace, and time).
+
+    Notes
+    -----
+    It works for SISO and MIMO systems.
+
+    This function does comply with the Python Control Library
+    :ref:`time-series-convention` for representation of time series data.
 
     References
     ----------
@@ -445,95 +468,69 @@ def markov(Y, U, m=None, transpose=False):
        and experiments. Journal of Guidance Control and Dynamics, 16(2),
        320-329, 2012. http://doi.org/10.2514/3.21006
 
-    Notes
-    -----
-    Currently only works for SISO systems.
-
-    This function does not currently comply with the Python Control Library
-    :ref:`time-series-convention` for representation of time series data.
-    Use `transpose=False` to make use of the standard convention (this
-    will be updated in a future release).
-
     Examples
     --------
     >>> T = np.linspace(0, 10, 100)
     >>> U = np.ones((1, 100))
-    >>> T, Y = ct.forced_response(ct.tf([1], [1, 0.5], True), T, U)
-    >>> H = ct.markov(Y, U, 3, transpose=False)
+    >>> response = ct.forced_response(ct.tf([1], [1, 0.5], True), T, U)
+    >>> H = ct.markov(response, 3)
 
     """
     # Convert input parameters to 2D arrays (if they aren't already)
-    Umat = np.array(U, ndmin=2)
-    Ymat = np.array(Y, ndmin=2)
+    Umat = np.array(data.inputs, ndmin=2)
+    Ymat = np.array(data.outputs, ndmin=2)
 
     # If data is in transposed format, switch it around
-    if transpose:
+    if data.transpose and not data.issiso:
         Umat, Ymat = np.transpose(Umat), np.transpose(Ymat)
-
-    # Make sure the system is a SISO system
-    if Umat.shape[0] != 1 or Ymat.shape[0] != 1:
-        raise ControlMIMONotImplemented
 
     # Make sure the number of time points match
     if Umat.shape[1] != Ymat.shape[1]:
         raise ControlDimension(
             "Input and output data are of differnent lengths")
-    n = Umat.shape[1]
+    l = Umat.shape[1]
 
     # If number of desired parameters was not given, set to size of input data
     if m is None:
-        m = Umat.shape[1]
+        m = l
+
+    t = 0
+    if truncate:
+        t = m
+
+    q = Ymat.shape[0] # number of outputs
+    p = Umat.shape[0] # number of inputs
 
     # Make sure there is enough data to compute parameters
-    if m > n:
+    if m*p > (l-t):
         warnings.warn("Not enough data for requested number of parameters")
 
+    # the algorithm - Construct a matrix of control inputs to invert
     #
-    # Original algorithm (with mapping to standard order)
-    #
-    # RMM note, 24 Dec 2020: This algorithm sets the problem up correctly
-    # until the final column of the UU matrix is created, at which point it
-    # makes some modifications that I don't understand. This version of the
-    # algorithm does not seem to return the actual Markov parameters for a
-    # system.
-    #
-    # # Create the matrix of (shifted) inputs
-    # UU = np.transpose(Umat)
-    # for i in range(1, m-1):
-    #     # Shift previous column down and add a zero at the top
-    #     newCol = np.vstack((0, np.reshape(UU[0:n-1, i-1], (-1, 1))))
-    #     UU = np.hstack((UU, newCol))
-    #
-    # # Shift previous column down and add a zero at the top
-    # Ulast = np.vstack((0, np.reshape(UU[0:n-1, m-2], (-1, 1))))
-    #
-    # # Replace the elements of the last column new values (?)
-    # # Each row gets the sum of the rows above it (?)
-    # for i in range(n-1, 0, -1):
-    #     Ulast[i] = np.sum(Ulast[0:i-1])
-    # UU = np.hstack((UU, Ulast))
-    #
-    # # Solve for the Markov parameters from Y = H @ UU
-    # # H = [[D], [CB], [CAB], ..., [C A^{m-3} B], [???]]
-    # H = np.linalg.lstsq(UU, np.transpose(Ymat))[0]
-    #
-    # # Markov parameters are in rows => transpose if needed
-    # return H if transpose else np.transpose(H)
-
-    #
-    # New algorithm - Construct a matrix of control inputs to invert
+    # (q,l)   = (q,p*m) @ (p*m,l)
+    # YY.T    = H @ UU.T
     #
     # This algorithm sets up the following problem and solves it for
     # the Markov parameters
+    #
+    # (l,q)   = (l,p*m) @ (p*m,q) 
+    # YY      = UU @ H.T
     #
     # [ y(0)   ]   [ u(0)    0       0                 ] [ D           ]
     # [ y(1)   ]   [ u(1)    u(0)    0                 ] [ C B         ]
     # [ y(2)   ] = [ u(2)    u(1)    u(0)              ] [ C A B       ]
     # [  :     ]   [  :      :        :          :     ] [  :          ]
-    # [ y(n-1) ]   [ u(n-1)  u(n-2)  u(n-3) ... u(n-m) ] [ C A^{m-2} B ]
+    # [ y(l-1) ]   [ u(l-1)  u(l-2)  u(l-3) ... u(l-m) ] [ C A^{m-2} B ]
     #
-    # Note: if the number of Markov parameters (m) is less than the size of
-    # the input/output data (n), then this algorithm assumes C A^{j} B = 0
+    # truncated version t=m, do not use first m equation
+    #
+    # [ y(t)   ]   [ u(t)    u(t-1)  u(t-2)    u(t-m)  ] [ D           ]
+    # [ y(t+1) ]   [ u(t+1)  u(t)    u(t-1)    u(t-m+1)] [ C B         ]
+    # [ y(t+2) ] = [ u(t+2)  u(t+1)  u(t)      u(t-m+2)] [ C B         ]
+    # [  :     ]   [  :      :        :          :     ] [  :          ]
+    # [ y(l-1) ]   [ u(l-1)  u(l-2)  u(l-3) ... u(l-m) ] [ C A^{m-2} B ]
+    #
+    # Note: This algorithm assumes C A^{j} B = 0
     # for j > m-2.  See equation (3) in
     #
     #   J.-N. Juang, M. Phan, L. G. Horta, and R. W. Longman, Identification
@@ -542,17 +539,40 @@ def markov(Y, U, m=None, transpose=False):
     #   320-329, 2012. http://doi.org/10.2514/3.21006
     #
 
+    # Set up the full problem
     # Create matrix of (shifted) inputs
-    UU = Umat
-    for i in range(1, m):
-        # Shift previous column down and add a zero at the top
-        new_row = np.hstack((0, UU[i-1, 0:-1]))
-        UU = np.vstack((UU, new_row))
-    UU = np.transpose(UU)
+    UUT = np.zeros((p*m,(l)))
+    for i in range(m):
+        # Shift previous column down and keep zeros at the top
+        UUT[i*p:(i+1)*p,i:] = Umat[:,:l-i]
 
-    # Invert and solve for Markov parameters
-    YY = np.transpose(Ymat)
-    H, _, _, _ = np.linalg.lstsq(UU, YY, rcond=None)
+    # Truncate first t=0 or t=m time steps, transpose the problem for lsq
+    YY = Ymat[:,t:].T
+    UU = UUT[:,t:].T
+    
+    # Solve for the Markov parameters from  YY = UU @ H.T
+    HT, _, _, _ = np.linalg.lstsq(UU, YY, rcond=None)
+    H = HT.T/dt # scaling
 
+    H = H.reshape(q,m,p) # output, time*input -> output, time, input
+    H = H.transpose(0,2,1) # output, input, time
+
+    # Create unit area impulse inputs
+    inputs = np.zeros((q,p,m))
+    trace_labels, trace_types = [], []
+    for i in range(p):
+        inputs[i,i,0] = 1/dt # unit area impulse
+        trace_labels.append(f"From {data.input_labels[i]}")
+        trace_types.append('impulse')
+
+    # Markov parameters as TimeResponseData with unit area impulse inputs
     # Return the first m Markov parameters
-    return H if transpose else np.transpose(H)
+    return TimeResponseData(time=data.time[:m],
+                            outputs=H,
+                            output_labels=data.output_labels,
+                            inputs=inputs,
+                            input_labels=data.input_labels,
+                            trace_labels=trace_labels,
+                            trace_types=trace_types,
+                            transpose=data.transpose,
+                            issiso=data.issiso)
