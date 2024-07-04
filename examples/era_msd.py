@@ -1,17 +1,14 @@
-# mkd_era.py
+# era_msd.py
 # Johannes Kaisinger, 4 July 2024
 #
-# Demonstrate estimation of markov parameters.
+# Demonstrate estimation of State Space model from impulse response.
 # SISO, SIMO, MISO, MIMO case
-
 
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-
 import control as ct
-
 
 # set up a mass spring damper system (2dof, MIMO case)
 # m q_dd + c q_d + k q = u
@@ -58,7 +55,5 @@ step_est.plot(color='orange',linestyle='dashed')
 
 plt.show()
 
-
 if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:
-
     plt.show()
