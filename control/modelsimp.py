@@ -368,38 +368,104 @@ def minreal(sys, tol=None, verbose=True):
     return sysr
 
 
-def era(YY, m, n, nin, nout, r):
-    """Calculate an ERA model of order `r` based on the impulse-response data
-    `YY`.
+def era(data, r, m=None, n=None, dt=True):
+    """Calculate an ERA model of order `r` based on the impulse-response data.
 
-    .. note:: This function is not implemented yet.
+    This function computes a discrete time system
+
+    .. math::
+
+        x[k+1] &= A x[k] + B u[k] \\\\
+        y[k] &= C x[k] + D u[k]
+
+    for a given impulse-response data (see [1]_).
 
     Parameters
     ----------
-    YY: array
-        `nout` x `nin` dimensional impulse-response data
-    m: integer
-        Number of rows in Hankel matrix
-    n: integer
-        Number of columns in Hankel matrix
-    nin: integer
-        Number of input variables
-    nout: integer
-        Number of output variables
-    r: integer
-        Order of model
+    data : TimeResponseData
+        impulse-response data from which the StateSpace model is estimated.
+    r : integer
+        Order of model.
+    m : integer, optional
+        Number of rows in Hankel matrix.
+        Default is 2*r.
+    n : integer, optional
+        Number of columns in Hankel matrix.
+        Default is 2*r.
+    dt : True or float, optional
+        True indicates discrete time with unspecified sampling time,
+        positive number is discrete time with specified sampling time.
+        It can be used to scale the StateSpace model in order to match
+        the impulse response of this library.
+        Default values is True.
 
     Returns
     -------
-    sys: StateSpace
-        A reduced order model sys=ss(Ar,Br,Cr,Dr)
+    sys : StateSpace
+        A reduced order model sys=StateSpace(Ar,Br,Cr,Dr,dt)
+    S : array
+        Singular values of Hankel matrix.
+        Can be used to choose a good r value.
+
+    References
+    ----------
+    .. [1] Samet Oymak and Necmiye Ozay
+       Non-asymptotic Identification of LTI Systems
+       from a Single Trajectory.
+       https://arxiv.org/abs/1806.05722
 
     Examples
     --------
-    >>> rsys = era(YY, m, n, nin, nout, r)                      # doctest: +SKIP
-
+    >>> T = np.linspace(0, 10, 100)
+    >>> response = ct.impulse_response(ct.tf([1], [1, 0.5], True), T)
+    >>> sysd, _ = ct.era(response, r=1)
     """
-    raise NotImplementedError('This function is not implemented yet.')
+    def block_hankel_matrix(Y, m, n):
+    
+        q, p, _ = Y.shape
+        YY = Y.transpose(0,2,1) # transpose for reshape
+        
+        H = np.zeros((q*m,p*n))
+        
+        for r in range(m):
+            # shift and add row to hankel matrix
+            new_row = YY[:,r:r+n,:]
+            H[q*r:q*(r+1),:] = new_row.reshape((q,p*n))
+                
+        return H
+    
+    Y = np.array(data.outputs, ndmin=3)
+    if data.transpose:
+        Y = np.transpose(Y)
+    q, p, l = Y.shape
+
+    if m is None:
+        m = 2*r
+    if n is None:
+        n = 2*r
+
+    if m*q < r or n*p < r:
+        raise ValueError("Hankel parameters are to small")
+    
+    if (l-1) < m+n:
+        raise ValueError("Not enough data for requested number of parameters")
+    
+    H = block_hankel_matrix(Y[:,:,1:], m, n+1) # Hankel matrix (q*m, p*(n+1))
+    Hf = H[:,:-p] # first p*n columns of H
+    Hl = H[:,p:] # last p*n columns of H
+    
+    U,S,Vh = np.linalg.svd(Hf, True)
+    Ur =U[:,0:r]
+    Vhr =Vh[0:r,:]
+
+    # balanced realizations
+    Sigma_inv = np.diag(1./np.sqrt(S[0:r]))
+    Ar = Sigma_inv @ Ur.T @ Hl @ Vhr.T @ Sigma_inv
+    Br = Sigma_inv @ Ur.T @ Hf[:,0:p]*dt
+    Cr = Hf[0:q,:] @ Vhr.T @ Sigma_inv
+    Dr = Y[:,:,0]
+
+    return StateSpace(Ar,Br,Cr,Dr,dt), S
 
 
 def markov(Y, U, m=None, transpose=False):
