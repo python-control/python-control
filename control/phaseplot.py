@@ -36,7 +36,7 @@ import numpy as np
 from scipy.integrate import odeint
 
 from . import config
-from .ctrlplot import ControlPlot, _add_arrows_to_line2D
+from .ctrlplot import ControlPlot, _add_arrows_to_line2D, _process_ax_keyword
 from .exception import ControlNotImplemented
 from .nlsys import NonlinearIOSystem, find_eqpt, input_output_response
 
@@ -141,6 +141,9 @@ def phase_plane_plot(
     pointdata = [-1, 1, -1, 1] if pointdata is None else pointdata
 
     # Create axis if needed
+    user_ax = ax
+    # TODO: make use of _process_ax_keyword
+    # fig, ax = _process_ax_keyword(user_ax, squeeze=True)
     if ax is None:
         fig, ax = plt.gcf(), plt.gca()
     else:
@@ -212,7 +215,8 @@ def phase_plane_plot(
     if initial_kwargs:
         raise TypeError("unrecognized keywords: ", str(initial_kwargs))
 
-    if fig is not None:
+    # TODO: update to common code pattern
+    if user_ax is None:
         ax.set_title(f"Phase portrait for {sys.name}")
         ax.set_xlabel(sys.state_labels[0])
         ax.set_ylabel(sys.state_labels[1])

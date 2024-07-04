@@ -315,9 +315,15 @@ def pole_zero_plot(
 
     # Initialize the figure
     # TODO: turn into standard utility function (from plotutil.py?)
+    # fig, ax = _process_ax_keyword(
+    #     user_ax, rcParams=freqplot_rcParams, squeeze=True, create_axes=False)
+    # axs = [ax] if ax is not None else []
     if user_ax is None:
         fig = plt.gcf()
         axs = fig.get_axes()
+    elif isinstance(user_ax, np.ndarray):
+        axs = user_ax.reshape(-1)
+        fig = axs[0].figure
     else:
         fig = ax.figure
         axs = [ax]
