@@ -141,8 +141,8 @@ def test_response_plots(
 # Use the manaul response to verify that different settings are working
 def test_manual_response_limits():
     # Default response: limits should be the same across rows
-    out = manual_response.plot()
-    axs = ct.get_plot_axes(out)
+    cplt = manual_response.plot()
+    axs = ct.get_plot_axes(cplt)        # legacy usage OK
     for i in range(manual_response.noutputs):
         for j in range(1, manual_response.ninputs):
             # Everything in the same row should have the same limits
@@ -397,18 +397,18 @@ def test_gangof4_trace_labels():
     C = ct.rss(1, 1, 1, name='C')
 
     # Make sure default labels are as expected
-    out = ct.gangof4_response(P1, C).plot()
-    out = ct.gangof4_response(P2, C).plot()
-    axs = ct.get_plot_axes(out)
+    cplt = ct.gangof4_response(P1, C).plot()
+    cplt = ct.gangof4_response(P2, C).plot()
+    axs = ct.get_plot_axes(cplt)        # legacy usage OK
     legend = axs[0, 1].get_legend().get_texts()
     assert legend[0].get_text() == 'None'
     assert legend[1].get_text() == 'None'
     plt.close()
 
     # Override labels
-    out = ct.gangof4_response(P1, C).plot(label='xxx, line1, yyy')
-    out = ct.gangof4_response(P2, C).plot(label='xxx, line2, yyy')
-    axs = ct.get_plot_axes(out)
+    cplt = ct.gangof4_response(P1, C).plot(label='xxx, line1, yyy')
+    cplt = ct.gangof4_response(P2, C).plot(label='xxx, line2, yyy')
+    axs = ct.get_plot_axes(cplt)        # legacy usage OK
     legend = axs[0, 1].get_legend().get_texts()
     assert legend[0].get_text() == 'xxx, line1, yyy'
     assert legend[1].get_text() == 'xxx, line2, yyy'
@@ -426,8 +426,8 @@ def test_freqplot_line_labels(plt_fcn):
     ct.set_defaults('freqplot', suptitle_frame='figure')
 
     # Make sure default labels are as expected
-    out = plt_fcn([sys1, sys2])
-    axs = ct.get_plot_axes(out)
+    cplt = plt_fcn([sys1, sys2])
+    axs = ct.get_plot_axes(cplt)        # legacy usage OK
     if axs.ndim == 1:
         legend = axs[0].get_legend().get_texts()
     else:
@@ -437,8 +437,8 @@ def test_freqplot_line_labels(plt_fcn):
     plt.close()
 
     # Override labels all at once
-    out = plt_fcn([sys1, sys2], label=['line1', 'line2'])
-    axs = ct.get_plot_axes(out)
+    cplt = plt_fcn([sys1, sys2], label=['line1', 'line2'])
+    axs = ct.get_plot_axes(cplt)        # legacy usage OK
     if axs.ndim == 1:
         legend = axs[0].get_legend().get_texts()
     else:
@@ -448,9 +448,9 @@ def test_freqplot_line_labels(plt_fcn):
     plt.close()
 
     # Override labels one at a time
-    out = plt_fcn(sys1, label='line1')
-    out = plt_fcn(sys2, label='line2')
-    axs = ct.get_plot_axes(out)
+    cplt = plt_fcn(sys1, label='line1')
+    cplt = plt_fcn(sys2, label='line2')
+    axs = ct.get_plot_axes(cplt)        # legacy usage OK
     if axs.ndim == 1:
         legend = axs[0].get_legend().get_texts()
     else:
@@ -475,8 +475,8 @@ def test_line_labels_bode(kwargs, labels):
     with pytest.raises(ValueError, match="number of labels must match"):
         ct.bode_plot([sys1, sys2], label=['line1'])
 
-    out = ct.bode_plot([sys1, sys2], label=labels, **kwargs)
-    axs = ct.get_plot_axes(out)
+    cplt = ct.bode_plot([sys1, sys2], label=labels, **kwargs)
+    axs = ct.get_plot_axes(cplt)        # legacy usage OK
     legend_texts = axs[0, -1].get_legend().get_texts()
     for i, legend in enumerate(legend_texts):
         assert legend.get_text() == labels[i]
@@ -502,22 +502,22 @@ def test_freqplot_ax_keyword(plt_fcn, ninputs, noutputs):
     sys = ct.rss(4, ninputs, noutputs)
 
     # Create an initial figure
-    out1 = plt_fcn(sys)
+    cplt1 = plt_fcn(sys)
 
     # Draw again on the same figure, using array
-    axs = ct.get_plot_axes(out1)
-    out2 = plt_fcn(sys, ax=axs)
-    np.testing.assert_equal(ct.get_plot_axes(out1), ct.get_plot_axes(out2))
+    axs = ct.get_plot_axes(cplt1)       # legacy usage OK
+    cplt2 = plt_fcn(sys, ax=axs)
+    np.testing.assert_equal(cplt1.axes, cplt2.axes)
 
     # Pass things in as a list instead
     axs_list = axs.tolist()
-    out3 = plt_fcn(sys, ax=axs)
-    np.testing.assert_equal(ct.get_plot_axes(out1), ct.get_plot_axes(out3))
+    cplt3 = plt_fcn(sys, ax=axs)
+    np.testing.assert_equal(cplt1.axes, cplt3.axes)
 
     # Flatten the list
     axs_list = axs.squeeze().tolist()
-    out3 = plt_fcn(sys, ax=axs_list)
-    np.testing.assert_equal(ct.get_plot_axes(out1), ct.get_plot_axes(out3))
+    cplt4 = plt_fcn(sys, ax=axs_list)
+    np.testing.assert_equal(cplt1.axes, cplt4.axes)
 
 
 def test_mixed_systypes():
@@ -552,7 +552,7 @@ def test_suptitle():
     sys = ct.rss(2, 2, 2)
 
     # Default location: center of axes
-    out = ct.bode_plot(sys)
+    cplt = ct.bode_plot(sys)
     assert plt.gcf()._suptitle._x != 0.5
 
     # Try changing the the title

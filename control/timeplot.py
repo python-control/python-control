@@ -454,7 +454,7 @@ def time_response_plot(
 
     # Stop here if the user wants to control everything
     if not relabel:
-        return out
+        return ControlPlot(out, ax_array, fig)
 
     #
     # Label the axes (including trace labels)

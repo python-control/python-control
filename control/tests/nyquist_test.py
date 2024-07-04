@@ -399,17 +399,17 @@ def test_linestyle_checks():
     sys = ct.tf([100], [1, 1, 1])
 
     # Set the line styles
-    lines = ct.nyquist_plot(
+    cplt = ct.nyquist_plot(
         sys, primary_style=[':', ':'], mirror_style=[':', ':'])
-    assert all([line.get_linestyle() == ':' for line in lines[0]])
+    assert all([line.get_linestyle() == ':' for line in cplt.lines[0]])
 
     # Set the line colors
-    lines = ct.nyquist_plot(sys, color='g')
-    assert all([line.get_color() == 'g' for line in lines[0]])
+    cplt = ct.nyquist_plot(sys, color='g')
+    assert all([line.get_color() == 'g' for line in cplt.lines[0]])
 
     # Turn off the mirror image
-    lines = ct.nyquist_plot(sys, mirror_style=False)
-    assert lines[0][2:] == [None, None]
+    cplt = ct.nyquist_plot(sys, mirror_style=False)
+    assert cplt.lines[0][2:] == [None, None]
 
     with pytest.raises(ValueError, match="invalid 'primary_style'"):
         ct.nyquist_plot(sys, primary_style=False)
@@ -505,7 +505,7 @@ def test_nyquist_frd():
 
     # Computing Nyquist response w/ different frequencies OK if given as a list
     nyqresp = ct.nyquist_response([sys1, sys2])
-    out = nyqresp.plot()
+    cplt = nyqresp.plot()
 
     warnings.resetwarnings()
 

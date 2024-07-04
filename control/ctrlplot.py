@@ -49,7 +49,7 @@ class ControlPlot(object):
     Attributes
     ----------
     lines : array of list of :class:`matplotlib:Line2D`
-        Array of Line2D objects for each line in the plot.  Generally, The
+        Array of Line2D objects for each line in the plot.  Generally, the
         shape of the array matches the subplots shape and the value of the
         array is a list of Line2D objects in that subplot.  Some plotting
         functions will return variants of this structure, as described in

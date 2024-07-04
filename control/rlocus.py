@@ -198,13 +198,13 @@ def root_locus_plot(
         return responses.loci, responses.gains
 
     # Plot the root loci
-    ctrlplot = responses.plot(grid=grid, **kwargs)
+    cplt = responses.plot(grid=grid, **kwargs)
 
     # Legacy processing: return locations of poles and zeros as a tuple
     if plot is True:
         return responses.loci, responses.gains
 
-    return ControlPlot(ctrlplot.lines, ctrlplot.axes, ctrlplot.figure)
+    return ControlPlot(cplt.lines, cplt.axes, cplt.figure)
 
 
 def _default_gains(num, den, xlim, ylim):

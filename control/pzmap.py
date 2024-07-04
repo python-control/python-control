@@ -503,7 +503,7 @@ def pole_zero_plot(
         else:
             TypeError("system lists not supported with legacy return values")
 
-    return ControlPlot(out, np.asarray(axs), fig, legend=legend)
+    return ControlPlot(out, ax, fig, legend=legend)
 
 
 # Utility function to find gain corresponding to a click event

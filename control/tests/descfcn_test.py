@@ -188,13 +188,13 @@ def test_describing_function_plot():
     assert len(response.intersections) == 1
     assert len(plt.gcf().get_axes()) == 0       # make sure there is no plot
 
-    out = response.plot()
+    cplt = response.plot()
     assert len(plt.gcf().get_axes()) == 1       # make sure there is a plot
-    assert len(out[0]) == 4 and len(out[1]) == 1
+    assert len(cplt.lines[0]) == 4 and len(cplt.lines[1]) == 1
 
     # Call plot directly
-    out = ct.describing_function_plot(H_larger, F_saturation, amp, omega)
-    assert len(out[0]) == 4 and len(out[1]) == 1
+    cplt = ct.describing_function_plot(H_larger, F_saturation, amp, omega)
+    assert len(cplt.lines[0]) == 4 and len(cplt.lines[1]) == 1
 
 
 def test_describing_function_exceptions():

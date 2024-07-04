@@ -24,11 +24,12 @@ resulting in the following standard pattern::
 
   response = ct.nyquist_response([sys1, sys2])
   count = ct.response.count          # number of encirclements of -1
-  lines = ct.nyquist_plot(response)  # Nyquist plot
+  cplt = ct.nyquist_plot(response)  # Nyquist plot
 
-The returned value `lines` provides access to the individual lines in the
-generated plot, allowing various aspects of the plot to be modified to suit
-specific needs.
+Plotting commands return a :class:`~control.ControlPlot` object that
+provides access to the individual lines in the generated plot using
+`cplt.lines`, allowing various aspects of the plot to be modified to
+suit specific needs.
 
 The plotting function is also available via the `plot()` method of the
 analysis object, allowing the following type of calls::
@@ -146,7 +147,7 @@ Additional customization is possible using the `input_props`,
 `output_props`, and `trace_props` keywords to set complementary line colors
 and styles for various signals and traces::
 
-  out = ct.step_response(sys_mimo).plot(
+  cplt = ct.step_response(sys_mimo).plot(
       plot_inputs='overlay', overlay_signals=True, overlay_traces=True,
       output_props=[{'color': c} for c in ['blue', 'orange']],
       input_props=[{'color': c} for c in ['red', 'green']],
