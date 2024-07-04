@@ -536,6 +536,32 @@ class TestTimeresp:
         sysdt = sys.sample(dt, 'impulse')
         np.testing.assert_array_almost_equal(impulse_response(sys, t)[1],
                                              impulse_response(sysdt, t)[1])
+        
+    def test_discrete_time_impulse_input(self):
+        # discrete time impulse input, Only one active input for each trace
+        A = [[.5, 0.25],[.0, .5]]
+        B = [[1., 0,],[0., 1.]]
+        C = [[1., 0.],[0., 1.]]
+        D = [[0., 0.],[0., 0.]]
+        dt = True
+        sysd = ct.ss(A,B,C,D, dt=dt)
+        response = ct.impulse_response(sysd,T=dt*3)
+
+        Uexpected = np.zeros((2,2,4), dtype=float).astype(object)
+        Uexpected[0,0,0] = 1./dt
+        Uexpected[1,1,0] = 1./dt
+
+        np.testing.assert_array_equal(response.inputs,Uexpected)
+
+        dt = 0.5
+        sysd = ct.ss(A,B,C,D, dt=dt)
+        response = ct.impulse_response(sysd,T=dt*3)
+
+        Uexpected = np.zeros((2,2,4), dtype=float).astype(object)
+        Uexpected[0,0,0] = 1./dt
+        Uexpected[1,1,0] = 1./dt
+
+        np.testing.assert_array_equal(response.inputs,Uexpected)
 
     @pytest.mark.parametrize("tsystem", ["siso_ss1"], indirect=True)
     def test_impulse_response_warnD(self, tsystem):
