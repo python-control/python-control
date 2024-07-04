@@ -575,4 +575,5 @@ def markov(data, m=None, dt=True, truncate=False):
                             trace_labels=trace_labels,
                             trace_types=trace_types,
                             transpose=data.transpose,
+                            plot_inputs=False,
                             issiso=data.issiso)
