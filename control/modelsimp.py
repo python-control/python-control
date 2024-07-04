@@ -558,7 +558,7 @@ def markov(data, m=None, dt=True, truncate=False):
     H = H.transpose(0,2,1) # output, input, time
 
     # Create unit area impulse inputs
-    inputs = np.zeros((q,p,m))
+    inputs = np.zeros((p,p,m))
     trace_labels, trace_types = [], []
     for i in range(p):
         inputs[i,i,0] = 1/dt # unit area impulse
