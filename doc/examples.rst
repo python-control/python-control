@@ -35,6 +35,7 @@ other sources.
    kincar-flatsys
    mrac_siso_mit
    mrac_siso_lyapunov
+   era_msd
 
 Jupyter notebooks
 =================
