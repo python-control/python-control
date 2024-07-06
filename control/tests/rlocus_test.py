@@ -95,7 +95,7 @@ class TestRootLocus:
         if grid == 'empty':
             assert n_gridlines == 0
             assert not isinstance(ax, AA.Axes)
-        elif grid is False or method == 'pzmap' and grid is None:
+        elif grid is False:
             assert n_gridlines == 2 if sys.isctime() else 3
             assert not isinstance(ax, AA.Axes)
         elif sys.isdtime(strict=True):
@@ -174,6 +174,7 @@ class TestRootLocus:
     "sys, grid, xlim, ylim, interactive", [
         (ct.tf([1], [1, 2, 1]), None, None, None, False),
     ])
+@pytest.mark.usefixtures("mplcleanup")
 def test_root_locus_plots(sys, grid, xlim, ylim, interactive):
     ct.root_locus_map(sys).plot(
         grid=grid, xlim=xlim, ylim=ylim, interactive=interactive)
@@ -182,6 +183,7 @@ def test_root_locus_plots(sys, grid, xlim, ylim, interactive):
 
 # Test deprecated keywords
 @pytest.mark.parametrize("keyword", ["kvect", "k"])
+@pytest.mark.usefixtures("mplcleanup")
 def test_root_locus_legacy(keyword):
     sys = ct.rss(2, 1, 1)
     with pytest.warns(DeprecationWarning, match=f"'{keyword}' is deprecated"):
@@ -189,6 +191,7 @@ def test_root_locus_legacy(keyword):
 
 
 # Generate plots used in documentation
+@pytest.mark.usefixtures("mplcleanup")
 def test_root_locus_documentation(savefigs=False):
     plt.figure()
     sys = ct.tf([1, 2], [1, 2, 3], name='SISO transfer function')

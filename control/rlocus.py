@@ -173,9 +173,6 @@ def root_locus_plot(
     for oldkey in ['kvect', 'k']:
         gains = config._process_legacy_keyword(kwargs, oldkey, 'gains', gains)
 
-    # Set default parameters
-    grid = config._get_param('rlocus', 'grid', grid, _rlocus_defaults)
-
     if isinstance(sysdata, list) and all(
             [isinstance(sys, LTI) for sys in sysdata]) or \
             isinstance(sysdata, LTI):

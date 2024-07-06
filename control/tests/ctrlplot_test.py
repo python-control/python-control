@@ -105,20 +105,14 @@ def test_plot_functions(resp_fcn, plot_fcn):
         # Plot should have landed on top of previous plot
         if resp_fcn is not None:
             assert cplt2.figure == cplt1.figure
-            if plot_fcn != ct.root_locus_plot:
-                assert np.all(cplt2.axes == cplt1.axes)
-            else:
-                warnings.warn("test skipped for root locus plot")
+            assert np.all(cplt2.axes == cplt1.axes)
             assert len(cplt2.lines[0]) == len(cplt1.lines[0])
 
     # Pass axes explicitly
     if resp_fcn is not None:
         cplt3 = resp.plot(**kwargs, **meth_kwargs, ax=cplt1.axes)
         assert cplt3.figure == cplt1.figure
-        if plot_fcn != ct.root_locus_plot:
-            assert np.all(cplt3.axes == cplt1.axes)
-        else:
-            warnings.warn("test skipped for root locus plot")
+        assert np.all(cplt3.axes == cplt1.axes)
         assert len(cplt3.lines[0]) == len(cplt1.lines[0])
 
 

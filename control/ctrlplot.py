@@ -3,6 +3,75 @@
 #
 # Collection of functions that are used by various plotting functions.
 
+# Code pattern for control system plotting functions:
+#
+# def name_plot(sysdata, plot=None, **kwargs):
+#     # Process keywords and set defaults
+#     ax = kwargs.pop('ax', None)
+#     color = kwargs.pop('color', None)
+#     label = kwargs.pop('label', None)
+#     rcParams = config._get_param(
+#         'nameplot', 'rcParams', kwargs, _nameplot_defaults, pop=True)
+#
+#     # Make sure all keyword arguments were processed (if not checked later)
+#     if kwargs:
+#         raise TypeError("unrecognized keywords: ", str(kwargs))
+#
+#     # Process the data (including generating responses for systems)
+#     sysdata = list(sysdata)
+#     if any([isinstance(sys, InputOutputSystem) for sys in sysdata]):
+#         data = name_response(sysdata)
+#     nrows = max([data.noutputs for data in sysdata])
+#     ncols = max([data.ninputs for data in sysdata])
+#
+#     # Legacy processing of plot keyword
+#     if plot is False:
+#         return data.x, data.y
+#
+#     # Figure out the shape of the plot and find/create axes
+#     fig, ax_array = _process_ax_keyword(ax, (nrows, ncols), rcParams)
+#
+#     # Customize axes (curvilinear grids, shared axes, etc)
+#
+#     # Plot the data
+#     lines = np.full(ax_array.shape, [])
+#     line_labels = _process_line_labels(label, ntraces, nrows, ncols)
+#     for i, j in itertools.product(range(nrows), range(ncols)):
+#         ax = ax_array[i, j]
+#         color_cycle, color_offset = _process_color_keyword(ax)
+#         for k in range(ntraces):
+#             if color is None:
+#                 color = color_cycle[(k + color_offset) % len(color_cycle)]
+#             label = line_labels[k, i, j]
+#             lines[i, j] += ax.plot(data.x, data.y, color=color, label=label)
+#
+#     # Customize and label the axes
+#     for i, j in itertools.product(range(nrows), range(ncols)):
+#         ax_array[i, j].set_xlabel("x label")
+#         ax_array[i, j].set_ylabel("y label")
+#
+#     # Create legends
+#     legend_map = _process_legend_keywords(kwargs)
+#     for i, j in itertools.product(range(nrows), range(ncols)):
+#         if legend_map[i, j] is not None:
+#             lines = ax_array[i, j].get_lines()
+#             labels = _make_legend_labels(lines)
+#             if len(labels) > 1:
+#                 legend_array[i, j] = ax.legend(
+#                     lines, labels, loc=legend_map[i, j])
+#
+#     # Update the plot title
+#     sysnames = [response.sysname for response in data]
+#     if title is None:
+#         title = "Name plot for " + ", ".join(sysnames)
+#     _update_suptitle(fig, title, rcParams=rcParams)
+#
+#     # Legacy processing of plot keyword
+#     if plot is True:
+#         return data
+#
+#     return ControlPlot(lines, ax_array, fig, legend=legend_map)
+
 import warnings
 from os.path import commonprefix
 
@@ -181,7 +250,8 @@ def get_plot_axes(line_array):
 
 
 def _process_ax_keyword(
-        axs, shape=(1, 1), rcParams=None, squeeze=False, clear_text=False):
+        axs, shape=(1, 1), rcParams=None, squeeze=False, clear_text=False,
+        create_axes=True):
     """Utility function to process ax keyword to plotting commands.
 
     This function processes the `ax` keyword to plotting commands.  If no
@@ -189,6 +259,11 @@ def _process_ax_keyword(
     the correct shape.  If the shape matches the desired shape, then the
     current figure and axes are returned.  Otherwise a new figure is
     created with axes of the desired shape.
+
+    If `create_axes` is False and a new/empty figure is returned, then axs
+    is an array of the proper shape but None for each element.  This allows
+    the calling function to do the actual axis creation (needed for
+    curvilinear grids that use the AxisArtist module).
 
     Legacy behavior: some of the older plotting commands use a axes label
     to identify the proper axes for plotting.  This behavior is supported
@@ -204,14 +279,19 @@ def _process_ax_keyword(
         # Note: can't actually check the shape, just the total number of axes
         if len(axs) != np.prod(shape):
             with plt.rc_context(rcParams):
-                if len(axs) != 0:
+                if len(axs) != 0 and create_axes:
                     # Create a new figure
                     fig, axs = plt.subplots(*shape, squeeze=False)
-                else:
+                elif create_axes:
                     # Create new axes on (empty) figure
                     axs = fig.subplots(*shape, squeeze=False)
-            fig.set_layout_engine('tight')
-            fig.align_labels()
+                else:
+                    # Create an empty array and let user create axes
+                    axs = np.full(shape, None)
+            if create_axes:     # if not creating axes, leave these to caller
+                fig.set_layout_engine('tight')
+                fig.align_labels()
+
         else:
             # Use the existing axes, properly reshaped
             axs = np.asarray(axs).reshape(*shape)

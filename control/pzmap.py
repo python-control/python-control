@@ -119,13 +119,6 @@ class PoleZeroData:
         and keywords.
 
         """
-        # If this is a root locus plot, use rlocus defaults for grid
-        if self.loci is not None:
-            from .rlocus import _rlocus_defaults
-            kwargs = kwargs.copy()
-            kwargs['grid'] = config._get_param(
-                'rlocus', 'grid', kwargs.get('grid', None), _rlocus_defaults)
-
         return pole_zero_plot(self, *args, **kwargs)
 
 
@@ -267,11 +260,10 @@ def pole_zero_plot(
 
     """
     # Get parameter values
-    grid = config._get_param('pzmap', 'grid', grid, _pzmap_defaults)
     marker_size = config._get_param('pzmap', 'marker_size', marker_size, 6)
     marker_width = config._get_param('pzmap', 'marker_width', marker_width, 1.5)
     xlim_user, ylim_user = xlim, ylim
-    freqplot_rcParams = config._get_param(
+    rcParams = config._get_param(
         'freqplot', 'rcParams', kwargs, _freqplot_defaults,
         pop=True, last=True)
     user_ax = ax
@@ -315,56 +307,41 @@ def pole_zero_plot(
             return poles, zeros
 
     # Initialize the figure
-    # TODO: turn into standard utility function (from plotutil.py?)
-    # fig, ax = _process_ax_keyword(
-    #     user_ax, rcParams=freqplot_rcParams, squeeze=True, create_axes=False)
-    # axs = [ax] if ax is not None else []
-    if user_ax is None:
-        fig = plt.gcf()
-        axs = fig.get_axes()
-    elif isinstance(user_ax, np.ndarray):
-        axs = user_ax.reshape(-1)
-        fig = axs[0].figure
-    else:
-        fig = ax.figure
-        axs = [ax]
+    fig, ax = _process_ax_keyword(
+        user_ax, rcParams=rcParams, squeeze=True, create_axes=False)
 
-    if len(axs) > 1:
-        # Need to generate a new figure
-        fig, axs = plt.figure(), []
-
-    with plt.rc_context(freqplot_rcParams):
-        if grid and grid != 'empty':
-            plt.clf()
-            if all([isctime(dt=response.dt) for response in data]):
-                ax, fig = sgrid(scaling=scaling)
-            elif all([isdtime(dt=response.dt) for response in data]):
-                ax, fig = zgrid(scaling=scaling)
-            else:
-                raise ValueError(
-                    "incompatible time bases; don't know how to grid")
-            # Store the limits for later use
-            xlim, ylim = ax.get_xlim(), ax.get_ylim()
-        elif len(axs) == 0:
-            if grid == 'empty':
-                # Leave off grid entirely
+    if ax is None:
+        # Determine what type of grid to use
+        if rlocus_plot:
+            from .rlocus import _rlocus_defaults
+            grid = config._get_param('rlocus', 'grid', grid, _rlocus_defaults)
+        else:
+            grid = config._get_param('pzmap', 'grid', grid, _pzmap_defaults)
+        
+        # Create the axes with the appropriate grid
+        with plt.rc_context(rcParams):
+            if grid and grid != 'empty':
+                if all([isctime(dt=response.dt) for response in data]):
+                    ax, fig = sgrid(scaling=scaling)
+                elif all([isdtime(dt=response.dt) for response in data]):
+                    ax, fig = zgrid(scaling=scaling)
+                else:
+                    raise ValueError(
+                        "incompatible time bases; don't know how to grid")
+                # Store the limits for later use
+                xlim, ylim = ax.get_xlim(), ax.get_ylim()
+            elif grid == 'empty':
                 ax = plt.axes()
                 xlim = ylim = [np.inf, -np.inf] # use data to set limits
             else:
-                # draw stability boundary; use first response timebase
                 ax, fig = nogrid(data[0].dt, scaling=scaling)
                 xlim, ylim = ax.get_xlim(), ax.get_ylim()
-        else:
-            # Use the existing axes and any grid that is there
-            ax = axs[0]
-
-            # Store the limits for later use
-            xlim, ylim = ax.get_xlim(), ax.get_ylim()
-
-            # Issue a warning if the user tried to set the grid type
-            if grid:
-                warnings.warn("axis already exists; grid keyword ignored")
-
+    else:
+        # Store the limits for later use
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        if grid is not None:
+            warnings.warn("axis already exists; grid keyword ignored")
+    
     # Handle color cycle manually as all root locus segments
     # of the same system are expected to be of the same color
     # TODO: replace with common function?
@@ -459,13 +436,13 @@ def pole_zero_plot(
                 handle = (pole_line, zero_line)
                 line_tuples.append(handle)
 
-            with plt.rc_context(freqplot_rcParams):
+            with plt.rc_context(rcParams):
                 legend = ax.legend(
                     line_tuples, labels, loc=legend_loc,
                     handler_map={tuple: HandlerTuple(ndivide=None)})
         else:
             # Regular legend, with lines
-            with plt.rc_context(freqplot_rcParams):
+            with plt.rc_context(rcParams):
                 legend = ax.legend(lines, labels, loc=legend_loc)
     else:
         legend = None
@@ -475,7 +452,8 @@ def pole_zero_plot(
         title = ("Root locus plot for " if rlocus_plot
                  else "Pole/zero plot for ") + ", ".join(labels)
     if user_ax is None:
-        suptitle(title)
+        with plt.rc_context(rcParams):
+            fig.suptitle(title)
 
     # Add dispather to handle choosing a point on the diagram
     if interactive:
@@ -497,7 +475,7 @@ def pole_zero_plot(
                 _mark_root_locus_gain(ax, sys, K)
 
                 # Display the parameters in the axes title
-                with plt.rc_context(freqplot_rcParams):
+                with plt.rc_context(rcParams):
                     ax.set_title(_create_root_locus_label(sys, K, s))
 
             ax.figure.canvas.draw()
