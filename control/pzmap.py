@@ -18,7 +18,8 @@ import numpy as np
 from numpy import cos, exp, imag, linspace, real, sin, sqrt
 
 from . import config
-from .ctrlplot import ControlPlot, _get_line_labels
+from .ctrlplot import ControlPlot, suptitle, _get_line_labels, \
+    _process_ax_keyword
 from .freqplot import _freqplot_defaults
 from .grid import nogrid, sgrid, zgrid
 from .iosys import isctime, isdtime
@@ -366,6 +367,7 @@ def pole_zero_plot(
 
     # Handle color cycle manually as all root locus segments
     # of the same system are expected to be of the same color
+    # TODO: replace with common function?
     color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
     color_offset = 0
     if len(ax.lines) > 0:
@@ -470,10 +472,10 @@ def pole_zero_plot(
 
     # Add the title
     if title is None:
-        title = "Pole/zero plot for " + ", ".join(labels)
+        title = ("Root locus plot for " if rlocus_plot
+                 else "Pole/zero plot for ") + ", ".join(labels)
     if user_ax is None:
-        with plt.rc_context(freqplot_rcParams):
-            fig.suptitle(title)
+        suptitle(title)
 
     # Add dispather to handle choosing a point on the diagram
     if interactive:

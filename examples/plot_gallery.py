@@ -125,6 +125,7 @@ with create_figure("Root locus plot") as fig:
     sys2 = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='sys2')
     ct.root_locus_plot([sys1, sys2], grid=True, ax=ax1)
     ct.root_locus_plot([sys1, sys2], grid=False, ax=ax2)
+    ct.suptitle("Root locus plots (w/ specified axes)")
     print("  -- BUG: should have 2 x 1 array of plots")
 
 # sisotool

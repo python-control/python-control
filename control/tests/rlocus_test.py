@@ -278,6 +278,9 @@ if __name__ == "__main__":
         plt.figure()
         test_root_locus_plots(
             sys, grid=grid, xlim=xlim, ylim=ylim, interactive=interactive)
+        ct.suptitle(
+            f"sys={sys.name}, {grid=}, {xlim=}, {ylim=}, {interactive=}",
+            frame='figure')
 
     # Run tests that generate plots for the documentation
     test_root_locus_documentation(savefigs=True)
