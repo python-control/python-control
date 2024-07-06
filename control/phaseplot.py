@@ -36,7 +36,8 @@ import numpy as np
 from scipy.integrate import odeint
 
 from . import config
-from .ctrlplot import ControlPlot, _add_arrows_to_line2D, _process_ax_keyword
+from .ctrlplot import ControlPlot, _add_arrows_to_line2D, \
+    _ctrlplot_rcParams, _process_ax_keyword, suptitle
 from .exception import ControlNotImplemented
 from .nlsys import NonlinearIOSystem, find_eqpt, input_output_response
 
@@ -44,6 +45,7 @@ __all__ = ['phase_plane_plot', 'phase_plot', 'box_grid']
 
 # Default values for module parameter variables
 _phaseplot_defaults = {
+    'phaseplot.rcParams': _ctrlplot_rcParams,
     'phaseplot.arrows': 2,                  # number of arrows around curve
     'phaseplot.arrow_size': 8,              # pixel size for arrows
     'phaseplot.separatrices_radius': 0.1    # initial radius for separatrices
@@ -139,15 +141,12 @@ def phase_plane_plot(
     params = kwargs.get('params', None)
     sys = _create_system(sys, params)
     pointdata = [-1, 1, -1, 1] if pointdata is None else pointdata
+    rcParams = config._get_param(
+        'timeplot', 'rcParams', kwargs, _phaseplot_defaults, pop=True)
 
     # Create axis if needed
     user_ax = ax
-    # TODO: make use of _process_ax_keyword
-    # fig, ax = _process_ax_keyword(user_ax, squeeze=True)
-    if ax is None:
-        fig, ax = plt.gcf(), plt.gca()
-    else:
-        fig = None              # don't modify figure
+    fig, ax = _process_ax_keyword(user_ax, squeeze=True, rcParams=rcParams)
 
     # Create copy of kwargs for later checking to find unused arguments
     initial_kwargs = dict(kwargs)
@@ -217,10 +216,12 @@ def phase_plane_plot(
 
     # TODO: update to common code pattern
     if user_ax is None:
-        ax.set_title(f"Phase portrait for {sys.name}")
-        ax.set_xlabel(sys.state_labels[0])
-        ax.set_ylabel(sys.state_labels[1])
+        with plt.rc_context(rcParams):
+            suptitle(f"Phase portrait for {sys.name}")
+            ax.set_xlabel(sys.state_labels[0])
+            ax.set_ylabel(sys.state_labels[1])
 
+    plt.tight_layout()
     return ControlPlot(out, ax, fig)
 
 
@@ -273,6 +274,10 @@ def vectorfield(
         If set to `True`, suppress warning messages in generating trajectories.
 
     """
+    # Process keywords
+    rcParams = config._get_param(
+        'timeplot', 'rcParams', kwargs, _phaseplot_defaults, pop=True)
+
     # Get system parameters
     params = kwargs.pop('params', None)
 
@@ -303,9 +308,10 @@ def vectorfield(
         vfdata[i, :2] = x
         vfdata[i, 2:] = sys._rhs(0, x, 0)
 
-    out = ax.quiver(
-        vfdata[:, 0], vfdata[:, 1], vfdata[:, 2], vfdata[:, 3],
-        angles='xy', color=color)
+    with plt.rc_context(rcParams):
+        out = ax.quiver(
+            vfdata[:, 0], vfdata[:, 1], vfdata[:, 2], vfdata[:, 3],
+            angles='xy', color=color)
 
     return out
 
@@ -362,6 +368,10 @@ def streamlines(
         If set to `True`, suppress warning messages in generating trajectories.
 
     """
+    # Process keywords
+    rcParams = config._get_param(
+        'timeplot', 'rcParams', kwargs, _phaseplot_defaults, pop=True)
+
     # Get system parameters
     params = kwargs.pop('params', None)
 
@@ -411,13 +421,13 @@ def streamlines(
 
         # Plot the trajectory (if there is one)
         if traj.shape[1] > 1:
-            out.append(
-                ax.plot(traj[0], traj[1], color=color))
+            with plt.rc_context(rcParams):
+                out.append(
+                    ax.plot(traj[0], traj[1], color=color))
 
-            # Add arrows to the lines at specified intervals
-            _add_arrows_to_line2D(
-                ax, out[-1][0], arrow_pos, arrowstyle=arrow_style, dir=1)
-
+                # Add arrows to the lines at specified intervals
+                _add_arrows_to_line2D(
+                    ax, out[-1][0], arrow_pos, arrowstyle=arrow_style, dir=1)
     return out
 
 
@@ -464,6 +474,10 @@ def equilpoints(
     out : list of Line2D objects
 
     """
+    # Process keywords
+    rcParams = config._get_param(
+        'timeplot', 'rcParams', kwargs, _phaseplot_defaults, pop=True)
+
     # Get system parameters
     params = kwargs.pop('params', None)
 
@@ -491,9 +505,9 @@ def equilpoints(
     # Plot the equilibrium points
     out = []
     for xeq in equilpts:
-        out.append(
-            ax.plot(xeq[0], xeq[1], marker='o', color=color))
-
+        with plt.rc_context(rcParams):
+            out.append(
+                ax.plot(xeq[0], xeq[1], marker='o', color=color))
     return out
 
 
@@ -549,6 +563,10 @@ def separatrices(
         If set to `True`, suppress warning messages in generating trajectories.
 
     """
+    # Process keywords
+    rcParams = config._get_param(
+        'timeplot', 'rcParams', kwargs, _phaseplot_defaults, pop=True)
+
     # Get system parameters
     params = kwargs.pop('params', None)
 
@@ -598,8 +616,9 @@ def separatrices(
     out = []
     for i, xeq in enumerate(equilpts):
         # Plot the equilibrium points
-        out.append(
-            ax.plot(xeq[0], xeq[1], marker='o', color='k'))
+        with plt.rc_context(rcParams):
+            out.append(
+                ax.plot(xeq[0], xeq[1], marker='o', color='k'))
 
         # Figure out the linearization and eigenvectors
         evals, evecs = np.linalg.eig(sys.linearize(xeq, 0, params=params).A)
@@ -639,14 +658,15 @@ def separatrices(
 
                 # Plot the trajectory (if there is one)
                 if traj.shape[1] > 1:
-                    out.append(ax.plot(
-                        traj[0], traj[1], color=color, linestyle=linestyle))
+                    with plt.rc_context(rcParams):
+                        out.append(ax.plot(
+                            traj[0], traj[1], color=color, linestyle=linestyle))
 
                     # Add arrows to the lines at specified intervals
-                    _add_arrows_to_line2D(
-                        ax, out[-1][0], arrow_pos, arrowstyle=arrow_style,
-                        dir=1)
-
+                    with plt.rc_context(rcParams):
+                        _add_arrows_to_line2D(
+                            ax, out[-1][0], arrow_pos, arrowstyle=arrow_style,
+                            dir=1)
     return out
 
 
@@ -903,6 +923,7 @@ def _parse_arrow_keywords(kwargs):
     return arrow_pos, arrow_style
 
 
+# TODO: move to ctrlplot?
 def _get_color(kwargs, ax=None):
     if 'color' in kwargs:
         return kwargs.pop('color')
