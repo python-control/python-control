@@ -72,6 +72,7 @@
 #
 #     return ControlPlot(lines, ax_array, fig, legend=legend_map)
 
+import itertools
 import warnings
 from os.path import commonprefix
 
@@ -81,7 +82,7 @@ import numpy as np
 
 from . import config
 
-__all__ = ['ControlPlot', 'suptitle', 'get_plot_axes']
+__all__ = ['ControlPlot', 'suptitle', 'get_plot_axes', 'pole_zero_subplots']
 
 #
 # Style parameters
@@ -241,13 +242,75 @@ def get_plot_axes(line_array):
     else:
         return _get_axes(line_array)
 
+
+def pole_zero_subplots(
+        nrows, ncols, grid=None, dt=None, fig=None, scaling=None,
+        rcParams=None):
+    """Create axes for pole/zero plot.
+
+    Parameters
+    ----------
+    nrows, ncols : int
+        Number of rows and columns
+    grid : True, False, or 'empty', optional
+        Grid style to use.  Can also be a list, in which case each subplot
+        will have a different style (columns then rows).
+    dt : timebase, option
+        Timebase for each subplot (or a list of timebases).
+    scaling : 'auto', 'equal', or None
+        Scaling to apply to the subplots.
+    fig : :class:`matplotlib.figure.Figure`
+        Figure to use for creating subplots.
+
+    Returns
+    -------
+    ax_array : array
+        2D array of axes
+
+    """
+    from .grid import sgrid, zgrid, nogrid
+    from .iosys import isctime
+
+    if rcParams is None:
+        rcParams = _ctrlplot_rcParams
+
+    if fig is None:
+        fig = plt.gcf()
+
+    if not isinstance(grid, list):
+        grid = [grid] * nrows * ncols
+    if not isinstance(dt, list):
+        dt = [dt] * nrows * ncols
+
+    ax_array = np.full((nrows, ncols), None)
+    index = 0
+    with plt.rc_context(rcParams):
+        for row, col in itertools.product(range(nrows), range(ncols)):
+            match grid[index], isctime(dt=dt[index]):
+                case 'empty', _:        # empty grid
+                    ax_array[row, col] = fig.add_subplot(nrows, ncols, index+1)
+
+                case True, True:        # continuous time grid
+                    ax_array[row, col], _ = sgrid(
+                        (nrows, ncols, index+1), scaling=scaling)
+
+                case True, False:       # discrete time grid
+                    ax_array[row, col] = fig.add_subplot(nrows, ncols, index+1)
+                    zgrid(ax=ax_array[row, col], scaling=scaling)
+
+                case False | None, _:   # no grid (just stability boundaries)
+                    ax_array[row, col] = fig.add_subplot(nrows, ncols, index+1)
+                    nogrid(
+                        ax=ax_array[row, col], dt=dt[index], scaling=scaling)
+            index += 1
+    return ax_array
+
 #
 # Utility functions
 #
 # These functions are used by plotting routines to provide a consistent way
 # of processing and displaying information.
 #
-
 
 def _process_ax_keyword(
         axs, shape=(1, 1), rcParams=None, squeeze=False, clear_text=False,
