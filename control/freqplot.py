@@ -1935,7 +1935,8 @@ def nyquist_plot(
 
     # Add legend if there is more than one system plotted
     if len(labels) > 1:
-        legend = ax.legend(lines, labels, loc=legend_loc)
+        with plt.rc_context(rcParams):
+            legend = ax.legend(lines, labels, loc=legend_loc)
     else:
         legend=None
 
