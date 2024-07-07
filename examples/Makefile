@@ -5,11 +5,7 @@
 # Google Colab.
 
 NOTEBOOKS = cds110-L*_*.ipynb
-FILES = satellite-dish.png disk-drive.png robotic-arm.png		\
-  springmass-coupled.png pvtol.py kincar.py estimation.png ssctrl.png	\
-  zn-step-response.png zn-step-table.png zn-step-improved.png		\
-  pid-aw-diagram.png
-GDRIVE= gdrive:python-control/examples
+GDRIVE= gdrive:projects/python-control/public/notebooks
 
 # Clean up notebooks to remove output
 clean: .ipynb-clean
@@ -23,5 +19,5 @@ clean: .ipynb-clean
 	touch $@
 
 # Post Jupyter notebooks on course website
-post: .ipynb-clean $(FILES)
-	rclone -u copy $(NOTEBOOKS) $(FILES) $(GDRIVE)
+post: .ipynb-clean
+	rclone copy . $(GDRIVE) --include /cds110-L\*_\*.ipynb
