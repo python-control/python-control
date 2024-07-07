@@ -2510,8 +2510,8 @@ def interconnect(
                     # First trying looking in the output signals
                     osys, indices, gain = _parse_spec(syslist, spec, 'output')
                     for osig in indices:
-                            dprint(f"  adding output {(osys, osig, gain)}")
-                            signal_list.append((osys, osig, gain))
+                        dprint(f"  adding output {(osys, osig, gain)}")
+                        signal_list.append((osys, osig, gain))
                 except ValueError:
                     # If not, see if we can find it in inputs
                     isys, indices, gain = _parse_spec(
