@@ -44,17 +44,17 @@ class TestModelsimp:
         m = 3
         H = markov(response, m)
         Htrue = np.array([1., 0., 0.])
-        np.testing.assert_array_almost_equal(H.outputs, Htrue)
+        np.testing.assert_array_almost_equal(H, Htrue)
 
         # Make sure that transposed data also works
         response.transpose=True
         H = markov(response, m)
-        np.testing.assert_array_almost_equal(H.outputs, np.transpose(Htrue))
+        np.testing.assert_array_almost_equal(H, np.transpose(Htrue))
 
         # Generate Markov parameters without any arguments
         response.transpose=False
         H = markov(response, m)
-        np.testing.assert_array_almost_equal(H.outputs, Htrue)
+        np.testing.assert_array_almost_equal(H, Htrue)
 
         # Test example from docstring
         T = np.linspace(0, 10, 100)
@@ -119,7 +119,7 @@ class TestModelsimp:
         # experimentally determined probability to get non matching results
         # with rtot=1e-6 and atol=1e-8 due to numerical errors
         # for k=5, m=n=10: 0.015 %
-        np.testing.assert_allclose(Mtrue, Mcomp.outputs, rtol=1e-6, atol=1e-8)
+        np.testing.assert_allclose(Mtrue, Mcomp, rtol=1e-6, atol=1e-8)
 
     def testModredMatchDC(self):
         #balanced realization computed in matlab for the transfer function:

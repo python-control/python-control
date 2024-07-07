@@ -438,21 +438,9 @@ def markov(data, m=None, dt=True, truncate=False):
 
     Returns
     -------
-    H : TimeResponseData
-        Markov parameters / impulse response [D CB CAB ...] represented as
-        a :class:`TimeResponseData` object containing the following properties:
-
-        * time (array): Time values of the output.
-
-        * outputs (array): Response of the system.  If the system is SISO,
-          the array is 1D (indexed by time).  If the
-          system is not SISO, the array is 3D (indexed
-          by the output, trace, and time).
-
-        * inputs (array): Inputs of the system.  If the system is SISO,
-          the array is 1D (indexed by time).  If the
-          system is not SISO, the array is 3D (indexed
-          by the output, trace, and time).
+    H : ndarray
+        First m Markov parameters, [D CB CAB ...]
+    
 
     Notes
     -----
@@ -557,23 +545,8 @@ def markov(data, m=None, dt=True, truncate=False):
     H = H.reshape(q,m,p) # output, time*input -> output, time, input
     H = H.transpose(0,2,1) # output, input, time
 
-    # Create unit area impulse inputs
-    inputs = np.zeros((p,p,m))
-    trace_labels, trace_types = [], []
-    for i in range(p):
-        inputs[i,i,0] = 1/dt # unit area impulse
-        trace_labels.append(f"From {data.input_labels[i]}")
-        trace_types.append('impulse')
+    if q == 1 and p == 1:
+        H = np.squeeze(H)
 
-    # Markov parameters as TimeResponseData with unit area impulse inputs
     # Return the first m Markov parameters
-    return TimeResponseData(time=data.time[:m],
-                            outputs=H,
-                            output_labels=data.output_labels,
-                            inputs=inputs,
-                            input_labels=data.input_labels,
-                            trace_labels=trace_labels,
-                            trace_types=trace_types,
-                            transpose=data.transpose,
-                            plot_inputs=False,
-                            issiso=data.issiso)
+    return H if not data.transpose else np.transpose(H)
