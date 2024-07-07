@@ -157,12 +157,12 @@ response from a non-zero initial condition.
 For linear time invariant (LTI) systems, the :func:`impulse_response`,
 :func:`initial_response`, and :func:`step_response` functions will
 automatically compute the time vector based on the poles and zeros of
-system.  If a list of systems is passed, a common time vector will be
+the system.  If a list of systems is passed, a common time vector will be
 computed and a list of responses will be returned in the form of a
-:class:`TimeResponseList` object.  The :func:`force_response` function can
+:class:`TimeResponseList` object.  The :func:`forced_response` function can
 also take a list of systems, to which a single common input is applied.
 The :class:`TimeResponseList` object has a `plot()` method that will plot
-each of the reponses in turn, using a sequence of different colors with
+each of the responses in turn, using a sequence of different colors with
 appropriate titles and legends.
 
 In addition the :func:`input_output_response` function, which handles

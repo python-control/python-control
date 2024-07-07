@@ -1317,7 +1317,7 @@ def nlsys(
 
 
 def input_output_response(
-        sysdata, T, U=0., X0=0, params=None, ignore_errors=False,
+        sys, T, U=0., X0=0, params=None, ignore_errors=False,
         transpose=False, return_x=False, squeeze=None,
         solve_ivp_kwargs=None, t_eval='T', **kwargs):
     """Compute the output response of a system to a given input.
@@ -1327,7 +1327,7 @@ def input_output_response(
 
     Parameters
     ----------
-    sysdata : I/O system or list of I/O systems
+    sys : NonlinearIOSystem or list of NonlinearIOSystem
         I/O system(s) for which input/output response is simulated.
 
     T : array-like
@@ -1449,16 +1449,14 @@ def input_output_response(
         raise TypeError("unrecognized keyword(s): ", str(kwargs))
 
     # If passed a list, recursively call individual responses with given T
-    if isinstance(sysdata, (list, tuple)):
-        responses = []
+    if isinstance(sys, (list, tuple)):
+        sysdata, responses = sys, []
         for sys in sysdata:
             responses.append(input_output_response(
                 sys, T, U=U, X0=X0, params=params, transpose=transpose,
                 return_x=return_x, squeeze=squeeze, t_eval=t_eval,
                 solve_ivp_kwargs=solve_ivp_kwargs, **kwargs))
         return TimeResponseList(responses)
-    else:
-        sys = sysdata
 
     # Sanity checking on the input
     if not isinstance(sys, NonlinearIOSystem):

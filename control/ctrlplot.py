@@ -103,7 +103,7 @@ def _make_legend_labels(labels, ignore_common=False):
         common_prefix = common_prefix[:last_space]
     prefix_len = len(common_prefix)
 
-    # Look for a common suffice (up to a space)
+    # Look for a common suffix (up to a space)
     common_suffix = commonprefix(
         [label[::-1] for label in labels])[::-1]
     suffix_len = len(common_suffix)

@@ -6,7 +6,7 @@
 # used to compare what things look like between different versions of the
 # library.  It is mainly intended for uses by developers to make sure there
 # are no unexpected changes in plot formats, but also has some interest
-# examples of htings you can plot.
+# examples of things you can plot.
 
 import os
 import sys
@@ -21,9 +21,10 @@ import control as ct
 savefigs = 'PYCONTROL_TEST_EXAMPLES' not in os.environ
 if savefigs:
     # Create a pdf file for storing the results
+    import subprocess
     from matplotlib.backends.backend_pdf import PdfPages
     from datetime import date
-    git_info = os.popen('git describe').read().strip()
+    git_info = subprocess.check_output(['git', 'describe'], text=True).strip()
     pdf = PdfPages(
         f'plot_gallery-{git_info}-{date.today().isoformat()}.pdf')
 
