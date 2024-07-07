@@ -653,6 +653,14 @@ class FrequencyResponseData(LTI):
 
     # Convert to pandas
     def to_pandas(self):
+        """Convert response data to pandas data frame.
+
+        Creates a pandas data frame for the value of the frequency
+        response at each `omega`.  The frequency response values are
+        labeled in the form "H_{<out>, <in>}" where "<out>" and "<in>"
+        are replaced with the output and input labels for the system.
+
+        """
         if not pandas_check():
             ImportError('pandas not installed')
         import pandas

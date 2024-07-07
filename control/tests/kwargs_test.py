@@ -308,6 +308,7 @@ kwarg_unittest = {
     'StateSpace.sample': test_unrecognized_kwargs,
     'TimeResponseData.__call__': trdata_test.test_response_copy,
     'TimeResponseData.plot': timeplot_test.test_errors,
+    'TimeResponseList.plot': timeplot_test.test_errors,
     'TransferFunction.__init__': test_unrecognized_kwargs,
     'TransferFunction.sample': test_unrecognized_kwargs,
     'optimal.OptimalControlProblem.__init__':

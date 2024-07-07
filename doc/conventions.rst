@@ -154,6 +154,17 @@ The :func:`forced_response` system is the most general and allows by
 the zero initial state response to be simulated as well as the
 response from a non-zero initial condition.
 
+For linear time invariant (LTI) systems, the :func:`impulse_response`,
+:func:`initial_response`, and :func:`step_response` functions will
+automatically compute the time vector based on the poles and zeros of
+the system.  If a list of systems is passed, a common time vector will be
+computed and a list of responses will be returned in the form of a
+:class:`TimeResponseList` object.  The :func:`forced_response` function can
+also take a list of systems, to which a single common input is applied.
+The :class:`TimeResponseList` object has a `plot()` method that will plot
+each of the responses in turn, using a sequence of different colors with
+appropriate titles and legends.
+
 In addition the :func:`input_output_response` function, which handles
 simulation of nonlinear systems and interconnected systems, can be
 used.  For an LTI system, results are generally more accurate using

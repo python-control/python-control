@@ -19,14 +19,14 @@ import numpy as np
 
 from . import config
 from .bdalg import feedback
-from .ctrlplot import suptitle, _find_axes_center
+from .ctrlplot import suptitle, _find_axes_center, _make_legend_labels, \
+    _update_suptitle
 from .ctrlutil import unwrap
 from .exception import ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
 from .lti import LTI, _process_frequency_response, frequency_response
 from .margins import stability_margins
 from .statesp import StateSpace
-from .timeplot import _make_legend_labels
 from .xferfcn import TransferFunction
 
 __all__ = ['bode_plot', 'NyquistResponseData', 'nyquist_response',
@@ -954,28 +954,7 @@ def bode_plot(
         else:
             title = data[0].title
 
-    if fig is not None and isinstance(title, str):
-        # Get the current title, if it exists
-        old_title = None if fig._suptitle is None else fig._suptitle._text
-        new_title = title
-
-        if old_title is not None:
-            # Find the common part of the titles
-            common_prefix = commonprefix([old_title, new_title])
-
-            # Back up to the last space
-            last_space = common_prefix.rfind(' ')
-            if last_space > 0:
-                common_prefix = common_prefix[:last_space]
-            common_len = len(common_prefix)
-
-            # Add the new part of the title (usually the system name)
-            if old_title[common_len:] != new_title[common_len:]:
-                separator = ',' if len(common_prefix) > 0 else ';'
-                new_title = old_title + separator + new_title[common_len:]
-
-        # Add the title
-        suptitle(title, fig=fig, rcParams=rcParams, frame=suptitle_frame)
+    _update_suptitle(fig, title, rcParams=rcParams, frame=suptitle_frame)
 
     #
     # Create legends
@@ -2717,12 +2696,13 @@ def _get_line_labels(ax, use_color=True):
 
 
 # Turn label keyword into array indexed by trace, output, input
-def _process_line_labels(label, nsys, ninputs=0, noutputs=0):
+# TODO: move to ctrlutil.py and update parameter names to reflect general use
+def _process_line_labels(label, ntraces, ninputs=0, noutputs=0):
     if label is None:
         return None
 
     if isinstance(label, str):
-        label = [label]
+        label = [label] * ntraces          # single label for all traces
 
     # Convert to an ndarray, if not done aleady
     try:
@@ -2734,12 +2714,14 @@ def _process_line_labels(label, nsys, ninputs=0, noutputs=0):
     # TODO: allow more sophisticated broadcasting (and error checking)
     try:
         if ninputs > 0 and noutputs > 0:
-            if line_labels.ndim == 1:
-                line_labels = line_labels.reshape(nsys, 1, 1)
-            line_labels = np.broadcast_to(
-                line_labels,(nsys, ninputs, noutputs))
+            if line_labels.ndim == 1 and line_labels.size == ntraces:
+                line_labels = line_labels.reshape(ntraces, 1, 1)
+                line_labels = np.broadcast_to(
+                    line_labels, (ntraces, ninputs, noutputs))
+            else:
+                line_labels = line_labels.reshape(ntraces, ninputs, noutputs)
     except:
-        if line_labels.shape[0] != nsys:
+        if line_labels.shape[0] != ntraces:
             raise ValueError("number of labels must match number of traces")
         else:
             raise ValueError("labels must be given for each input/output pair")

@@ -27,8 +27,8 @@ import scipy as sp
 from . import config
 from .iosys import InputOutputSystem, _parse_spec, _process_iosys_keywords, \
     _process_signal_list, common_timebase, isctime, isdtime
-from .timeresp import TimeResponseData, _check_convert_array, \
-    _process_time_response
+from .timeresp import _check_convert_array, _process_time_response, \
+    TimeResponseData, TimeResponseList
 
 __all__ = ['NonlinearIOSystem', 'InterconnectedSystem', 'nlsys',
            'input_output_response', 'find_eqpt', 'linearize',
@@ -1327,8 +1327,8 @@ def input_output_response(
 
     Parameters
     ----------
-    sys : InputOutputSystem
-        Input/output system to simulate.
+    sys : NonlinearIOSystem or list of NonlinearIOSystem
+        I/O system(s) for which input/output response is simulated.
 
     T : array-like
         Time steps at which the input is defined; values must be evenly spaced.
@@ -1447,6 +1447,16 @@ def input_output_response(
     # Make sure there were no extraneous keywords
     if kwargs:
         raise TypeError("unrecognized keyword(s): ", str(kwargs))
+
+    # If passed a list, recursively call individual responses with given T
+    if isinstance(sys, (list, tuple)):
+        sysdata, responses = sys, []
+        for sys in sysdata:
+            responses.append(input_output_response(
+                sys, T, U=U, X0=X0, params=params, transpose=transpose,
+                return_x=return_x, squeeze=squeeze, t_eval=t_eval,
+                solve_ivp_kwargs=solve_ivp_kwargs, **kwargs))
+        return TimeResponseList(responses)
 
     # Sanity checking on the input
     if not isinstance(sys, NonlinearIOSystem):

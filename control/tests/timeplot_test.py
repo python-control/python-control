@@ -7,7 +7,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-from control.tests.conftest import slycotonly
+from control.tests.conftest import slycotonly, mplcleanup
 
 # Detailed test of (almost) all functionality
 #
@@ -67,6 +67,7 @@ from control.tests.conftest import slycotonly
                            True,      True,   False,  False,  False,  False),
      ])
 
+@pytest.mark.usefixtures('mplcleanup')
 def test_response_plots(
         fcn, sys, pltinp, pltout, cmbsig, cmbtrc,
         trpose, secsys, clear=True):
@@ -190,8 +191,9 @@ def test_response_plots(
         plt.clf()
 
 
+@pytest.mark.usefixtures('mplcleanup')
 def test_axes_setup():
-    get_plot_axes = ct.timeplot.get_plot_axes
+    get_plot_axes = ct.get_plot_axes
 
     sys_2x3 = ct.rss(4, 2, 3)
     sys_2x3b = ct.rss(4, 2, 3)
@@ -238,6 +240,7 @@ def test_axes_setup():
 
 
 @slycotonly
+@pytest.mark.usefixtures('mplcleanup')
 def test_legend_map():
     sys_mimo = ct.tf2ss(
         [[[1], [0.1]], [[0.2], [1]]],
@@ -250,6 +253,7 @@ def test_legend_map():
         title='MIMO step response with custom legend placement')
 
 
+@pytest.mark.usefixtures('mplcleanup')
 def test_combine_time_responses():
     sys_mimo = ct.rss(4, 2, 2)
     timepts = np.linspace(0, 10, 100)
@@ -313,7 +317,57 @@ def test_combine_time_responses():
         combresp6 = ct.combine_time_responses([resp1, resp])
 
 
+@pytest.mark.parametrize("resp_fcn", [
+    ct.step_response, ct.initial_response, ct.impulse_response,
+    ct.forced_response, ct.input_output_response])
+@pytest.mark.usefixtures('mplcleanup')
+def test_list_responses(resp_fcn):
+    sys1 = ct.rss(2, 2, 2, strictly_proper=True)
+    sys2 = ct.rss(2, 2, 2, strictly_proper=True)
+
+    # Figure out the expected shape of the system
+    match resp_fcn:
+        case ct.step_response | ct.impulse_response:
+            shape = (2, 2)
+            kwargs = {}
+        case ct.initial_response:
+            shape = (2, 1)
+            kwargs = {}
+        case ct.forced_response | ct.input_output_response:
+            shape = (4, 1)      # outputs and inputs both plotted
+            T = np.linspace(0, 10)
+            U = [np.sin(T), np.cos(T)]
+            kwargs = {'T': T, 'U': U}
+
+    resp1 = resp_fcn(sys1, **kwargs)
+    resp2 = resp_fcn(sys2, **kwargs)
+
+    # Sequential plotting results in colors rotating
+    plt.figure()
+    out1 = resp1.plot()
+    out2 = resp2.plot()
+    assert out1.shape == shape
+    assert out2.shape == shape
+    for row in range(2):        # just look at the outputs
+        for col in range(shape[1]):
+            assert out1[row, col][0].get_color() == 'tab:blue'
+            assert out2[row, col][0].get_color() == 'tab:orange'
+
+    plt.figure()
+    resp_combined = resp_fcn([sys1, sys2], **kwargs)
+    assert isinstance(resp_combined, ct.timeresp.TimeResponseList)
+    assert resp_combined[0].time[-1] == max(resp1.time[-1], resp2.time[-1])
+    assert resp_combined[1].time[-1] == max(resp1.time[-1], resp2.time[-1])
+    out = resp_combined.plot()
+    assert out.shape == shape
+    for row in range(2):        # just look at the outputs
+        for col in range(shape[1]):
+            assert out[row, col][0].get_color() == 'tab:blue'
+            assert out[row, col][1].get_color() == 'tab:orange'
+
+
 @slycotonly
+@pytest.mark.usefixtures('mplcleanup')
 def test_linestyles():
     # Check to make sure we can change line styles
     sys_mimo = ct.tf2ss(
@@ -343,18 +397,24 @@ def test_linestyles():
     assert lines[7].get_color() == 'green' and lines[7].get_linestyle() == '--'
 
 
+@pytest.mark.usefixtures('mplcleanup')
 def test_rcParams():
     sys = ct.rss(2, 2, 2)
 
     # Create new set of rcParams
-    my_rcParams = {
-        'axes.labelsize': 10,
-        'axes.titlesize': 10,
-        'figure.titlesize': 12,
-        'legend.fontsize': 10,
-        'xtick.labelsize': 10,
-        'ytick.labelsize': 10,
-    }
+    my_rcParams = {}
+    for key in [
+            'axes.labelsize', 'axes.titlesize', 'figure.titlesize',
+            'legend.fontsize', 'xtick.labelsize', 'ytick.labelsize']:
+        match plt.rcParams[key]:
+            case 8 | 9 | 10:
+                my_rcParams[key] = plt.rcParams[key] + 1
+            case 'medium':
+                my_rcParams[key] = 11.5
+            case 'large':
+                my_rcParams[key] = 9.5
+            case _:
+                raise ValueError(f"unknown rcParam type for {key}")
 
     # Generate a figure with the new rcParams
     out = ct.step_response(sys).plot(rcParams=my_rcParams)
@@ -362,13 +422,124 @@ def test_rcParams():
     fig = ax.figure
 
     # Check to make sure new settings were used
-    assert ax.xaxis.get_label().get_fontsize() == 10
-    assert ax.yaxis.get_label().get_fontsize() == 10
-    assert ax.title.get_fontsize() == 10
-    assert ax.xaxis._get_tick_label_size('x') == 10
-    assert ax.yaxis._get_tick_label_size('y') == 10
-    assert fig._suptitle.get_fontsize() == 12
+    assert ax.xaxis.get_label().get_fontsize() == my_rcParams['axes.labelsize']
+    assert ax.yaxis.get_label().get_fontsize() == my_rcParams['axes.labelsize']
+    assert ax.title.get_fontsize() == my_rcParams['axes.titlesize']
+    assert ax.get_xticklabels()[0].get_fontsize() == \
+        my_rcParams['xtick.labelsize']
+    assert ax.get_yticklabels()[0].get_fontsize() == \
+        my_rcParams['ytick.labelsize']
+    assert fig._suptitle.get_fontsize() == my_rcParams['figure.titlesize']
 
+
+@pytest.mark.parametrize("resp_fcn", [
+    ct.step_response, ct.initial_response, ct.impulse_response,
+    ct.forced_response, ct.input_output_response])
+@pytest.mark.usefixtures('editsdefaults', 'mplcleanup')
+def test_timeplot_trace_labels(resp_fcn):
+    plt.close('all')
+    sys1 = ct.rss(2, 2, 2, strictly_proper=True, name='sys1')
+    sys2 = ct.rss(2, 2, 2, strictly_proper=True, name='sys2')
+
+    # Figure out the expected shape of the system
+    match resp_fcn:
+        case ct.step_response | ct.impulse_response:
+            shape = (2, 2)
+            kwargs = {}
+        case ct.initial_response:
+            shape = (2, 1)
+            kwargs = {}
+        case ct.forced_response | ct.input_output_response:
+            shape = (4, 1)      # outputs and inputs both plotted
+            T = np.linspace(0, 10)
+            U = [np.sin(T), np.cos(T)]
+            kwargs = {'T': T, 'U': U}
+
+    # Use figure frame for suptitle to speed things up
+    ct.set_defaults('freqplot', suptitle_frame='figure')
+
+    # Make sure default labels are as expected
+    out = resp_fcn([sys1, sys2], **kwargs).plot()
+    axs = ct.get_plot_axes(out)
+    if axs.ndim == 1:
+        legend = axs[0].get_legend().get_texts()
+    else:
+        legend = axs[0, -1].get_legend().get_texts()
+    assert legend[0].get_text() == 'sys1'
+    assert legend[1].get_text() == 'sys2'
+    plt.close()
+
+    # Override labels all at once
+    out = resp_fcn([sys1, sys2], **kwargs).plot(label=['line1', 'line2'])
+    axs = ct.get_plot_axes(out)
+    if axs.ndim == 1:
+        legend = axs[0].get_legend().get_texts()
+    else:
+        legend = axs[0, -1].get_legend().get_texts()
+    assert legend[0].get_text() == 'line1'
+    assert legend[1].get_text() == 'line2'
+    plt.close()
+
+    # Override labels one at a time
+    out = resp_fcn(sys1, **kwargs).plot(label='line1')
+    out = resp_fcn(sys2, **kwargs).plot(label='line2')
+    axs = ct.get_plot_axes(out)
+    if axs.ndim == 1:
+        legend = axs[0].get_legend().get_texts()
+    else:
+        legend = axs[0, -1].get_legend().get_texts()
+    assert legend[0].get_text() == 'line1'
+    assert legend[1].get_text() == 'line2'
+    plt.close()
+
+
+@pytest.mark.usefixtures('mplcleanup')
+def test_full_label_override():
+    sys1 = ct.rss(2, 2, 2, strictly_proper=True, name='sys1')
+    sys2 = ct.rss(2, 2, 2, strictly_proper=True, name='sys2')
+
+    labels_2d = np.array([
+        ["outsys1u1y1", "outsys1u1y2", "outsys1u2y1", "outsys1u2y2",
+         "outsys2u1y1", "outsys2u1y2", "outsys2u2y1", "outsys2u2y2"],
+        ["inpsys1u1y1", "inpsys1u1y2", "inpsys1u2y1", "inpsys1u2y2",
+        "inpsys2u1y1", "inpsys2u1y2", "inpsys2u2y1", "inpsys2u2y2"]])
+
+
+    labels_4d = np.empty((2, 2, 2, 2), dtype=object)
+    for i, sys in enumerate(['sys1', 'sys2']):
+        for j, trace in enumerate(['u1', 'u2']):
+            for k, out in enumerate(['y1', 'y2']):
+                labels_4d[i, j, k, 0] = "out" + sys + trace + out
+                labels_4d[i, j, k, 1] = "inp" + sys + trace + out
+
+    # Test 4D labels
+    out = ct.step_response([sys1, sys2]).plot(
+        overlay_signals=True, overlay_traces=True, plot_inputs=True,
+        label=labels_4d)
+    axs = ct.get_plot_axes(out)
+    assert axs.shape == (2, 1)
+    legend_text = axs[0, 0].get_legend().get_texts()
+    for i, label in enumerate(labels_2d[0]):
+        assert legend_text[i].get_text() == label
+    legend_text = axs[1, 0].get_legend().get_texts()
+    for i, label in enumerate(labels_2d[1]):
+        assert legend_text[i].get_text() == label
+
+    # Test 2D labels
+    out = ct.step_response([sys1, sys2]).plot(
+        overlay_signals=True, overlay_traces=True, plot_inputs=True,
+        label=labels_2d)
+    axs = ct.get_plot_axes(out)
+    assert axs.shape == (2, 1)
+    legend_text = axs[0, 0].get_legend().get_texts()
+    for i, label in enumerate(labels_2d[0]):
+        assert legend_text[i].get_text() == label
+    legend_text = axs[1, 0].get_legend().get_texts()
+    for i, label in enumerate(labels_2d[1]):
+        assert legend_text[i].get_text() == label
+
+
+@pytest.mark.usefixtures('mplcleanup')
 def test_relabel():
     sys1 = ct.rss(2, inputs='u', outputs='y')
     sys2 = ct.rss(1, 1, 1)      # uses default i/o labels
@@ -410,6 +581,45 @@ def test_errors():
         with pytest.warns(UserWarning, match="ignored since fmt string"):
             out = stepresp.plot('k-', **propkw)
             assert out[0, 0][0].get_color() == 'k'
+
+    # Make sure TimeResponseLists also work
+    stepresp = ct.step_response([sys, sys])
+    with pytest.raises(AttributeError,
+                       match="(has no property|unexpected keyword)"):
+        stepresp.plot(unknown=None)
+
+
+def test_legend_customization():
+    sys = ct.rss(4, 2, 1, name='sys')
+    timepts = np.linspace(0, 10)
+    U = np.sin(timepts)
+    resp = ct.input_output_response(sys, timepts, U)
+
+    # Generic input/output plot
+    out = resp.plot(overlay_signals=True)
+    axs = ct.get_plot_axes(out)
+    assert axs[0, 0].get_legend()._loc == 7                 # center right
+    assert len(axs[0, 0].get_legend().get_texts()) == 2
+    assert axs[1, 0].get_legend() == None
+    plt.close()
+
+    # Hide legend
+    out = resp.plot(overlay_signals=True, show_legend=False)
+    axs = ct.get_plot_axes(out)
+    assert axs[0, 0].get_legend() == None
+    assert axs[1, 0].get_legend() == None
+    plt.close()
+
+    # Put legend in both axes
+    out = resp.plot(
+        overlay_signals=True, legend_map=[['center left'], ['center right']])
+    axs = ct.get_plot_axes(out)
+    assert axs[0, 0].get_legend()._loc == 6                 # center left
+    assert len(axs[0, 0].get_legend().get_texts()) == 2
+    assert axs[1, 0].get_legend()._loc == 7                 # center right
+    assert len(axs[1, 0].get_legend().get_texts()) == 1
+    plt.close()
+
 
 if __name__ == "__main__":
     #
@@ -504,8 +714,33 @@ if __name__ == "__main__":
 
     plt.figure()
     out = ct.step_response(sys_mimo).plot(
-    plot_inputs='overlay', overlay_signals=True, overlay_traces=True,
-    output_props=[{'color': c} for c in ['blue', 'orange']],
-    input_props=[{'color': c} for c in ['red', 'green']],
-    trace_props=[{'linestyle': s} for s in ['-', '--']])
+        plot_inputs='overlay', overlay_signals=True, overlay_traces=True,
+        output_props=[{'color': c} for c in ['blue', 'orange']],
+        input_props=[{'color': c} for c in ['red', 'green']],
+        trace_props=[{'linestyle': s} for s in ['-', '--']])
     plt.savefig('timeplot-mimo_step-linestyle.png')
+
+    sys1 = ct.rss(4, 2, 2)
+    sys2 = ct.rss(4, 2, 2)
+    resp_list = ct.step_response([sys1, sys2])
+
+    fig = plt.figure()
+    ct.combine_time_responses(
+        [ct.step_response(sys1, resp_list[0].time),
+         ct.step_response(sys2, resp_list[1].time)]
+    ).plot(overlay_traces=True)
+    ct.suptitle("[Combine] " + fig._suptitle._text)
+
+    fig = plt.figure()
+    ct.step_response(sys1).plot()
+    ct.step_response(sys2).plot()
+    ct.suptitle("[Sequential] " + fig._suptitle._text)
+
+    fig = plt.figure()
+    ct.step_response(sys1).plot(color='b')
+    ct.step_response(sys2).plot(color='r')
+    ct.suptitle("[Seq w/color] " + fig._suptitle._text)
+
+    fig = plt.figure()
+    ct.step_response([sys1, sys2]).plot()
+    ct.suptitle("[List] " + fig._suptitle._text)
