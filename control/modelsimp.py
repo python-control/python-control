@@ -48,6 +48,7 @@ from .exception import ControlSlycot, ControlMIMONotImplemented, \
 from .iosys import isdtime, isctime
 from .statesp import StateSpace
 from .statefbk import gram
+from .timeresp import TimeResponseData
 
 __all__ = ['hsvd', 'balred', 'modred', 'era', 'markov', 'minreal']
 
@@ -368,8 +369,10 @@ def minreal(sys, tol=None, verbose=True):
     return sysr
 
 
-def era(data, r, m=None, n=None, dt=True):
-    """Calculate an ERA model of order `r` based on the impulse-response data.
+def era(arg, r, m=None, n=None, dt=True, transpose=False):
+    r"""era(YY, r)
+
+    Calculate an ERA model of order `r` based on the impulse-response data.
 
     This function computes a discrete time system
 
@@ -380,8 +383,19 @@ def era(data, r, m=None, n=None, dt=True):
 
     for a given impulse-response data (see [1]_).
 
+    The function can be called with 2 arguments:
+
+    * ``sysd, S = era(data, r)``
+    * ``sysd, S = era(YY, r)``
+
+    where `response` is an `TimeResponseData` object, and `YY` is 1D or 3D
+    array and r is an integer.
+
     Parameters
     ----------
+    YY : array_like
+        impulse-response data from which the StateSpace model is estimated,
+        1D or 3D array.
     data : TimeResponseData
         impulse-response data from which the StateSpace model is estimated.
     r : integer
@@ -398,11 +412,16 @@ def era(data, r, m=None, n=None, dt=True):
         It can be used to scale the StateSpace model in order to match
         the impulse response of this library.
         Default values is True.
+    transpose : bool, optional
+        Assume that input data is transposed relative to the standard
+        :ref:`time-series-convention`. For TimeResponseData this parameter 
+        is ignored.
+        Default value is False.
 
     Returns
     -------
     sys : StateSpace
-        A reduced order model sys=StateSpace(Ar,Br,Cr,Dr,dt)
+        A reduced order model sys=StateSpace(Ar,Br,Cr,Dr,dt).
     S : array
         Singular values of Hankel matrix.
         Can be used to choose a good r value.
@@ -416,6 +435,10 @@ def era(data, r, m=None, n=None, dt=True):
 
     Examples
     --------
+    >>> T = np.linspace(0, 10, 100)
+    >>> _, YY = ct.impulse_response(ct.tf([1], [1, 0.5], True), T)
+    >>> sysd, _ = ct.era(YY, r=1)
+
     >>> T = np.linspace(0, 10, 100)
     >>> response = ct.impulse_response(ct.tf([1], [1, 0.5], True), T)
     >>> sysd, _ = ct.era(response, r=1)
@@ -434,10 +457,16 @@ def era(data, r, m=None, n=None, dt=True):
                 
         return H
     
-    Y = np.array(data.outputs, ndmin=3)
-    if data.transpose:
-        Y = np.transpose(Y)
-    q, p, l = Y.shape
+    if isinstance(arg, TimeResponseData):
+        YY = np.array(arg.outputs, ndmin=3)
+        if arg.transpose:
+            YY = np.transpose(YY)
+    else:
+        YY = np.array(arg, ndmin=3)
+        if transpose:
+            YY = np.transpose(YY)
+    
+    q, p, l = YY.shape
 
     if m is None:
         m = 2*r
@@ -450,7 +479,7 @@ def era(data, r, m=None, n=None, dt=True):
     if (l-1) < m+n:
         raise ValueError("Not enough data for requested number of parameters")
     
-    H = block_hankel_matrix(Y[:,:,1:], m, n+1) # Hankel matrix (q*m, p*(n+1))
+    H = block_hankel_matrix(YY[:,:,1:], m, n+1) # Hankel matrix (q*m, p*(n+1))
     Hf = H[:,:-p] # first p*n columns of H
     Hl = H[:,p:] # last p*n columns of H
     
@@ -463,7 +492,7 @@ def era(data, r, m=None, n=None, dt=True):
     Ar = Sigma_inv @ Ur.T @ Hl @ Vhr.T @ Sigma_inv
     Br = Sigma_inv @ Ur.T @ Hf[:,0:p]*dt
     Cr = Hf[0:q,:] @ Vhr.T @ Sigma_inv
-    Dr = Y[:,:,0]
+    Dr = YY[:,:,0]
 
     return StateSpace(Ar,Br,Cr,Dr,dt), S
 

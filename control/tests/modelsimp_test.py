@@ -7,10 +7,10 @@ import numpy as np
 import pytest
 
 
-from control import StateSpace, forced_response, tf, rss, c2d
+from control import StateSpace, impulse_response, step_response, forced_response, tf, rss, c2d
 from control.exception import ControlMIMONotImplemented
 from control.tests.conftest import slycotonly
-from control.modelsimp import balred, hsvd, markov, modred
+from control.modelsimp import balred, hsvd, markov, modred, era
 
 
 class TestModelsimp:
@@ -110,6 +110,85 @@ class TestModelsimp:
         # with rtot=1e-6 and atol=1e-8 due to numerical errors
         # for k=5, m=n=10: 0.015 %
         np.testing.assert_allclose(Mtrue, Mcomp, rtol=1e-6, atol=1e-8)
+
+    def testERASignature(self):
+
+        # test siso
+        # Katayama, Subspace Methods for System Identification
+        # Example 6.1, Fibonacci sequence
+        H_true = np.array([0.,1.,1.,2.,3.,5.,8.,13.,21.,34.])
+
+        # A realization of fibonacci impulse response
+        A = np.array([[0., 1.],[1., 1.,]])
+        B = np.array([[1.],[1.,]])
+        C = np.array([[1., 0.,]])
+        D = np.array([[0.,]])
+        
+        T = np.arange(0,10,1)
+        sysd_true = StateSpace(A,B,C,D,True)
+        ir_true = impulse_response(sysd_true,T=T)
+
+        # test TimeResponseData
+        sysd_est, _  = era(ir_true,r=2)
+        ir_est = impulse_response(sysd_est, T=T)
+        _, H_est = ir_est
+    
+        np.testing.assert_allclose(H_true, H_est, rtol=1e-6, atol=1e-8)
+
+        # test ndarray
+        _, YY_true = ir_true
+        sysd_est, _  = era(YY_true,r=2)
+        ir_est = impulse_response(sysd_est, T=T)
+        _, H_est = ir_est
+    
+        np.testing.assert_allclose(H_true, H_est, rtol=1e-6, atol=1e-8)
+
+        # test mimo
+        # Mechanical Vibrations: Theory and Application, SI Edition, 1st ed.
+        # Figure 6.5 / Example 6.7
+        # m q_dd + c q_d + k q = f
+        m1, k1, c1 = 1., 4., 1.
+        m2, k2, c2 = 2., 2., 1.
+        k3, c3 = 6., 2.
+
+        A = np.array([
+            [0., 0., 1., 0.],
+            [0., 0., 0., 1.],
+            [-(k1+k2)/m1, (k2)/m1, -(c1+c2)/m1, c2/m1],
+            [(k2)/m2, -(k2+k3)/m2, c2/m2, -(c2+c3)/m2]
+        ])
+        B = np.array([[0.,0.],[0.,0.],[1/m1,0.],[0.,1/m2]])
+        C = np.array([[1.0, 0.0, 0.0, 0.0],[0.0, 1.0, 0.0, 0.0]])
+        D = np.zeros((2,2))
+
+        sys = StateSpace(A, B, C, D)
+
+        dt = 0.1
+        T = np.arange(0,10,dt)
+        sysd_true = sys.sample(dt, method='zoh')
+        ir_true = impulse_response(sysd_true, T=T)
+
+        # test TimeResponseData
+        sysd_est, _ = era(ir_true,r=4,dt=dt)
+
+        step_true = step_response(sysd_true)
+        step_est = step_response(sysd_est)
+
+        np.testing.assert_allclose(step_true.outputs, 
+                                   step_est.outputs,
+                                   rtol=1e-6, atol=1e-8)
+        
+        # test ndarray
+        _, YY_true = ir_true
+        sysd_est, _  = era(YY_true,r=4,dt=dt)
+
+        step_true = step_response(sysd_true, T=T)
+        step_est = step_response(sysd_est, T=T)
+
+        np.testing.assert_allclose(step_true.outputs, 
+                                   step_est.outputs,
+                                   rtol=1e-6, atol=1e-8)
+
 
     def testModredMatchDC(self):
         #balanced realization computed in matlab for the transfer function:

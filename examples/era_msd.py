@@ -11,10 +11,12 @@ import os
 import control as ct
 
 # set up a mass spring damper system (2dof, MIMO case)
-# m q_dd + c q_d + k q = u
-m1, k1, c1 = 1., 1., .1
-m2, k2, c2 = 2., .5, .1
-k3, c3 = .5, .1
+# Mechanical Vibrations: Theory and Application, SI Edition, 1st ed.
+# Figure 6.5 / Example 6.7
+# m q_dd + c q_d + k q = f
+m1, k1, c1 = 1., 4., 1.
+m2, k2, c2 = 2., 2., 1.
+k3, c3 = 6., 2.
 
 A = np.array([
     [0., 0., 1., 0.],
@@ -39,7 +41,7 @@ match xixo:
         sys = ct.StateSpace(A, B, C, D)
 
 
-dt = 0.5
+dt = 0.1
 sysd = sys.sample(dt, method='zoh')
 response = ct.impulse_response(sysd)
 response.plot()
@@ -48,7 +50,9 @@ plt.show()
 sysd_est, _ = ct.era(response,r=4,dt=dt)
 
 step_true = ct.step_response(sysd)
+step_true.sysname="H_true"
 step_est = ct.step_response(sysd_est)
+step_est.sysname="H_est"
 
 step_true.plot(title=xixo)
 step_est.plot(color='orange',linestyle='dashed')
