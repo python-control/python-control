@@ -48,10 +48,12 @@ def create_impulse_response(H, time, transpose, dt):
                             issiso=issiso)
 
 # set up a mass spring damper system (2dof, MIMO case)
-# m q_dd + c q_d + k q = u
-m1, k1, c1 = 1., 1., .1
-m2, k2, c2 = 2., .5, .1
-k3, c3 = .5, .1
+# Mechanical Vibartions: Theory and Application, SI Edition, 1st ed.
+# Figure 6.5 / Example 6.7
+# m q_dd + c q_d + k q = f
+m1, k1, c1 = 1., 4., 1.
+m2, k2, c2 = 2., 2., 1.
+k3, c3 = 6., 2.
 
 A = np.array([
     [0., 0., 1., 0.],
@@ -76,19 +78,19 @@ match xixo:
     case "MIMO":
         sys = ct.StateSpace(A, B, C, D)
 
-dt = 0.5
+dt = 0.25
 sysd = sys.sample(dt, method='zoh')
 sysd.name = "H_true"
 
  # random forcing input
-t = np.arange(0,500,dt)
+t = np.arange(0,100,dt)
 u = np.random.randn(sysd.B.shape[-1], len(t))
 
 response = ct.forced_response(sysd, U=u)
 response.plot()
 plt.show()
 
-m = 100
+m = 50
 ir_true = ct.impulse_response(sysd,T=dt*m)
 ir_true.tranpose = True
 
