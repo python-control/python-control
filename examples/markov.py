@@ -48,7 +48,7 @@ def create_impulse_response(H, time, transpose, dt):
                             issiso=issiso)
 
 # set up a mass spring damper system (2dof, MIMO case)
-# Mechanical Vibartions: Theory and Application, SI Edition, 1st ed.
+# Mechanical Vibrations: Theory and Application, SI Edition, 1st ed.
 # Figure 6.5 / Example 6.7
 # m q_dd + c q_d + k q = f
 m1, k1, c1 = 1., 4., 1.
@@ -91,10 +91,9 @@ response.plot()
 plt.show()
 
 m = 50
-ir_true = ct.impulse_response(sysd,T=dt*m)
-ir_true.tranpose = True
+ir_true = ct.impulse_response(sysd, T=dt*m)
 
-H_est = ct.markov(response,m=m,dt=dt)
+H_est = ct.markov(response, m, dt=dt)
 # Helper function for plotting only
 ir_est = create_impulse_response(H_est,
                                  ir_true.time,

@@ -7,8 +7,7 @@ import numpy as np
 import pytest
 
 
-from control import StateSpace, forced_response, tf, rss, c2d, TimeResponseData
-from control.exception import ControlMIMONotImplemented
+from control import StateSpace, forced_response, impulse_response, tf, rss, c2d, TimeResponseData
 from control.tests.conftest import slycotonly
 from control.modelsimp import balred, hsvd, markov, modred
 
@@ -33,7 +32,7 @@ class TestModelsimp:
         assert not isinstance(hsv, np.matrix)
 
     def testMarkovSignature(self):
-        U = np.array([1., 1., 1., 1., 1.])
+        U = np.array([[1., 1., 1., 1., 1.]])
         Y = U
         response = TimeResponseData(time=np.arange(U.shape[-1]),
                                     outputs=Y,
@@ -41,36 +40,80 @@ class TestModelsimp:
                                     inputs=U,
                                     input_labels='u',
                                     )
+        
+        # Basic usage
         m = 3
+        H = markov(Y, U, m, transpose=False)
+        Htrue = np.array([1., 0., 0.])
+        np.testing.assert_array_almost_equal(H, Htrue)
+
+        response.transpose=False
         H = markov(response, m)
         Htrue = np.array([1., 0., 0.])
         np.testing.assert_array_almost_equal(H, Htrue)
 
         # Make sure that transposed data also works
+        H = markov(Y.T, U.T, m, transpose=True)
+        np.testing.assert_array_almost_equal(H, np.transpose(Htrue))
+
         response.transpose=True
         H = markov(response, m)
         np.testing.assert_array_almost_equal(H, np.transpose(Htrue))
+        response.transpose=False
 
         # Generate Markov parameters without any arguments
-        response.transpose=False
+        H = markov(Y, U, m)
+        np.testing.assert_array_almost_equal(H, Htrue)
+
         H = markov(response, m)
         np.testing.assert_array_almost_equal(H, Htrue)
 
         # Test example from docstring
         T = np.linspace(0, 10, 100)
         U = np.ones((1, 100))
+        _, Y = forced_response(tf([1], [1, 0.5], True), T, U)
+        H = markov(Y, U, 3)
+
+        T = np.linspace(0, 10, 100)
+        U = np.ones((1, 100))
         response = forced_response(tf([1], [1, 0.5], True), T, U)
         H = markov(response, 3)
 
         # Test example from issue #395
-        #inp = np.array([1, 2])
-        #outp = np.array([2, 4])
-        #mrk = markov(outp, inp, 1, transpose=False)
+        inp = np.array([1, 2])
+        outp = np.array([2, 4])
+        mrk = markov(outp, inp, 1, transpose=False)
 
-        # Make sure MIMO generates an error
-        #U = np.ones((2, 100))   # 2 inputs (Y unchanged, with 1 output)
-        #with pytest.raises(ControlMIMONotImplemented):
-        #    markov(Y, U, m)
+        # Test mimo example
+        # Mechanical Vibrations: Theory and Application, SI Edition, 1st ed.
+        # Figure 6.5 / Example 6.7
+        m1, k1, c1 = 1., 4., 1.
+        m2, k2, c2 = 2., 2., 1.
+        k3, c3 = 6., 2.
+
+        A = np.array([
+            [0., 0., 1., 0.],
+            [0., 0., 0., 1.],
+            [-(k1+k2)/m1, (k2)/m1, -(c1+c2)/m1, c2/m1],
+            [(k2)/m2, -(k2+k3)/m2, c2/m2, -(c2+c3)/m2]
+        ])
+        B = np.array([[0.,0.],[0.,0.],[1/m1,0.],[0.,1/m2]])
+        C = np.array([[1.0, 0.0, 0.0, 0.0],[0.0, 1.0, 0.0, 0.0]])
+        D = np.zeros((2,2))
+
+        sys = StateSpace(A, B, C, D)
+        dt = 0.25
+        sysd = sys.sample(dt, method='zoh')
+
+        t = np.arange(0,100,dt)
+        u = np.random.randn(sysd.B.shape[-1], len(t))
+        response = forced_response(sysd, U=u)
+
+        m = 100
+        H = markov(response, m, dt=dt)
+        _, Htrue = impulse_response(sysd, T=dt*(m-1))
+
+        np.testing.assert_array_almost_equal(H, Htrue)
 
     # Make sure markov() returns the right answer
     @pytest.mark.parametrize("k, m, n",

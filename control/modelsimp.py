@@ -43,8 +43,7 @@
 # External packages and modules
 import numpy as np
 import warnings
-from .exception import ControlSlycot, ControlMIMONotImplemented, \
-    ControlDimension
+from .exception import ControlSlycot, ControlArgument, ControlDimension
 from .iosys import isdtime, isctime
 from .statesp import StateSpace
 from .statefbk import gram
@@ -403,8 +402,10 @@ def era(YY, m, n, nin, nout, r):
     raise NotImplementedError('This function is not implemented yet.')
 
 
-def markov(data, m=None, dt=True, truncate=False):
-    """Calculate the first `m` Markov parameters [D CB CAB ...]
+def markov(*args, **kwargs):
+    """markov(Y, U, [, m])
+    
+    Calculate the first `m` Markov parameters [D CB CAB ...]
     from data
 
     This function computes the Markov parameters for a discrete time system
@@ -419,14 +420,31 @@ def markov(data, m=None, dt=True, truncate=False):
     the input data is less than the desired number of Markov parameters (a
     warning message is generated in this case).
 
+    The function can be called with either 1, 2, or 3 arguments:
+
+    * ``K, S, E = lqr(response)``
+    * ``K, S, E = lqr(respnose, m)``
+    * ``K, S, E = lqr(Y, U)``
+    * ``K, S, E = lqr(Y, U, m)``
+
+    where `response` is an `TimeResponseData` object, and `Y`, `U`, are 1D or 2D
+    array and m is an integer.
+
     Parameters
     ----------
+    Y : array_like
+        Output data.  If the array is 1D, the system is assumed to be single
+        input.  If the array is 2D and transpose=False, the columns of `Y`
+        are taken as time points, otherwise the rows of `Y` are taken as
+        time points.
+    U : array_like
+        Input data, arranged in the same way as `Y`.
     data : TimeResponseData
         Response data from which the Markov parameters where estimated.
         Input and output data must be 1D or 2D array.
     m : int, optional
         Number of Markov parameters to output.  Defaults to len(U).
-    dt : (True of float, optional)
+    dt : True of float, optional
         True indicates discrete time with unspecified sampling time,
         positive number is discrete time with specified sampling time.
         It can be used to scale the markov parameters in order to match
@@ -460,17 +478,41 @@ def markov(data, m=None, dt=True, truncate=False):
     --------
     >>> T = np.linspace(0, 10, 100)
     >>> U = np.ones((1, 100))
-    >>> response = ct.forced_response(ct.tf([1], [1, 0.5], True), T, U)
-    >>> H = ct.markov(response, 3)
+    >>> T, Y = ct.forced_response(ct.tf([1], [1, 0.5], True), T, U)
+    >>> H = ct.markov(Y, U, 3, transpose=False)
 
     """
     # Convert input parameters to 2D arrays (if they aren't already)
-    Umat = np.array(data.inputs, ndmin=2)
-    Ymat = np.array(data.outputs, ndmin=2)
 
-    # If data is in transposed format, switch it around
-    if data.transpose and not data.issiso:
-        Umat, Ymat = np.transpose(Umat), np.transpose(Ymat)
+    # Get the system description
+    if (len(args) < 1):
+        raise ControlArgument("not enough input arguments")
+    
+    if isinstance(args[0], TimeResponseData):
+        Umat = np.array(args[0].inputs, ndmin=2)
+        Ymat = np.array(args[0].outputs, ndmin=2)
+        transpose = args[0].transpose
+        if args[0].transpose and not args[0].issiso:
+            Umat, Ymat = np.transpose(Umat), np.transpose(Ymat)
+        index = 1
+    else:
+        if (len(args) < 2):
+            raise ControlArgument("not enough input arguments")
+        Umat = np.array(args[0], ndmin=2)
+        Ymat = np.array(args[1], ndmin=2)
+        transpose = kwargs.pop('transpose', False)
+        if transpose:
+            Umat, Ymat = np.transpose(Umat), np.transpose(Ymat)
+        index = 2
+
+
+    if (len(args) > index):
+        m = args[index]
+    else:
+        m = None
+
+    dt = kwargs.pop('dt', True)
+    truncate = kwargs.pop('truncate', False)
 
     # Make sure the number of time points match
     if Umat.shape[1] != Ymat.shape[1]:
@@ -549,4 +591,4 @@ def markov(data, m=None, dt=True, truncate=False):
         H = np.squeeze(H)
 
     # Return the first m Markov parameters
-    return H if not data.transpose else np.transpose(H)
+    return H if not transpose else np.transpose(H)
