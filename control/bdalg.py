@@ -54,17 +54,19 @@ $Id$
 """
 
 from functools import reduce
-import numpy as np
 from warnings import warn
-from . import xferfcn as tf
-from . import statesp as ss
+
+import numpy as np
+
 from . import frdata as frd
+from . import statesp as ss
+from . import xferfcn as tf
 from .iosys import InputOutputSystem
 
 __all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect']
 
 
-def series(sys1, *sysn):
+def series(sys1, *sysn, **kwargs):
     r"""series(sys1, sys2, [..., sysn])
 
     Return the series connection (`sysn` \* ...\  \*) `sys2` \* `sys1`.
@@ -78,6 +80,20 @@ def series(sys1, *sysn):
     -------
     out : scalar, array, or :class:`InputOutputSystem`
         Series interconnection of the systems.
+
+    Other Parameters
+    ----------------
+    inputs, outputs : str, or list of str, optional
+        List of strings that name the individual signals.  If not given,
+        signal names will be of the form `s[i]` (where `s` is one of `u`,
+        or `y`). See :class:`InputOutputSystem` for more information.
+    states : str, or list of str, optional
+        List of names for system states.  If not given, state names will be
+        of of the form `x[i]` for interconnections of linear systems or
+        '<subsys_name>.<state_name>' for interconnected nonlinear systems.
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
 
     Raises
     ------
@@ -117,10 +133,12 @@ def series(sys1, *sysn):
     (2, 1, 5)
 
     """
-    return reduce(lambda x, y: y * x, sysn, sys1)
+    sys = reduce(lambda x, y: y * x, sysn, sys1)
+    sys.update_names(**kwargs)
+    return sys
 
 
-def parallel(sys1, *sysn):
+def parallel(sys1, *sysn, **kwargs):
     r"""parallel(sys1, sys2, [..., sysn])
 
     Return the parallel connection `sys1` + `sys2` (+ ...\  + `sysn`).
@@ -134,6 +152,20 @@ def parallel(sys1, *sysn):
     -------
     out : scalar, array, or :class:`InputOutputSystem`
         Parallel interconnection of the systems.
+
+    Other Parameters
+    ----------------
+    inputs, outputs : str, or list of str, optional
+        List of strings that name the individual signals.  If not given,
+        signal names will be of the form `s[i]` (where `s` is one of `u`,
+        or `y`). See :class:`InputOutputSystem` for more information.
+    states : str, or list of str, optional
+        List of names for system states.  If not given, state names will be
+        of of the form `x[i]` for interconnections of linear systems or
+        '<subsys_name>.<state_name>' for interconnected nonlinear systems.
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
 
     Raises
     ------
@@ -171,10 +203,11 @@ def parallel(sys1, *sysn):
     (3, 4, 7)
 
     """
-    return reduce(lambda x, y: x + y, sysn, sys1)
+    sys = reduce(lambda x, y: x + y, sysn, sys1)
+    sys.update_names(**kwargs)
+    return sys
 
-
-def negate(sys):
+def negate(sys, **kwargs):
     """
     Return the negative of a system.
 
@@ -188,14 +221,28 @@ def negate(sys):
     out : scalar, array, or :class:`InputOutputSystem`
         Negated system.
 
-    Notes
-    -----
-    This function is a wrapper for the __neg__ function in the StateSpace and
-    TransferFunction classes.  The output type is the same as the input type.
+    Other Parameters
+    ----------------
+    inputs, outputs : str, or list of str, optional
+        List of strings that name the individual signals.  If not given,
+        signal names will be of the form `s[i]` (where `s` is one of `u`,
+        or `y`). See :class:`InputOutputSystem` for more information.
+    states : str, or list of str, optional
+        List of names for system states.  If not given, state names will be
+        of of the form `x[i]` for interconnections of linear systems or
+        '<subsys_name>.<state_name>' for interconnected nonlinear systems.
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
 
     See Also
     --------
     append, feedback, interconnect, parallel, series
+
+    Notes
+    -----
+    This function is a wrapper for the __neg__ function in the StateSpace and
+    TransferFunction classes.  The output type is the same as the input type.
 
     Examples
     --------
@@ -208,11 +255,12 @@ def negate(sys):
     np.float64(-2.0)
 
     """
-    return -sys
+    sys = -sys
+    sys.update_names(**kwargs)
+    return sys
 
 #! TODO: expand to allow sys2 default to work in MIMO case?
-#! TODO: allow renaming of signals (for all bdalg operations)
-def feedback(sys1, sys2=1, sign=-1):
+def feedback(sys1, sys2=1, sign=-1, **kwargs):
     """Feedback interconnection between two I/O systems.
 
     Parameters
@@ -228,6 +276,20 @@ def feedback(sys1, sys2=1, sign=-1):
     -------
     out : scalar, array, or :class:`InputOutputSystem`
         Feedback interconnection of the systems.
+
+    Other Parameters
+    ----------------
+    inputs, outputs : str, or list of str, optional
+        List of strings that name the individual signals.  If not given,
+        signal names will be of the form `s[i]` (where `s` is one of `u`,
+        or `y`). See :class:`InputOutputSystem` for more information.
+    states : str, or list of str, optional
+        List of names for system states.  If not given, state names will be
+        of of the form `x[i]` for interconnections of linear systems or
+        '<subsys_name>.<state_name>' for interconnected nonlinear systems.
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
 
     Raises
     ------
@@ -261,7 +323,7 @@ def feedback(sys1, sys2=1, sign=-1):
     # Allow anything with a feedback function to call that function
     # TODO: rewrite to allow __rfeedback__
     try:
-        return sys1.feedback(sys2, sign)
+        return sys1.feedback(sys2, sign, **kwargs)
     except (AttributeError, TypeError):
         pass
 
@@ -284,9 +346,11 @@ def feedback(sys1, sys2=1, sign=-1):
         else:
             sys1 = ss._convert_to_statespace(sys1)
 
-    return sys1.feedback(sys2, sign)
+    sys = sys1.feedback(sys2, sign)
+    sys.update_names(**kwargs)
+    return sys
 
-def append(*sys):
+def append(*sys, **kwargs):
     """append(sys1, sys2, [..., sysn])
 
     Group LTI state space models by appending their inputs and outputs.
@@ -298,6 +362,20 @@ def append(*sys):
     ----------
     sys1, sys2, ..., sysn: scalar, array, or :class:`StateSpace`
         I/O systems to combine.
+
+    Other Parameters
+    ----------------
+    inputs, outputs : str, or list of str, optional
+        List of strings that name the individual signals.  If not given,
+        signal names will be of the form `s[i]` (where `s` is one of `u`,
+        or `y`). See :class:`InputOutputSystem` for more information.
+    states : str, or list of str, optional
+        List of names for system states.  If not given, state names will be
+        of of the form `x[i]` for interconnections of linear systems or
+        '<subsys_name>.<state_name>' for interconnected nonlinear systems.
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
 
     Returns
     -------
@@ -327,6 +405,7 @@ def append(*sys):
     s1 = ss._convert_to_statespace(sys[0])
     for s in sys[1:]:
         s1 = s1.append(s)
+    s1.update_names(**kwargs)
     return s1
 
 def connect(sys, Q, inputv, outputv):
@@ -370,6 +449,12 @@ def connect(sys, Q, inputv, outputv):
     --------
     append, feedback, interconnect, negate, parallel, series
 
+    Notes
+    -----
+    The :func:`~control.interconnect` function in the :ref:`input/output
+    systems <iosys-module>` module allows the use of named signals and
+    provides an alternative method for interconnecting multiple systems.
+
     Examples
     --------
     >>> G = ct.rss(7, inputs=2, outputs=2)
@@ -377,12 +462,6 @@ def connect(sys, Q, inputv, outputv):
     >>> T = ct.connect(G, K, [2], [1, 2])
     >>> T.ninputs, T.noutputs, T.nstates
     (1, 2, 7)
-
-    Notes
-    -----
-    The :func:`~control.interconnect` function in the :ref:`input/output
-    systems <iosys-module>` module allows the use of named signals and
-    provides an alternative method for interconnecting multiple systems.
 
     """
     # TODO: maintain `connect` for use in MATLAB submodule (?)

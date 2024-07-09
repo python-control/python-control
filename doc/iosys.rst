@@ -191,7 +191,86 @@ Additional features
 ===================
 
 The I/O systems module has a number of other features that can be used to
-simplify the creation of interconnected input/output systems.
+simplify the creation and use of interconnected input/output systems.
+
+Vector elements processing
+--------------------------
+
+Several I/O system commands perform processing of vector elements
+(such as initial states or input vectors) and broadcast these to the
+proper shape.
+
+For static elements, such as the initial state in a simulation or the
+nominal state and input for a linearization), the following processing
+is done:
+
+* Scalars are automatically converted to a vector of the appropriate
+  size consisting of the scalar value. This is commonly used when
+  specifying the origin ('0') or a step input ('1').
+
+* Lists of values are concatenated into a single vector.  This is
+  often used when you have an interconnected system and you need to
+  specify the initial condition or input value for each subsystem
+  (e.g., [X1eq, X2eq, ...]).
+
+* Vector elements are zero padded to the required length. If you
+  specify only a portion of the values for states or inputs, the
+  remaining values are taken as zero.  (If the final element in the
+  given vector is non-zero, a warning is issued.)
+
+Similar processing is done for input time series, used for the
+:func:`~control.input_output_response` and
+:func:`~control.forced_response` commands, with the following
+additional feature:
+
+* Time series elements are broadcast to match the number of time points
+  specified.  If a list of time series and static elements are given (as a
+  list), static elements are broadcast to the proper number of time points,
+  and the overall list of elements concatenated to provide the full input
+  vector.
+
+As an example, suppose we have an interconnected system consisting of three
+subsystems, a controlled process, an estimator, and a (static) controller::
+
+  proc = ct.nlsys(...,
+      states=2, inputs=['u1', 'u2', 'd'], outputs='y')
+  estim = ct.nlsys(...,
+      states=2, inputs='y', outputs=['xhat[0]', 'xhat[1]')
+  ctrl = ct.nlsys(...,
+      states=0, inputs=['r', 'xhat[0]', 'xhat[1]'], outputs=['u1', 'u2'])
+
+  clsys = ct.interconnect(
+      [proc, estim, ctrl], inputs=['r', 'd'], outputs=['y', 'u1', 'u2'])
+
+To linearize the system around the origin, we can utilize the scalar
+processing feature of vector elements::
+
+  P = proc.linearize(0, 0)
+
+In this command, the states and the inputs are broadcast to the size of the
+state and input vectors, respectively.
+
+If we want to linearize the closed loop system around a process state
+``x0`` (with two elements) and an estimator state ``0`` (for both states),
+we can use the list processing feature::
+
+  H = clsys.linearize([x0, 0], 0)
+
+Note that this also utilizes the zero-padding functionality, since the
+second argument in the list ``[x0, 0]`` is a scalar and so the vector
+``[x0, 0]`` only has three elements instead of the required four.
+
+To run an input/output simulation with a sinusoidal signal for the first
+input, a constant for the second input, and no external disturbance, we can
+use the list processing feature combined with time series broadcasting::
+
+  timepts = np.linspace(0, 10)
+  u1 = np.sin(timepts)
+  u2 = 1
+  resp = ct.input_output_response(clsys, timepts, [u1, u2, 0])
+
+In this command, the second and third arguments will be broadcast to match
+the number of time points.
 
 Summing junction
 ----------------

@@ -6,10 +6,12 @@
 # FrequencyResponseData, InterconnectedSystem and other similar classes
 # that allow naming of signals.
 
-import numpy as np
+import re
 from copy import deepcopy
 from warnings import warn
-import re
+
+import numpy as np
+
 from . import config
 
 __all__ = ['InputOutputSystem', 'issiso', 'timebase', 'common_timebase',
@@ -365,6 +367,51 @@ class InputOutputSystem(object):
     state_labels = property(
         lambda self: list(self.state_index.keys()),     # getter
         set_states)                                     # setter
+
+    # TODO: add dict as a means to selective change names?  [GH #1019]
+    def update_names(self, **kwargs):
+        """update_names([name, inputs, outputs, states])
+
+        Update signal and system names for an I/O system.
+
+        Parameters
+        ----------
+        name : str, optional
+            New system name.
+        inputs : list of str, int, or None, optional
+            List of strings that name the individual input signals.  If
+            given as an integer or None, signal names default to the form
+            `u[i]`.  See :class:`InputOutputSystem` for more information.
+        outputs : list of str, int, or None, optional
+            Description of output signals; defaults to `y[i]`.
+        states : int, list of str, int, or None, optional
+            Description of system states; defaults to `x[i]`.
+
+        """
+        self.name = kwargs.pop('name', self.name)
+        if 'inputs' in kwargs:
+            ninputs, input_index = _process_signal_list(
+                kwargs.pop('inputs'), prefix=kwargs.pop('input_prefix', 'u'))
+            if self.ninputs and self.ninputs != ninputs:
+                raise ValueError("number of inputs does not match system size")
+            self.input_index = input_index
+        if 'outputs' in kwargs:
+            noutputs, output_index = _process_signal_list(
+                kwargs.pop('outputs'), prefix=kwargs.pop('output_prefix', 'y'))
+            if self.noutputs and self.noutputs != noutputs:
+                raise ValueError("number of outputs does not match system size")
+            self.output_index = output_index
+        if 'states' in kwargs:
+            nstates, state_index = _process_signal_list(
+                kwargs.pop('states'), prefix=kwargs.pop('state_prefix', 'x'))
+            if self.nstates != nstates:
+                raise ValueError("number of states does not match system size")
+            self.state_index = state_index
+
+        # Make sure we processed all of the arguments
+        if kwargs:
+            raise TypeError("unrecognized keywords: ", str(kwargs))
+
 
     def isctime(self, strict=False):
         """
@@ -823,7 +870,6 @@ def _process_labels(labels, name, default):
 # This function returns the subsystem index, a list of indices for the
 # system signals, and the gain to use for that set of signals.
 #
-import re
 
 def _parse_spec(syslist, spec, signame, dictname=None):
     """Parse a signal specification, returning system and signal index."""
