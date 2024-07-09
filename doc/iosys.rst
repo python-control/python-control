@@ -216,7 +216,7 @@ is done:
 * Vector elements are zero padded to the required length. If you
   specify only a portion of the values for states or inputs, the
   remaining values are taken as zero.  (If the final element in the
-  given vector is non-zero, a warning is issues.)
+  given vector is non-zero, a warning is issued.)
 
 Similar processing is done for input time series, used for the
 :func:`~control.input_output_response` and
@@ -251,16 +251,16 @@ In this command, the states and the inputs are broadcast to the size of the
 state and input vectors, respectively.
 
 If we want to linearize the closed loop system around a process state
-``x0`` (with two elemenst) and an estimator state ``0`` (for both states),
+``x0`` (with two elements) and an estimator state ``0`` (for both states),
 we can use the list processing feature::
 
-  H = clsys.liniearize([x0, 0], 0)
+  H = clsys.linearize([x0, 0], 0)
 
 Note that this also utilizes the zero-padding functionality, since the
 second argument in the list ``[x0, 0]`` is a scalar and so the vector
 ``[x0, 0]`` only has three elements instead of the required four.
 
-To run an input/output simulation with a sinsoidal signal for the first
+To run an input/output simulation with a sinusoidal signal for the first
 input, a constant for the second input, and no external disturbance, we can
 use the list processing feature combined with time series broadcasting::
 

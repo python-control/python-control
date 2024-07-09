@@ -1462,7 +1462,7 @@ def input_output_response(
     # Process input argument
     #
     # The input argument is interpreted very flexibly, allowing the
-    # use of listsa and/or tuples of mixed scalar and vector elements.
+    # use of lists and/or tuples of mixed scalar and vector elements.
     #
     # Much of the processing here is similar to the processing in
     # _process_vector_argument, but applied to a time series.
