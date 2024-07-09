@@ -2585,6 +2585,8 @@ def _process_vector_argument(arg, name, size):
         val = np.array(val_list)
     elif np.isscalar(arg) and size is not None:     # extend scalars
         val = np.ones((size, )) * arg
+    elif np.isscalar(arg) and size is None:         # single scalar
+        val = np.array([arg])
     elif isinstance(arg, np.ndarray):
         val = arg.reshape(-1)                       # convert to 1D array
     else:

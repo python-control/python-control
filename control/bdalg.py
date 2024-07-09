@@ -81,6 +81,20 @@ def series(sys1, *sysn, **kwargs):
     out : scalar, array, or :class:`InputOutputSystem`
         Series interconnection of the systems.
 
+    Other Parameters
+    ----------------
+    inputs, outputs : str, or list of str, optional
+        List of strings that name the individual signals.  If not given,
+        signal names will be of the form `s[i]` (where `s` is one of `u`,
+        or `y`). See :class:`InputOutputSystem` for more information.
+    states : str, or list of str, optional
+        List of names for system states.  If not given, state names will be
+        of of the form `x[i]` for interconnections of linear systems or
+        '<subsys_name>.<state_name>' for interconnected nonlinear systems.
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
+
     Raises
     ------
     ValueError
@@ -139,6 +153,20 @@ def parallel(sys1, *sysn, **kwargs):
     out : scalar, array, or :class:`InputOutputSystem`
         Parallel interconnection of the systems.
 
+    Other Parameters
+    ----------------
+    inputs, outputs : str, or list of str, optional
+        List of strings that name the individual signals.  If not given,
+        signal names will be of the form `s[i]` (where `s` is one of `u`,
+        or `y`). See :class:`InputOutputSystem` for more information.
+    states : str, or list of str, optional
+        List of names for system states.  If not given, state names will be
+        of of the form `x[i]` for interconnections of linear systems or
+        '<subsys_name>.<state_name>' for interconnected nonlinear systems.
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
+
     Raises
     ------
     ValueError
@@ -193,14 +221,28 @@ def negate(sys, **kwargs):
     out : scalar, array, or :class:`InputOutputSystem`
         Negated system.
 
-    Notes
-    -----
-    This function is a wrapper for the __neg__ function in the StateSpace and
-    TransferFunction classes.  The output type is the same as the input type.
+    Other Parameters
+    ----------------
+    inputs, outputs : str, or list of str, optional
+        List of strings that name the individual signals.  If not given,
+        signal names will be of the form `s[i]` (where `s` is one of `u`,
+        or `y`). See :class:`InputOutputSystem` for more information.
+    states : str, or list of str, optional
+        List of names for system states.  If not given, state names will be
+        of of the form `x[i]` for interconnections of linear systems or
+        '<subsys_name>.<state_name>' for interconnected nonlinear systems.
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
 
     See Also
     --------
     append, feedback, interconnect, parallel, series
+
+    Notes
+    -----
+    This function is a wrapper for the __neg__ function in the StateSpace and
+    TransferFunction classes.  The output type is the same as the input type.
 
     Examples
     --------
@@ -234,6 +276,20 @@ def feedback(sys1, sys2=1, sign=-1, **kwargs):
     -------
     out : scalar, array, or :class:`InputOutputSystem`
         Feedback interconnection of the systems.
+
+    Other Parameters
+    ----------------
+    inputs, outputs : str, or list of str, optional
+        List of strings that name the individual signals.  If not given,
+        signal names will be of the form `s[i]` (where `s` is one of `u`,
+        or `y`). See :class:`InputOutputSystem` for more information.
+    states : str, or list of str, optional
+        List of names for system states.  If not given, state names will be
+        of of the form `x[i]` for interconnections of linear systems or
+        '<subsys_name>.<state_name>' for interconnected nonlinear systems.
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
 
     Raises
     ------
@@ -307,6 +363,20 @@ def append(*sys, **kwargs):
     sys1, sys2, ..., sysn: scalar, array, or :class:`StateSpace`
         I/O systems to combine.
 
+    Other Parameters
+    ----------------
+    inputs, outputs : str, or list of str, optional
+        List of strings that name the individual signals.  If not given,
+        signal names will be of the form `s[i]` (where `s` is one of `u`,
+        or `y`). See :class:`InputOutputSystem` for more information.
+    states : str, or list of str, optional
+        List of names for system states.  If not given, state names will be
+        of of the form `x[i]` for interconnections of linear systems or
+        '<subsys_name>.<state_name>' for interconnected nonlinear systems.
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
+
     Returns
     -------
     out: :class:`StateSpace`
@@ -379,6 +449,12 @@ def connect(sys, Q, inputv, outputv):
     --------
     append, feedback, interconnect, negate, parallel, series
 
+    Notes
+    -----
+    The :func:`~control.interconnect` function in the :ref:`input/output
+    systems <iosys-module>` module allows the use of named signals and
+    provides an alternative method for interconnecting multiple systems.
+
     Examples
     --------
     >>> G = ct.rss(7, inputs=2, outputs=2)
@@ -386,12 +462,6 @@ def connect(sys, Q, inputv, outputv):
     >>> T = ct.connect(G, K, [2], [1, 2])
     >>> T.ninputs, T.noutputs, T.nstates
     (1, 2, 7)
-
-    Notes
-    -----
-    The :func:`~control.interconnect` function in the :ref:`input/output
-    systems <iosys-module>` module allows the use of named signals and
-    provides an alternative method for interconnecting multiple systems.
 
     """
     # TODO: maintain `connect` for use in MATLAB submodule (?)
