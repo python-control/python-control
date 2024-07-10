@@ -738,7 +738,7 @@ def combine_time_responses(response_list, trace_labels=None, title=None):
             if generate_trace_labels:
                 trace_labels.append(response.title)
             trace_types.append(
-                None if response.trace_types is None else response.types[0])
+                None if response.trace_types is None else response.trace_types[0])
 
         else:
             # Save the data
