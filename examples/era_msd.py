@@ -47,7 +47,7 @@ response = ct.impulse_response(sysd)
 response.plot()
 plt.show()
 
-sysd_est, _ = ct.era(response,r=4,dt=dt)
+sysd_est, _ = ct.eigensys_realization(response,r=4,dt=dt)
 
 step_true = ct.step_response(sysd)
 step_true.sysname="H_true"

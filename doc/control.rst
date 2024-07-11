@@ -137,7 +137,7 @@ Model simplification tools
     balred
     hsvd
     modred
-    era
+    eigensys_realization
     markov
 
 Nonlinear system support

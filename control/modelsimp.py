@@ -50,7 +50,7 @@ from .statesp import StateSpace
 from .statefbk import gram
 from .timeresp import TimeResponseData
 
-__all__ = ['hsvd', 'balred', 'modred', 'era', 'markov', 'minreal']
+__all__ = ['hsvd', 'balred', 'modred', 'eigensys_realization', 'markov', 'minreal', 'era']
 
 
 # Hankel Singular Value Decomposition
@@ -369,10 +369,11 @@ def minreal(sys, tol=None, verbose=True):
     return sysr
 
 
-def era(arg, r, m=None, n=None, dt=True, transpose=False):
-    r"""era(YY, r)
+def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
+    r"""eigensys_realization(YY, r)
 
-    Calculate an ERA model of order `r` based on the impulse-response data.
+    Calculate an ERA model of order `r` based on the impulse-response data
+    `YY`.
 
     This function computes a discrete time system
 
@@ -385,8 +386,8 @@ def era(arg, r, m=None, n=None, dt=True, transpose=False):
 
     The function can be called with 2 arguments:
 
-    * ``sysd, S = era(data, r)``
-    * ``sysd, S = era(YY, r)``
+    * ``sysd, S = eigensys_realization(data, r)``
+    * ``sysd, S = eigensys_realization(YY, r)``
 
     where `response` is an `TimeResponseData` object, and `YY` is 1D or 3D
     array and r is an integer.
@@ -394,64 +395,59 @@ def era(arg, r, m=None, n=None, dt=True, transpose=False):
     Parameters
     ----------
     YY : array_like
-        impulse-response data from which the StateSpace model is estimated,
-        1D or 3D array.
+        Impulse-response from which the StateSpace model is estimated, 1D
+        or 3D array.
     data : TimeResponseData
-        impulse-response data from which the StateSpace model is estimated.
+        Impulse-response from which the StateSpace model is estimated.
     r : integer
         Order of model.
     m : integer, optional
-        Number of rows in Hankel matrix.
-        Default is 2*r.
+        Number of rows in Hankel matrix. Default is 2*r.
     n : integer, optional
-        Number of columns in Hankel matrix.
-        Default is 2*r.
+        Number of columns in Hankel matrix. Default is 2*r.
     dt : True or float, optional
         True indicates discrete time with unspecified sampling time,
-        positive number is discrete time with specified sampling time.
-        It can be used to scale the StateSpace model in order to match
-        the impulse response of this library.
-        Default values is True.
+        positive number is discrete time with specified sampling time. It
+        can be used to scale the StateSpace model in order to match the
+        impulse response of this library. Default is True.
     transpose : bool, optional
         Assume that input data is transposed relative to the standard
         :ref:`time-series-convention`. For TimeResponseData this parameter 
-        is ignored.
-        Default value is False.
+        is ignored. Default is False.
 
     Returns
     -------
     sys : StateSpace
         A reduced order model sys=StateSpace(Ar,Br,Cr,Dr,dt).
     S : array
-        Singular values of Hankel matrix.
-        Can be used to choose a good r value.
+        Singular values of Hankel matrix. Can be used to choose a good r
+        value.
 
     References
     ----------
-    .. [1] Samet Oymak and Necmiye Ozay
-       Non-asymptotic Identification of LTI Systems
-       from a Single Trajectory.
+    .. [1] Samet Oymak and Necmiye Ozay, Non-asymptotic Identification of
+       LTI Systems from a Single Trajectory.
        https://arxiv.org/abs/1806.05722
 
     Examples
     --------
     >>> T = np.linspace(0, 10, 100)
     >>> _, YY = ct.impulse_response(ct.tf([1], [1, 0.5], True), T)
-    >>> sysd, _ = ct.era(YY, r=1)
+    >>> sysd, _ = ct.eigensys_realization(YY, r=1)
 
     >>> T = np.linspace(0, 10, 100)
     >>> response = ct.impulse_response(ct.tf([1], [1, 0.5], True), T)
-    >>> sysd, _ = ct.era(response, r=1)
+    >>> sysd, _ = ct.eigensys_realization(response, r=1)
     """
     def block_hankel_matrix(Y, m, n):
-    
+        """Create a block Hankel matrix from Impulse response"""
         q, p, _ = Y.shape
         YY = Y.transpose(0,2,1) # transpose for reshape
         
         H = np.zeros((q*m,p*n))
         
         for r in range(m):
-            # shift and add row to hankel matrix
+            # shift and add row to Hankel matrix
             new_row = YY[:,r:r+n,:]
             H[q*r:q*(r+1),:] = new_row.reshape((q,p*n))
                 
@@ -477,7 +473,7 @@ def era(arg, r, m=None, n=None, dt=True, transpose=False):
         raise ValueError("Hankel parameters are to small")
     
     if (l-1) < m+n:
-        raise ValueError("Not enough data for requested number of parameters")
+        raise ValueError("not enough data for requested number of parameters")
     
     H = block_hankel_matrix(YY[:,:,1:], m, n+1) # Hankel matrix (q*m, p*(n+1))
     Hf = H[:,:-p] # first p*n columns of H
@@ -651,3 +647,6 @@ def markov(Y, U, m=None, transpose=False):
 
     # Return the first m Markov parameters
     return H if transpose else np.transpose(H)
+
+# Function aliases
+era = eigensys_realization

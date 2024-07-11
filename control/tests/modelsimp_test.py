@@ -10,7 +10,7 @@ import pytest
 from control import StateSpace, impulse_response, step_response, forced_response, tf, rss, c2d
 from control.exception import ControlMIMONotImplemented
 from control.tests.conftest import slycotonly
-from control.modelsimp import balred, hsvd, markov, modred, era
+from control.modelsimp import balred, hsvd, markov, modred, eigensys_realization
 
 
 class TestModelsimp:
@@ -129,7 +129,7 @@ class TestModelsimp:
         ir_true = impulse_response(sysd_true,T=T)
 
         # test TimeResponseData
-        sysd_est, _  = era(ir_true,r=2)
+        sysd_est, _  = eigensys_realization(ir_true,r=2)
         ir_est = impulse_response(sysd_est, T=T)
         _, H_est = ir_est
     
@@ -137,7 +137,7 @@ class TestModelsimp:
 
         # test ndarray
         _, YY_true = ir_true
-        sysd_est, _  = era(YY_true,r=2)
+        sysd_est, _  = eigensys_realization(YY_true,r=2)
         ir_est = impulse_response(sysd_est, T=T)
         _, H_est = ir_est
     
@@ -169,7 +169,7 @@ class TestModelsimp:
         ir_true = impulse_response(sysd_true, T=T)
 
         # test TimeResponseData
-        sysd_est, _ = era(ir_true,r=4,dt=dt)
+        sysd_est, _ = eigensys_realization(ir_true,r=4,dt=dt)
 
         step_true = step_response(sysd_true)
         step_est = step_response(sysd_est)
@@ -180,7 +180,7 @@ class TestModelsimp:
         
         # test ndarray
         _, YY_true = ir_true
-        sysd_est, _  = era(YY_true,r=4,dt=dt)
+        sysd_est, _  = eigensys_realization(YY_true,r=4,dt=dt)
 
         step_true = step_response(sysd_true, T=T)
         step_est = step_response(sysd_est, T=T)
