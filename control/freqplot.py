@@ -29,8 +29,8 @@ from .margins import stability_margins
 from .statesp import StateSpace
 from .xferfcn import TransferFunction
 
-__all__ = ['bode_plot', 'NyquistResponseData', 'nyquist_response',
-           'nyquist_plot', 'singular_values_response',
+__all__ = ['FrequencyResponseList', 'bode_plot', 'NyquistResponseData',
+           'nyquist_response', 'nyquist_plot', 'singular_values_response',
            'singular_values_plot', 'gangof4_plot', 'gangof4_response',
            'bode', 'nyquist', 'gangof4']
 
