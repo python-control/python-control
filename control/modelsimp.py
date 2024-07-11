@@ -402,7 +402,7 @@ def era(YY, m, n, nin, nout, r):
     raise NotImplementedError('This function is not implemented yet.')
 
 
-def markov(*args, **kwargs):
+def markov(*args, m=None, transpose=False, dt=True, truncate=False):
     """markov(Y, U, [, m])
     
     Calculate the first `m` Markov parameters [D CB CAB ...]
@@ -420,12 +420,12 @@ def markov(*args, **kwargs):
     the input data is less than the desired number of Markov parameters (a
     warning message is generated in this case).
 
-    The function can be called with either 1, 2, or 3 arguments:
+    The function can be called with either 1, 2 or 3 arguments:
 
-    * ``K, S, E = lqr(response)``
-    * ``K, S, E = lqr(respnose, m)``
-    * ``K, S, E = lqr(Y, U)``
-    * ``K, S, E = lqr(Y, U, m)``
+    * ``H = markov(response)``
+    * ``H = markov(respnose, m)``
+    * ``H = markov(Y, U)``
+    * ``H = markov(Y, U, m)``
 
     where `response` is an `TimeResponseData` object, and `Y`, `U`, are 1D or 2D
     array and m is an integer.
@@ -446,26 +446,20 @@ def markov(*args, **kwargs):
         Number of Markov parameters to output.  Defaults to len(U).
     dt : True of float, optional
         True indicates discrete time with unspecified sampling time,
-        positive number is discrete time with specified sampling time.
-        It can be used to scale the markov parameters in order to match
-        the impulse response of this library.
-        Default values is True.
+        positive number is discrete time with specified sampling time.It
+        can be used to scale the markov parameters in order to match the
+        impulse response of this library. Default is True.
     truncate : bool, optional
-        Do not use first m equation for least least squares.
-        Default value is False.
+        Do not use first m equation for least least squares. Default is False.
+    transpose : bool, optional
+        Assume that input data is transposed relative to the standard
+        :ref:`time-series-convention`. For TimeResponseData this parameter
+        is ignored. Default is False.
 
     Returns
     -------
     H : ndarray
         First m Markov parameters, [D CB CAB ...]
-    
-
-    Notes
-    -----
-    It works for SISO and MIMO systems.
-
-    This function does comply with the Python Control Library
-    :ref:`time-series-convention` for representation of time series data.
 
     References
     ----------
@@ -494,25 +488,21 @@ def markov(*args, **kwargs):
         transpose = args[0].transpose
         if args[0].transpose and not args[0].issiso:
             Umat, Ymat = np.transpose(Umat), np.transpose(Ymat)
-        index = 1
+        if (len(args) == 2):
+            m = args[1]
+        elif (len(args) > 2):
+            raise ControlArgument("too many positional arguments")
     else:
         if (len(args) < 2):
             raise ControlArgument("not enough input arguments")
-        Umat = np.array(args[0], ndmin=2)
-        Ymat = np.array(args[1], ndmin=2)
-        transpose = kwargs.pop('transpose', False)
+        Umat = np.array(args[1], ndmin=2)
+        Ymat = np.array(args[0], ndmin=2)
         if transpose:
             Umat, Ymat = np.transpose(Umat), np.transpose(Ymat)
-        index = 2
-
-
-    if (len(args) > index):
-        m = args[index]
-    else:
-        m = None
-
-    dt = kwargs.pop('dt', True)
-    truncate = kwargs.pop('truncate', False)
+        if (len(args) == 3):
+            m = args[2]
+        elif (len(args) > 3):
+            raise ControlArgument("too many positional arguments")
 
     # Make sure the number of time points match
     if Umat.shape[1] != Ymat.shape[1]:

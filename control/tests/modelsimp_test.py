@@ -45,11 +45,11 @@ class TestModelsimp:
         m = 3
         Htrue = np.array([1., 0., 0.])
 
-        H = markov(Y, U, m, transpose=False)
+        H = markov(Y, U, m=m, transpose=False)
         np.testing.assert_array_almost_equal(H, Htrue)
 
         response.transpose=False
-        H = markov(response, m)
+        H = markov(response, m=m)
         np.testing.assert_array_almost_equal(H, Htrue)
 
         # Make sure that transposed data also works
@@ -68,20 +68,25 @@ class TestModelsimp:
         H = markov(response, m)
         np.testing.assert_array_almost_equal(H, Htrue)
 
+        H = markov(Y, U, m=m)
+        np.testing.assert_array_almost_equal(H, Htrue)
+
+        H = markov(response, m=m)
+        np.testing.assert_array_almost_equal(H, Htrue)
+
         # Test example from docstring
-        # TODO: There is a problem here
-        # Htrue = np.array([1., 0.5, 0.])
+        # TODO: There is a problem here, last markov parameter does not fit
+        # the approximation error could be to big
+        Htrue = np.array([0, 1., -0.5])
         T = np.linspace(0, 10, 100)
         U = np.ones((1, 100))
         T, Y = forced_response(tf([1], [1, 0.5], True), T, U)
-        H = markov(Y, U, 3, transpose=False)
-        #np.testing.assert_array_almost_equal(H, Htrue)
+        H = markov(Y, U, 4, transpose=False)
+        np.testing.assert_array_almost_equal(H[:3], Htrue[:3])
 
-        T = np.linspace(0, 10, 100)
-        U = np.ones((1, 100))
         response = forced_response(tf([1], [1, 0.5], True), T, U)
-        H = markov(response, 3)
-        #np.testing.assert_array_almost_equal(H, Htrue)
+        H = markov(response, 4)
+        np.testing.assert_array_almost_equal(H[:3], Htrue[:3])
 
         # Test example from issue #395
         inp = np.array([1, 2])
