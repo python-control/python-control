@@ -49,7 +49,9 @@ from .iosys import isdtime, isctime
 from .statesp import StateSpace
 from .statefbk import gram
 
-__all__ = ['hsvd', 'balred', 'modred', 'era', 'markov', 'minreal']
+__all__ = ['hankel_singular_values', 'balanced_reduction', 'model_reduction',
+           'minimal_realization', 'eigensys_realization', 'markov', 'hsvd',
+           'balred', 'modred', 'minreal', 'era']
 
 
 # Hankel Singular Value Decomposition
@@ -57,7 +59,7 @@ __all__ = ['hsvd', 'balred', 'modred', 'era', 'markov', 'minreal']
 # The following returns the Hankel singular values, which are singular values
 # of the matrix formed by multiplying the controllability and observability
 # Gramians
-def hsvd(sys):
+def hankel_singular_values(sys):
     """Calculate the Hankel singular values.
 
     Parameters
@@ -106,7 +108,7 @@ def hsvd(sys):
     return hsv[::-1]
 
 
-def modred(sys, ELIM, method='matchdc'):
+def model_reduction(sys, ELIM, method='matchdc'):
     """
     Model reduction of `sys` by eliminating the states in `ELIM` using a given
     method.
@@ -216,7 +218,7 @@ def modred(sys, ELIM, method='matchdc'):
     return rsys
 
 
-def balred(sys, orders, method='truncate', alpha=None):
+def balanced_reduction(sys, orders, method='truncate', alpha=None):
     """Balanced reduced order model of sys of a given order.
     States are eliminated based on Hankel singular value.
     If sys has unstable modes, they are removed, the
@@ -340,7 +342,7 @@ def balred(sys, orders, method='truncate', alpha=None):
         return rsys
 
 
-def minreal(sys, tol=None, verbose=True):
+def minimal_realization(sys, tol=None, verbose=True):
     '''
     Eliminates uncontrollable or unobservable states in state-space
     models or cancelling pole-zero pairs in transfer functions. The
@@ -368,7 +370,7 @@ def minreal(sys, tol=None, verbose=True):
     return sysr
 
 
-def era(YY, m, n, nin, nout, r):
+def eigensys_realization(YY, m, n, nin, nout, r):
     """Calculate an ERA model of order `r` based on the impulse-response data
     `YY`.
 
@@ -556,3 +558,10 @@ def markov(Y, U, m=None, transpose=False):
 
     # Return the first m Markov parameters
     return H if transpose else np.transpose(H)
+
+# Function aliases
+hsvd = hankel_singular_values
+balred = balanced_reduction
+modred = model_reduction
+minreal = minimal_realization
+era = eigensys_realization
