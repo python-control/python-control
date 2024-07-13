@@ -1,6 +1,7 @@
 """timeresp_test.py - test time response functions"""
 
 from copy import copy
+from math import isclose
 
 import numpy as np
 import pytest
@@ -8,11 +9,11 @@ import scipy as sp
 
 import control as ct
 from control import StateSpace, TransferFunction, c2d, isctime, ss2tf, tf2ss
-from control.exception import slycot_check, pandas_check
+from control.exception import pandas_check, slycot_check
 from control.tests.conftest import slycotonly
-from control.timeresp import (_default_time_vector, _ideal_tfinal_and_dt,
-                              forced_response, impulse_response,
-                              initial_response, step_info, step_response)
+from control.timeresp import _default_time_vector, _ideal_tfinal_and_dt, \
+    forced_response, impulse_response, initial_response, step_info, \
+    step_response
 
 
 class TSys:
@@ -1275,3 +1276,45 @@ def test_no_pandas():
     # Convert to pandas
     with pytest.raises(ImportError, match="pandas"):
         df = resp.to_pandas()
+
+
+# https://github.com/python-control/python-control/issues/1014
+def test_step_info_nonstep():
+    # Pass a constant input
+    timepts = np.linspace(0, 10, endpoint=False)
+    y_const = np.ones_like(timepts)
+
+    # Constant value of 1
+    step_info = ct.step_info(y_const, timepts)
+    assert step_info['RiseTime'] == 0
+    assert step_info['SettlingTime'] == 0
+    assert step_info['SettlingMin'] == 1
+    assert step_info['SettlingMax'] == 1
+    assert step_info['Overshoot'] == 0
+    assert step_info['Undershoot'] == 0
+    assert step_info['Peak'] == 1
+    assert step_info['PeakTime'] == 0
+    assert step_info['SteadyStateValue'] == 1
+
+    # Constant value of -1
+    step_info = ct.step_info(-y_const, timepts)
+    assert step_info['RiseTime'] == 0
+    assert step_info['SettlingTime'] == 0
+    assert step_info['SettlingMin'] == -1
+    assert step_info['SettlingMax'] == -1
+    assert step_info['Overshoot'] == 0
+    assert step_info['Undershoot'] == 0
+    assert step_info['Peak'] == 1
+    assert step_info['PeakTime'] == 0
+    assert step_info['SteadyStateValue'] == -1
+
+    # Ramp from -1 to 1
+    step_info = ct.step_info(-1 + 2 * timepts/10, timepts)
+    assert step_info['RiseTime'] == 3.8
+    assert step_info['SettlingTime'] == 9.8
+    assert isclose(step_info['SettlingMin'], 0.88)
+    assert isclose(step_info['SettlingMax'], 0.96)
+    assert step_info['Overshoot'] == 0
+    assert step_info['Peak'] == 1
+    assert step_info['PeakTime'] == 0
+    assert isclose(step_info['SteadyStateValue'], 0.96)
