@@ -258,7 +258,7 @@ def test_combine_time_responses():
     sys_mimo = ct.rss(4, 2, 2)
     timepts = np.linspace(0, 10, 100)
 
-    # Combine two response with ntrace = 0
+    # Combine two responses with ntrace = 0
     U = np.vstack([np.sin(timepts), np.cos(2*timepts)])
     resp1 = ct.input_output_response(sys_mimo, timepts, U)
 
@@ -293,6 +293,7 @@ def test_combine_time_responses():
     combresp4 = ct.combine_time_responses(
         [resp1, resp2, resp3], trace_labels=labels)
     assert combresp4.trace_labels == labels
+    assert combresp4.trace_types == [None, None, 'step', 'step']
 
     # Automatically generated trace label names and types
     resp5 = ct.step_response(sys_mimo, timepts)
@@ -302,7 +303,13 @@ def test_combine_time_responses():
     combresp5 = ct.combine_time_responses([resp1, resp5])
     assert combresp5.trace_labels == [resp1.title] + \
         ["test, trace 0", "test, trace 1"]
-    assert combresp4.trace_types == [None, None, 'step', 'step']
+    assert combresp5.trace_types == [None, None, None]
+
+    # ntraces = 0 with trace_types != None
+    # https://github.com/python-control/python-control/issues/1025
+    resp6 = ct.forced_response(sys_mimo, timepts, U)
+    combresp6 = ct.combine_time_responses([resp1, resp6])
+    assert combresp6.trace_types == [None, 'forced']
 
     with pytest.raises(ValueError, match="must have the same number"):
         resp = ct.step_response(ct.rss(4, 2, 3), timepts)
