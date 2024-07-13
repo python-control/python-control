@@ -1674,17 +1674,19 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
 
             if not np.isnan(InfValue) and not np.isinf(InfValue):
                 # RiseTime
-                tr_lower_index = np.where(
+                tr_lower_index = np.nonzero(
                     sgnInf * (yout - RiseTimeLimits[0] * InfValue) >= 0
                     )[0][0]
-                tr_upper_index = np.where(
+                tr_upper_index = np.nonzero(
                     sgnInf * (yout - RiseTimeLimits[1] * InfValue) >= 0
                     )[0][0]
                 rise_time = T[tr_upper_index] - T[tr_lower_index]
 
                 # SettlingTime
-                settled = np.where(
-                    np.abs(yout/InfValue-1) >= SettlingTimeThreshold)[0][-1]+1
+                outside_threshold = np.nonzero(
+                    np.abs(yout/InfValue - 1) >= SettlingTimeThreshold)[0]
+                settled = 0 if outside_threshold.size == 0 \
+                    else outside_threshold[-1] + 1
                 # MIMO systems can have unsettled channels without infinite
                 # InfValue
                 if settled < len(T):
