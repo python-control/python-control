@@ -59,13 +59,14 @@ def test_find_respplot_functions():
 
 @pytest.mark.parametrize("resp_fcn, plot_fcn", resp_plot_fcns)
 @pytest.mark.usefixtures('mplcleanup')
-def test_plot_functions(resp_fcn, plot_fcn):
+def test_plot_ax_processing(resp_fcn, plot_fcn):
     # Create some systems to use
     sys1 = ct.rss(2, 1, 1, strictly_proper=True)
     sys2 = ct.rss(4, 1, 1, strictly_proper=True)
 
     # Set up arguments
     kwargs = meth_kwargs = plot_fcn_kwargs = {}
+    get_line_color = lambda cplt: cplt.lines.reshape(-1)[0][0].get_color()
     match resp_fcn, plot_fcn:
         case ct.describing_function_response, _:
             F = ct.descfcn.saturation_nonlinearity(1)
@@ -88,6 +89,11 @@ def test_plot_functions(resp_fcn, plot_fcn):
             U = np.sin(timepts)
             args = (sys1, timepts, U)
 
+        case None, ct.phase_plane_plot:
+            args = (sys1, )
+            get_line_color = None
+            warnings.warn("ct.phase_plane_plot returns nonstandard lines")
+
         case _, _:
             args = (sys1, )
 
@@ -95,26 +101,39 @@ def test_plot_functions(resp_fcn, plot_fcn):
     if resp_fcn is not None:
         resp = resp_fcn(*args, **kwargs)
         cplt1 = resp.plot(**kwargs, **meth_kwargs)
-        assert isinstance(cplt1, ct.ControlPlot)
+    else:
+        # No response function available; just plot the data
+        cplt1 = plot_fcn(*args, **kwargs, **meth_kwargs)
+    assert isinstance(cplt1, ct.ControlPlot)
 
     # Call the plot directly, plotting on top of previous plot
-    if plot_fcn not in [None, ct.time_response_plot]:
+    if plot_fcn == ct.time_response_plot:
+        # Can't call the time_response_plot() with system => reuse data
+        cplt2 = plot_fcn(resp, **kwargs, **plot_fcn_kwargs)
+    else:
         cplt2 = plot_fcn(*args, **kwargs, **plot_fcn_kwargs)
-        assert isinstance(cplt2, ct.ControlPlot)
+    assert isinstance(cplt2, ct.ControlPlot)
 
-        # Plot should have landed on top of previous plot
-        if resp_fcn is not None:
-            assert cplt2.figure == cplt1.figure
-            assert np.all(cplt2.axes == cplt1.axes)
-            assert len(cplt2.lines[0]) == len(cplt1.lines[0])
+    # Plot should have landed on top of previous plot, in different colors
+    assert cplt2.figure == cplt1.figure
+    assert np.all(cplt2.axes == cplt1.axes)
+    assert len(cplt2.lines[0]) == len(cplt1.lines[0])
+    if get_line_color is not None:
+        assert get_line_color(cplt2) != get_line_color(cplt1)
 
     # Pass axes explicitly
     if resp_fcn is not None:
         cplt3 = resp.plot(**kwargs, **meth_kwargs, ax=cplt1.axes)
-        assert cplt3.figure == cplt1.figure
-        assert np.all(cplt3.axes == cplt1.axes)
-        assert len(cplt3.lines[0]) == len(cplt1.lines[0])
-
+    else:
+        cplt3 = plot_fcn(*args, **kwargs, **meth_kwargs)
+    assert cplt3.figure == cplt1.figure
+    
+    # Plot should have landed on top of previous plot, in different colors
+    assert np.all(cplt3.axes == cplt1.axes)
+    assert len(cplt3.lines[0]) == len(cplt1.lines[0])
+    if get_line_color is not None:
+        assert get_line_color(cplt3) != get_line_color(cplt1)
+        assert get_line_color(cplt3) != get_line_color(cplt2)
 
 @pytest.mark.usefixtures('mplcleanup')
 def test_rcParams():
