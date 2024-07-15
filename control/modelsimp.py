@@ -402,7 +402,7 @@ def era(YY, m, n, nin, nout, r):
     raise NotImplementedError('This function is not implemented yet.')
 
 
-def markov(*args, m=None, transpose=False, dt=True, truncate=False):
+def markov(*args, m=None, transpose=False, dt=None, truncate=False):
     """markov(Y, U, [, m])
     
     Calculate the first `m` Markov parameters [D CB CAB ...] from data.
@@ -448,7 +448,9 @@ def markov(*args, m=None, transpose=False, dt=True, truncate=False):
         True indicates discrete time with unspecified sampling time and a
         positive float is discrete time with the specified sampling time.
         It can be used to scale the Markov parameters in order to match
-        the unit-area impulse response of python-control. Default is True.
+        the unit-area impulse response of python-control. Default is True
+        for array_like and dt=data.time[1]-data.time[0] for
+        TimeResponseData as input.
     truncate : bool, optional
         Do not use first m equation for least squares. Default is False.
     transpose : bool, optional
@@ -483,10 +485,16 @@ def markov(*args, m=None, transpose=False, dt=True, truncate=False):
         raise ControlArgument("not enough input arguments")
     
     if isinstance(args[0], TimeResponseData):
-        Umat = np.array(args[0].inputs, ndmin=2)
-        Ymat = np.array(args[0].outputs, ndmin=2)
-        transpose = args[0].transpose
-        if args[0].transpose and not args[0].issiso:
+        data = args[0]
+        Umat = np.array(data.inputs, ndmin=2)
+        Ymat = np.array(data.outputs, ndmin=2)
+        if dt is None:
+            dt = data.time[1] - data.time[0]
+            if not np.allclose(np.diff(data.time), dt):
+                raise ValueError("response time values must be equally "
+                                 "spaced.")
+        transpose = data.transpose
+        if data.transpose and not data.issiso:
             Umat, Ymat = np.transpose(Umat), np.transpose(Ymat)
         if len(args) == 2:
             m = args[1]
@@ -497,6 +505,8 @@ def markov(*args, m=None, transpose=False, dt=True, truncate=False):
             raise ControlArgument("not enough input arguments")
         Umat = np.array(args[1], ndmin=2)
         Ymat = np.array(args[0], ndmin=2)
+        if dt is None:
+            dt = True
         if transpose:
             Umat, Ymat = np.transpose(Umat), np.transpose(Ymat)
         if len(args) == 3:

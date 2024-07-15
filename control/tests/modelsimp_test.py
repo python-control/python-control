@@ -81,11 +81,11 @@ class TestModelsimp:
         T = np.linspace(0, 10, 100)
         U = np.ones((1, 100))
         T, Y = forced_response(tf([1], [1, 0.5], True), T, U)
-        H = markov(Y, U, 4, transpose=False)
+        H = markov(Y, U, 4, dt=True)
         np.testing.assert_array_almost_equal(H[:3], Htrue[:3])
 
         response = forced_response(tf([1], [1, 0.5], True), T, U)
-        H = markov(response, 4)
+        H = markov(response, 4, dt=True)
         np.testing.assert_array_almost_equal(H[:3], Htrue[:3])
 
         # Test example from issue #395
@@ -164,14 +164,28 @@ class TestModelsimp:
         # Generate input/output data
         T = np.array(range(n)) * Ts
         U = np.cos(T) + np.sin(T/np.pi)
-        response = forced_response(Hd, T, U, squeeze=True)
-        Mcomp = markov(response, m)
+
+        ir_true = impulse_response(Hd,T)
+        Mtrue_scaled = ir_true[1][:m]
+
+        T, Y = forced_response(Hd, T, U, squeeze=True)
+        Mcomp = markov(Y, U, m, dt=True)
+        Mcomp_scaled = markov(Y, U, m, dt=Ts)
 
         # Compare to results from markov()
         # experimentally determined probability to get non matching results
         # with rtot=1e-6 and atol=1e-8 due to numerical errors
         # for k=5, m=n=10: 0.015 %
         np.testing.assert_allclose(Mtrue, Mcomp, rtol=1e-6, atol=1e-8)
+        np.testing.assert_allclose(Mtrue_scaled, Mcomp_scaled, rtol=1e-6, atol=1e-8)
+
+        response = forced_response(Hd, T, U, squeeze=True)
+        Mcomp = markov(response, m, dt=True)
+        Mcomp_scaled = markov(response, m, dt=Ts)
+
+        np.testing.assert_allclose(Mtrue, Mcomp, rtol=1e-6, atol=1e-8)
+        np.testing.assert_allclose(Mtrue_scaled, Mcomp_scaled, rtol=1e-6, atol=1e-8)
+        
 
     def testModredMatchDC(self):
         #balanced realization computed in matlab for the transfer function:
