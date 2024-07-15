@@ -405,52 +405,52 @@ def era(YY, m, n, nin, nout, r):
 def markov(*args, m=None, transpose=False, dt=True, truncate=False):
     """markov(Y, U, [, m])
     
-    Calculate the first `m` Markov parameters [D CB CAB ...]
-    from data
+    Calculate the first `m` Markov parameters [D CB CAB ...] from data.
 
-    This function computes the Markov parameters for a discrete time system
+    This function computes the Markov parameters for a discrete time
+    system
 
     .. math::
 
         x[k+1] &= A x[k] + B u[k] \\\\
         y[k] &= C x[k] + D u[k]
 
-    given data for u and y.  The algorithm assumes that that C A^k B = 0 for
-    k > m-2 (see [1]_).  Note that the problem is ill-posed if the length of
-    the input data is less than the desired number of Markov parameters (a
-    warning message is generated in this case).
+    given data for u and y.  The algorithm assumes that that C A^k B = 0
+    for k > m-2 (see [1]_).  Note that the problem is ill-posed if the
+    length of the input data is less than the desired number of Markov
+    parameters (a warning message is generated in this case).
 
     The function can be called with either 1, 2 or 3 arguments:
 
-    * ``H = markov(response)``
-    * ``H = markov(respnose, m)``
+    * ``H = markov(data)``
+    * ``H = markov(data, m)``
     * ``H = markov(Y, U)``
     * ``H = markov(Y, U, m)``
 
-    where `response` is an `TimeResponseData` object, and `Y`, `U`, are 1D or 2D
-    array and m is an integer.
+    where `data` is a `TimeResponseData` object, `YY` is a 1D or 3D
+    array, and r is an integer.
 
     Parameters
     ----------
     Y : array_like
-        Output data.  If the array is 1D, the system is assumed to be single
-        input.  If the array is 2D and transpose=False, the columns of `Y`
-        are taken as time points, otherwise the rows of `Y` are taken as
-        time points.
+        Output data. If the array is 1D, the system is assumed to be
+        single input. If the array is 2D and transpose=False, the columns
+        of `Y` are taken as time points, otherwise the rows of `Y` are
+        taken as time points.
     U : array_like
         Input data, arranged in the same way as `Y`.
     data : TimeResponseData
         Response data from which the Markov parameters where estimated.
         Input and output data must be 1D or 2D array.
     m : int, optional
-        Number of Markov parameters to output.  Defaults to len(U).
+        Number of Markov parameters to output. Defaults to len(U).
     dt : True of float, optional
-        True indicates discrete time with unspecified sampling time,
-        positive number is discrete time with specified sampling time.It
-        can be used to scale the markov parameters in order to match the
-        impulse response of this library. Default is True.
+        True indicates discrete time with unspecified sampling time and a
+        positive float is discrete time with the specified sampling time.
+        It can be used to scale the Markov parameters in order to match
+        the unit-area impulse response of python-control. Default is True.
     truncate : bool, optional
-        Do not use first m equation for least least squares. Default is False.
+        Do not use first m equation for least squares. Default is False.
     transpose : bool, optional
         Assume that input data is transposed relative to the standard
         :ref:`time-series-convention`. For TimeResponseData this parameter
@@ -459,7 +459,7 @@ def markov(*args, m=None, transpose=False, dt=True, truncate=False):
     Returns
     -------
     H : ndarray
-        First m Markov parameters, [D CB CAB ...]
+        First m Markov parameters, [D CB CAB ...].
 
     References
     ----------
@@ -476,10 +476,10 @@ def markov(*args, m=None, transpose=False, dt=True, truncate=False):
     >>> H = ct.markov(Y, U, 3, transpose=False)
 
     """
-    # Convert input parameters to 2D arrays (if they aren't already)
 
+    # Convert input parameters to 2D arrays (if they aren't already)
     # Get the system description
-    if (len(args) < 1):
+    if len(args) < 1:
         raise ControlArgument("not enough input arguments")
     
     if isinstance(args[0], TimeResponseData):
@@ -488,20 +488,20 @@ def markov(*args, m=None, transpose=False, dt=True, truncate=False):
         transpose = args[0].transpose
         if args[0].transpose and not args[0].issiso:
             Umat, Ymat = np.transpose(Umat), np.transpose(Ymat)
-        if (len(args) == 2):
+        if len(args) == 2:
             m = args[1]
-        elif (len(args) > 2):
+        elif len(args) > 2:
             raise ControlArgument("too many positional arguments")
     else:
-        if (len(args) < 2):
+        if len(args) < 2:
             raise ControlArgument("not enough input arguments")
         Umat = np.array(args[1], ndmin=2)
         Ymat = np.array(args[0], ndmin=2)
         if transpose:
             Umat, Ymat = np.transpose(Umat), np.transpose(Ymat)
-        if (len(args) == 3):
+        if len(args) == 3:
             m = args[2]
-        elif (len(args) > 3):
+        elif len(args) > 3:
             raise ControlArgument("too many positional arguments")
 
     # Make sure the number of time points match
@@ -577,6 +577,7 @@ def markov(*args, m=None, transpose=False, dt=True, truncate=False):
     H = H.reshape(q,m,p) # output, time*input -> output, time, input
     H = H.transpose(0,2,1) # output, input, time
 
+    # for siso return a 1D array instead of a 3D array
     if q == 1 and p == 1:
         H = np.squeeze(H)
 
