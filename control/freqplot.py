@@ -2078,7 +2078,8 @@ def gangof4_response(
 
     return FrequencyResponseData(
         data, omega, outputs=['y', 'u'], inputs=['r', 'd'],
-        title=f"Gang of Four for P={P.name}, C={C.name}", plot_phase=False)
+        title=f"Gang of Four for P={P.name}, C={C.name}",
+        sysname=f"P={P.name}, C={C.name}", plot_phase=False)
 
 
 def gangof4_plot(

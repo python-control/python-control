@@ -380,7 +380,7 @@ def describing_function_response(
 
 
 def describing_function_plot(
-        *sysdata, label="%5.2g @ %-5.2g", **kwargs):
+        *sysdata, point_label="%5.2g @ %-5.2g", label=None, **kwargs):
     """describing_function_plot(data, *args, **kwargs)
 
     Plot a Nyquist plot with a describing function for a nonlinear system.
@@ -420,7 +420,7 @@ def describing_function_plot(
         If True (default), refine the location of the intersection of the
         Nyquist curve for the linear system and the describing function to
         determine the intersection point
-    label : str, optional
+    point_label : str, optional
         Formatting string used to label intersection points on the Nyquist
         plot.  Defaults to "%5.2g @ %-5.2g".  Set to `None` to omit labels.
 
@@ -453,6 +453,8 @@ def describing_function_plot(
     # Process keywords
     warn_nyquist = config._process_legacy_keyword(
         kwargs, 'warn', 'warn_nyquist', kwargs.pop('warn_nyquist', None))
+    point_label = config._process_legacy_keyword(
+        kwargs, 'label', 'point_label', point_label)
 
     # TODO: update to be consistent with ctrlplot use of `label`
     if label not in (False, None) and not isinstance(label, str):
@@ -484,10 +486,10 @@ def describing_function_plot(
     lines[1] = plt.plot(dfresp.N_vals.real, dfresp.N_vals.imag)
 
     # Label the intersection points
-    if label:
+    if point_label:
         for pos, (a, omega) in zip(dfresp.positions, dfresp.intersections):
             # Add labels to the intersection points
-            plt.text(pos.real, pos.imag, label % (a, omega))
+            plt.text(pos.real, pos.imag, point_label % (a, omega))
 
     return ControlPlot(lines, cfig.axes, cfig.figure)
 

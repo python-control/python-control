@@ -394,20 +394,39 @@ def test_freqplot_omega_limits(plt_fcn):
 def test_gangof4_trace_labels():
     P1 = ct.rss(2, 1, 1, name='P1')
     P2 = ct.rss(3, 1, 1, name='P2')
-    C = ct.rss(1, 1, 1, name='C')
+    C1 = ct.rss(1, 1, 1, name='C1')
+    C2 = ct.rss(1, 1, 1, name='C2')
 
     # Make sure default labels are as expected
-    cplt = ct.gangof4_response(P1, C).plot()
-    cplt = ct.gangof4_response(P2, C).plot()
+    cplt = ct.gangof4_response(P1, C1).plot()
+    cplt = ct.gangof4_response(P2, C2).plot()
     axs = ct.get_plot_axes(cplt)        # legacy usage OK
     legend = axs[0, 1].get_legend().get_texts()
-    assert legend[0].get_text() == 'None'
-    assert legend[1].get_text() == 'None'
+    assert legend[0].get_text() == 'P=P1, C=C1'
+    assert legend[1].get_text() == 'P=P2, C=C2'
+    plt.close()
+
+    # Suffix truncation
+    cplt = ct.gangof4_response(P1, C1).plot()
+    cplt = ct.gangof4_response(P2, C1).plot()
+    axs = ct.get_plot_axes(cplt)        # legacy usage OK
+    legend = axs[0, 1].get_legend().get_texts()
+    assert legend[0].get_text() == 'P=P1'
+    assert legend[1].get_text() == 'P=P2'
+    plt.close()
+
+    # Prefix turncation
+    cplt = ct.gangof4_response(P1, C1).plot()
+    cplt = ct.gangof4_response(P1, C2).plot()
+    axs = ct.get_plot_axes(cplt)        # legacy usage OK
+    legend = axs[0, 1].get_legend().get_texts()
+    assert legend[0].get_text() == 'C=C1'
+    assert legend[1].get_text() == 'C=C2'
     plt.close()
 
     # Override labels
-    cplt = ct.gangof4_response(P1, C).plot(label='xxx, line1, yyy')
-    cplt = ct.gangof4_response(P2, C).plot(label='xxx, line2, yyy')
+    cplt = ct.gangof4_response(P1, C1).plot(label='xxx, line1, yyy')
+    cplt = ct.gangof4_response(P2, C2).plot(label='xxx, line2, yyy')
     axs = ct.get_plot_axes(cplt)        # legacy usage OK
     legend = axs[0, 1].get_legend().get_texts()
     assert legend[0].get_text() == 'xxx, line1, yyy'

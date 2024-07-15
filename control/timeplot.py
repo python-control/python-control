@@ -139,6 +139,8 @@ def time_response_plot(
         axis or ``legend_loc`` or ``legend_map`` have been specified.
     time_label : str, optional
         Label to use for the time axis.
+    trace_labels : list of str, optional
+        Replace the default trace labels with the given labels.
     trace_props : array of dicts
         List of line properties to use when plotting combined outputs.  The
         default values are set by config.defaults['timeplot.trace_props'].
@@ -382,7 +384,7 @@ def time_response_plot(
     #
     # To allow repeated calls to time_response_plot() to cycle through
     # colors, we store an offset in the figure object that we can
-    # retrieve at a later date, if needed.
+    # retrieve in a later call, if needed.
     #
     output_offset = fig._output_offset = getattr(fig, '_output_offset', 0)
     input_offset = fig._input_offset = getattr(fig, '_input_offset', 0)

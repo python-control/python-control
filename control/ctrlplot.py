@@ -384,7 +384,7 @@ def _process_ax_keyword(
 
 # Turn label keyword into array indexed by trace, output, input
 # TODO: move to ctrlutil.py and update parameter names to reflect general use
-def _process_line_labels(label, ntraces, ninputs=0, noutputs=0):
+def _process_line_labels(label, ntraces=1, ninputs=0, noutputs=0):
     if label is None:
         return None
 
@@ -447,7 +447,7 @@ def _make_legend_labels(labels, ignore_common=False):
     if last_space < 0 or ignore_common:
         common_prefix = ''
     elif last_space > 0:
-        common_prefix = common_prefix[:last_space]
+        common_prefix = common_prefix[:last_space + 2]
     prefix_len = len(common_prefix)
 
     # Look for a common suffix (up to a space)

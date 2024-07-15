@@ -19,7 +19,7 @@ import numpy as np
 
 from . import config
 from .ctrlplot import ControlPlot, _get_line_labels, _process_ax_keyword, \
-    suptitle
+    _process_line_labels, suptitle
 from .ctrlutil import unwrap
 from .freqplot import _default_frequency_range, _freqplot_defaults
 from .lti import frequency_response
@@ -36,7 +36,7 @@ _nichols_defaults = {
 
 def nichols_plot(
         data, omega=None, *fmt, grid=None, title=None, ax=None,
-        legend_loc='upper left', **kwargs):
+        legend_loc='upper left', label=None, **kwargs):
     """Nichols plot for a system.
 
     Plots a Nichols plot for the system over a (optional) frequency range.
@@ -53,6 +53,10 @@ def nichols_plot(
         The `omega` parameter must be present (use omega=None if needed).
     grid : boolean, optional
         True if the plot should include a Nichols-chart grid. Default is True.
+    label : str or array-like of str
+        If present, replace automatically generated label(s) with given
+        label(s).  If sysdata is a list, strings should be specified for each
+        system.
     legend_loc : str, optional
         For plots with multiple lines, a legend will be included in the
         given location.  Default is 'upper left'.  Use False to supress.
@@ -61,7 +65,7 @@ def nichols_plot(
 
     Returns
     -------
-  cplt : :class:`ControlPlot` object
+    cplt : :class:`ControlPlot` object
         Object containing the data that were plotted:
 
           * cplt.lines: 1D array of :class:`matplotlib.lines.Line2D` objects.
@@ -81,6 +85,7 @@ def nichols_plot(
     """
     # Get parameter values
     grid = config._get_param('nichols', 'grid', grid, True)
+    label = _process_line_labels(label)
     rcParams = config._get_param(
         'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
 
@@ -113,12 +118,13 @@ def nichols_plot(
         x = unwrap(np.degrees(phase), 360)
         y = 20*np.log10(mag)
 
-        # Decide on the system name
+        # Decide on the system name and label
         sysname = response.sysname if response.sysname is not None \
             else f"Unknown-{idx_sys}"
+        label_ = sysname if label is None else label[idx]
 
         # Generate the plot
-        out[idx] = ax_nichols.plot(x, y, *fmt, label=sysname, **kwargs)
+        out[idx] = ax_nichols.plot(x, y, *fmt, label=label_, **kwargs)
 
     # Label the plot axes
     plt.xlabel('Phase [deg]')

@@ -19,7 +19,7 @@ from numpy import cos, exp, imag, linspace, real, sin, sqrt
 
 from . import config
 from .ctrlplot import ControlPlot, suptitle, _get_line_labels, \
-    _process_ax_keyword
+    _process_ax_keyword, _process_line_labels
 from .freqplot import _freqplot_defaults
 from .grid import nogrid, sgrid, zgrid
 from .iosys import isctime, isdtime
@@ -173,7 +173,7 @@ def pole_zero_plot(
         data, plot=None, grid=None, title=None, marker_color=None,
         marker_size=None, marker_width=None, legend_loc='upper right',
         xlim=None, ylim=None, interactive=None, ax=None, scaling=None,
-        initial_gain=None, **kwargs):
+        initial_gain=None, label=None, **kwargs):
     """Plot a pole/zero map for a linear system.
 
     If the system data include root loci, a root locus diagram for the
@@ -230,25 +230,30 @@ def pole_zero_plot(
     scaling : str or list, optional
         Set the type of axis scaling.  Can be 'equal' (default), 'auto', or
         a list of the form [xmin, xmax, ymin, ymax].
-    title : str, optional
-        Set the title of the plot.  Defaults plot type and system name(s).
+    initial_gain : float, optional
+        If given, the specified system gain will be marked on the plot.
+
+    interactive : bool, optional
+        Turn off interactive mode for root locus plots.
+    label : str or array-like of str
+        If present, replace automatically generated label(s) with given
+        label(s).  If data is a list, strings should be specified for each
+        system.
+    legend_loc : str, optional
+        For plots with multiple lines, a legend will be included in the
+        given location.  Default is 'center right'.  Use False to supress.
     marker_color : str, optional
         Set the color of the markers used for poles and zeros.
     marker_size : int, optional
         Set the size of the markers used for poles and zeros.
     marker_width : int, optional
         Set the line width of the markers used for poles and zeros.
-    legend_loc : str, optional
-        For plots with multiple lines, a legend will be included in the
-        given location.  Default is 'center right'.  Use False to supress.
+    title : str, optional
+        Set the title of the plot.  Defaults plot type and system name(s).
     xlim : list, optional
         Set the limits for the x axis.
     ylim : list, optional
         Set the limits for the y axis.
-    interactive : bool, optional
-        Turn off interactive mode for root locus plots.
-    initial_gain : float, optional
-        If given, the specified system gain will be marked on the plot.
 
     Notes
     -----
@@ -260,13 +265,14 @@ def pole_zero_plot(
 
     """
     # Get parameter values
+    label = _process_line_labels(label)
     marker_size = config._get_param('pzmap', 'marker_size', marker_size, 6)
     marker_width = config._get_param('pzmap', 'marker_width', marker_width, 1.5)
-    xlim_user, ylim_user = xlim, ylim
     rcParams = config._get_param(
         'freqplot', 'rcParams', kwargs, _freqplot_defaults,
         pop=True, last=True)
     user_ax = ax
+    xlim_user, ylim_user = xlim, ylim
 
     # If argument was a singleton, turn it into a tuple
     if not isinstance(data, (list, tuple)):
@@ -371,12 +377,15 @@ def pole_zero_plot(
 
         # Plot the locations of the poles and zeros
         if len(poles) > 0:
-            label = response.sysname if response.loci is None else None
+            if label is None:
+                label_ = response.sysname if response.loci is None else None
+            else:
+                label_ = label[idx]
             out[idx, 0] = ax.plot(
                 real(poles), imag(poles), marker='x', linestyle='',
                 markeredgecolor=color, markerfacecolor=color,
                 markersize=marker_size, markeredgewidth=marker_width,
-                color=color, label=label)
+                color=color, label=label_)
         if len(zeros) > 0:
             out[idx, 1] = ax.plot(
                 real(zeros), imag(zeros), marker='o', linestyle='',
@@ -386,10 +395,10 @@ def pole_zero_plot(
 
         # Plot the loci, if present
         if response.loci is not None:
+            label_ = response.sysname if label is None else label[idx]
             for locus in response.loci.transpose():
                 out[idx, 2] += ax.plot(
-                    real(locus), imag(locus), color=color,
-                    label=response.sysname)
+                    real(locus), imag(locus), color=color, label=label_)
 
             # Compute the axis limits to use based on the response
             resp_xlim, resp_ylim = _compute_root_locus_limits(response)

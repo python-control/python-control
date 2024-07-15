@@ -104,8 +104,7 @@ def sgrid(subplot=(1, 1, 1), scaling=None):
     ax = SubplotHost(fig, *subplot, grid_helper=grid_helper)
 
     # make ticklabels of right invisible, and top axis visible.
-    visible = True
-    ax.axis[:].major_ticklabels.set_visible(visible)
+    ax.axis[:].major_ticklabels.set_visible(True)
     ax.axis[:].major_ticks.set_visible(False)
     ax.axis[:].invert_ticklabel_direction()
     ax.axis[:].major_ticklabels.set_color('gray')
