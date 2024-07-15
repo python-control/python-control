@@ -410,10 +410,10 @@ def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
     Parameters
     ----------
     YY : array_like
-        Impulse-response from which the StateSpace model is estimated, 1D
+        Impulse response from which the StateSpace model is estimated, 1D
         or 3D array.
     data : TimeResponseData
-        Impulse-response from which the StateSpace model is estimated.
+        Impulse response from which the StateSpace model is estimated.
     r : integer
         Order of model.
     m : integer, optional
