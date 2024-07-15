@@ -369,6 +369,21 @@ def minreal(sys, tol=None, verbose=True):
     return sysr
 
 
+def _block_hankel(Y, m, n):
+    """Create a block Hankel matrix from impulse response"""
+    q, p, _ = Y.shape
+    YY = Y.transpose(0,2,1) # transpose for reshape
+    
+    H = np.zeros((q*m,p*n))
+    
+    for r in range(m):
+        # shift and add row to Hankel matrix
+        new_row = YY[:,r:r+n,:]
+        H[q*r:q*(r+1),:] = new_row.reshape((q,p*n))
+            
+    return H
+
+
 def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
     r"""eigensys_realization(YY, r)
 
@@ -389,8 +404,8 @@ def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
     * ``sysd, S = eigensys_realization(data, r)``
     * ``sysd, S = eigensys_realization(YY, r)``
 
-    where `response` is an `TimeResponseData` object, and `YY` is 1D or 3D
-    array and r is an integer.
+    where `data` is a `TimeResponseData` object, `YY` is a 1D or 3D
+    array, and r is an integer.
 
     Parameters
     ----------
@@ -406,10 +421,10 @@ def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
     n : integer, optional
         Number of columns in Hankel matrix. Default is 2*r.
     dt : True or float, optional
-        True indicates discrete time with unspecified sampling time,
-        positive number is discrete time with specified sampling time. It
-        can be used to scale the StateSpace model in order to match the
-        impulse response of this library. Default is True.
+        True indicates discrete time with unspecified sampling time and a
+        positive float is discrete time with the specified sampling time.
+        It can be used to scale the StateSpace model in order to match the
+        unit-area impulse response of python-control. Default is True.
     transpose : bool, optional
         Assume that input data is transposed relative to the standard
         :ref:`time-series-convention`. For TimeResponseData this parameter 
@@ -439,20 +454,6 @@ def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
     >>> response = ct.impulse_response(ct.tf([1], [1, 0.5], True), T)
     >>> sysd, _ = ct.eigensys_realization(response, r=1)
     """
-    def block_hankel_matrix(Y, m, n):
-        """Create a block Hankel matrix from Impulse response"""
-        q, p, _ = Y.shape
-        YY = Y.transpose(0,2,1) # transpose for reshape
-        
-        H = np.zeros((q*m,p*n))
-        
-        for r in range(m):
-            # shift and add row to Hankel matrix
-            new_row = YY[:,r:r+n,:]
-            H[q*r:q*(r+1),:] = new_row.reshape((q,p*n))
-                
-        return H
-    
     if isinstance(arg, TimeResponseData):
         YY = np.array(arg.outputs, ndmin=3)
         if arg.transpose:
@@ -475,7 +476,7 @@ def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
     if (l-1) < m+n:
         raise ValueError("not enough data for requested number of parameters")
     
-    H = block_hankel_matrix(YY[:,:,1:], m, n+1) # Hankel matrix (q*m, p*(n+1))
+    H = _block_hankel(YY[:,:,1:], m, n+1) # Hankel matrix (q*m, p*(n+1))
     Hf = H[:,:-p] # first p*n columns of H
     Hl = H[:,p:] # last p*n columns of H
     
@@ -486,7 +487,7 @@ def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
     # balanced realizations
     Sigma_inv = np.diag(1./np.sqrt(S[0:r]))
     Ar = Sigma_inv @ Ur.T @ Hl @ Vhr.T @ Sigma_inv
-    Br = Sigma_inv @ Ur.T @ Hf[:,0:p]*dt
+    Br = Sigma_inv @ Ur.T @ Hf[:,0:p]*dt # dt scaling for unit-area impulse
     Cr = Hf[0:q,:] @ Vhr.T @ Sigma_inv
     Dr = YY[:,:,0]
 
