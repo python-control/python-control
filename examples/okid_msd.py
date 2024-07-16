@@ -91,7 +91,7 @@ response.plot()
 plt.show()
 
 m = 100
-ir_true = ct.impulse_response(sysd, T=t[:m])
+ir_true = ct.impulse_response(sysd, T=t[:m+1])
 H_true = ir_true.outputs
 
 
