@@ -139,6 +139,7 @@ Model simplification tools
     modred
     era
     markov
+    okid
 
 Nonlinear system support
 ========================
