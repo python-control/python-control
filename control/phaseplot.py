@@ -54,7 +54,8 @@ _phaseplot_defaults = {
 def phase_plane_plot(
         sys, pointdata=None, timedata=None, gridtype=None, gridspec=None,
         plot_streamlines=True, plot_vectorfield=False, plot_equilpoints=True,
-        plot_separatrices=True, ax=None, suppress_warnings=False, **kwargs
+        plot_separatrices=True, ax=None, suppress_warnings=False, title=None,
+        **kwargs
 ):
     """Plot phase plane diagram.
 
@@ -135,6 +136,8 @@ def phase_plane_plot(
         in the dict as keywords to :func:`~control.phaseplot.separatrices`.
     suppress_warnings : bool, optional
         If set to `True`, suppress warning messages in generating trajectories.
+    title : str, optional
+        Set the title of the plot.  Defaults to plot type and system name(s).
 
     """
     # Process arguments
@@ -217,7 +220,9 @@ def phase_plane_plot(
     # TODO: update to common code pattern
     if user_ax is None:
         with plt.rc_context(rcParams):
-            suptitle(f"Phase portrait for {sys.name}")
+            if title is None:
+                title = f"Phase portrait for {sys.name}"
+            suptitle(title)
             ax.set_xlabel(sys.state_labels[0])
             ax.set_ylabel(sys.state_labels[1])
 

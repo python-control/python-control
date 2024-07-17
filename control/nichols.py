@@ -60,6 +60,8 @@ def nichols_plot(
     legend_loc : str, optional
         For plots with multiple lines, a legend will be included in the
         given location.  Default is 'upper left'.  Use False to supress.
+    title : str, optional
+        Set the title of the plot.  Defaults to plot type and system name(s).
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 

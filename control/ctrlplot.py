@@ -64,7 +64,9 @@
 #     sysnames = [response.sysname for response in data]
 #     if title is None:
 #         title = "Name plot for " + ", ".join(sysnames)
-#     _update_suptitle(fig, title, rcParams=rcParams)
+#         _update_suptitle(title, fig, rcParams=rcParams)
+#     else
+#         suptitle(title, fig, rcParams=rcParams)
 #
 #     # Legacy processing of plot keyword
 #     if plot is True:
@@ -158,6 +160,9 @@ class ControlPlot(object):
     shape = property(lambda self: self.lines.shape, None)
     def reshape(self, *args):
         return self.lines.reshape(*args)
+
+    def set_plot_title(self, title, frame='axes'):
+        suptitle(title, fig=self.figure, frame=frame)
 
 
 #
@@ -467,7 +472,7 @@ def _make_legend_labels(labels, ignore_common=False):
     return labels
 
 
-def _update_suptitle(fig, title, rcParams=None, frame='axes'):
+def _update_suptitle(title, fig=None, frame='axes', rcParams=None):
     if fig is not None and isinstance(title, str):
         # Get the current title, if it exists
         old_title = None if fig._suptitle is None else fig._suptitle._text

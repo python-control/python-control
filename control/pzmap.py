@@ -249,7 +249,7 @@ def pole_zero_plot(
     marker_width : int, optional
         Set the line width of the markers used for poles and zeros.
     title : str, optional
-        Set the title of the plot.  Defaults plot type and system name(s).
+        Set the title of the plot.  Defaults to plot type and system name(s).
     xlim : list, optional
         Set the limits for the x axis.
     ylim : list, optional

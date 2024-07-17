@@ -142,6 +142,12 @@ def bode_plot(
 
     Other Parameters
     ----------------
+    ax : array of Axes
+        The matplotlib Axes to draw the figure on.  If not specified, the
+        Axes for the current figure are used or, if there is no current
+        figure with the correct number and shape of Axes, a new figure is
+        created.  The shape of the array must match the shape of the
+        plotted data.
     grid : bool
         If True, plot grid lines on gain and phase plots.  Default is set by
         `config.defaults['freqplot.grid']`.
@@ -173,6 +179,8 @@ def bode_plot(
     rcParams : dict
         Override the default parameters used for generating plots.
         Default is set by config.default['freqplot.rcParams'].
+    title : str, optional
+        Set the title of the plot.  Defaults to plot type and system name(s).
     wrap_phase : bool or float
         If wrap_phase is `False` (default), then the phase will be unwrapped
         so that it is continuously increasing or decreasing.  If wrap_phase is
@@ -948,13 +956,16 @@ def bode_plot(
     seen = set()
     sysnames = [response.sysname for response in data \
                 if not (response.sysname in seen or seen.add(response.sysname))]
+
     if title is None:
         if data[0].title is None:
             title = "Bode plot for " + ", ".join(sysnames)
         else:
+            # Allow data to set the title (used by gangof4)
             title = data[0].title
-
-    _update_suptitle(fig, title, rcParams=rcParams, frame=suptitle_frame)
+        _update_suptitle(title, fig, rcParams=rcParams, frame=suptitle_frame)
+    else:
+        suptitle(title, fig=fig, rcParams=rcParams, frame=suptitle_frame)
 
     #
     # Create legends
@@ -1603,6 +1614,8 @@ def nyquist_plot(
     start_marker_size : float, optional
         Start marker size (in display coordinates).  Default value is
         4 and can be set using config.defaults['nyquist.start_marker_size'].
+    title : str, optional
+        Set the title of the plot.  Defaults to plot type and system name(s).
     warn_nyquist : bool, optional
         If set to 'False', turn off warnings about frequencies above Nyquist.
     warn_encirclements : bool, optional
@@ -1870,7 +1883,7 @@ def nyquist_plot(
         # Display the unit circle, to read gain crossover frequency
         if unit_circle:
             plt.plot(cos, sin, **config.defaults['nyquist.circle_style'])
-        
+
         # Draw circles for given magnitudes of sensitivity
         if ms_circles is not None:
             for ms in ms_circles:
@@ -2243,6 +2256,8 @@ def singular_values_plot(
     rcParams : dict
         Override the default parameters used for generating plots.
         Default is set up config.default['freqplot.rcParams'].
+    title : str, optional
+        Set the title of the plot.  Defaults to plot type and system name(s).
 
     See Also
     --------

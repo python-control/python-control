@@ -128,7 +128,7 @@ def test_plot_ax_processing(resp_fcn, plot_fcn):
     else:
         cplt3 = plot_fcn(*args, **kwargs, **meth_kwargs)
     assert cplt3.figure == cplt1.figure
-    
+
     # Plot should have landed on top of previous plot, in different colors
     assert np.all(cplt3.axes == cplt1.axes)
     assert len(cplt3.lines[0]) == len(cplt1.lines[0])
@@ -253,6 +253,124 @@ def test_plot_label_processing(resp_fcn, plot_fcn):
             **kwargs, **plot_fcn_kwargs, label=expected_labels)
         assert isinstance(cplt, ct.ControlPlot)
         assert_legend(cplt, expected_labels)
+
+
+@pytest.mark.parametrize("resp_fcn, plot_fcn", resp_plot_fcns)
+@pytest.mark.usefixtures('mplcleanup')
+def test_plot_title_processing(resp_fcn, plot_fcn):
+    # Create some systems to use
+    sys1 = ct.rss(2, 1, 1, strictly_proper=True, name="sys[1]")
+    sys1c = ct.rss(4, 1, 1, strictly_proper=True, name="sys[1]_C")
+    sys2 = ct.rss(2, 1, 1, strictly_proper=True, name="sys[2]")
+
+    # Set up arguments
+    kwargs = meth_kwargs = plot_fcn_kwargs = {}
+    default_title = "sys[1], sys[2]"
+    expected_title = "sys1_, sys2_"
+    match resp_fcn, plot_fcn:
+        case ct.describing_function_response, _:
+            F = ct.descfcn.saturation_nonlinearity(1)
+            amp = np.linspace(1, 4, 10)
+            args1 = (sys1, F, amp)
+            args2 = (sys2, F, amp)
+
+        case ct.gangof4_response, _:
+            args1 = (sys1, sys1c)
+            args2 = (sys2, sys1c)
+            default_title = "P=sys[1], C=sys[1]_C, P=sys[2], C=sys[1]_C"
+
+        case ct.frequency_response, ct.nichols_plot:
+            args1 = (sys1, )
+            args2 = (sys2, )
+            meth_kwargs = {'plot_type': 'nichols'}
+
+        case ct.root_locus_map, ct.root_locus_plot:
+            args1 = (sys1, )
+            args2 = (sys2, )
+            meth_kwargs = plot_fcn_kwargs = {'interactive': False}
+
+        case (ct.forced_response | ct.input_output_response, _):
+            timepts = np.linspace(1, 10)
+            U = np.sin(timepts)
+            args1 = (resp_fcn(sys1, timepts, U), )
+            args2 = (resp_fcn(sys2, timepts, U), )
+            argsc = (resp_fcn([sys1, sys2], timepts, U), )
+
+        case (ct.impulse_response | ct.initial_response | ct.step_response, _):
+            args1 = (resp_fcn(sys1), )
+            args2 = (resp_fcn(sys2), )
+            argsc = (resp_fcn([sys1, sys2]), )
+
+        case _, _:
+            args1 = (sys1, )
+            args2 = (sys2, )
+
+    # Store the expected title prefix
+    match resp_fcn, plot_fcn:
+        case _, ct.bode_plot:
+            title_prefix = "Bode plot for "
+        case _, ct.nichols_plot:
+            title_prefix = "Nichols plot for "
+        case _, ct.singular_values_plot:
+            title_prefix = "Singular values for "
+        case _, ct.gangof4_plot:
+            title_prefix = "Gang of Four for "
+        case _, ct.describing_function_plot:
+            title_prefix = "Nyquist plot for "
+        case _, ct.phase_plane_plot:
+            title_prefix = "Phase portrait for "
+        case _, ct.pole_zero_plot:
+            title_prefix = "Pole/zero plot for "
+        case _, ct.nyquist_plot:
+            title_prefix = "Nyquist plot for "
+        case _, ct.root_locus_plot:
+            title_prefix = "Root locus plot for "
+        case ct.initial_response, _:
+            title_prefix = "Initial response for "
+        case ct.step_response, _:
+            title_prefix = "Step response for "
+        case ct.impulse_response, _:
+            title_prefix = "Impulse response for "
+        case ct.forced_response, _:
+            title_prefix = "Forced response for "
+        case ct.input_output_response, _:
+            title_prefix = "Input/output response for "
+        case _:
+            raise RuntimeError(f"didn't recognize {resp_fnc}, {plot_fnc}")
+
+    # Generate the first plot, with default labels
+    cplt1 = plot_fcn(*args1, **kwargs, **plot_fcn_kwargs)
+    assert cplt1.figure._suptitle._text.startswith(title_prefix)
+
+    # Skip functions not intended for sequential calling
+    if plot_fcn not in nolabel_plot_fcns:
+        # Generate second plot with default labels
+        cplt2 = plot_fcn(*args2, **kwargs, **plot_fcn_kwargs)
+        assert cplt1.figure._suptitle._text == title_prefix + default_title
+        plt.close()
+
+        # Generate both plots at the same time
+        if len(args1) == 1 and plot_fcn != ct.time_response_plot:
+            cplt = plot_fcn([*args1, *args2], **kwargs, **plot_fcn_kwargs)
+            assert cplt.figure._suptitle._text == title_prefix + default_title
+        elif len(args1) == 1 and plot_fcn == ct.time_response_plot:
+            # Use TimeResponseList.plot() to generate combined response
+            cplt = argsc[0].plot(**kwargs, **plot_fcn_kwargs)
+            assert cplt.figure._suptitle._text == title_prefix + default_title
+        plt.close()
+
+    # Generate plots sequentially, with updated titles
+    cplt1 = plot_fcn(
+        *args1, **kwargs, **plot_fcn_kwargs, title="My first title")
+    cplt2 = plot_fcn(
+        *args2, **kwargs, **plot_fcn_kwargs, title="My new title")
+    assert cplt2.figure._suptitle._text == "My new title"
+    plt.close()
+
+    # Update using set_plot_title
+    cplt2.set_plot_title("Another title")
+    assert cplt2.figure._suptitle._text == "Another title"
+    plt.close()
 
 
 @pytest.mark.usefixtures('mplcleanup')

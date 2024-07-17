@@ -192,6 +192,9 @@ class TimeResponseData:
         response.  If ntraces is 0 (default) then the data represents a
         single trace with the trace index surpressed in the data.
 
+    title : str, optional
+        Set the title to use when plotting.
+
     trace_labels : array of string, optional
         Labels to use for traces (set to sysname it ntraces is 0)
 

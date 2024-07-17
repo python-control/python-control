@@ -15,8 +15,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from . import config
-from .ctrlplot import ControlPlot, _ctrlplot_rcParams, _make_legend_labels, \
-    _update_suptitle
+from .ctrlplot import ControlPlot, suptitle, _ctrlplot_rcParams, \
+    _make_legend_labels, _update_suptitle
 
 __all__ = ['time_response_plot', 'combine_time_responses']
 
@@ -139,6 +139,8 @@ def time_response_plot(
         axis or ``legend_loc`` or ``legend_map`` have been specified.
     time_label : str, optional
         Label to use for the time axis.
+    title : str, optional
+        Set the title of the plot.  Defaults to plot type and system name(s).
     trace_labels : list of str, optional
         Replace the default trace labels with the given labels.
     trace_props : array of dicts
@@ -195,9 +197,6 @@ def time_response_plot(
     trace_props = config._get_param(
         'timeplot', 'trace_props', kwargs, _timeplot_defaults, pop=True)
     tprop_len = len(trace_props)
-
-    # Set the title for the data
-    title = data.title if title == None else title
 
     # Determine whether or not to plot the input data (and how)
     if plot_inputs is None:
@@ -658,7 +657,11 @@ def time_response_plot(
     # list of systems (e.g., "Step response for sys[1], sys[2]").
     #
 
-    _update_suptitle(fig, title, rcParams=rcParams)
+    if title is None:
+        title = data.title if title == None else title
+        _update_suptitle(title, fig, rcParams=rcParams)
+    else:
+        suptitle(title, fig, rcParams=rcParams)
 
     return ControlPlot(out, ax_array, fig, legend=legend_map)
 
@@ -676,6 +679,9 @@ def combine_time_responses(response_list, trace_labels=None, title=None):
     trace_labels : list of str, optional
         List of labels for each trace.  If not specified, trace names are
         taken from the input data or set to None.
+    title : str, optional
+        Set the title to use when plotting.  Defaults to plot type and
+        system name(s).
 
     Returns
     -------
