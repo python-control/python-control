@@ -55,8 +55,9 @@ def test_kwarg_search(module, prefix):
         # Get the signature for the function
         sig = inspect.signature(obj)
 
-        # Skip anything that is inherited
-        if inspect.isclass(module) and obj.__name__ not in module.__dict__:
+        # Skip anything that is inherited or hidden
+        if inspect.isclass(module) and obj.__name__ not in module.__dict__ \
+           or obj.__name__.startswith('_'):
             continue
 
         # See if there is a variable keyword argument
@@ -298,6 +299,7 @@ kwarg_unittest = {
     'optimal.create_mpc_iosystem': optimal_test.test_mpc_iosystem_rename,
     'optimal.solve_ocp': optimal_test.test_ocp_argument_errors,
     'optimal.solve_oep': optimal_test.test_oep_argument_errors,
+    'ControlPlot.set_plot_title': freqplot_test.test_suptitle,
     'FrequencyResponseData.__init__':
         frd_test.TestFRD.test_unrecognized_keyword,
     'FrequencyResponseData.plot': test_response_plot_kwargs,

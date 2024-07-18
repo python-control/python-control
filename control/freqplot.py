@@ -21,7 +21,7 @@ from . import config
 from .bdalg import feedback
 from .ctrlplot import ControlPlot, _add_arrows_to_line2D, _ctrlplot_rcParams, \
     _find_axes_center, _get_line_labels, _make_legend_labels, \
-    _process_ax_keyword, _process_line_labels, _update_suptitle, suptitle
+    _process_ax_keyword, _process_line_labels, _update_plot_title
 from .ctrlutil import unwrap
 from .exception import ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
@@ -963,9 +963,11 @@ def bode_plot(
         else:
             # Allow data to set the title (used by gangof4)
             title = data[0].title
-        _update_suptitle(title, fig, rcParams=rcParams, frame=suptitle_frame)
+        _update_plot_title(title, fig, rcParams=rcParams, frame=suptitle_frame)
     else:
-        suptitle(title, fig=fig, rcParams=rcParams, frame=suptitle_frame)
+        _update_plot_title(
+            title, fig=fig, rcParams=rcParams, frame=suptitle_frame,
+            use_existing=False)
 
     #
     # Create legends
@@ -1956,7 +1958,9 @@ def nyquist_plot(
     # Add the title
     if title is None:
         title = "Nyquist plot for " + ", ".join(labels)
-    suptitle(title, fig=fig, rcParams=rcParams, frame=suptitle_frame)
+    _update_plot_title(
+        title, fig=fig, rcParams=rcParams, frame=suptitle_frame,
+        use_existing=False)
 
     # Legacy return pocessing
     if plot is True or return_contour is not None:
@@ -2416,7 +2420,9 @@ def singular_values_plot(
     # Add the title
     if title is None:
         title = "Singular values for " + ", ".join(labels)
-    suptitle(title, fig=fig, rcParams=rcParams, frame=suptitle_frame)
+    _update_plot_title(
+        title, fig=fig, rcParams=rcParams, frame=suptitle_frame,
+        use_existing=False)
 
     # Legacy return processing
     if plot is not None:

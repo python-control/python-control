@@ -161,38 +161,40 @@ def test_nyquist_fbs_examples():
 
     """Run through various examples from FBS2e to compare plots"""
     plt.figure()
-    ct.suptitle("Figure 10.4: L(s) = 1.4 e^{-s}/(s+1)^2")
     sys = ct.tf([1.4], [1, 2, 1]) * ct.tf(*ct.pade(1, 4))
     response = ct.nyquist_response(sys)
-    response.plot()
+    cplt = response.plot()
+    cplt.set_plot_title("Figure 10.4: L(s) = 1.4 e^{-s}/(s+1)^2")
     assert _Z(sys) == response.count + _P(sys)
 
     plt.figure()
-    ct.suptitle("Figure 10.4: L(s) = 1/(s + a)^2 with a = 0.6")
     sys = 1/(s + 0.6)**3
     response = ct.nyquist_response(sys)
-    response.plot()
+    cplt = response.plot()
+    cplt.set_plot_title("Figure 10.4: L(s) = 1/(s + a)^2 with a = 0.6")
     assert _Z(sys) == response.count + _P(sys)
 
     plt.figure()
-    ct.suptitle("Figure 10.6: L(s) = 1/(s (s+1)^2) - pole at the origin")
     sys = 1/(s * (s+1)**2)
     response = ct.nyquist_response(sys)
-    response.plot()
+    cplt = response.plot()
+    cplt.set_plot_title(
+        "Figure 10.6: L(s) = 1/(s (s+1)^2) - pole at the origin")
     assert _Z(sys) == response.count + _P(sys)
 
     plt.figure()
-    ct.suptitle("Figure 10.10: L(s) = 3 (s+6)^2 / (s (s+1)^2)")
     sys = 3 * (s+6)**2 / (s * (s+1)**2)
     response = ct.nyquist_response(sys)
-    response.plot()
+    cplt = response.plot()
+    cplt.set_plot_title("Figure 10.10: L(s) = 3 (s+6)^2 / (s (s+1)^2)")
     assert _Z(sys) == response.count + _P(sys)
 
     plt.figure()
-    ct.suptitle("Figure 10.10: L(s) = 3 (s+6)^2 / (s (s+1)^2) [zoom]")
     with pytest.warns(UserWarning, match="encirclements does not match"):
         response = ct.nyquist_response(sys, omega_limits=[1.5, 1e3])
-        response.plot()
+        cplt = response.plot()
+        cplt.set_plot_title(
+            "Figure 10.10: L(s) = 3 (s+6)^2 / (s (s+1)^2) [zoom]")
         # Frequency limits for zoom give incorrect encirclement count
         # assert _Z(sys) == response.count + _P(sys)
         assert response.count == -1
@@ -207,9 +209,9 @@ def test_nyquist_fbs_examples():
 def test_nyquist_arrows(arrows):
     sys = ct.tf([1.4], [1, 2, 1]) * ct.tf(*ct.pade(1, 4))
     plt.figure();
-    ct.suptitle("L(s) = 1.4 e^{-s}/(s+1)^2 / arrows = %s" % arrows)
     response = ct.nyquist_response(sys)
-    response.plot(arrows=arrows)
+    cplt = response.plot(arrows=arrows)
+    cplt.set_plot_title("L(s) = 1.4 e^{-s}/(s+1)^2 / arrows = %s" % arrows)
     assert _Z(sys) == response.count + _P(sys)
 
 
@@ -236,14 +238,14 @@ def test_nyquist_encirclements():
 
     plt.figure();
     response = ct.nyquist_response(sys)
-    response.plot()
-    ct.suptitle("Stable system; encirclements = %d" % response.count)
+    cplt = response.plot()
+    cplt.set_plot_title("Stable system; encirclements = %d" % response.count)
     assert _Z(sys) == response.count + _P(sys)
 
     plt.figure();
     response = ct.nyquist_response(sys * 3)
-    response.plot()
-    ct.suptitle("Unstable system; encirclements = %d" %response.count)
+    cplt = response.plot()
+    cplt.set_plot_title("Unstable system; encirclements = %d" %response.count)
     assert _Z(sys * 3) == response.count + _P(sys * 3)
 
     # System with pole at the origin
@@ -251,8 +253,9 @@ def test_nyquist_encirclements():
 
     plt.figure();
     response = ct.nyquist_response(sys)
-    response.plot()
-    ct.suptitle("Pole at the origin; encirclements = %d" %response.count)
+    cplt = response.plot()
+    cplt.set_plot_title(
+        "Pole at the origin; encirclements = %d" %response.count)
     assert _Z(sys) == response.count + _P(sys)
 
     # Non-integer number of encirclements
@@ -265,8 +268,9 @@ def test_nyquist_encirclements():
         # strip out matrix warnings
         response = ct.nyquist_response(
             sys, omega_limits=[0.5, 1e3], encirclement_threshold=0.2)
-        response.plot()
-    ct.suptitle("Non-integer number of encirclements [%g]" %response.count)
+        cplt = response.plot()
+    cplt.set_plot_title(
+        "Non-integer number of encirclements [%g]" %response.count)
 
 
 @pytest.fixture
@@ -280,8 +284,8 @@ def indentsys():
 def test_nyquist_indent_default(indentsys):
     plt.figure();
     response = ct.nyquist_response(indentsys)
-    response.plot()
-    ct.suptitle("Pole at origin; indent_radius=default")
+    cplt = response.plot()
+    cplt.set_plot_title("Pole at origin; indent_radius=default")
     assert _Z(indentsys) == response.count + _P(indentsys)
 
 
@@ -307,8 +311,9 @@ def test_nyquist_indent_do(indentsys):
     response = ct.nyquist_response(
         indentsys, indent_radius=0.01, return_contour=True)
     count, contour = response
-    response.plot()
-    ct.suptitle("Pole at origin; indent_radius=0.01; encirclements = %d" % count)
+    cplt = response.plot()
+    cplt.set_plot_title(
+        "Pole at origin; indent_radius=0.01; encirclements = %d" % count)
     assert _Z(indentsys) == count + _P(indentsys)
     # indent radius is smaller than the start of the default omega vector
     # check that a quarter circle around the pole at origin has been added.
@@ -328,8 +333,8 @@ def test_nyquist_indent_do(indentsys):
 def test_nyquist_indent_left(indentsys):
     plt.figure();
     response = ct.nyquist_response(indentsys, indent_direction='left')
-    response.plot()
-    ct.suptitle(
+    cplt = response.plot()
+    cplt.set_plot_title(
         "Pole at origin; indent_direction='left'; encirclements = %d" %
         response.count)
     assert _Z(indentsys) == response.count + _P(indentsys, indent='left')
@@ -342,15 +347,15 @@ def test_nyquist_indent_im():
     # Imaginary poles with standard indentation
     plt.figure();
     response = ct.nyquist_response(sys)
-    response.plot()
-    ct.suptitle("Imaginary poles; encirclements = %d" % response.count)
+    cplt = response.plot()
+    cplt.set_plot_title("Imaginary poles; encirclements = %d" % response.count)
     assert _Z(sys) == response.count + _P(sys)
 
     # Imaginary poles with indentation to the left
     plt.figure();
     response = ct.nyquist_response(sys, indent_direction='left')
-    response.plot(label_freq=300)
-    ct.suptitle(
+    cplt = response.plot(label_freq=300)
+    cplt.set_plot_title(
         "Imaginary poles; indent_direction='left'; encirclements = %d" %
         response.count)
     assert _Z(sys) == response.count + _P(sys, indent='left')
@@ -360,8 +365,8 @@ def test_nyquist_indent_im():
     with pytest.warns(UserWarning, match="encirclements does not match"):
         response = ct.nyquist_response(
             sys, np.linspace(0, 1e3, 1000), indent_direction='none')
-        response.plot()
-    ct.suptitle(
+        cplt = response.plot()
+    cplt.set_plot_title(
         "Imaginary poles; indent_direction='none'; encirclements = %d" %
         response.count)
     assert _Z(sys) == response.count + _P(sys)
@@ -556,19 +561,19 @@ if __name__ == "__main__":
     print("Unusual Nyquist plot")
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
     plt.figure()
-    ct.suptitle("Poles: %s" %
-              np.array2string(sys.poles(), precision=2, separator=','))
     response = ct.nyquist_response(sys)
-    response.plot()
+    cplt = response.plot()
+    cplt.set_plot_title("Poles: %s" %
+              np.array2string(sys.poles(), precision=2, separator=','))
     assert _Z(sys) == response.count + _P(sys)
 
     print("Discrete time systems")
     sys = ct.c2d(sys, 0.01)
     plt.figure()
-    ct.suptitle("Discrete-time; poles: %s" %
-              np.array2string(sys.poles(), precision=2, separator=','))
     response = ct.nyquist_response(sys)
-    response.plot()
+    cplt = response.plot()
+    cplt.set_plot_title("Discrete-time; poles: %s" %
+              np.array2string(sys.poles(), precision=2, separator=','))
 
     print("Frequency response data (FRD) systems")
     sys = ct.tf(
@@ -577,5 +582,5 @@ if __name__ == "__main__":
     sys1 = ct.frd(sys, np.logspace(-1, 1, 15), name='frd1')
     sys2 = ct.frd(sys, np.logspace(-2, 2, 20), name='frd2')
     plt.figure()
-    ct.nyquist_plot([sys, sys1, sys2])
-    ct.suptitle("Mixed FRD, tf data")
+    cplt = ct.nyquist_plot([sys, sys1, sys2])
+    cplt.set_plot_title("Mixed FRD, tf data")

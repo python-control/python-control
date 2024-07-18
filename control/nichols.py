@@ -19,7 +19,7 @@ import numpy as np
 
 from . import config
 from .ctrlplot import ControlPlot, _get_line_labels, _process_ax_keyword, \
-    _process_line_labels, suptitle
+    _process_line_labels, _update_plot_title
 from .ctrlutil import unwrap
 from .freqplot import _default_frequency_range, _freqplot_defaults
 from .lti import frequency_response
@@ -152,7 +152,7 @@ def nichols_plot(
     # Add the title
     if title is None:
         title = "Nichols plot for " + ", ".join(labels)
-    suptitle(title, fig=fig, rcParams=rcParams)
+    _update_plot_title(title, fig=fig, rcParams=rcParams, use_existing=False)
 
     return ControlPlot(out, ax_nichols, fig, legend=legend)
 

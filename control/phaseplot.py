@@ -37,7 +37,7 @@ from scipy.integrate import odeint
 
 from . import config
 from .ctrlplot import ControlPlot, _add_arrows_to_line2D, \
-    _ctrlplot_rcParams, _process_ax_keyword, suptitle
+    _ctrlplot_rcParams, _process_ax_keyword, _update_plot_title
 from .exception import ControlNotImplemented
 from .nlsys import NonlinearIOSystem, find_eqpt, input_output_response
 
@@ -222,7 +222,7 @@ def phase_plane_plot(
         with plt.rc_context(rcParams):
             if title is None:
                 title = f"Phase portrait for {sys.name}"
-            suptitle(title)
+            _update_plot_title(title, use_existing=False)
             ax.set_xlabel(sys.state_labels[0])
             ax.set_ylabel(sys.state_labels[1])
 

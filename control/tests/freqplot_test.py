@@ -126,12 +126,12 @@ def test_response_plots(
             assert len(ax.get_lines()) > 1
 
     # Update the title so we can see what is going on
-    ct.suptitle(
+    cplt.set_plot_title(
         cplt.figure._suptitle._text +
         f" [{sys.noutputs}x{sys.ninputs}, pm={pltmag}, pp={pltphs},"
         f" sm={shrmag}, sp={shrphs}, sf={shrfrq}]",     # TODO: ", "
         # f"oo={ovlout}, oi={ovlinp}, ss={secsys}]",    # TODO: add back
-        frame='figure', fontsize='small')
+        frame='figure')
 
     # Get rid of the figure to free up memory
     if clear:
@@ -552,19 +552,21 @@ def test_mixed_systypes():
     resp_tf = ct.frequency_response(sys_tf)
     resp_ss = ct.frequency_response(sys_ss)
     plt.figure()
-    ct.bode_plot([resp_tf, resp_ss, sys_frd1, sys_frd2], plot_phase=False)
-    ct.suptitle("bode_plot([resp_tf, resp_ss, sys_frd1, sys_frd2])")
+    cplt = ct.bode_plot(
+        [resp_tf, resp_ss, sys_frd1, sys_frd2], plot_phase=False)
+    cplt.set_plot_title("bode_plot([resp_tf, resp_ss, sys_frd1, sys_frd2])")
 
     # Same thing, but using frequency response
     plt.figure()
     resp = ct.frequency_response([sys_tf, sys_ss, sys_frd1, sys_frd2])
-    resp.plot(plot_phase=False)
-    ct.suptitle("frequency_response([sys_tf, sys_ss, sys_frd1, sys_frd2])")
+    cplt = resp.plot(plot_phase=False)
+    cplt.set_plot_title(
+        "frequency_response([sys_tf, sys_ss, sys_frd1, sys_frd2])")
 
     # Same thing, but using bode_plot
     plt.figure()
-    resp = ct.bode_plot([sys_tf, sys_ss, sys_frd1, sys_frd2], plot_phase=False)
-    ct.suptitle("bode_plot([sys_tf, sys_ss, sys_frd1, sys_frd2])")
+    cplt = ct.bode_plot([sys_tf, sys_ss, sys_frd1, sys_frd2], plot_phase=False)
+    cplt.set_plot_title("bode_plot([sys_tf, sys_ss, sys_frd1, sys_frd2])")
 
 
 def test_suptitle():
@@ -575,24 +577,25 @@ def test_suptitle():
     assert plt.gcf()._suptitle._x != 0.5
 
     # Try changing the the title
-    ct.suptitle("New title")
+    cplt.set_plot_title("New title")
     assert plt.gcf()._suptitle._text == "New title"
 
     # Change the location of the title
-    ct.suptitle("New title", frame='figure')
+    cplt.set_plot_title("New title", frame='figure')
     assert plt.gcf()._suptitle._x == 0.5
 
     # Change the location of the title back
-    ct.suptitle("New title", frame='axes')
+    cplt.set_plot_title("New title", frame='axes')
     assert plt.gcf()._suptitle._x != 0.5
 
     # Bad frame
     with pytest.raises(ValueError, match="unknown"):
-        ct.suptitle("New title", frame='nowhere')
+        cplt.set_plot_title("New title", frame='nowhere')
 
     # Bad keyword
-    with pytest.raises(AttributeError, match="unexpected keyword|no property"):
-        ct.suptitle("New title", unknown=None)
+    with pytest.raises(
+            TypeError, match="unexpected keyword|no property"):
+        cplt.set_plot_title("New title", unknown=None)
 
 
 @pytest.mark.parametrize("plt_fcn", [ct.bode_plot, ct.singular_values_plot])

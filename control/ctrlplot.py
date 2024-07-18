@@ -64,9 +64,9 @@
 #     sysnames = [response.sysname for response in data]
 #     if title is None:
 #         title = "Name plot for " + ", ".join(sysnames)
-#         _update_suptitle(title, fig, rcParams=rcParams)
-#     else
-#         suptitle(title, fig, rcParams=rcParams)
+#         _update_plot_title(title, fig, rcParams=rcParams)
+#     else:
+#         _update_plot_title(title, fig, rcParams=rcParams, use_existing=False)
 #
 #     # Legacy processing of plot keyword
 #     if plot is True:
@@ -162,7 +162,28 @@ class ControlPlot(object):
         return self.lines.reshape(*args)
 
     def set_plot_title(self, title, frame='axes'):
-        suptitle(title, fig=self.figure, frame=frame)
+        """Set the title for a control plot.
+
+        This is a wrapper for the matplotlib `suptitle` function, but by
+        setting ``frame`` to 'axes' (default) then the title is centered on
+        the midpoint of the axes in the figure, rather than the center of
+        the figure.  This usually looks better (particularly with
+        multi-panel plots), though it takes longer to render.
+
+        Parameters
+        ----------
+        title : str
+            Title text.
+        fig : Figure, optional
+            Matplotlib figure.  Defaults to current figure.
+        frame : str, optional
+            Coordinate frame to use for centering: 'axes' (default) or 'figure'.
+        **kwargs : :func:`matplotlib.pyplot.suptitle` keywords, optional
+            Additional keywords (passed to matplotlib).
+
+        """
+        _update_plot_title(
+            title, fig=self.figure, frame=frame, use_existing=False)
 
 
 #
@@ -177,42 +198,13 @@ def suptitle(
         title, fig=None, frame='axes', **kwargs):
     """Add a centered title to a figure.
 
-    This is a wrapper for the matplotlib `suptitle` function, but by
-    setting ``frame`` to 'axes' (default) then the title is centered on the
-    midpoint of the axes in the figure, rather than the center of the
-    figure.  This usually looks better (particularly with multi-panel
-    plots), though it takes longer to render.
-
-    Parameters
-    ----------
-    title : str
-        Title text.
-    fig : Figure, optional
-        Matplotlib figure.  Defaults to current figure.
-    frame : str, optional
-        Coordinate frame to use for centering: 'axes' (default) or 'figure'.
-    **kwargs : :func:`matplotlib.pyplot.suptitle` keywords, optional
-        Additional keywords (passed to matplotlib).
+    This function is deprecated.  Use :func:`ControlPlot.set_plot_title`.
 
     """
-    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
-
-    if fig is None:
-        fig = plt.gcf()
-
-    if frame == 'figure':
-        with plt.rc_context(rcParams):
-            fig.suptitle(title, **kwargs)
-
-    elif frame == 'axes':
-        with plt.rc_context(rcParams):
-            fig.suptitle(title, **kwargs)           # Place title in center
-            plt.tight_layout()                      # Put everything into place
-            xc, _ = _find_axes_center(fig, fig.get_axes())
-            fig.suptitle(title, x=xc, **kwargs)     # Redraw title, centered
-
-    else:
-        raise ValueError(f"unknown frame '{frame}'")
+    warnings.warn(
+        "suptitle is deprecated; use cplt.set_plot_title", FutureWarning)
+    _update_plot_title(
+        title, fig=fig, frame=frame, use_existing=False, **kwargs)
 
 
 # Create vectorized function to find axes from lines
@@ -472,8 +464,18 @@ def _make_legend_labels(labels, ignore_common=False):
     return labels
 
 
-def _update_suptitle(title, fig=None, frame='axes', rcParams=None):
-    if fig is not None and isinstance(title, str):
+def _update_plot_title(
+        title, fig=None, frame='axes', use_existing=True, **kwargs):
+    if title is False:
+        return
+    if fig is None:
+        fig = plt.gcf()
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
+    if rcParams is None:
+        rcParams = _ctrlplot_rcParams
+    print(f"{rcParams['figure.titlesize']=}")
+
+    if use_existing:
         # Get the current title, if it exists
         old_title = None if fig._suptitle is None else fig._suptitle._text
 
@@ -492,8 +494,19 @@ def _update_suptitle(title, fig=None, frame='axes', rcParams=None):
                 separator = ',' if len(common_prefix) > 0 else ';'
                 title = old_title + separator + title[common_len:]
 
-        # Add the title
-        suptitle(title, fig=fig, rcParams=rcParams, frame=frame)
+    if frame == 'figure':
+        with plt.rc_context(rcParams):
+            fig.suptitle(title, **kwargs)
+
+    elif frame == 'axes':
+        with plt.rc_context(rcParams):
+            fig.suptitle(title, **kwargs)           # Place title in center
+            plt.tight_layout()                      # Put everything into place
+            xc, _ = _find_axes_center(fig, fig.get_axes())
+            fig.suptitle(title, x=xc, **kwargs)     # Redraw title, centered
+
+    else:
+        raise ValueError(f"unknown frame '{frame}'")
 
 
 def _find_axes_center(fig, axs):

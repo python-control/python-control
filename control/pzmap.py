@@ -18,8 +18,8 @@ import numpy as np
 from numpy import cos, exp, imag, linspace, real, sin, sqrt
 
 from . import config
-from .ctrlplot import ControlPlot, suptitle, _get_line_labels, \
-    _process_ax_keyword, _process_line_labels
+from .ctrlplot import ControlPlot, _get_line_labels, _process_ax_keyword, \
+    _process_line_labels, _update_plot_title
 from .freqplot import _freqplot_defaults
 from .grid import nogrid, sgrid, zgrid
 from .iosys import isctime, isdtime
@@ -461,8 +461,9 @@ def pole_zero_plot(
         title = ("Root locus plot for " if rlocus_plot
                  else "Pole/zero plot for ") + ", ".join(labels)
     if user_ax is None:
-        with plt.rc_context(rcParams):
-            fig.suptitle(title)
+        _update_plot_title(
+            title, fig, rcParams=rcParams, frame='figure',
+            use_existing=False)
 
     # Add dispather to handle choosing a point on the diagram
     if interactive:

@@ -15,8 +15,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from . import config
-from .ctrlplot import ControlPlot, suptitle, _ctrlplot_rcParams, \
-    _make_legend_labels, _update_suptitle
+from .ctrlplot import ControlPlot, _ctrlplot_rcParams, _make_legend_labels,\
+    _update_plot_title
 
 __all__ = ['time_response_plot', 'combine_time_responses']
 
@@ -659,9 +659,9 @@ def time_response_plot(
 
     if title is None:
         title = data.title if title == None else title
-        _update_suptitle(title, fig, rcParams=rcParams)
+        _update_plot_title(title, fig, rcParams=rcParams)
     else:
-        suptitle(title, fig, rcParams=rcParams)
+        _update_plot_title(title, fig, rcParams=rcParams, use_existing=False)
 
     return ControlPlot(out, ax_array, fig, legend=legend_map)
 
