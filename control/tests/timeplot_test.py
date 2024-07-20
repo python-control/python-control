@@ -429,7 +429,7 @@ def test_timeplot_trace_labels(resp_fcn):
             kwargs = {'T': T, 'U': U}
 
     # Use figure frame for suptitle to speed things up
-    ct.set_defaults('freqplot', suptitle_frame='figure')
+    ct.set_defaults('freqplot', title_frame='figure')
 
     # Make sure default labels are as expected
     cplt = resp_fcn([sys1, sys2], **kwargs).plot()

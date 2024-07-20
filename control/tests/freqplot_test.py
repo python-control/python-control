@@ -62,7 +62,7 @@ def test_response_plots(
         ovlout, ovlinp, clear=True):
 
     # Use figure frame for suptitle to speed things up
-    ct.set_defaults('freqplot', suptitle_frame='figure')
+    ct.set_defaults('freqplot', title_frame='figure')
 
     # Save up the keyword arguments
     kwargs = dict(
@@ -158,7 +158,7 @@ def test_manual_response_limits():
 @pytest.mark.usefixtures("editsdefaults")
 def test_line_styles(plt_fcn):
     # Use figure frame for suptitle to speed things up
-    ct.set_defaults('freqplot', suptitle_frame='figure')
+    ct.set_defaults('freqplot', title_frame='figure')
 
     # Define a couple of systems for testing
     sys1 = ct.tf([1], [1, 2, 1], name='sys1')
@@ -266,7 +266,7 @@ def test_gangof4_plots(savefigs=False):
 @pytest.mark.usefixtures("editsdefaults")
 def test_first_arg_listable(response_cmd, return_type):
     # Use figure frame for suptitle to speed things up
-    ct.set_defaults('freqplot', suptitle_frame='figure')
+    ct.set_defaults('freqplot', title_frame='figure')
 
     sys = ct.rss(2, 1, 1)
 
@@ -302,7 +302,7 @@ def test_first_arg_listable(response_cmd, return_type):
 @pytest.mark.usefixtures("editsdefaults")
 def test_bode_share_options():
     # Use figure frame for suptitle to speed things up
-    ct.set_defaults('freqplot', suptitle_frame='figure')
+    ct.set_defaults('freqplot', title_frame='figure')
 
     # Default sharing should share along rows and cols for mag and phase
     lines = ct.bode_plot(manual_response)
@@ -365,7 +365,7 @@ def test_freqplot_plot_type(plot_type):
 @pytest.mark.usefixtures("editsdefaults")
 def test_freqplot_omega_limits(plt_fcn):
     # Use figure frame for suptitle to speed things up
-    ct.set_defaults('freqplot', suptitle_frame='figure')
+    ct.set_defaults('freqplot', title_frame='figure')
 
     # Utility function to check visible limits
     def _get_visible_limits(ax):
@@ -442,7 +442,7 @@ def test_freqplot_line_labels(plt_fcn):
     sys2 = ct.rss(3, 1, 1, name='sys2')
 
     # Use figure frame for suptitle to speed things up
-    ct.set_defaults('freqplot', suptitle_frame='figure')
+    ct.set_defaults('freqplot', title_frame='figure')
 
     # Make sure default labels are as expected
     cplt = plt_fcn([sys1, sys2])
@@ -515,7 +515,7 @@ def test_freqplot_ax_keyword(plt_fcn, ninputs, noutputs):
         pytest.skip("MIMO not implemented for Nyquist/Nichols")
 
     # Use figure frame for suptitle to speed things up
-    ct.set_defaults('freqplot', suptitle_frame='figure')
+    ct.set_defaults('freqplot', title_frame='figure')
 
     # System to use
     sys = ct.rss(4, ninputs, noutputs)
@@ -666,7 +666,7 @@ if __name__ == "__main__":
     for args in test_cases:
         test_response_plots(*args, ovlinp=False, ovlout=False, clear=False)
 
-    # Reset suptitle_frame to the default value
+    # Reset title_frame to the default value
     ct.reset_defaults()
 
     # Define and run a selected set of interesting tests

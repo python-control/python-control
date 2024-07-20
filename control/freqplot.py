@@ -50,7 +50,7 @@ _freqplot_defaults = {
     'freqplot.share_magnitude': 'row',
     'freqplot.share_phase': 'row',
     'freqplot.share_frequency': 'col',
-    'freqplot.suptitle_frame': 'axes',
+    'freqplot.title_frame': 'axes',
 }
 
 #
@@ -253,8 +253,8 @@ def bode_plot(
         'freqplot', 'initial_phase', kwargs, None, pop=True)
     rcParams = config._get_param(
         'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
-    suptitle_frame = config._get_param(
-        'freqplot', 'suptitle_frame', kwargs, _freqplot_defaults, pop=True)
+    title_frame = config._get_param(
+        'freqplot', 'title_frame', kwargs, _freqplot_defaults, pop=True)
 
     # Set the default labels
     freq_label = config._get_param(
@@ -977,10 +977,10 @@ def bode_plot(
         else:
             # Allow data to set the title (used by gangof4)
             title = data[0].title
-        _update_plot_title(title, fig, rcParams=rcParams, frame=suptitle_frame)
+        _update_plot_title(title, fig, rcParams=rcParams, frame=title_frame)
     elif ax is None:
         _update_plot_title(
-            title, fig=fig, rcParams=rcParams, frame=suptitle_frame,
+            title, fig=fig, rcParams=rcParams, frame=title_frame,
             use_existing=False)
 
     #
@@ -1712,8 +1712,8 @@ def nyquist_plot(
         'nyquist', 'start_marker', kwargs, _nyquist_defaults, pop=True)
     start_marker_size = config._get_param(
         'nyquist', 'start_marker_size', kwargs, _nyquist_defaults, pop=True)
-    suptitle_frame = config._get_param(
-        'freqplot', 'suptitle_frame', kwargs, _freqplot_defaults, pop=True)
+    title_frame = config._get_param(
+        'freqplot', 'title_frame', kwargs, _freqplot_defaults, pop=True)
 
     # Set line styles for the curves
     def _parse_linestyle(style_name, allow_false=False):
@@ -1985,7 +1985,7 @@ def nyquist_plot(
         if title is None:
             title = "Nyquist plot for " + ", ".join(labels)
         _update_plot_title(
-            title, fig=fig, rcParams=rcParams, frame=suptitle_frame,
+            title, fig=fig, rcParams=rcParams, frame=title_frame,
             use_existing=False)
 
     # Legacy return pocessing
@@ -2321,8 +2321,8 @@ def singular_values_plot(
         'freqplot', 'grid', kwargs, _freqplot_defaults, pop=True)
     rcParams = config._get_param(
         'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
-    suptitle_frame = config._get_param(
-        'freqplot', 'suptitle_frame', kwargs, _freqplot_defaults, pop=True)
+    title_frame = config._get_param(
+        'freqplot', 'title_frame', kwargs, _freqplot_defaults, pop=True)
 
     # If argument was a singleton, turn it into a tuple
     data = data if isinstance(data, (list, tuple)) else (data,)
@@ -2458,7 +2458,7 @@ def singular_values_plot(
         if title is None:
             title = "Singular values for " + ", ".join(labels)
         _update_plot_title(
-            title, fig=fig, rcParams=rcParams, frame=suptitle_frame,
+            title, fig=fig, rcParams=rcParams, frame=title_frame,
             use_existing=False)
 
     # Legacy return processing
