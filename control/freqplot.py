@@ -957,14 +957,14 @@ def bode_plot(
     sysnames = [response.sysname for response in data \
                 if not (response.sysname in seen or seen.add(response.sysname))]
 
-    if title is None:
+    if ax is None and title is None:
         if data[0].title is None:
             title = "Bode plot for " + ", ".join(sysnames)
         else:
             # Allow data to set the title (used by gangof4)
             title = data[0].title
         _update_plot_title(title, fig, rcParams=rcParams, frame=suptitle_frame)
-    else:
+    elif ax is None:
         _update_plot_title(
             title, fig=fig, rcParams=rcParams, frame=suptitle_frame,
             use_existing=False)
@@ -1679,6 +1679,7 @@ def nyquist_plot(
     arrow_size = config._get_param(
         'nyquist', 'arrow_size', kwargs, _nyquist_defaults, pop=True)
     arrow_style = config._get_param('nyquist', 'arrow_style', kwargs, None)
+    ax_user = ax
     max_curve_magnitude = config._get_param(
         'nyquist', 'max_curve_magnitude', kwargs, _nyquist_defaults, pop=True)
     max_curve_offset = config._get_param(
@@ -1773,7 +1774,7 @@ def nyquist_plot(
         return (counts, contours) if return_contour else counts
 
     fig, ax = _process_ax_keyword(
-        ax, shape=(1, 1), squeeze=True, rcParams=rcParams)
+        ax_user, shape=(1, 1), squeeze=True, rcParams=rcParams)
 
     # Create a list of lines for the output
     out = np.empty(len(nyquist_responses), dtype=object)
@@ -1956,11 +1957,12 @@ def nyquist_plot(
         legend=None
 
     # Add the title
-    if title is None:
-        title = "Nyquist plot for " + ", ".join(labels)
-    _update_plot_title(
-        title, fig=fig, rcParams=rcParams, frame=suptitle_frame,
-        use_existing=False)
+    if ax_user is None:
+        if title is None:
+            title = "Nyquist plot for " + ", ".join(labels)
+        _update_plot_title(
+            title, fig=fig, rcParams=rcParams, frame=suptitle_frame,
+            use_existing=False)
 
     # Legacy return pocessing
     if plot is True or return_contour is not None:
@@ -2418,11 +2420,12 @@ def singular_values_plot(
         legend = None
 
     # Add the title
-    if title is None:
-        title = "Singular values for " + ", ".join(labels)
-    _update_plot_title(
-        title, fig=fig, rcParams=rcParams, frame=suptitle_frame,
-        use_existing=False)
+    if ax is None:
+        if title is None:
+            title = "Singular values for " + ", ".join(labels)
+        _update_plot_title(
+            title, fig=fig, rcParams=rcParams, frame=suptitle_frame,
+            use_existing=False)
 
     # Legacy return processing
     if plot is not None:

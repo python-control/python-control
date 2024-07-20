@@ -126,7 +126,7 @@ def test_plot_ax_processing(resp_fcn, plot_fcn):
     if resp_fcn is not None:
         cplt3 = resp.plot(**kwargs, **meth_kwargs, ax=cplt1.axes)
     else:
-        cplt3 = plot_fcn(*args, **kwargs, **meth_kwargs)
+        cplt3 = plot_fcn(*args, **kwargs, **meth_kwargs, ax=cplt1.axes)
     assert cplt3.figure == cplt1.figure
 
     # Plot should have landed on top of previous plot, in different colors
@@ -135,6 +135,51 @@ def test_plot_ax_processing(resp_fcn, plot_fcn):
     if get_line_color is not None:
         assert get_line_color(cplt3) != get_line_color(cplt1)
         assert get_line_color(cplt3) != get_line_color(cplt2)
+
+    #
+    # Plot on a user-contructed figure
+    #
+
+    # Store modified properties from previous figure
+    cplt_titlesize = cplt3.figure._suptitle.get_fontsize()
+    cplt_labelsize = \
+        cplt3.axes.reshape(-1)[0].get_yticklabels()[0].get_fontsize()
+
+    # Set up some axes with a known title
+    fig, axs = plt.subplots(2, 3)
+    title = "User-constructed figure"
+    plt.suptitle(title)
+    titlesize = fig._suptitle.get_fontsize()
+    assert titlesize != cplt_titlesize
+    labelsize = axs[0, 0].get_yticklabels()[0].get_fontsize()
+    assert labelsize != cplt_labelsize
+
+    # Figure out what to pass as the ax keyword
+    match resp_fcn, plot_fcn:
+        case _, ct.bode_plot:
+            ax = [axs[0, 1], axs[1, 1]]
+
+        case ct.gangof4_response, _:
+            ax = [axs[0, 1], axs[0, 2], axs[1, 1], axs[1, 2]]
+
+        case (ct.forced_response | ct.input_output_response, _):
+            ax = [axs[0, 1], axs[1, 1]]
+
+        case _, _:
+            ax = [axs[0, 1]]
+
+    # Call the plotting function, passing the axes
+    if resp_fcn is not None:
+        resp = resp_fcn(*args, **kwargs)
+        cplt4 = resp.plot(**kwargs, **meth_kwargs, ax=ax)
+    else:
+        # No response function available; just plot the data
+        cplt4 = plot_fcn(*args, **kwargs, **meth_kwargs, ax=ax)
+
+    # Check to make sure original settings did not change
+    assert fig._suptitle.get_text() == title
+    assert fig._suptitle.get_fontsize() == titlesize
+    assert ax[0].get_yticklabels()[0].get_fontsize() == labelsize
 
 
 @pytest.mark.parametrize("resp_fcn, plot_fcn", resp_plot_fcns)
@@ -338,13 +383,13 @@ def test_plot_title_processing(resp_fcn, plot_fcn):
         case _:
             raise RuntimeError(f"didn't recognize {resp_fnc}, {plot_fnc}")
 
-    # Generate the first plot, with default labels
+    # Generate the first plot, with default title
     cplt1 = plot_fcn(*args1, **kwargs, **plot_fcn_kwargs)
     assert cplt1.figure._suptitle._text.startswith(title_prefix)
 
     # Skip functions not intended for sequential calling
     if plot_fcn not in nolabel_plot_fcns:
-        # Generate second plot with default labels
+        # Generate second plot with default title
         cplt2 = plot_fcn(*args2, **kwargs, **plot_fcn_kwargs)
         assert cplt1.figure._suptitle._text == title_prefix + default_title
         plt.close()
@@ -371,6 +416,11 @@ def test_plot_title_processing(resp_fcn, plot_fcn):
     cplt2.set_plot_title("Another title")
     assert cplt2.figure._suptitle._text == "Another title"
     plt.close()
+
+    # Generate the plots with no title
+    cplt = plot_fcn(
+        *args1, **kwargs, **plot_fcn_kwargs, title=False)
+    assert cplt.figure._suptitle == None
 
 
 @pytest.mark.usefixtures('mplcleanup')

@@ -219,14 +219,13 @@ def phase_plane_plot(
 
     # TODO: update to common code pattern
     if user_ax is None:
-        with plt.rc_context(rcParams):
-            if title is None:
-                title = f"Phase portrait for {sys.name}"
-            _update_plot_title(title, use_existing=False)
-            ax.set_xlabel(sys.state_labels[0])
-            ax.set_ylabel(sys.state_labels[1])
+        if title is None:
+            title = f"Phase portrait for {sys.name}"
+        _update_plot_title(title, use_existing=False)
+        ax.set_xlabel(sys.state_labels[0])
+        ax.set_ylabel(sys.state_labels[1])
+        plt.tight_layout()
 
-    plt.tight_layout()
     return ControlPlot(out, ax, fig)
 
 

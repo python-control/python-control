@@ -60,12 +60,12 @@
 #                 legend_array[i, j] = ax.legend(
 #                     lines, labels, loc=legend_map[i, j])
 #
-#     # Update the plot title
+#     # Update the plot title (only if ax was not given)
 #     sysnames = [response.sysname for response in data]
-#     if title is None:
+#     if ax == None and title is None:
 #         title = "Name plot for " + ", ".join(sysnames)
 #         _update_plot_title(title, fig, rcParams=rcParams)
-#     else:
+#     elif ax == None:
 #         _update_plot_title(title, fig, rcParams=rcParams, use_existing=False)
 #
 #     # Legacy processing of plot keyword
@@ -362,8 +362,9 @@ def _process_ax_keyword(
                     text.set_visible(False)     # turn off the text
                     del text                    # get rid of it completely
     else:
+        axs = np.atleast_1d(axs)
         try:
-            axs = np.asarray(axs).reshape(shape)
+            axs = axs.reshape(shape)
         except ValueError:
             raise ValueError(
                 "specified axes are not the right shape; "

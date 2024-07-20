@@ -175,6 +175,7 @@ def time_response_plot(
     # Process keywords and set defaults
     #
     # Set up defaults
+    ax_user = ax
     time_label = config._get_param(
         'timeplot', 'time_label', kwargs, _timeplot_defaults, pop=True)
     rcParams = config._get_param(
@@ -657,10 +658,10 @@ def time_response_plot(
     # list of systems (e.g., "Step response for sys[1], sys[2]").
     #
 
-    if title is None:
+    if ax_user is None and title is None:
         title = data.title if title == None else title
         _update_plot_title(title, fig, rcParams=rcParams)
-    else:
+    elif ax_user is None:
         _update_plot_title(title, fig, rcParams=rcParams, use_existing=False)
 
     return ControlPlot(out, ax_array, fig, legend=legend_map)

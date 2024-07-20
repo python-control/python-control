@@ -150,9 +150,11 @@ def nichols_plot(
         legend = None
 
     # Add the title
-    if title is None:
-        title = "Nichols plot for " + ", ".join(labels)
-    _update_plot_title(title, fig=fig, rcParams=rcParams, use_existing=False)
+    if ax is None:
+        if title is None:
+            title = "Nichols plot for " + ", ".join(labels)
+        _update_plot_title(
+            title, fig=fig, rcParams=rcParams, use_existing=False)
 
     return ControlPlot(out, ax_nichols, fig, legend=legend)
 
