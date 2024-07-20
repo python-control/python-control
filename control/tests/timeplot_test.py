@@ -530,8 +530,9 @@ def test_relabel():
     ct.step_response(sys1).plot()
 
     # Generate a new plt, without relabeling
-    cplt = ct.step_response(sys2).plot(relabel=False)
-    assert cplt.axes[0, 0].get_ylabel() == 'y'
+    with pytest.warns(FutureWarning, match="deprecated"):
+        cplt = ct.step_response(sys2).plot(relabel=False)
+        assert cplt.axes[0, 0].get_ylabel() == 'y'
 
 
 def test_errors():

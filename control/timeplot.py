@@ -131,8 +131,9 @@ def time_response_plot(
         List of line properties to use when plotting combined outputs.  The
         default values are set by config.defaults['timeplot.output_props'].
     relabel : bool, optional
-        By default, existing figures and axes are relabeled when new data
-        are added.  If set to `False`, just plot new data on existing axes.
+        [deprecated] By default, existing figures and axes are relabeled
+        when new data are added.  If set to `False`, just plot new data on
+        existing axes.
     show_legend : bool, optional
         Force legend to be shown if ``True`` or hidden if ``False``.  If
         ``None``, then show legend when there is more than one line on an
@@ -456,6 +457,7 @@ def time_response_plot(
 
     # Stop here if the user wants to control everything
     if not relabel:
+        warn("relabel keyword is deprecated", FutureWarning)
         return ControlPlot(out, ax_array, fig)
 
     #
