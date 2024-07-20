@@ -30,7 +30,26 @@ resp_plot_fcns = [
 ]
 
 nolabel_plot_fcns = [ct.describing_function_plot, ct.phase_plane_plot]
+legacy_plot_fcns = [ct.gangof4_plot]
+multiaxes_plot_fcns = [ct.bode_plot, ct.gangof4_plot, ct.time_response_plot]
 deprecated_fcns = [ct.phase_plot]
+
+
+# Utility function to make sure legends are OK
+def assert_legend(cplt, expected_texts):
+    # Check to make sure the labels are OK in legend
+    legend = None
+    for ax in cplt.axes.flatten():
+        legend = ax.get_legend()
+        if legend is not None:
+            break
+    if expected_texts is None:
+        assert legend is None
+    else:
+        assert legend is not None
+        legend_texts = [entry.get_text() for entry in legend.get_texts()]
+        assert legend_texts == expected_texts
+
 
 # Make sure we didn't miss any plotting functions
 def test_find_respplot_functions():
@@ -66,13 +85,14 @@ def test_plot_ax_processing(resp_fcn, plot_fcn):
     sys2 = ct.rss(4, 1, 1, strictly_proper=True)
 
     # Set up arguments
-    kwargs = meth_kwargs = plot_fcn_kwargs = {}
+    kwargs = resp_kwargs = meth_kwargs = plot_kwargs = {}
     get_line_color = lambda cplt: cplt.lines.reshape(-1)[0][0].get_color()
     match resp_fcn, plot_fcn:
         case ct.describing_function_response, _:
             F = ct.descfcn.saturation_nonlinearity(1)
             amp = np.linspace(1, 4, 10)
             args = (sys1, F, amp)
+            resp_kwargs = {'refine': False}
 
         case ct.gangof4_response, _:
             args = (sys1, sys2)
@@ -83,7 +103,7 @@ def test_plot_ax_processing(resp_fcn, plot_fcn):
 
         case ct.root_locus_map, ct.root_locus_plot:
             args = (sys1, )
-            meth_kwargs = plot_fcn_kwargs = {'interactive': False}
+            plot_kwargs = {'interactive': False}
 
         case (ct.forced_response | ct.input_output_response, _):
             timepts = np.linspace(1, 10)
@@ -100,19 +120,19 @@ def test_plot_ax_processing(resp_fcn, plot_fcn):
 
     # Call the plot through the response function
     if resp_fcn is not None:
-        resp = resp_fcn(*args, **kwargs)
-        cplt1 = resp.plot(**kwargs, **meth_kwargs)
+        resp = resp_fcn(*args, **kwargs, **resp_kwargs)
+        cplt1 = resp.plot(**kwargs, **plot_kwargs, **meth_kwargs)
     else:
         # No response function available; just plot the data
-        cplt1 = plot_fcn(*args, **kwargs, **meth_kwargs)
+        cplt1 = plot_fcn(*args, **kwargs, **plot_kwargs)
     assert isinstance(cplt1, ct.ControlPlot)
 
     # Call the plot directly, plotting on top of previous plot
     if plot_fcn == ct.time_response_plot:
         # Can't call the time_response_plot() with system => reuse data
-        cplt2 = plot_fcn(resp, **kwargs, **plot_fcn_kwargs)
+        cplt2 = plot_fcn(resp, **kwargs, **plot_kwargs)
     else:
-        cplt2 = plot_fcn(*args, **kwargs, **plot_fcn_kwargs)
+        cplt2 = plot_fcn(*args, **kwargs, **plot_kwargs)
     assert isinstance(cplt2, ct.ControlPlot)
 
     # Plot should have landed on top of previous plot, in different colors
@@ -126,7 +146,7 @@ def test_plot_ax_processing(resp_fcn, plot_fcn):
     if resp_fcn is not None:
         cplt3 = resp.plot(**kwargs, **meth_kwargs, ax=cplt1.axes)
     else:
-        cplt3 = plot_fcn(*args, **kwargs, **meth_kwargs, ax=cplt1.axes)
+        cplt3 = plot_fcn(*args, **kwargs, **plot_kwargs, ax=cplt1.axes)
     assert cplt3.figure == cplt1.figure
 
     # Plot should have landed on top of previous plot, in different colors
@@ -170,43 +190,36 @@ def test_plot_ax_processing(resp_fcn, plot_fcn):
 
     # Call the plotting function, passing the axes
     if resp_fcn is not None:
-        resp = resp_fcn(*args, **kwargs)
+        resp = resp_fcn(*args, **kwargs, **resp_kwargs)
         cplt4 = resp.plot(**kwargs, **meth_kwargs, ax=ax)
     else:
         # No response function available; just plot the data
-        cplt4 = plot_fcn(*args, **kwargs, **meth_kwargs, ax=ax)
+        cplt4 = plot_fcn(*args, **kwargs, **plot_kwargs, ax=ax)
 
     # Check to make sure original settings did not change
     assert fig._suptitle.get_text() == title
     assert fig._suptitle.get_fontsize() == titlesize
     assert ax[0].get_yticklabels()[0].get_fontsize() == labelsize
 
+    # Make sure that docstring documents ax keyword
+    if plot_fcn not in legacy_plot_fcns:
+        if plot_fcn in multiaxes_plot_fcns:
+            assert "ax : array of matplotlib.axes.Axes, optional" \
+                in plot_fcn.__doc__
+        else:
+            assert "ax : matplotlib.axes.Axes, optional" in plot_fcn.__doc__
+
 
 @pytest.mark.parametrize("resp_fcn, plot_fcn", resp_plot_fcns)
 @pytest.mark.usefixtures('mplcleanup')
 def test_plot_label_processing(resp_fcn, plot_fcn):
-    # Utility function to make sure legends are OK
-    def assert_legend(cplt, expected_texts):
-        # Check to make sure the labels are OK in legend
-        legend = None
-        for ax in cplt.axes.flatten():
-            legend = ax.get_legend()
-            if legend is not None:
-                break
-        if expected_texts is None:
-            assert legend is None
-        else:
-            assert legend is not None
-            legend_texts = [entry.get_text() for entry in legend.get_texts()]
-            assert legend_texts == expected_texts
-
     # Create some systems to use
     sys1 = ct.rss(2, 1, 1, strictly_proper=True, name="sys[1]")
     sys1c = ct.rss(4, 1, 1, strictly_proper=True, name="sys[1]_C")
     sys2 = ct.rss(4, 1, 1, strictly_proper=True, name="sys[2]")
 
     # Set up arguments
-    kwargs = meth_kwargs = plot_fcn_kwargs = {}
+    kwargs = resp_kwargs = plot_kwargs = meth_kwargs = {}
     default_labels = ["sys[1]", "sys[2]"]
     expected_labels = ["sys1_", "sys2_"]
     match resp_fcn, plot_fcn:
@@ -215,6 +228,7 @@ def test_plot_label_processing(resp_fcn, plot_fcn):
             amp = np.linspace(1, 4, 10)
             args1 = (sys1, F, amp)
             args2 = (sys2, F, amp)
+            resp_kwargs = {'refine': False}
 
         case ct.gangof4_response, _:
             args1 = (sys1, sys1c)
@@ -229,7 +243,7 @@ def test_plot_label_processing(resp_fcn, plot_fcn):
         case ct.root_locus_map, ct.root_locus_plot:
             args1 = (sys1, )
             args2 = (sys2, )
-            meth_kwargs = plot_fcn_kwargs = {'interactive': False}
+            plot_kwargs = {'interactive': False}
 
         case (ct.forced_response | ct.input_output_response, _):
             timepts = np.linspace(1, 10)
@@ -251,36 +265,36 @@ def test_plot_label_processing(resp_fcn, plot_fcn):
         pytest.skip(f"labels not implemented for {plot_fcn}")
 
     # Generate the first plot, with default labels
-    cplt1 = plot_fcn(*args1, **kwargs, **plot_fcn_kwargs)
+    cplt1 = plot_fcn(*args1, **kwargs, **plot_kwargs)
     assert isinstance(cplt1, ct.ControlPlot)
     assert_legend(cplt1, None)
 
     # Generate second plot with default labels
-    cplt2 = plot_fcn(*args2, **kwargs, **plot_fcn_kwargs)
+    cplt2 = plot_fcn(*args2, **kwargs, **plot_kwargs)
     assert isinstance(cplt2, ct.ControlPlot)
     assert_legend(cplt2, default_labels)
     plt.close()
 
     # Generate both plots at the same time
     if len(args1) == 1 and plot_fcn != ct.time_response_plot:
-        cplt = plot_fcn([*args1, *args2], **kwargs, **plot_fcn_kwargs)
+        cplt = plot_fcn([*args1, *args2], **kwargs, **plot_kwargs)
         assert isinstance(cplt, ct.ControlPlot)
         assert_legend(cplt, default_labels)
     elif len(args1) == 1 and plot_fcn == ct.time_response_plot:
         # Use TimeResponseList.plot() to generate combined response
-        cplt = argsc[0].plot(**kwargs, **plot_fcn_kwargs)
+        cplt = argsc[0].plot(**kwargs, **meth_kwargs)
         assert isinstance(cplt, ct.ControlPlot)
         assert_legend(cplt, default_labels)
     plt.close()
 
     # Generate plots sequentially, with updated labels
     cplt1 = plot_fcn(
-        *args1, **kwargs, **plot_fcn_kwargs, label=expected_labels[0])
+        *args1, **kwargs, **plot_kwargs, label=expected_labels[0])
     assert isinstance(cplt1, ct.ControlPlot)
     assert_legend(cplt1, None)
 
     cplt2 = plot_fcn(
-        *args2, **kwargs, **plot_fcn_kwargs, label=expected_labels[1])
+        *args2, **kwargs, **plot_kwargs, label=expected_labels[1])
     assert isinstance(cplt2, ct.ControlPlot)
     assert_legend(cplt2, expected_labels)
     plt.close()
@@ -288,16 +302,176 @@ def test_plot_label_processing(resp_fcn, plot_fcn):
     # Generate both plots at the same time, with updated labels
     if len(args1) == 1 and plot_fcn != ct.time_response_plot:
         cplt = plot_fcn(
-            [*args1, *args2], **kwargs, **plot_fcn_kwargs,
+            [*args1, *args2], **kwargs, **plot_kwargs,
             label=expected_labels)
         assert isinstance(cplt, ct.ControlPlot)
         assert_legend(cplt, expected_labels)
     elif len(args1) == 1 and plot_fcn == ct.time_response_plot:
         # Use TimeResponseList.plot() to generate combined response
         cplt = argsc[0].plot(
-            **kwargs, **plot_fcn_kwargs, label=expected_labels)
+            **kwargs, **meth_kwargs, label=expected_labels)
         assert isinstance(cplt, ct.ControlPlot)
         assert_legend(cplt, expected_labels)
+    plt.close()
+
+    # Make sure that docstring documents label
+    if plot_fcn not in legacy_plot_fcns:
+        assert "label : str or array_like of str, optional" in plot_fcn.__doc__
+
+
+@pytest.mark.parametrize("resp_fcn, plot_fcn", resp_plot_fcns)
+@pytest.mark.usefixtures('mplcleanup')
+def test_siso_plot_legend_processing(resp_fcn, plot_fcn):
+    # Create some systems to use
+    sys1 = ct.rss(2, 1, 1, strictly_proper=True, name="sys[1]")
+    sys1c = ct.rss(4, 1, 1, strictly_proper=True, name="sys[1]_C")
+    sys2 = ct.rss(4, 1, 1, strictly_proper=True, name="sys[2]")
+
+    # Set up arguments
+    kwargs = resp_kwargs = plot_kwargs = meth_kwargs = {}
+    default_labels = ["sys[1]", "sys[2]"]
+    match resp_fcn, plot_fcn:
+        case ct.describing_function_response, _:
+            F = ct.descfcn.saturation_nonlinearity(1)
+            amp = np.linspace(1, 4, 10)
+            args1 = (sys1, F, amp)
+            args2 = (sys2, F, amp)
+            resp_kwargs = {'refine': False}
+
+        case ct.gangof4_response, _:
+            # Multi-axes plot => test in next function
+            return
+
+        case ct.frequency_response, ct.nichols_plot:
+            args1 = (sys1, )
+            args2 = (sys2, )
+            meth_kwargs = {'plot_type': 'nichols'}
+
+        case ct.root_locus_map, ct.root_locus_plot:
+            args1 = (sys1, )
+            args2 = (sys2, )
+            plot_kwargs = {'interactive': False}
+
+        case (ct.forced_response | ct.input_output_response, _):
+            timepts = np.linspace(1, 10)
+            U = np.sin(timepts)
+            args1 = (resp_fcn(sys1, timepts, U), )
+            args2 = (resp_fcn(sys2, timepts, U), )
+            argsc = (resp_fcn([sys1, sys2], timepts, U), )
+
+        case (ct.impulse_response | ct.initial_response | ct.step_response, _):
+            args1 = (resp_fcn(sys1), )
+            args2 = (resp_fcn(sys2), )
+            argsc = (resp_fcn([sys1, sys2]), )
+
+        case _, _:
+            args1 = (sys1, )
+            args2 = (sys2, )
+
+    if plot_fcn in nolabel_plot_fcns:
+        # Make sure that using legend keywords generates an error
+        with pytest.raises(TypeError, match="unexpected|unrecognized"):
+            cplt = plot_fcn(*args1, legend_loc=None)
+        with pytest.raises(TypeError, match="unexpected|unrecognized"):
+            cplt = plot_fcn(*args1, legend_map=None)
+        with pytest.raises(TypeError, match="unexpected|unrecognized"):
+            cplt = plot_fcn(*args1, show_legend=None)
+        return
+
+    # Single system, with forced legend
+    cplt = plot_fcn(*args1, **kwargs, **plot_kwargs, show_legend=True)
+    assert_legend(cplt, default_labels[:1])
+    plt.close()
+
+    # Single system, with forced location
+    cplt = plot_fcn(*args1, **kwargs, **plot_kwargs, legend_loc=10)
+    assert cplt.axes[0, 0].get_legend()._loc == 10
+    plt.close()
+
+    # Generate two plots, but turn off legends
+    if len(args1) == 1 and plot_fcn != ct.time_response_plot:
+        cplt = plot_fcn(
+            [*args1, *args2], **kwargs, **plot_kwargs, show_legend=False)
+        assert_legend(cplt, None)
+    elif len(args1) == 1 and plot_fcn == ct.time_response_plot:
+        # Use TimeResponseList.plot() to generate combined response
+        cplt = argsc[0].plot(**kwargs, **meth_kwargs, show_legend=False)
+        assert_legend(cplt, None)
+    plt.close()
+
+    # Make sure that docstring documents legend_loc, show_legend
+    assert "legend_loc : int or str, optional" in plot_fcn.__doc__
+    assert "show_legend : bool, optional" in plot_fcn.__doc__
+
+    # Make sure that single axes plots generate an error with legend_map
+    if plot_fcn not in multiaxes_plot_fcns:
+        with pytest.raises(TypeError, match="unexpected"):
+            cplt = plot_fcn(*args1, legend_map=False)
+    else:
+        assert "legend_map : array of str" in plot_fcn.__doc__
+
+
+@pytest.mark.parametrize("resp_fcn, plot_fcn", resp_plot_fcns)
+@pytest.mark.usefixtures('mplcleanup')
+def test_mimo_plot_legend_processing(resp_fcn, plot_fcn):
+    # Generate the response that we will use for plotting
+    match resp_fcn, plot_fcn:
+        case ct.frequency_response, ct.bode_plot:
+            resp = ct.frequency_response([ct.rss(4, 2, 2), ct.rss(3, 2, 2)])
+        case ct.step_response, ct.time_response_plot:
+            resp = ct.step_response([ct.rss(4, 2, 2), ct.rss(3, 2, 2)])
+        case ct.gangof4_response, ct.gangof4_plot:
+            resp = ct.gangof4_response(ct.rss(4, 1, 1), ct.rss(3, 1, 1))
+        case _, ct.time_response_plot:
+            # Skip remaining time response plots to avoid duplicate tests
+            return
+        case _, _:
+            # Skip everything else that doesn't support multi-axes plots
+            assert plot_fcn not in multiaxes_plot_fcns
+            return
+
+    # Generate a standard plot with legend in the center
+    cplt1 = resp.plot(legend_loc=10)
+    assert cplt1.axes.ndim == 2
+    for legend_idx, ax in enumerate(cplt1.axes.flatten()):
+        if ax.get_legend() is not None:
+            break;
+    assert legend_idx != 0      # Make sure legend is not in first subplot
+    assert ax.get_legend()._loc == 10
+    plt.close()
+
+    # Regenerate the plot with no legend
+    cplt2 = resp.plot(show_legend=False)
+    for ax in cplt2.axes.flatten():
+        if ax.get_legend() is not None:
+            break;
+    assert ax.get_legend() is None
+    plt.close()
+
+    # Regenerate the plot with no legend in a different way
+    cplt2 = resp.plot(legend_loc=False)
+    for ax in cplt2.axes.flatten():
+        if ax.get_legend() is not None:
+            break;
+    assert ax.get_legend() is None
+    plt.close()
+
+    # Regenerate the plot with no legend in a different way
+    cplt2 = resp.plot(legend_map=False)
+    for ax in cplt2.axes.flatten():
+        if ax.get_legend() is not None:
+            break;
+    assert ax.get_legend() is None
+    plt.close()
+
+    # Put the legend in a different (first) subplot
+    legend_map = np.full(cplt2.shape, None, dtype=object)
+    legend_map[0, 0] = 5
+    legend_map[-1, -1] = 6
+    cplt3 = resp.plot(legend_map=legend_map)
+    assert cplt3.axes[0, 0].get_legend()._loc == 5
+    assert cplt3.axes[-1, -1].get_legend()._loc == 6
+    plt.close()
 
 
 @pytest.mark.parametrize("resp_fcn, plot_fcn", resp_plot_fcns)
@@ -309,7 +483,7 @@ def test_plot_title_processing(resp_fcn, plot_fcn):
     sys2 = ct.rss(2, 1, 1, strictly_proper=True, name="sys[2]")
 
     # Set up arguments
-    kwargs = meth_kwargs = plot_fcn_kwargs = {}
+    kwargs = resp_kwargs = plot_kwargs = meth_kwargs = {}
     default_title = "sys[1], sys[2]"
     expected_title = "sys1_, sys2_"
     match resp_fcn, plot_fcn:
@@ -318,6 +492,7 @@ def test_plot_title_processing(resp_fcn, plot_fcn):
             amp = np.linspace(1, 4, 10)
             args1 = (sys1, F, amp)
             args2 = (sys2, F, amp)
+            resp_kwargs = {'refine': False}
 
         case ct.gangof4_response, _:
             args1 = (sys1, sys1c)
@@ -332,7 +507,7 @@ def test_plot_title_processing(resp_fcn, plot_fcn):
         case ct.root_locus_map, ct.root_locus_plot:
             args1 = (sys1, )
             args2 = (sys2, )
-            meth_kwargs = plot_fcn_kwargs = {'interactive': False}
+            plot_kwargs = {'interactive': False}
 
         case (ct.forced_response | ct.input_output_response, _):
             timepts = np.linspace(1, 10)
@@ -384,31 +559,31 @@ def test_plot_title_processing(resp_fcn, plot_fcn):
             raise RuntimeError(f"didn't recognize {resp_fnc}, {plot_fnc}")
 
     # Generate the first plot, with default title
-    cplt1 = plot_fcn(*args1, **kwargs, **plot_fcn_kwargs)
+    cplt1 = plot_fcn(*args1, **kwargs, **plot_kwargs)
     assert cplt1.figure._suptitle._text.startswith(title_prefix)
 
     # Skip functions not intended for sequential calling
     if plot_fcn not in nolabel_plot_fcns:
         # Generate second plot with default title
-        cplt2 = plot_fcn(*args2, **kwargs, **plot_fcn_kwargs)
+        cplt2 = plot_fcn(*args2, **kwargs, **plot_kwargs)
         assert cplt1.figure._suptitle._text == title_prefix + default_title
         plt.close()
 
         # Generate both plots at the same time
         if len(args1) == 1 and plot_fcn != ct.time_response_plot:
-            cplt = plot_fcn([*args1, *args2], **kwargs, **plot_fcn_kwargs)
+            cplt = plot_fcn([*args1, *args2], **kwargs, **plot_kwargs)
             assert cplt.figure._suptitle._text == title_prefix + default_title
         elif len(args1) == 1 and plot_fcn == ct.time_response_plot:
             # Use TimeResponseList.plot() to generate combined response
-            cplt = argsc[0].plot(**kwargs, **plot_fcn_kwargs)
+            cplt = argsc[0].plot(**kwargs, **meth_kwargs)
             assert cplt.figure._suptitle._text == title_prefix + default_title
         plt.close()
 
     # Generate plots sequentially, with updated titles
     cplt1 = plot_fcn(
-        *args1, **kwargs, **plot_fcn_kwargs, title="My first title")
+        *args1, **kwargs, **plot_kwargs, title="My first title")
     cplt2 = plot_fcn(
-        *args2, **kwargs, **plot_fcn_kwargs, title="My new title")
+        *args2, **kwargs, **plot_kwargs, title="My new title")
     assert cplt2.figure._suptitle._text == "My new title"
     plt.close()
 
@@ -419,8 +594,13 @@ def test_plot_title_processing(resp_fcn, plot_fcn):
 
     # Generate the plots with no title
     cplt = plot_fcn(
-        *args1, **kwargs, **plot_fcn_kwargs, title=False)
+        *args1, **kwargs, **plot_kwargs, title=False)
     assert cplt.figure._suptitle == None
+    plt.close()
+
+    # Make sure that docstring documents title
+    if plot_fcn not in legacy_plot_fcns:
+        assert "title : str, optional" in plot_fcn.__doc__
 
 
 @pytest.mark.usefixtures('mplcleanup')

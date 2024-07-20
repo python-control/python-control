@@ -19,7 +19,7 @@ from numpy import cos, exp, imag, linspace, real, sin, sqrt
 
 from . import config
 from .ctrlplot import ControlPlot, _get_line_labels, _process_ax_keyword, \
-    _process_line_labels, _update_plot_title
+    _process_legend_keywords, _process_line_labels, _update_plot_title
 from .freqplot import _freqplot_defaults
 from .grid import nogrid, sgrid, zgrid
 from .iosys import isctime, isdtime
@@ -171,7 +171,7 @@ def pole_zero_map(sysdata):
 #    https://matplotlib.org/2.0.2/examples/axes_grid/demo_curvelinear_grid.html
 def pole_zero_plot(
         data, plot=None, grid=None, title=None, marker_color=None,
-        marker_size=None, marker_width=None, legend_loc='upper right',
+        marker_size=None, marker_width=None,
         xlim=None, ylim=None, interactive=None, ax=None, scaling=None,
         initial_gain=None, label=None, **kwargs):
     """Plot a pole/zero map for a linear system.
@@ -227,27 +227,35 @@ def pole_zero_plot(
 
     Other Parameters
     ----------------
-    scaling : str or list, optional
-        Set the type of axis scaling.  Can be 'equal' (default), 'auto', or
-        a list of the form [xmin, xmax, ymin, ymax].
+    ax : matplotlib.axes.Axes, optional
+        The matplotlib axes to draw the figure on.  If not specified and
+        the current figure has a single axes, that axes is used.
+        Otherwise, a new figure is created.
     initial_gain : float, optional
         If given, the specified system gain will be marked on the plot.
 
     interactive : bool, optional
         Turn off interactive mode for root locus plots.
-    label : str or array-like of str
+    label : str or array_like of str, optional
         If present, replace automatically generated label(s) with given
         label(s).  If data is a list, strings should be specified for each
         system.
-    legend_loc : str, optional
-        For plots with multiple lines, a legend will be included in the
-        given location.  Default is 'center right'.  Use False to supress.
+    legend_loc : int or str, optional
+        Include a legend in the given location. Default is 'center right',
+        with no legend for a single response.  Use False to supress legend.
     marker_color : str, optional
         Set the color of the markers used for poles and zeros.
     marker_size : int, optional
         Set the size of the markers used for poles and zeros.
     marker_width : int, optional
         Set the line width of the markers used for poles and zeros.
+    scaling : str or list, optional
+        Set the type of axis scaling.  Can be 'equal' (default), 'auto', or
+        a list of the form [xmin, xmax, ymin, ymax].
+    show_legend : bool, optional
+        Force legend to be shown if ``True`` or hidden if ``False``.  If
+        ``None``, then show legend when there is more than one line on the
+        plot or ``legend_loc`` has been specified.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
     xlim : list, optional
@@ -269,8 +277,7 @@ def pole_zero_plot(
     marker_size = config._get_param('pzmap', 'marker_size', marker_size, 6)
     marker_width = config._get_param('pzmap', 'marker_width', marker_width, 1.5)
     rcParams = config._get_param(
-        'freqplot', 'rcParams', kwargs, _freqplot_defaults,
-        pop=True, last=True)
+        'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
     user_ax = ax
     xlim_user, ylim_user = xlim, ylim
 
@@ -315,6 +322,12 @@ def pole_zero_plot(
     # Initialize the figure
     fig, ax = _process_ax_keyword(
         user_ax, rcParams=rcParams, squeeze=True, create_axes=False)
+    legend_loc, _, show_legend = _process_legend_keywords(
+        kwargs, None, 'upper right')
+
+    # Make sure there are no remaining keyword arguments
+    if kwargs:
+        raise TypeError("unrecognized keywords: ", str(kwargs))
 
     if ax is None:
         # Determine what type of grid to use
@@ -323,7 +336,7 @@ def pole_zero_plot(
             grid = config._get_param('rlocus', 'grid', grid, _rlocus_defaults)
         else:
             grid = config._get_param('pzmap', 'grid', grid, _pzmap_defaults)
-        
+
         # Create the axes with the appropriate grid
         with plt.rc_context(rcParams):
             if grid and grid != 'empty':
@@ -347,7 +360,7 @@ def pole_zero_plot(
         xlim, ylim = ax.get_xlim(), ax.get_ylim()
         if grid is not None:
             warnings.warn("axis already exists; grid keyword ignored")
-    
+
     # Handle color cycle manually as all root locus segments
     # of the same system are expected to be of the same color
     # TODO: replace with common function?
@@ -429,7 +442,7 @@ def pole_zero_plot(
     lines, labels = _get_line_labels(ax)
 
     # Add legend if there is more than one system plotted
-    if len(labels) > 1 and legend_loc is not False:
+    if show_legend or len(labels) > 1 and show_legend != False:
         if response.loci is None:
             # Use "x o" for the system label, via matplotlib tuple handler
             from matplotlib.legend_handler import HandlerTuple

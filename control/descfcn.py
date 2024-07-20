@@ -423,6 +423,12 @@ def describing_function_plot(
     point_label : str, optional
         Formatting string used to label intersection points on the Nyquist
         plot.  Defaults to "%5.2g @ %-5.2g".  Set to `None` to omit labels.
+    ax : matplotlib.axes.Axes, optional
+        The matplotlib axes to draw the figure on.  If not specified and
+        the current figure has a single axes, that axes is used.
+        Otherwise, a new figure is created.
+    title : str, optional
+        Set the title of the plot.  Defaults to plot type and system name(s).
 
     Returns
     -------
@@ -474,6 +480,11 @@ def describing_function_plot(
             dfresp = sysdata[0]
     else:
         raise TypeError("1, 3, or 4 position arguments required")
+
+    # Don't allow legend keyword arguments
+    for kw in ['legend_loc', 'legend_map', 'show_legend']:
+        if kw in kwargs:
+            raise TypeError(f"unexpected keyword argument '{kw}'")
 
     # Create a list of lines for the output
     lines = np.empty(2, dtype=object)

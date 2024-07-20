@@ -698,22 +698,22 @@ if __name__ == "__main__":
     resp_list = ct.step_response([sys1, sys2])
 
     fig = plt.figure()
-    ct.combine_time_responses(
+    cplt = ct.combine_time_responses(
         [ct.step_response(sys1, resp_list[0].time),
          ct.step_response(sys2, resp_list[1].time)]
     ).plot(overlay_traces=True)
-    ct.suptitle("[Combine] " + fig._suptitle._text)
+    cplt.set_plot_title("[Combine] " + fig._suptitle._text)
 
     fig = plt.figure()
     ct.step_response(sys1).plot()
-    ct.step_response(sys2).plot()
-    ct.suptitle("[Sequential] " + fig._suptitle._text)
+    cplt = ct.step_response(sys2).plot()
+    cplt.set_plot_title("[Sequential] " + fig._suptitle._text)
 
     fig = plt.figure()
     ct.step_response(sys1).plot(color='b')
-    ct.step_response(sys2).plot(color='r')
-    ct.suptitle("[Seq w/color] " + fig._suptitle._text)
+    cplt = ct.step_response(sys2).plot(color='r')
+    cplt.set_plot_title("[Seq w/color] " + fig._suptitle._text)
 
     fig = plt.figure()
-    ct.step_response([sys1, sys2]).plot()
-    ct.suptitle("[List] " + fig._suptitle._text)
+    cplt = ct.step_response([sys1, sys2]).plot()
+    cplt.set_plot_title("[List] " + fig._suptitle._text)

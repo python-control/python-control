@@ -30,6 +30,8 @@
 #
 #     # Figure out the shape of the plot and find/create axes
 #     fig, ax_array = _process_ax_keyword(ax, (nrows, ncols), rcParams)
+#     legend_loc, legend_map, show_legend = _process_legend_keywords(
+#         kwargs, (nrows, ncols), 'center right')
 #
 #     # Customize axes (curvilinear grids, shared axes, etc)
 #
@@ -51,14 +53,17 @@
 #         ax_array[i, j].set_ylabel("y label")
 #
 #     # Create legends
-#     legend_map = _process_legend_keywords(kwargs)
-#     for i, j in itertools.product(range(nrows), range(ncols)):
-#         if legend_map[i, j] is not None:
-#             lines = ax_array[i, j].get_lines()
-#             labels = _make_legend_labels(lines)
-#             if len(labels) > 1:
-#                 legend_array[i, j] = ax.legend(
-#                     lines, labels, loc=legend_map[i, j])
+#     if show_legend != False:
+#         legend_array = np.full(ax_array.shape, None, dtype=object)
+#         for i, j in itertools.product(range(nrows), range(ncols)):
+#             if legend_map[i, j] is not None:
+#                 lines = ax_array[i, j].get_lines()
+#                 labels = _make_legend_labels(lines)
+#                 if len(labels) > 1:
+#                     legend_array[i, j] = ax.legend(
+#                         lines, labels, loc=legend_map[i, j])
+#     else:
+#         legend_array = None
 #
 #     # Update the plot title (only if ax was not given)
 #     sysnames = [response.sysname for response in data]
@@ -131,7 +136,7 @@ class ControlPlot(object):
     figure : :class:`matplotlib:Figure`
         Figure on which the Axes are drawn.
     legend : :class:`matplotlib:.legend.Legend` (instance or ndarray)
-        Legend object(s) for the plat.  If more than one legend is
+        Legend object(s) for the plot.  If more than one legend is
         included, this will be an array with each entry being either None
         (for no legend) or a legend object.
 
@@ -436,8 +441,46 @@ def _get_line_labels(ax, use_color=True):
     return lines, [label for label, color in labels_colors]
 
 
+def _process_legend_keywords(
+        kwargs, shape=None, default_loc='center right'):
+    legend_loc = kwargs.pop('legend_loc', None)
+    if shape is None and 'legend_map' in kwargs:
+        raise TypeError("unexpected keyword argument 'legend_map'")
+    else:
+        legend_map = kwargs.pop('legend_map', None)
+    show_legend = kwargs.pop('show_legend', None)
+
+    # If legend_loc or legend_map were given, always show the legend
+    if legend_loc is False or legend_map is False:
+        if show_legend is True:
+            warnings.warn(
+                "show_legend ignored; legend_loc or legend_map was given")
+        show_legend = False
+        legend_loc = legend_map = None
+    elif legend_loc is not None or legend_map is not None:
+        if show_legend is False:
+            warnings.warn(
+                "show_legend ignored; legend_loc or legend_map was given")
+        show_legend = True
+
+    if legend_loc is None:
+        legend_loc = default_loc
+    elif not isinstance(legend_loc, (int, str)):
+        raise ValueError("legend_loc must be string or int")
+
+    # Make sure the legend map is the right size
+    if legend_map is not None:
+        legend_map = np.atleast_2d(legend_map)
+        if legend_map.shape != shape:
+            raise ValueError("legend_map shape just match axes shape")
+
+    return legend_loc, legend_map, show_legend
+
+
 # Utility function to make legend labels
 def _make_legend_labels(labels, ignore_common=False):
+    if len(labels) == 1:
+        return labels
 
     # Look for a common prefix (up to a space)
     common_prefix = commonprefix(labels)
@@ -474,7 +517,6 @@ def _update_plot_title(
     rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
     if rcParams is None:
         rcParams = _ctrlplot_rcParams
-    print(f"{rcParams['figure.titlesize']=}")
 
     if use_existing:
         # Get the current title, if it exists

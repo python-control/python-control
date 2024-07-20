@@ -94,8 +94,10 @@ def phase_plane_plot(
     color : str
         Plot all elements in the given color (use `plot_<fcn>={'color': c}`
         to set the color in one element of the phase plot.
-    ax : Axes
-        Use the given axes for the plot instead of creating a new figure.
+    ax : matplotlib.axes.Axes, optional
+        The matplotlib axes to draw the figure on.  If not specified and
+        the current figure has a single axes, that axes is used.
+        Otherwise, a new figure is created.
 
     Returns
     -------
@@ -265,7 +267,7 @@ def vectorfield(
         dict with key 'args' and value given by a tuple (passed to callable).
     color : str
         Plot the vector field in the given color.
-    ax : Axes
+    ax : matplotlib.axes.Axes
         Use the given axes for the plot, otherwise use the current axes.
 
     Returns
@@ -359,7 +361,7 @@ def streamlines(
         dict with key 'args' and value given by a tuple (passed to callable).
     color : str
         Plot the streamlines in the given color.
-    ax : Axes
+    ax : matplotlib.axes.Axes
         Use the given axes for the plot, otherwise use the current axes.
 
     Returns
@@ -470,7 +472,7 @@ def equilpoints(
         dict with key 'args' and value given by a tuple (passed to callable).
     color : str
         Plot the equilibrium points in the given color.
-    ax : Axes
+    ax : matplotlib.axes.Axes
         Use the given axes for the plot, otherwise use the current axes.
 
     Returns
@@ -554,7 +556,7 @@ def separatrices(
         dict with key 'args' and value given by a tuple (passed to callable).
     color : str
         Plot the streamlines in the given color.
-    ax : Axes
+    ax : matplotlib.axes.Axes
         Use the given axes for the plot, otherwise use the current axes.
 
     Returns

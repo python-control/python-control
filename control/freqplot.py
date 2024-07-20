@@ -21,7 +21,8 @@ from . import config
 from .bdalg import feedback
 from .ctrlplot import ControlPlot, _add_arrows_to_line2D, _ctrlplot_rcParams, \
     _find_axes_center, _get_line_labels, _make_legend_labels, \
-    _process_ax_keyword, _process_line_labels, _update_plot_title
+    _process_ax_keyword, _process_legend_keywords, _process_line_labels, \
+    _update_plot_title
 from .ctrlutil import unwrap
 from .exception import ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
@@ -87,8 +88,7 @@ def bode_plot(
         plot=None, plot_magnitude=True, plot_phase=None,
         overlay_outputs=None, overlay_inputs=None, phase_label=None,
         magnitude_label=None, label=None, display_margins=None,
-        margins_method='best', legend_map=None, legend_loc=None,
-        sharex=None, sharey=None, title=None, **kwargs):
+        margins_method='best', title=None, sharex=None, sharey=None, **kwargs):
     """Bode plot for a system.
 
     Plot the magnitude and phase of the frequency response over a
@@ -142,25 +142,33 @@ def bode_plot(
 
     Other Parameters
     ----------------
-    ax : array of Axes
-        The matplotlib Axes to draw the figure on.  If not specified, the
-        Axes for the current figure are used or, if there is no current
-        figure with the correct number and shape of Axes, a new figure is
+    ax : array of matplotlib.axes.Axes, optional
+        The matplotlib axes to draw the figure on.  If not specified, the
+        axes for the current figure are used or, if there is no current
+        figure with the correct number and shape of axes, a new figure is
         created.  The shape of the array must match the shape of the
         plotted data.
-    grid : bool
+    grid : bool, optional
         If True, plot grid lines on gain and phase plots.  Default is set by
         `config.defaults['freqplot.grid']`.
-    initial_phase : float
+    initial_phase : float, optional
         Set the reference phase to use for the lowest frequency.  If set, the
         initial phase of the Bode plot will be set to the value closest to the
         value specified.  Units are in either degrees or radians, depending on
         the `deg` parameter. Default is -180 if wrap_phase is False, 0 if
         wrap_phase is True.
-    label : str or array-like of str
+    label : str or array_like of str, optional
         If present, replace automatically generated label(s) with the given
         label(s).  If sysdata is a list, strings should be specified for each
         system.  If MIMO, strings required for each system, output, and input.
+    legend_map : array of str, optional
+        Location of the legend for multi-axes plots.  Specifies an array
+        of legend location strings matching the shape of the subplots, with
+        each entry being either None (for no legend) or a legend location
+        string (see :func:`~matplotlib.pyplot.legend`).
+    legend_loc : int or str, optional
+        Include a legend in the given location. Default is 'center right',
+        with no legend for a single response.  Use False to supress legend.
     margins_method : str, optional
         Method to use in computing margins (see :func:`stability_margins`).
     omega_limits : array_like of two values
@@ -179,6 +187,10 @@ def bode_plot(
     rcParams : dict
         Override the default parameters used for generating plots.
         Default is set by config.default['freqplot.rcParams'].
+    show_legend : bool, optional
+        Force legend to be shown if ``True`` or hidden if ``False``.  If
+        ``None``, then show legend when there is more than one line on an
+        axis or ``legend_loc`` or ``legend_map`` has been specified.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
     wrap_phase : bool or float
@@ -478,8 +490,10 @@ def bode_plot(
             if kw not in kwargs or kwargs[kw] is None:
                 kwargs[kw] = config.defaults['freqplot.' + kw]
 
-    fig, ax_array = _process_ax_keyword(ax, (
-        nrows, ncols), squeeze=False, rcParams=rcParams, clear_text=True)
+    fig, ax_array = _process_ax_keyword(
+        ax, (nrows, ncols), squeeze=False, rcParams=rcParams, clear_text=True)
+    legend_loc, legend_map, show_legend = _process_legend_keywords(
+        kwargs, (nrows,ncols), 'center right')
 
     # Get the values for sharing axes limits
     share_magnitude = kwargs.pop('share_magnitude', None)
@@ -989,21 +1003,15 @@ def bode_plot(
     # different response (system).
     #
 
-    # Figure out where to put legends
-    if legend_map is None:
-        legend_map = np.full(ax_array.shape, None, dtype=object)
-        if legend_loc == None:
-            legend_loc = 'center right'
-
-        # TODO: add in additional processing later
-
-        # Put legend in the upper right
-        legend_map[0, -1] = legend_loc
-
     # Create axis legends
-    legend_array = np.full(ax_array.shape, None, dtype=object)
-    for i in range(nrows):
-        for j in range(ncols):
+    if show_legend != False:
+        # Figure out where to put legends
+        if legend_map is None:
+            legend_map = np.full(ax_array.shape, None, dtype=object)
+            legend_map[0, -1] = legend_loc
+
+        legend_array = np.full(ax_array.shape, None, dtype=object)
+        for i, j in itertools.product(range(nrows), range(ncols)):
             if legend_map[i, j] is None:
                 continue
             ax = ax_array[i, j]
@@ -1016,10 +1024,13 @@ def bode_plot(
                 ignore_common=line_labels is not None)
 
             # Generate the label, if needed
-            if len(labels) > 1:
+            if show_legend == True or len(labels) > 1:
                 with plt.rc_context(rcParams):
+                    print(f"{lines=}, {labels=}")
                     legend_array[i, j] = ax.legend(
                         lines, labels, loc=legend_map[i, j])
+    else:
+        legend_array = None
 
     #
     # Legacy return pocessing
@@ -1476,7 +1487,7 @@ def nyquist_response(
 
 def nyquist_plot(
         data, omega=None, plot=None, label_freq=0, color=None, label=None,
-        return_contour=None, title=None, legend_loc='upper right', ax=None,
+        return_contour=None, title=None, ax=None,
         unit_circle=False, mt_circles=None, ms_circles=None, **kwargs):
     """Nyquist plot for a system.
 
@@ -1550,6 +1561,10 @@ def nyquist_plot(
         8 and can be set using config.defaults['nyquist.arrow_size'].
     arrow_style : matplotlib.patches.ArrowStyle, optional
         Define style used for Nyquist curve arrows (overrides `arrow_size`).
+    ax : matplotlib.axes.Axes, optional
+        The matplotlib axes to draw the figure on.  If not specified and
+        the current figure has a single axes, that axes is used.
+        Otherwise, a new figure is created.
     encirclement_threshold : float, optional
         Define the threshold for generating a warning if the number of net
         encirclements is a non-integer value.  Default value is 0.05 and can
@@ -1564,13 +1579,16 @@ def nyquist_plot(
         Amount to indent the Nyquist contour around poles on or near the
         imaginary axis. Portions of the Nyquist plot corresponding to indented
         portions of the contour are plotted using a different line style.
-    label : str or array-like of str
+    label : str or array_like of str, optional
         If present, replace automatically generated label(s) with the given
         label(s).  If sysdata is a list, strings should be specified for each
         system.
     label_freq : int, optiona
         Label every nth frequency on the plot.  If not specified, no labels
         are generated.
+    legend_loc : int or str, optional
+        Include a legend in the given location. Default is 'center right',
+        with no legend for a single response.  Use False to supress legend.
     max_curve_magnitude : float, optional
         Restrict the maximum magnitude of the Nyquist plot to this value.
         Portions of the Nyquist plot whose magnitude is restricted are
@@ -1609,6 +1627,10 @@ def nyquist_plot(
     return_contour : bool, optional
         (legacy) If 'True', return the encirclement count and Nyquist
         contour used to generate the Nyquist plot.
+    show_legend : bool, optional
+        Force legend to be shown if ``True`` or hidden if ``False``.  If
+        ``None``, then show legend when there is more than one line on the
+        plot or ``legend_loc`` has been specified.
     start_marker : str, optional
         Matplotlib marker to use to mark the starting point of the Nyquist
         plot.  Defaults value is 'o' and can be set using
@@ -1775,6 +1797,8 @@ def nyquist_plot(
 
     fig, ax = _process_ax_keyword(
         ax_user, shape=(1, 1), squeeze=True, rcParams=rcParams)
+    legend_loc, _, show_legend = _process_legend_keywords(
+        kwargs, None, 'upper right')
 
     # Create a list of lines for the output
     out = np.empty(len(nyquist_responses), dtype=object)
@@ -1950,11 +1974,11 @@ def nyquist_plot(
     lines, labels = _get_line_labels(ax)
 
     # Add legend if there is more than one system plotted
-    if len(labels) > 1:
+    if show_legend == True or (show_legend != False and len(labels) > 1):
         with plt.rc_context(rcParams):
             legend = ax.legend(lines, labels, loc=legend_loc)
     else:
-        legend=None
+        legend = None
 
     # Add the title
     if ax_user is None:
@@ -2193,7 +2217,7 @@ def singular_values_response(
 
 def singular_values_plot(
         data, omega=None, *fmt, plot=None, omega_limits=None, omega_num=None,
-        ax=None, label=None, title=None, legend_loc='center right', **kwargs):
+        ax=None, label=None, title=None, **kwargs):
     """Plot the singular values for a system.
 
     Plot the singular values as a function of frequency for a system or
@@ -2237,16 +2261,20 @@ def singular_values_plot(
 
     Other Parameters
     ----------------
+    ax : matplotlib.axes.Axes, optional
+        The matplotlib axes to draw the figure on.  If not specified and
+        the current figure has a single axes, that axes is used.
+        Otherwise, a new figure is created.
     grid : bool
         If True, plot grid lines on gain and phase plots.  Default is set by
         `config.defaults['freqplot.grid']`.
-    label : str or array-like of str
+    label : str or array_like of str, optional
         If present, replace automatically generated label(s) with the given
         label(s).  If sysdata is a list, strings should be specified for each
         system.
-    legend_loc : str, optional
-        For plots with multiple lines, a legend will be included in the
-        given location.  Default is 'center right'.  Use False to supress.
+    legend_loc : int or str, optional
+        Include a legend in the given location. Default is 'center right',
+        with no legend for a single response.  Use False to supress legend.
     omega_limits : array_like of two values
         Set limits for plotted frequency range. If Hz=True the limits are
         in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
@@ -2262,6 +2290,10 @@ def singular_values_plot(
     rcParams : dict
         Override the default parameters used for generating plots.
         Default is set up config.default['freqplot.rcParams'].
+    show_legend : bool, optional
+        Force legend to be shown if ``True`` or hidden if ``False``.  If
+        ``None``, then show legend when there is more than one line on an
+        axis or ``legend_loc`` or ``legend_map`` has been specified.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
 
@@ -2343,6 +2375,8 @@ def singular_values_plot(
     fig, ax_sigma = _process_ax_keyword(
         ax, shape=(1, 1), squeeze=True, rcParams=rcParams)
     ax_sigma.set_label('control-sigma')         # TODO: deprecate?
+    legend_loc, _, show_legend = _process_legend_keywords(
+        kwargs, None, 'center right')
 
     # Handle color cycle manually as all singular values
     # of the same systems are expected to be of the same color
@@ -2413,7 +2447,7 @@ def singular_values_plot(
     lines, labels = _get_line_labels(ax_sigma)
 
     # Add legend if there is more than one system plotted
-    if len(labels) > 1 and legend_loc is not False:
+    if show_legend == True or (show_legend != False and len(labels) > 1):
         with plt.rc_context(rcParams):
             legend = ax_sigma.legend(lines, labels, loc=legend_loc)
     else:

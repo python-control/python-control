@@ -127,8 +127,6 @@ def root_locus_plot(
         for continuous time systems, unit circle for discrete time systems.
         If `empty`, do not draw any additonal lines.  Default value is set
         by config.default['rlocus.grid'].
-    ax : :class:`matplotlib.axes.Axes`
-        Axes on which to create root locus plot
     initial_gain : float, optional
         Mark the point on the root locus diagram corresponding to the
         given gain.
@@ -158,6 +156,26 @@ def root_locus_plot(
         (legacy) If the `plot` keyword is given, returns the closed-loop
         root locations, arranged such that each row corresponds to a gain,
         and the array of gains (same as `gains` keyword argument if provided).
+
+    Other Parameters
+    ----------------
+    ax : matplotlib.axes.Axes, optional
+        The matplotlib axes to draw the figure on.  If not specified and
+        the current figure has a single axes, that axes is used.
+        Otherwise, a new figure is created.
+    label : str or array_like of str, optional
+        If present, replace automatically generated label(s) with the given
+        label(s).  If sysdata is a list, strings should be specified for each
+        system.
+    legend_loc : int or str, optional
+        Include a legend in the given location. Default is 'center right',
+        with no legend for a single response.  Use False to supress legend.
+    show_legend : bool, optional
+        Force legend to be shown if ``True`` or hidden if ``False``.  If
+        ``None``, then show legend when there is more than one line on the
+        plot or ``legend_loc`` has been specified.
+    title : str, optional
+        Set the title of the plot.  Defaults to plot type and system name(s).
 
     Notes
     -----
