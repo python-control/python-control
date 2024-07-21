@@ -431,7 +431,7 @@ various ways.  The following general rules apply:
 
 * If a plotting function is called multiple times with data that generate
   control plots with the same shape for the array of subplots, the new data
-  will be overlayed with the old data, with a change in color(s) for the
+  will be overlaid with the old data, with a change in color(s) for the
   new data (chosen from the standard matplotlib color cycle).  If not
   overridden, the plot title and legends will be updated to reflect all
   data shown on the plot.
@@ -439,7 +439,7 @@ various ways.  The following general rules apply:
 * If a plotting function is called and the shape for the array of subplots
   does not match the currently displayed plot, a new figure is created.
   Note that only the shape is checked, so if two different types of
-  plotting commands that generate the same shape of suplots are called
+  plotting commands that generate the same shape of subplots are called
   sequentially, the :func:`matplotlib.pyplot.figure` command should be used
   to explicitly create a new figure.
 
@@ -485,7 +485,7 @@ various ways.  The following general rules apply:
   the ``legend_loc`` keyword argument is set to a string or integer, it
   will set the position of the legend as described in the
   :func:`matplotlib.legend`` documentation.  Finally, ``legend_map`` can be
-  set to an` array that matches the shape of the suplots, with each item
+  set to an` array that matches the shape of the subplots, with each item
   being a string indicating the location of the legend for that axes (or
   ``None`` for no legend).
 
@@ -529,6 +529,61 @@ various ways.  The following general rules apply:
   for the returned control plot object.
 
   The plot title is only generated if ``ax`` is ``None``.
+
+The following code illustrates the use of some of these customization
+features::
+
+    P = ct.tf([0.02], [1, 0.1, 0.01])   # servomechanism
+    C1 = ct.tf([1, 1], [1, 0])          # unstable
+    L1 = P * C1
+    C2 = ct.tf([1, 0.05], [1, 0])       # stable
+    L2 = P * C2
+
+    plt.rcParams.update(ct.rcParams)
+    fig = plt.figure(figsize=[7, 4])
+    ax_mag = fig.add_subplot(2, 2, 1)
+    ax_phase = fig.add_subplot(2, 2, 3)
+    ax_nyquist = fig.add_subplot(1, 2, 2)
+
+    ct.bode_plot(
+        [L1, L2], ax=[ax_mag, ax_phase],
+        label=["$L_1$ (unstable)", "$L_2$ (unstable)"],
+        show_legend=False)
+    ax_mag.set_title("Bode plot for $L_1$, $L_2$")
+    ax_mag.tick_params(labelbottom=False)
+    fig.align_labels()
+
+    ct.nyquist_plot(L1, ax=ax_nyquist, label="$L_1$ (unstable)")
+    ct.nyquist_plot(
+        L2, ax=ax_nyquist, label="$L_2$ (stable)",
+        max_curve_magnitude=22, legend_loc='upper right')
+    ax_nyquist.set_title("Nyquist plot for $L_1$, $L_2$")
+
+    fig.suptitle("Loop analysis for servomechanism control design")
+    plt.tight_layout()
+
+.. image:: ctrlplot-servomech.png
+
+As this example illustrates, python-control plotting functions and
+Matplotlib plotting functions can generally be intermixed.  One type of
+plot for which this does not currently work is pole/zero plots with a
+continuous time omega-damping grid (including root locus diagrams), due to
+the way that axes grids are implemented.  As a workaround, the
+:func:`~control.pole_zero_subplots` command can be used to create an array
+of subplots with different grid types, as illustrated in the following
+example::
+
+    ax_array = ct.pole_zero_subplots(2, 1, grid=[True, False])
+    sys1 = ct.tf([1, 2], [1, 2, 3], name='sys1')
+    sys2 = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='sys2')
+    ct.root_locus_plot([sys1, sys2], ax=ax_array[0, 0])
+    cplt = ct.root_locus_plot([sys1, sys2], ax=ax_array[1, 0])
+    cplt.set_plot_title("Root locus plots (w/ specified axes)")
+
+.. image:: ctrlplot-pole_zero_subplots.png
+
+Alternatively, turning off the omega-damping grid (using ``grid=False`` or
+``grid='empty'``) allows use of Matplotlib layout commands.
 
 
 Response and plotting functions

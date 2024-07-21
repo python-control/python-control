@@ -782,3 +782,64 @@ def test_ControlPlot_init():
     assert np.all(cplt_raw.axes == cplt.axes)
     assert cplt_raw.figure == cplt.figure
 
+def test_pole_zero_subplots(savefig=False):
+    ax_array = ct.pole_zero_subplots(2, 1, grid=[True, False])
+    sys1 = ct.tf([1, 2], [1, 2, 3], name='sys1')
+    sys2 = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='sys2')
+    ct.root_locus_plot([sys1, sys2], ax=ax_array[0, 0])
+    cplt = ct.root_locus_plot([sys1, sys2], ax=ax_array[1, 0])
+    with pytest.warns(UserWarning, match="Tight layout not applied"):
+        cplt.set_plot_title("Root locus plots (w/ specified axes)")
+    if savefig:
+        plt.savefig("ctrlplot-pole_zero_subplots.png")
+
+if __name__ == "__main__":
+    #
+    # Interactive mode: generate plots for manual viewing
+    #
+    # Running this script in python (or better ipython) will show a
+    # collection of figures that should all look OK on the screeen.
+    #
+
+    # In interactive mode, turn on ipython interactive graphics
+    plt.ion()
+
+    # Start by clearing existing figures
+    plt.close('all')
+
+    #
+    # Combination plot
+    #
+
+    P = ct.tf([0.02], [1, 0.1, 0.01])   # servomechanism
+    C1 = ct.tf([1, 1], [1, 0])          # unstable
+    L1 = P * C1
+    C2 = ct.tf([1, 0.05], [1, 0])       # stable
+    L2 = P * C2
+
+    plt.rcParams.update(ct.rcParams)
+    fig = plt.figure(figsize=[7, 4])
+    ax_mag = fig.add_subplot(2, 2, 1)
+    ax_phase = fig.add_subplot(2, 2, 3)
+    ax_nyquist = fig.add_subplot(1, 2, 2)
+
+    ct.bode_plot(
+        [L1, L2], ax=[ax_mag, ax_phase],
+        label=["$L_1$ (unstable)", "$L_2$ (unstable)"],
+        show_legend=False)
+    ax_mag.set_title("Bode plot for $L_1$, $L_2$")
+    ax_mag.tick_params(labelbottom=False)
+    fig.align_labels()
+
+    ct.nyquist_plot(L1, ax=ax_nyquist, label="$L_1$ (unstable)")
+    ct.nyquist_plot(
+        L2, ax=ax_nyquist, label="$L_2$ (stable)",
+        max_curve_magnitude=22, legend_loc='upper right')
+    ax_nyquist.set_title("Nyquist plot for $L_1$, $L_2$")
+
+    fig.suptitle("Loop analysis for servomechanism control design")
+    plt.tight_layout()
+    plt.savefig('ctrlplot-servomech.png')
+
+    plt.figure()
+    test_pole_zero_subplots(savefig=True)

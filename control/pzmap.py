@@ -265,11 +265,16 @@ def pole_zero_plot(
 
     Notes
     -----
-    By default, the pzmap function calls matplotlib.pyplot.axis('equal'),
-    which means that trying to reset the axis limits may not behave as
-    expected.  To change the axis limits, use the `scaling` keyword of use
-    matplotlib.pyplot.gca().axis('auto') and then set the axis limits to
-    the desired values.
+    1. By default, the pzmap function calls matplotlib.pyplot.axis('equal'),
+       which means that trying to reset the axis limits may not behave as
+       expected.  To change the axis limits, use the `scaling` keyword of
+       use matplotlib.pyplot.gca().axis('auto') and then set the axis
+       limits to the desired values.
+
+    2. Pole/zero plts that use the continuous time omega-damping grid do
+       not work with the ``ax`` keyword argument, due to the way that axes
+       grids are implemented.  The ``grid`` argument must be set to
+       ``False`` or `'empty'`` when using the ``ax`` keyword argument.
 
     """
     # Get parameter values
