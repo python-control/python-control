@@ -141,18 +141,6 @@ def sgrid(scaling=None):
     return ax, fig
 
 
-# Utility function used by all grid code
-def _final_setup(ax, scaling=None):
-    ax.set_xlabel('Real')
-    ax.set_ylabel('Imaginary')
-    ax.axhline(y=0, color='black', lw=0.25)
-    ax.axvline(x=0, color='black', lw=0.25)
-
-    # Set up the scaling for the axes
-    scaling = 'equal' if scaling is None else scaling
-    plt.axis(scaling)
-
-
 # If not grid is given, at least separate stable/unstable regions
 def nogrid(dt=None, ax=None, scaling=None):
     fig = plt.gcf()
@@ -226,3 +214,15 @@ def zgrid(zetas=None, wns=None, ax=None, scaling=None):
 
     _final_setup(ax, scaling=scaling)
     return ax, fig
+
+
+# Utility function used by all grid code
+def _final_setup(ax, scaling=None):
+    ax.set_xlabel('Real')
+    ax.set_ylabel('Imaginary')
+    ax.axhline(y=0, color='black', lw=0.25)
+    ax.axvline(x=0, color='black', lw=0.25)
+
+    # Set up the scaling for the axes
+    scaling = 'equal' if scaling is None else scaling
+    plt.axis(scaling)

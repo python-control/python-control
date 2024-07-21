@@ -18,7 +18,8 @@ import numpy as np
 from numpy import cos, exp, imag, linspace, real, sin, sqrt
 
 from . import config
-from .freqplot import _freqplot_defaults, _get_line_labels
+from .ctrlplot import _get_line_labels
+from .freqplot import _freqplot_defaults
 from .grid import nogrid, sgrid, zgrid
 from .iosys import isctime, isdtime
 from .lti import LTI
