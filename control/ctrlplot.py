@@ -277,11 +277,9 @@ def pole_zero_subplots(
     from .grid import nogrid, sgrid, zgrid
     from .iosys import isctime
 
-    if rcParams is None:
-        rcParams = _ctrlplot_rcParams
-
     if fig is None:
         fig = plt.gcf()
+    rcParams = config._get_param('ctrlplot', 'rcParams', rcParams)
 
     if not isinstance(grid, list):
         grid = [grid] * nrows * ncols
@@ -525,8 +523,6 @@ def _update_plot_title(
     if fig is None:
         fig = plt.gcf()
     rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
-    if rcParams is None:
-        rcParams = _ctrlplot_rcParams
 
     if use_existing:
         # Get the current title, if it exists

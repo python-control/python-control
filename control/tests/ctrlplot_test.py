@@ -771,6 +771,10 @@ def test_deprecation_warnings():
         axs = ct.get_plot_axes(cplt.lines)
         assert np.all(axs == cplt.axes)
 
+    with pytest.warns(FutureWarning, match="deprecated"):
+        ct.suptitle("updated title")
+        assert cplt.figure._suptitle.get_text() == "updated title"
+
 
 def test_ControlPlot_init():
     sys = ct.rss(2, 2, 2)
@@ -782,6 +786,7 @@ def test_ControlPlot_init():
     assert np.all(cplt_raw.axes == cplt.axes)
     assert cplt_raw.figure == cplt.figure
 
+
 def test_pole_zero_subplots(savefig=False):
     ax_array = ct.pole_zero_subplots(2, 1, grid=[True, False])
     sys1 = ct.tf([1, 2], [1, 2, 3], name='sys1')
@@ -792,6 +797,16 @@ def test_pole_zero_subplots(savefig=False):
         cplt.set_plot_title("Root locus plots (w/ specified axes)")
     if savefig:
         plt.savefig("ctrlplot-pole_zero_subplots.png")
+
+    # Single type of of grid for all axes
+    ax_array = ct.pole_zero_subplots(2, 2, grid='empty')
+    assert ax_array[0, 0].xaxis.get_label().get_text() == ''
+
+    # Discrete system grid
+    ax_array = ct.pole_zero_subplots(2, 2, grid=True, dt=1)
+    assert ax_array[0, 0].xaxis.get_label().get_text() == 'Real'
+    assert ax_array[0, 0].get_lines()[0].get_color() == 'grey'
+
 
 if __name__ == "__main__":
     #
