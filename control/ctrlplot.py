@@ -113,7 +113,7 @@ def get_plot_axes(line_array):
 # Utility functions
 #
 # These functions are used by plotting routines to provide a consistent way
-# of processing and displaing information.
+# of processing and displaying information.
 #
 
 
