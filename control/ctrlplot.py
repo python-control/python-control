@@ -148,7 +148,8 @@ class ControlPlot(object):
     def __init__(self, lines, axes=None, figure=None, legend=None):
         self.lines = lines
         if axes is None:
-            axes = get_plot_axes(lines)
+            _get_axes = np.vectorize(lambda lines: lines[0].axes)
+            axes = _get_axes(lines)
         self.axes = np.atleast_2d(axes)
         if figure is None:
             figure = self.axes[0, 0].figure
@@ -240,6 +241,7 @@ def get_plot_axes(line_array):
     Only the first element of each array entry is used to determine the axes.
 
     """
+    warnings.warn("get_plot_axes is deprecated; use cplt.axes", FutureWarning)
     _get_axes = np.vectorize(lambda lines: lines[0].axes)
     if isinstance(line_array, ControlPlot):
         return _get_axes(line_array.lines)

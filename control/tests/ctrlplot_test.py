@@ -89,9 +89,10 @@ def test_plot_ax_processing(resp_fcn, plot_fcn):
     get_line_color = lambda cplt: cplt.lines.reshape(-1)[0][0].get_color()
     match resp_fcn, plot_fcn:
         case ct.describing_function_response, _:
+            sys = ct.tf([1], [1, 2, 2, 1])
             F = ct.descfcn.saturation_nonlinearity(1)
             amp = np.linspace(1, 4, 10)
-            args = (sys1, F, amp)
+            args = (sys, F, amp)
             resp_kwargs = plot_kwargs = {'refine': False}
 
         case ct.gangof4_response, _:
@@ -224,6 +225,8 @@ def test_plot_label_processing(resp_fcn, plot_fcn):
     expected_labels = ["sys1_", "sys2_"]
     match resp_fcn, plot_fcn:
         case ct.describing_function_response, _:
+            sys1 = ct.tf([1], [1, 2, 2, 1], name="sys[1]")
+            sys2 = ct.tf([1.1], [1, 2, 2, 1], name="sys[2]")
             F = ct.descfcn.saturation_nonlinearity(1)
             amp = np.linspace(1, 4, 10)
             args1 = (sys1, F, amp)
@@ -332,6 +335,8 @@ def test_siso_plot_legend_processing(resp_fcn, plot_fcn):
     default_labels = ["sys[1]", "sys[2]"]
     match resp_fcn, plot_fcn:
         case ct.describing_function_response, _:
+            sys1 = ct.tf([1], [1, 2, 2, 1], name="sys[1]")
+            sys2 = ct.tf([1.1], [1, 2, 2, 1], name="sys[2]")
             F = ct.descfcn.saturation_nonlinearity(1)
             amp = np.linspace(1, 4, 10)
             args1 = (sys1, F, amp)
@@ -488,6 +493,8 @@ def test_plot_title_processing(resp_fcn, plot_fcn):
     expected_title = "sys1_, sys2_"
     match resp_fcn, plot_fcn:
         case ct.describing_function_response, _:
+            sys1 = ct.tf([1], [1, 2, 2, 1], name="sys[1]")
+            sys2 = ct.tf([1.1], [1, 2, 2, 1], name="sys[2]")
             F = ct.descfcn.saturation_nonlinearity(1)
             amp = np.linspace(1, 4, 10)
             args1 = (sys1, F, amp)
@@ -617,6 +624,8 @@ def test_rcParams(resp_fcn, plot_fcn):
     expected_title = "sys1_, sys2_"
     match resp_fcn, plot_fcn:
         case ct.describing_function_response, _:
+            sys1 = ct.tf([1], [1, 2, 2, 1], name="sys[1]")
+            sys2 = ct.tf([1], [1, 2, 2, 1], name="sys[2]")
             F = ct.descfcn.saturation_nonlinearity(1)
             amp = np.linspace(1, 4, 10)
             args1 = (sys1, F, amp)
@@ -747,8 +756,29 @@ def test_rcParams(resp_fcn, plot_fcn):
         assert ct.ctrlplot.rcParams[key] != my_rcParams[key]
 
 
-def test_deprecation_warning():
+def test_deprecation_warnings():
     sys = ct.rss(2, 2, 2)
     lines = ct.step_response(sys).plot(overlay_traces=True)
     with pytest.warns(FutureWarning, match="deprecated"):
         assert len(lines[0, 0]) == 2
+
+    cplt = ct.step_response(sys).plot()
+    with pytest.warns(FutureWarning, match="deprecated"):
+        axs = ct.get_plot_axes(cplt)
+        assert np.all(axs == cplt.axes)
+
+    with pytest.warns(FutureWarning, match="deprecated"):
+        axs = ct.get_plot_axes(cplt.lines)
+        assert np.all(axs == cplt.axes)
+
+
+def test_ControlPlot_init():
+    sys = ct.rss(2, 2, 2)
+    cplt = ct.step_response(sys).plot()
+
+    # Create a ControlPlot from data, without the axes or figure
+    cplt_raw = ct.ControlPlot(cplt.lines)
+    assert np.all(cplt_raw.lines == cplt.lines)
+    assert np.all(cplt_raw.axes == cplt.axes)
+    assert cplt_raw.figure == cplt.figure
+

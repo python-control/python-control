@@ -194,8 +194,6 @@ def test_response_plots(
 
 @pytest.mark.usefixtures('mplcleanup')
 def test_axes_setup():
-    get_plot_axes = ct.get_plot_axes
-
     sys_2x3 = ct.rss(4, 2, 3)
     sys_2x3b = ct.rss(4, 2, 3)
     sys_3x2 = ct.rss(4, 3, 2)
@@ -204,21 +202,21 @@ def test_axes_setup():
     # Two plots of the same size leaves axes unchanged
     cplt1 = ct.step_response(sys_2x3).plot()
     cplt2 = ct.step_response(sys_2x3b).plot()
-    np.testing.assert_equal(get_plot_axes(cplt1), get_plot_axes(cplt2))
+    np.testing.assert_equal(cplt1.axes, cplt2.axes)
     plt.close()
 
     # Two plots of same net size leaves axes unchanged (unfortunately)
     cplt1 = ct.step_response(sys_2x3).plot()
     cplt2 = ct.step_response(sys_3x2).plot()
     np.testing.assert_equal(
-        get_plot_axes(cplt1).reshape(-1), get_plot_axes(cplt2).reshape(-1))
+        cplt1.axes.reshape(-1), cplt2.axes.reshape(-1))
     plt.close()
 
     # Plots of different shapes generate new plots
     cplt1 = ct.step_response(sys_2x3).plot()
     cplt2 = ct.step_response(sys_3x1).plot()
-    ax1_list = get_plot_axes(cplt1).reshape(-1).tolist()
-    ax2_list = get_plot_axes(cplt2).reshape(-1).tolist()
+    ax1_list = cplt1.axes.reshape(-1).tolist()
+    ax2_list = cplt2.axes.reshape(-1).tolist()
     for ax in ax1_list:
         assert ax not in ax2_list
     plt.close()
@@ -226,8 +224,8 @@ def test_axes_setup():
     # Passing a list of axes preserves those axes
     cplt1 = ct.step_response(sys_2x3).plot()
     cplt2 = ct.step_response(sys_3x1).plot()
-    cplt3 = ct.step_response(sys_2x3b).plot(ax=get_plot_axes(cplt1))
-    np.testing.assert_equal(get_plot_axes(cplt1), get_plot_axes(cplt3))
+    cplt3 = ct.step_response(sys_2x3b).plot(ax=cplt1.axes)
+    np.testing.assert_equal(cplt1.axes, cplt3.axes)
     plt.close()
 
     # Sending an axes array of the wrong size raises exception
@@ -433,7 +431,7 @@ def test_timeplot_trace_labels(resp_fcn):
 
     # Make sure default labels are as expected
     cplt = resp_fcn([sys1, sys2], **kwargs).plot()
-    axs = ct.get_plot_axes(cplt.lines)
+    axs = cplt.axes
     if axs.ndim == 1:
         legend = axs[0].get_legend().get_texts()
     else:
@@ -444,7 +442,7 @@ def test_timeplot_trace_labels(resp_fcn):
 
     # Override labels all at once
     cplt = resp_fcn([sys1, sys2], **kwargs).plot(label=['line1', 'line2'])
-    axs = ct.get_plot_axes(cplt.lines)
+    axs = cplt.axes
     if axs.ndim == 1:
         legend = axs[0].get_legend().get_texts()
     else:
@@ -456,7 +454,7 @@ def test_timeplot_trace_labels(resp_fcn):
     # Override labels one at a time
     cplt = resp_fcn(sys1, **kwargs).plot(label='line1')
     cplt = resp_fcn(sys2, **kwargs).plot(label='line2')
-    axs = ct.get_plot_axes(cplt.lines)
+    axs = cplt.axes
     if axs.ndim == 1:
         legend = axs[0].get_legend().get_texts()
     else:
@@ -489,7 +487,7 @@ def test_full_label_override():
     cplt = ct.step_response([sys1, sys2]).plot(
         overlay_signals=True, overlay_traces=True, plot_inputs=True,
         label=labels_4d)
-    axs = ct.get_plot_axes(cplt.lines)
+    axs = cplt.axes
     assert axs.shape == (2, 1)
     legend_text = axs[0, 0].get_legend().get_texts()
     for i, label in enumerate(labels_2d[0]):
@@ -502,7 +500,7 @@ def test_full_label_override():
     cplt = ct.step_response([sys1, sys2]).plot(
         overlay_signals=True, overlay_traces=True, plot_inputs=True,
         label=labels_2d)
-    axs = ct.get_plot_axes(cplt.lines)
+    axs = cplt.axes
     assert axs.shape == (2, 1)
     legend_text = axs[0, 0].get_legend().get_texts()
     for i, label in enumerate(labels_2d[0]):
@@ -522,7 +520,7 @@ def test_relabel():
 
     # Generate a new plot, which overwrites labels
     cplt = ct.step_response(sys2).plot()
-    ax = ct.get_plot_axes(cplt.lines)
+    ax = cplt.axes
     assert ax[0, 0].get_ylabel() == 'y[0]'
 
     # Regenerate the first plot
@@ -570,7 +568,7 @@ def test_legend_customization():
 
     # Generic input/output plot
     cplt = resp.plot(overlay_signals=True)
-    axs = ct.get_plot_axes(cplt.lines)
+    axs = cplt.axes
     assert axs[0, 0].get_legend()._loc == 7                 # center right
     assert len(axs[0, 0].get_legend().get_texts()) == 2
     assert axs[1, 0].get_legend() == None
@@ -578,7 +576,7 @@ def test_legend_customization():
 
     # Hide legend
     cplt = resp.plot(overlay_signals=True, show_legend=False)
-    axs = ct.get_plot_axes(cplt.lines)
+    axs = cplt.axes
     assert axs[0, 0].get_legend() == None
     assert axs[1, 0].get_legend() == None
     plt.close()
@@ -586,7 +584,7 @@ def test_legend_customization():
     # Put legend in both axes
     cplt = resp.plot(
         overlay_signals=True, legend_map=[['center left'], ['center right']])
-    axs = ct.get_plot_axes(cplt.lines)
+    axs = cplt.axes
     assert axs[0, 0].get_legend()._loc == 6                 # center left
     assert len(axs[0, 0].get_legend().get_texts()) == 2
     assert axs[1, 0].get_legend()._loc == 7                 # center right

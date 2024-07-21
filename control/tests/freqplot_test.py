@@ -142,7 +142,7 @@ def test_response_plots(
 def test_manual_response_limits():
     # Default response: limits should be the same across rows
     cplt = manual_response.plot()
-    axs = ct.get_plot_axes(cplt)        # legacy usage OK
+    axs = cplt.axes
     for i in range(manual_response.noutputs):
         for j in range(1, manual_response.ninputs):
             # Everything in the same row should have the same limits
@@ -305,8 +305,8 @@ def test_bode_share_options():
     ct.set_defaults('freqplot', title_frame='figure')
 
     # Default sharing should share along rows and cols for mag and phase
-    lines = ct.bode_plot(manual_response)
-    axs = ct.get_plot_axes(lines)
+    cplt = ct.bode_plot(manual_response)
+    axs = cplt.axes
     for i in range(axs.shape[0]):
         for j in range(axs.shape[1]):
             # Share y limits along rows
@@ -317,8 +317,8 @@ def test_bode_share_options():
 
     # Sharing along y axis for mag but not phase
     plt.figure()
-    lines = ct.bode_plot(manual_response, share_phase='none')
-    axs = ct.get_plot_axes(lines)
+    cplt = ct.bode_plot(manual_response, share_phase='none')
+    axs = cplt.axes
     for i in range(int(axs.shape[0] / 2)):
         for j in range(axs.shape[1]):
             if i != 0:
@@ -330,8 +330,8 @@ def test_bode_share_options():
 
     # Turn off sharing for magnitude and phase
     plt.figure()
-    lines = ct.bode_plot(manual_response, sharey='none')
-    axs = ct.get_plot_axes(lines)
+    cplt = ct.bode_plot(manual_response, sharey='none')
+    axs = cplt.axes
     for i in range(int(axs.shape[0] / 2)):
         for j in range(axs.shape[1]):
             if i != 0:
@@ -345,7 +345,7 @@ def test_bode_share_options():
 
     # Turn off sharing in x axes
     plt.figure()
-    lines = ct.bode_plot(manual_response, sharex='none')
+    cplt = ct.bode_plot(manual_response, sharex='none')
     # TODO: figure out what to check
 
 
@@ -355,11 +355,11 @@ def test_freqplot_plot_type(plot_type):
         response = ct.singular_values_response(ct.rss(2, 1, 1))
     else:
         response = ct.frequency_response(ct.rss(2, 1, 1))
-    lines = response.plot(plot_type=plot_type)
+    cplt = response.plot(plot_type=plot_type)
     if plot_type == 'bode':
-        assert lines.shape == (2, 1)
+        assert cplt.lines.shape == (2, 1)
     else:
-        assert lines.shape == (1, )
+        assert cplt.lines.shape == (1, )
 
 @pytest.mark.parametrize("plt_fcn", [ct.bode_plot, ct.singular_values_plot])
 @pytest.mark.usefixtures("editsdefaults")
@@ -379,14 +379,14 @@ def test_freqplot_omega_limits(plt_fcn):
         ct.tf([1], [1, 2, 1]), np.logspace(-1, 1))
 
     # Generate a plot without overridding the limits
-    lines = plt_fcn(response)
-    ax = ct.get_plot_axes(lines)
+    cplt = plt_fcn(response)
+    ax = cplt.axes
     np.testing.assert_allclose(
         _get_visible_limits(ax.reshape(-1)[0]), np.array([0.1, 10]))
 
     # Now reset the limits
-    lines = plt_fcn(response, omega_limits=(1, 100))
-    ax = ct.get_plot_axes(lines)
+    cplt = plt_fcn(response, omega_limits=(1, 100))
+    ax = cplt.axes
     np.testing.assert_allclose(
         _get_visible_limits(ax.reshape(-1)[0]), np.array([1, 100]))
 
@@ -400,7 +400,7 @@ def test_gangof4_trace_labels():
     # Make sure default labels are as expected
     cplt = ct.gangof4_response(P1, C1).plot()
     cplt = ct.gangof4_response(P2, C2).plot()
-    axs = ct.get_plot_axes(cplt)        # legacy usage OK
+    axs = cplt.axes
     legend = axs[0, 1].get_legend().get_texts()
     assert legend[0].get_text() == 'P=P1, C=C1'
     assert legend[1].get_text() == 'P=P2, C=C2'
@@ -409,7 +409,7 @@ def test_gangof4_trace_labels():
     # Suffix truncation
     cplt = ct.gangof4_response(P1, C1).plot()
     cplt = ct.gangof4_response(P2, C1).plot()
-    axs = ct.get_plot_axes(cplt)        # legacy usage OK
+    axs = cplt.axes
     legend = axs[0, 1].get_legend().get_texts()
     assert legend[0].get_text() == 'P=P1'
     assert legend[1].get_text() == 'P=P2'
@@ -418,7 +418,7 @@ def test_gangof4_trace_labels():
     # Prefix turncation
     cplt = ct.gangof4_response(P1, C1).plot()
     cplt = ct.gangof4_response(P1, C2).plot()
-    axs = ct.get_plot_axes(cplt)        # legacy usage OK
+    axs = cplt.axes
     legend = axs[0, 1].get_legend().get_texts()
     assert legend[0].get_text() == 'C=C1'
     assert legend[1].get_text() == 'C=C2'
@@ -427,7 +427,7 @@ def test_gangof4_trace_labels():
     # Override labels
     cplt = ct.gangof4_response(P1, C1).plot(label='xxx, line1, yyy')
     cplt = ct.gangof4_response(P2, C2).plot(label='xxx, line2, yyy')
-    axs = ct.get_plot_axes(cplt)        # legacy usage OK
+    axs = cplt.axes
     legend = axs[0, 1].get_legend().get_texts()
     assert legend[0].get_text() == 'xxx, line1, yyy'
     assert legend[1].get_text() == 'xxx, line2, yyy'
@@ -446,7 +446,7 @@ def test_freqplot_line_labels(plt_fcn):
 
     # Make sure default labels are as expected
     cplt = plt_fcn([sys1, sys2])
-    axs = ct.get_plot_axes(cplt)        # legacy usage OK
+    axs = cplt.axes
     if axs.ndim == 1:
         legend = axs[0].get_legend().get_texts()
     else:
@@ -457,7 +457,7 @@ def test_freqplot_line_labels(plt_fcn):
 
     # Override labels all at once
     cplt = plt_fcn([sys1, sys2], label=['line1', 'line2'])
-    axs = ct.get_plot_axes(cplt)        # legacy usage OK
+    axs = cplt.axes
     if axs.ndim == 1:
         legend = axs[0].get_legend().get_texts()
     else:
@@ -469,7 +469,7 @@ def test_freqplot_line_labels(plt_fcn):
     # Override labels one at a time
     cplt = plt_fcn(sys1, label='line1')
     cplt = plt_fcn(sys2, label='line2')
-    axs = ct.get_plot_axes(cplt)        # legacy usage OK
+    axs = cplt.axes
     if axs.ndim == 1:
         legend = axs[0].get_legend().get_texts()
     else:
@@ -495,7 +495,7 @@ def test_line_labels_bode(kwargs, labels):
         ct.bode_plot([sys1, sys2], label=['line1'])
 
     cplt = ct.bode_plot([sys1, sys2], label=labels, **kwargs)
-    axs = ct.get_plot_axes(cplt)        # legacy usage OK
+    axs = cplt.axes
     legend_texts = axs[0, -1].get_legend().get_texts()
     for i, legend in enumerate(legend_texts):
         assert legend.get_text() == labels[i]
@@ -524,7 +524,7 @@ def test_freqplot_ax_keyword(plt_fcn, ninputs, noutputs):
     cplt1 = plt_fcn(sys)
 
     # Draw again on the same figure, using array
-    axs = ct.get_plot_axes(cplt1)       # legacy usage OK
+    axs = cplt1.axes
     cplt2 = plt_fcn(sys, ax=axs)
     np.testing.assert_equal(cplt1.axes, cplt2.axes)
 
