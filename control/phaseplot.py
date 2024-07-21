@@ -37,7 +37,7 @@ from scipy.integrate import odeint
 
 from . import config
 from .ctrlplot import ControlPlot, _add_arrows_to_line2D, \
-    _ctrlplot_rcParams, _process_ax_keyword, _update_plot_title
+    _process_ax_keyword, _update_plot_title
 from .exception import ControlNotImplemented
 from .nlsys import NonlinearIOSystem, find_eqpt, input_output_response
 
@@ -45,7 +45,6 @@ __all__ = ['phase_plane_plot', 'phase_plot', 'box_grid']
 
 # Default values for module parameter variables
 _phaseplot_defaults = {
-    'phaseplot.rcParams': _ctrlplot_rcParams,
     'phaseplot.arrows': 2,                  # number of arrows around curve
     'phaseplot.arrow_size': 8,              # pixel size for arrows
     'phaseplot.separatrices_radius': 0.1    # initial radius for separatrices
@@ -146,8 +145,7 @@ def phase_plane_plot(
     params = kwargs.get('params', None)
     sys = _create_system(sys, params)
     pointdata = [-1, 1, -1, 1] if pointdata is None else pointdata
-    rcParams = config._get_param(
-        'timeplot', 'rcParams', kwargs, _phaseplot_defaults, pop=True)
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
 
     # Create axis if needed
     user_ax = ax
@@ -223,7 +221,7 @@ def phase_plane_plot(
     if user_ax is None:
         if title is None:
             title = f"Phase portrait for {sys.name}"
-        _update_plot_title(title, use_existing=False)
+        _update_plot_title(title, use_existing=False, rcParams=rcParams)
         ax.set_xlabel(sys.state_labels[0])
         ax.set_ylabel(sys.state_labels[1])
         plt.tight_layout()
@@ -281,8 +279,7 @@ def vectorfield(
 
     """
     # Process keywords
-    rcParams = config._get_param(
-        'timeplot', 'rcParams', kwargs, _phaseplot_defaults, pop=True)
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
 
     # Get system parameters
     params = kwargs.pop('params', None)
@@ -375,8 +372,7 @@ def streamlines(
 
     """
     # Process keywords
-    rcParams = config._get_param(
-        'timeplot', 'rcParams', kwargs, _phaseplot_defaults, pop=True)
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
 
     # Get system parameters
     params = kwargs.pop('params', None)
@@ -481,8 +477,7 @@ def equilpoints(
 
     """
     # Process keywords
-    rcParams = config._get_param(
-        'timeplot', 'rcParams', kwargs, _phaseplot_defaults, pop=True)
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
 
     # Get system parameters
     params = kwargs.pop('params', None)
@@ -570,8 +565,7 @@ def separatrices(
 
     """
     # Process keywords
-    rcParams = config._get_param(
-        'timeplot', 'rcParams', kwargs, _phaseplot_defaults, pop=True)
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
 
     # Get system parameters
     params = kwargs.pop('params', None)

@@ -19,10 +19,9 @@ import numpy as np
 
 from . import config
 from .bdalg import feedback
-from .ctrlplot import ControlPlot, _add_arrows_to_line2D, _ctrlplot_rcParams, \
-    _find_axes_center, _get_line_labels, _make_legend_labels, \
-    _process_ax_keyword, _process_legend_keywords, _process_line_labels, \
-    _update_plot_title
+from .ctrlplot import ControlPlot, _add_arrows_to_line2D, _find_axes_center, \
+    _get_line_labels, _make_legend_labels, _process_ax_keyword, \
+    _process_legend_keywords, _process_line_labels, _update_plot_title
 from .ctrlutil import unwrap
 from .exception import ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
@@ -38,7 +37,6 @@ __all__ = ['bode_plot', 'NyquistResponseData', 'nyquist_response',
 
 # Default values for module parameter variables
 _freqplot_defaults = {
-    'freqplot.rcParams': _ctrlplot_rcParams,
     'freqplot.feature_periphery_decades': 1,
     'freqplot.number_of_samples': 1000,
     'freqplot.dB': False,  # Plot gain in dB
@@ -186,7 +184,7 @@ def bode_plot(
         values with no plot.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['freqplot.rcParams'].
+        Default is set by config.default['ctrlplot.rcParams'].
     show_legend : bool, optional
         Force legend to be shown if ``True`` or hidden if ``False``.  If
         ``None``, then show legend when there is more than one line on an
@@ -251,8 +249,7 @@ def bode_plot(
         'freqplot', 'wrap_phase', kwargs, _freqplot_defaults, pop=True)
     initial_phase = config._get_param(
         'freqplot', 'initial_phase', kwargs, None, pop=True)
-    rcParams = config._get_param(
-        'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
     title_frame = config._get_param(
         'freqplot', 'title_frame', kwargs, _freqplot_defaults, pop=True)
 
@@ -1026,7 +1023,6 @@ def bode_plot(
             # Generate the label, if needed
             if show_legend == True or len(labels) > 1:
                 with plt.rc_context(rcParams):
-                    print(f"{lines=}, {labels=}")
                     legend_array[i, j] = ax.legend(
                         lines, labels, loc=legend_map[i, j])
     else:
@@ -1706,8 +1702,7 @@ def nyquist_plot(
         'nyquist', 'max_curve_magnitude', kwargs, _nyquist_defaults, pop=True)
     max_curve_offset = config._get_param(
         'nyquist', 'max_curve_offset', kwargs, _nyquist_defaults, pop=True)
-    rcParams = config._get_param(
-        'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
     start_marker = config._get_param(
         'nyquist', 'start_marker', kwargs, _nyquist_defaults, pop=True)
     start_marker_size = config._get_param(
@@ -2319,8 +2314,7 @@ def singular_values_plot(
         'freqplot', 'Hz', kwargs, _freqplot_defaults, pop=True)
     grid = config._get_param(
         'freqplot', 'grid', kwargs, _freqplot_defaults, pop=True)
-    rcParams = config._get_param(
-        'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
     title_frame = config._get_param(
         'freqplot', 'title_frame', kwargs, _freqplot_defaults, pop=True)
 

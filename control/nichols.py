@@ -99,8 +99,7 @@ def nichols_plot(
     # Get parameter values
     grid = config._get_param('nichols', 'grid', grid, True)
     label = _process_line_labels(label)
-    rcParams = config._get_param(
-        'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
 
     # If argument was a singleton, turn it into a list
     if not isinstance(data, (tuple, list)):

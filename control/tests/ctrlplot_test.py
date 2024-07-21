@@ -92,7 +92,7 @@ def test_plot_ax_processing(resp_fcn, plot_fcn):
             F = ct.descfcn.saturation_nonlinearity(1)
             amp = np.linspace(1, 4, 10)
             args = (sys1, F, amp)
-            resp_kwargs = {'refine': False}
+            resp_kwargs = plot_kwargs = {'refine': False}
 
         case ct.gangof4_response, _:
             args = (sys1, sys2)
@@ -121,7 +121,7 @@ def test_plot_ax_processing(resp_fcn, plot_fcn):
     # Call the plot through the response function
     if resp_fcn is not None:
         resp = resp_fcn(*args, **kwargs, **resp_kwargs)
-        cplt1 = resp.plot(**kwargs, **plot_kwargs, **meth_kwargs)
+        cplt1 = resp.plot(**kwargs, **meth_kwargs)
     else:
         # No response function available; just plot the data
         cplt1 = plot_fcn(*args, **kwargs, **plot_kwargs)
@@ -228,7 +228,7 @@ def test_plot_label_processing(resp_fcn, plot_fcn):
             amp = np.linspace(1, 4, 10)
             args1 = (sys1, F, amp)
             args2 = (sys2, F, amp)
-            resp_kwargs = {'refine': False}
+            resp_kwargs = plot_kwargs = {'refine': False}
 
         case ct.gangof4_response, _:
             args1 = (sys1, sys1c)
@@ -336,7 +336,7 @@ def test_siso_plot_legend_processing(resp_fcn, plot_fcn):
             amp = np.linspace(1, 4, 10)
             args1 = (sys1, F, amp)
             args2 = (sys2, F, amp)
-            resp_kwargs = {'refine': False}
+            resp_kwargs = plot_kwargs = {'refine': False}
 
         case ct.gangof4_response, _:
             # Multi-axes plot => test in next function
@@ -492,7 +492,7 @@ def test_plot_title_processing(resp_fcn, plot_fcn):
             amp = np.linspace(1, 4, 10)
             args1 = (sys1, F, amp)
             args2 = (sys2, F, amp)
-            resp_kwargs = {'refine': False}
+            resp_kwargs = plot_kwargs = {'refine': False}
 
         case ct.gangof4_response, _:
             args1 = (sys1, sys1c)
@@ -603,15 +603,60 @@ def test_plot_title_processing(resp_fcn, plot_fcn):
         assert "title : str, optional" in plot_fcn.__doc__
 
 
-@pytest.mark.usefixtures('mplcleanup')
-def test_rcParams():
-    sys = ct.rss(2, 2, 2)
+@pytest.mark.parametrize("resp_fcn, plot_fcn", resp_plot_fcns)
+@pytest.mark.usefixtures('mplcleanup', 'editsdefaults')
+def test_rcParams(resp_fcn, plot_fcn):
+    # Create some systems to use
+    sys1 = ct.rss(2, 1, 1, strictly_proper=True, name="sys[1]")
+    sys1c = ct.rss(4, 1, 1, strictly_proper=True, name="sys[1]_C")
+    sys2 = ct.rss(2, 1, 1, strictly_proper=True, name="sys[2]")
+
+    # Set up arguments
+    kwargs = resp_kwargs = plot_kwargs = meth_kwargs = {}
+    default_title = "sys[1], sys[2]"
+    expected_title = "sys1_, sys2_"
+    match resp_fcn, plot_fcn:
+        case ct.describing_function_response, _:
+            F = ct.descfcn.saturation_nonlinearity(1)
+            amp = np.linspace(1, 4, 10)
+            args1 = (sys1, F, amp)
+            args2 = (sys2, F, amp)
+            resp_kwargs = plot_kwargs = {'refine': False}
+
+        case ct.gangof4_response, _:
+            args1 = (sys1, sys1c)
+            args2 = (sys2, sys1c)
+            default_title = "P=sys[1], C=sys[1]_C, P=sys[2], C=sys[1]_C"
+
+        case ct.frequency_response, ct.nichols_plot:
+            args1 = (sys1, )
+            args2 = (sys2, )
+            meth_kwargs = {'plot_type': 'nichols'}
+
+        case ct.root_locus_map, ct.root_locus_plot:
+            args1 = (sys1, )
+            args2 = (sys2, )
+            plot_kwargs = {'interactive': False}
+
+        case (ct.forced_response | ct.input_output_response, _):
+            timepts = np.linspace(1, 10)
+            U = np.sin(timepts)
+            args1 = (resp_fcn(sys1, timepts, U), )
+            args2 = (resp_fcn(sys2, timepts, U), )
+            argsc = (resp_fcn([sys1, sys2], timepts, U), )
+
+        case (ct.impulse_response | ct.initial_response | ct.step_response, _):
+            args1 = (resp_fcn(sys1), )
+            args2 = (resp_fcn(sys2), )
+            argsc = (resp_fcn([sys1, sys2]), )
+
+        case _, _:
+            args1 = (sys1, )
+            args2 = (sys2, )
 
     # Create new set of rcParams
     my_rcParams = {}
-    for key in [
-            'axes.labelsize', 'axes.titlesize', 'figure.titlesize',
-            'legend.fontsize', 'xtick.labelsize', 'ytick.labelsize']:
+    for key in ct.ctrlplot.rcParams:
         match plt.rcParams[key]:
             case 8 | 9 | 10:
                 my_rcParams[key] = plt.rcParams[key] + 1
@@ -621,12 +666,62 @@ def test_rcParams():
                 my_rcParams[key] = 9.5
             case _:
                 raise ValueError(f"unknown rcParam type for {key}")
+    checked_params = my_rcParams.copy()         # make sure we check everything
 
     # Generate a figure with the new rcParams
-    out = ct.step_response(sys).plot(rcParams=my_rcParams)
-    ax, fig = out.axes[0, 0], out.figure
+    if plot_fcn not in nolabel_plot_fcns:
+        cplt = plot_fcn(
+            *args1, **kwargs, **plot_kwargs, rcParams=my_rcParams,
+            show_legend=True)
+    else:
+        cplt = plot_fcn(*args1, **kwargs, **plot_kwargs, rcParams=my_rcParams)
+
+    # Check lower left figure (should always have ticks, labels)
+    ax, fig = cplt.axes[-1, 0], cplt.figure
 
     # Check to make sure new settings were used
+    assert ax.xaxis.get_label().get_fontsize() == my_rcParams['axes.labelsize']
+    assert ax.yaxis.get_label().get_fontsize() == my_rcParams['axes.labelsize']
+    checked_params.pop('axes.labelsize')
+
+    assert ax.title.get_fontsize() == my_rcParams['axes.titlesize']
+    checked_params.pop('axes.titlesize')
+
+    assert ax.get_xticklabels()[0].get_fontsize() == \
+        my_rcParams['xtick.labelsize']
+    checked_params.pop('xtick.labelsize')
+
+    assert ax.get_yticklabels()[0].get_fontsize() == \
+        my_rcParams['ytick.labelsize']
+    checked_params.pop('ytick.labelsize')
+
+    assert fig._suptitle.get_fontsize() == my_rcParams['figure.titlesize']
+    checked_params.pop('figure.titlesize')
+
+    if plot_fcn not in nolabel_plot_fcns:
+        for ax in cplt.axes.flatten():
+            legend = ax.get_legend()
+            if legend is not None:
+                break
+        assert legend is not None
+        assert legend.get_texts()[0].get_fontsize() == \
+            my_rcParams['legend.fontsize']
+    checked_params.pop('legend.fontsize')
+
+    # Make sure we checked everything
+    assert not checked_params
+    plt.close()
+
+    # Change the default rcParams
+    ct.ctrlplot.rcParams.update(my_rcParams)
+    if plot_fcn not in nolabel_plot_fcns:
+        cplt = plot_fcn(
+            *args1, **kwargs, **plot_kwargs, show_legend=True)
+    else:
+        cplt = plot_fcn(*args1, **kwargs, **plot_kwargs)
+
+    # Check everything
+    ax, fig = cplt.axes[-1, 0], cplt.figure
     assert ax.xaxis.get_label().get_fontsize() == my_rcParams['axes.labelsize']
     assert ax.yaxis.get_label().get_fontsize() == my_rcParams['axes.labelsize']
     assert ax.title.get_fontsize() == my_rcParams['axes.titlesize']
@@ -635,6 +730,21 @@ def test_rcParams():
     assert ax.get_yticklabels()[0].get_fontsize() == \
         my_rcParams['ytick.labelsize']
     assert fig._suptitle.get_fontsize() == my_rcParams['figure.titlesize']
+    if plot_fcn not in nolabel_plot_fcns:
+        for ax in cplt.axes.flatten():
+            legend = ax.get_legend()
+            if legend is not None:
+                break
+        assert legend is not None
+        assert legend.get_texts()[0].get_fontsize() == \
+            my_rcParams['legend.fontsize']
+    plt.close()
+
+    # Make sure that resetting parameters works correctly
+    ct.reset_defaults()
+    for key in ct.ctrlplot.rcParams:
+        assert ct.defaults['ctrlplot.rcParams'][key] != my_rcParams[key]
+        assert ct.ctrlplot.rcParams[key] != my_rcParams[key]
 
 
 def test_deprecation_warning():

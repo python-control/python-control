@@ -16,14 +16,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from . import config
-from .ctrlplot import ControlPlot, _ctrlplot_rcParams, _make_legend_labels,\
+from .ctrlplot import ControlPlot, _make_legend_labels,\
     _process_legend_keywords, _update_plot_title
 
 __all__ = ['time_response_plot', 'combine_time_responses']
 
 # Default values for module parameter variables
 _timeplot_defaults = {
-    'timeplot.rcParams': _ctrlplot_rcParams,
     'timeplot.trace_props': [
         {'linestyle': s} for s in ['-', '--', ':', '-.']],
     'timeplot.output_props': [
@@ -176,8 +175,7 @@ def time_response_plot(
     ax_user = ax
     time_label = config._get_param(
         'timeplot', 'time_label', kwargs, _timeplot_defaults, pop=True)
-    rcParams = config._get_param(
-        'timeplot', 'rcParams', kwargs, _timeplot_defaults, pop=True)
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
 
     if kwargs.get('input_props', None) and len(fmt) > 0:
         warn("input_props ignored since fmt string was present")

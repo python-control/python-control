@@ -276,8 +276,7 @@ def pole_zero_plot(
     label = _process_line_labels(label)
     marker_size = config._get_param('pzmap', 'marker_size', marker_size, 6)
     marker_width = config._get_param('pzmap', 'marker_width', marker_width, 1.5)
-    rcParams = config._get_param(
-        'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
     user_ax = ax
     xlim_user, ylim_user = xlim, ylim
 

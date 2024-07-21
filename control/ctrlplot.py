@@ -10,8 +10,7 @@
 #     ax = kwargs.pop('ax', None)
 #     color = kwargs.pop('color', None)
 #     label = kwargs.pop('label', None)
-#     rcParams = config._get_param(
-#         'nameplot', 'rcParams', kwargs, _nameplot_defaults, pop=True)
+#     rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
 #
 #     # Make sure all keyword arguments were processed (if not checked later)
 #     if kwargs:
@@ -89,21 +88,26 @@ import numpy as np
 
 from . import config
 
-__all__ = ['ControlPlot', 'suptitle', 'get_plot_axes', 'pole_zero_subplots']
+__all__ = [
+    'ControlPlot', 'suptitle', 'get_plot_axes', 'pole_zero_subplots',
+    'rcParams', 'reset_rcParams']
 
 #
 # Style parameters
 #
 
-_ctrlplot_rcParams = mpl.rcParams.copy()
-_ctrlplot_rcParams.update({
+rcParams_default = {
     'axes.labelsize': 'small',
     'axes.titlesize': 'small',
     'figure.titlesize': 'medium',
     'legend.fontsize': 'x-small',
     'xtick.labelsize': 'small',
     'ytick.labelsize': 'small',
-})
+}
+_ctrlplot_rcParams = rcParams_default.copy()    # provide access inside module
+rcParams = _ctrlplot_rcParams                   # provide access outside module
+
+_ctrlplot_defaults = {'ctrlplot.rcParams': _ctrlplot_rcParams}
 
 
 #
@@ -190,14 +194,12 @@ class ControlPlot(object):
         _update_plot_title(
             title, fig=self.figure, frame=frame, use_existing=False)
 
-
 #
 # User functions
 #
 # The functions below can be used by users to modify control plots or get
 # information about them.
 #
-
 
 def suptitle(
         title, fig=None, frame='axes', **kwargs):
@@ -270,7 +272,7 @@ def pole_zero_subplots(
         2D array of axes
 
     """
-    from .grid import sgrid, zgrid, nogrid
+    from .grid import nogrid, sgrid, zgrid
     from .iosys import isctime
 
     if rcParams is None:
@@ -306,6 +308,12 @@ def pole_zero_subplots(
                         ax=ax_array[row, col], dt=dt[index], scaling=scaling)
             index += 1
     return ax_array
+
+
+def reset_rcParams():
+    """Reset rcParams to default values for control plots."""
+    _ctrlplot_rcParams.update(rcParams_default)
+
 
 #
 # Utility functions
