@@ -654,3 +654,32 @@ def _add_arrows_to_line2D(
         axes.add_patch(p)
         arrows.append(p)
     return arrows
+
+
+def _get_color(colorspec, ax=None, lines=None, color_cycle=None):
+    # See if the color was explicitly specified by the user
+    if isinstance(colorspec, dict):
+        if 'color' in colorspec:
+            return colorspec.pop('color')
+    elif colorspec != None:
+        return colorspec
+
+    # Figure out what color cycle to use, if not given by caller
+    if color_cycle == None:
+        color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+    # Find the lines that we should pay attention to
+    if lines is None and ax is not None:
+        lines = ax.lines
+
+    # If we were passed a set of lines, try to increment color from previous
+    if lines is not None:
+        color_offset = 0
+        if len(ax.lines) > 0:
+            last_color = ax.lines[-1].get_color()
+            if last_color in color_cycle:
+                color_offset = color_cycle.index(last_color) + 1
+        color_offset = color_offset % len(color_cycle)
+        return color_cycle[color_offset]
+    else:
+        return None

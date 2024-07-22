@@ -449,6 +449,22 @@ various ways.  The following general rules apply:
   2x2 array of subplots should be given a 2x2 array of axes for the ``ax``
   keyword).
 
+* The ```color``, ``linestyle``, ``linewidth``, and other matplotlib line
+  property arguments can be used to override the default line properties.
+  If these arguments are absent, the default matplotlib line properties are
+  used and the color cycles through the default matplotlib color cycle.
+
+  The :func:`~control.bode_plot`, :func:`~control.time_response_plot`, and
+  selected other commands can also accept a matplotlib format string (e.g.,
+  'r--').  The format string that must appear as a positional argument
+  right after the required data argumnt.
+
+  Note that line property arguments are the same for all lines generated as
+  part of a single plotting command call, including when multiple responses
+  are passed as a list to the plotting command.  For this reason it is
+  often easiest to call multiple plot commands in sequence, with each
+  command setting the line properties for that system/trace.
+
 * The ``label`` keyword argument can be used to override the line labels
   that are used in generating the title and legend.  If more than one line
   is being plotted in a given call to a plot command, the ``label``
@@ -484,7 +500,7 @@ various ways.  The following general rules apply:
   there is only a single line in each axes.  In addition, if the value of
   the ``legend_loc`` keyword argument is set to a string or integer, it
   will set the position of the legend as described in the
-  :func:`matplotlib.legend`` documentation.  Finally, ``legend_map`` can be
+  :func:`matplotlib.legend` documentation.  Finally, ``legend_map`` can be
   set to an` array that matches the shape of the subplots, with each item
   being a string indicating the location of the legend for that axes (or
   ``None`` for no legend).

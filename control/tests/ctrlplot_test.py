@@ -51,6 +51,77 @@ def assert_legend(cplt, expected_texts):
         assert legend_texts == expected_texts
 
 
+def setup_plot_arguments(resp_fcn, plot_fcn, compute_time_response=True):
+    # Create some systems to use
+    sys1 = ct.rss(2, 1, 1, strictly_proper=True, name="sys[1]")
+    sys1c = ct.rss(2, 1, 1, strictly_proper=True, name="sys[1]_C")
+    sys2 = ct.rss(2, 1, 1, strictly_proper=True, name="sys[2]")
+
+    # Set up arguments
+    kwargs = resp_kwargs = plot_kwargs = meth_kwargs = {}
+    argsc = None
+    match resp_fcn, plot_fcn:
+        case ct.describing_function_response, _:
+            sys1 = ct.tf([1], [1, 2, 2, 1], name="sys[1]")
+            sys2 = ct.tf([1.1], [1, 2, 2, 1], name="sys[2]")
+            F = ct.descfcn.saturation_nonlinearity(1)
+            amp = np.linspace(1, 4, 10)
+            args1 = (sys1, F, amp)
+            args2 = (sys2, F, amp)
+            resp_kwargs = plot_kwargs = {'refine': False}
+
+        case ct.gangof4_response, _:
+            args1 = (sys1, sys1c)
+            args2 = (sys2, sys1c)
+            default_labels = ["P=sys[1]", "P=sys[2]"]
+
+        case ct.frequency_response, ct.nichols_plot:
+            args1 = (sys1, None)        # to allow *fmt in linestyle test
+            args2 = (sys2, )
+            meth_kwargs = {'plot_type': 'nichols'}
+
+        case ct.frequency_response, ct.bode_plot:
+            args1 = (sys1, None)        # to allow *fmt in linestyle test
+            args2 = (sys2, )
+
+        case ct.singular_values_response, ct.singular_values_plot:
+            args1 = (sys1, None)        # to allow *fmt in linestyle test
+            args2 = (sys2, )
+
+        case ct.root_locus_map, ct.root_locus_plot:
+            args1 = (sys1, )
+            args2 = (sys2, )
+            plot_kwargs = {'interactive': False}
+
+        case (ct.forced_response | ct.input_output_response, _):
+            timepts = np.linspace(1, 10)
+            U = np.sin(timepts)
+            if compute_time_response:
+                args1 = (resp_fcn(sys1, timepts, U), )
+                args2 = (resp_fcn(sys2, timepts, U), )
+                argsc = (resp_fcn([sys1, sys2], timepts, U), )
+            else:
+                args1 = (sys1, timepts, U)
+                args2 = (sys2, timepts, U)
+                argsc = None
+
+        case (ct.impulse_response | ct.initial_response | ct.step_response, _):
+            if compute_time_response:
+                args1 = (resp_fcn(sys1), )
+                args2 = (resp_fcn(sys2), )
+                argsc = (resp_fcn([sys1, sys2]), )
+            else:
+                args1 = (sys1, )
+                args2 = (sys2, )
+                argsc = ([sys1, sys2], )
+
+        case _, _:
+            args1 = (sys1, )
+            args2 = (sys2, )
+
+    return args1, args2, argsc, kwargs, meth_kwargs, plot_kwargs, resp_kwargs
+
+
 # Make sure we didn't miss any plotting functions
 def test_find_respplot_functions():
     # Get the list of plotting functions
@@ -80,44 +151,14 @@ def test_find_respplot_functions():
 @pytest.mark.parametrize("resp_fcn, plot_fcn", resp_plot_fcns)
 @pytest.mark.usefixtures('mplcleanup')
 def test_plot_ax_processing(resp_fcn, plot_fcn):
-    # Create some systems to use
-    sys1 = ct.rss(2, 1, 1, strictly_proper=True)
-    sys2 = ct.rss(4, 1, 1, strictly_proper=True)
-
     # Set up arguments
-    kwargs = resp_kwargs = meth_kwargs = plot_kwargs = {}
+    args, _, _, kwargs, meth_kwargs, plot_kwargs, resp_kwargs = \
+        setup_plot_arguments(resp_fcn, plot_fcn, compute_time_response=False)
     get_line_color = lambda cplt: cplt.lines.reshape(-1)[0][0].get_color()
     match resp_fcn, plot_fcn:
-        case ct.describing_function_response, _:
-            sys = ct.tf([1], [1, 2, 2, 1])
-            F = ct.descfcn.saturation_nonlinearity(1)
-            amp = np.linspace(1, 4, 10)
-            args = (sys, F, amp)
-            resp_kwargs = plot_kwargs = {'refine': False}
-
-        case ct.gangof4_response, _:
-            args = (sys1, sys2)
-
-        case ct.frequency_response, ct.nichols_plot:
-            args = (sys1, )
-            meth_kwargs = {'plot_type': 'nichols'}
-
-        case ct.root_locus_map, ct.root_locus_plot:
-            args = (sys1, )
-            plot_kwargs = {'interactive': False}
-
-        case (ct.forced_response | ct.input_output_response, _):
-            timepts = np.linspace(1, 10)
-            U = np.sin(timepts)
-            args = (sys1, timepts, U)
-
         case None, ct.phase_plane_plot:
-            args = (sys1, )
             get_line_color = None
             warnings.warn("ct.phase_plane_plot returns nonstandard lines")
-
-        case _, _:
-            args = (sys1, )
 
     # Call the plot through the response function
     if resp_fcn is not None:
@@ -214,55 +255,14 @@ def test_plot_ax_processing(resp_fcn, plot_fcn):
 @pytest.mark.parametrize("resp_fcn, plot_fcn", resp_plot_fcns)
 @pytest.mark.usefixtures('mplcleanup')
 def test_plot_label_processing(resp_fcn, plot_fcn):
-    # Create some systems to use
-    sys1 = ct.rss(2, 1, 1, strictly_proper=True, name="sys[1]")
-    sys1c = ct.rss(4, 1, 1, strictly_proper=True, name="sys[1]_C")
-    sys2 = ct.rss(4, 1, 1, strictly_proper=True, name="sys[2]")
-
     # Set up arguments
-    kwargs = resp_kwargs = plot_kwargs = meth_kwargs = {}
+    args1, args2, argsc, kwargs, meth_kwargs, plot_kwargs, resp_kwargs = \
+        setup_plot_arguments(resp_fcn, plot_fcn)
     default_labels = ["sys[1]", "sys[2]"]
     expected_labels = ["sys1_", "sys2_"]
     match resp_fcn, plot_fcn:
-        case ct.describing_function_response, _:
-            sys1 = ct.tf([1], [1, 2, 2, 1], name="sys[1]")
-            sys2 = ct.tf([1.1], [1, 2, 2, 1], name="sys[2]")
-            F = ct.descfcn.saturation_nonlinearity(1)
-            amp = np.linspace(1, 4, 10)
-            args1 = (sys1, F, amp)
-            args2 = (sys2, F, amp)
-            resp_kwargs = plot_kwargs = {'refine': False}
-
         case ct.gangof4_response, _:
-            args1 = (sys1, sys1c)
-            args2 = (sys2, sys1c)
             default_labels = ["P=sys[1]", "P=sys[2]"]
-
-        case ct.frequency_response, ct.nichols_plot:
-            args1 = (sys1, )
-            args2 = (sys2, )
-            meth_kwargs = {'plot_type': 'nichols'}
-
-        case ct.root_locus_map, ct.root_locus_plot:
-            args1 = (sys1, )
-            args2 = (sys2, )
-            plot_kwargs = {'interactive': False}
-
-        case (ct.forced_response | ct.input_output_response, _):
-            timepts = np.linspace(1, 10)
-            U = np.sin(timepts)
-            args1 = (resp_fcn(sys1, timepts, U), )
-            args2 = (resp_fcn(sys2, timepts, U), )
-            argsc = (resp_fcn([sys1, sys2], timepts, U), )
-
-        case (ct.impulse_response | ct.initial_response | ct.step_response, _):
-            args1 = (resp_fcn(sys1), )
-            args2 = (resp_fcn(sys2), )
-            argsc = (resp_fcn([sys1, sys2]), )
-
-        case _, _:
-            args1 = (sys1, )
-            args2 = (sys2, )
 
     if plot_fcn in nolabel_plot_fcns:
         pytest.skip(f"labels not implemented for {plot_fcn}")
@@ -324,54 +324,53 @@ def test_plot_label_processing(resp_fcn, plot_fcn):
 
 @pytest.mark.parametrize("resp_fcn, plot_fcn", resp_plot_fcns)
 @pytest.mark.usefixtures('mplcleanup')
-def test_siso_plot_legend_processing(resp_fcn, plot_fcn):
+def test_plot_linestyle_processing(resp_fcn, plot_fcn):
     # Create some systems to use
     sys1 = ct.rss(2, 1, 1, strictly_proper=True, name="sys[1]")
     sys1c = ct.rss(4, 1, 1, strictly_proper=True, name="sys[1]_C")
     sys2 = ct.rss(4, 1, 1, strictly_proper=True, name="sys[2]")
 
     # Set up arguments
-    kwargs = resp_kwargs = plot_kwargs = meth_kwargs = {}
+    args, _, _, kwargs, meth_kwargs, plot_kwargs, resp_kwargs = \
+        setup_plot_arguments(resp_fcn, plot_fcn)
+    default_labels = ["sys[1]", "sys[2]"]
+    expected_labels = ["sys1_", "sys2_"]
+    match resp_fcn, plot_fcn:
+        case ct.gangof4_response, _:
+            default_labels = ["P=sys[1]", "P=sys[2]"]
+
+    # Set line color
+    cplt = plot_fcn(*args, **kwargs, **plot_kwargs, color='r')
+    assert cplt.lines.reshape(-1)[0][0].get_color() == 'r'
+
+    # Make sure that docstring documents line properties
+    if plot_fcn not in legacy_plot_fcns:
+        assert "line properties" in plot_fcn.__doc__ or \
+            "color : matplotlib color spec, optional" in plot_fcn.__doc__
+
+    # Set other characteristics if documentation says we can
+    if "line properties" in plot_fcn.__doc__:
+        cplt = plot_fcn(*args, **kwargs, **plot_kwargs, linewidth=5)
+        assert cplt.lines.reshape(-1)[0][0].get_linewidth() == 5
+
+    # If fmt string is allowed, use it to set line color and style
+    if "*fmt" in plot_fcn.__doc__:
+        cplt = plot_fcn(*args, 'r--', **kwargs, **plot_kwargs)
+        assert cplt.lines.reshape(-1)[0][0].get_color() == 'r'
+        assert cplt.lines.reshape(-1)[0][0].get_linestyle() == '--'
+
+
+@pytest.mark.parametrize("resp_fcn, plot_fcn", resp_plot_fcns)
+@pytest.mark.usefixtures('mplcleanup')
+def test_siso_plot_legend_processing(resp_fcn, plot_fcn):
+    # Set up arguments
+    args1, args2, argsc, kwargs, meth_kwargs, plot_kwargs, resp_kwargs = \
+        setup_plot_arguments(resp_fcn, plot_fcn)
     default_labels = ["sys[1]", "sys[2]"]
     match resp_fcn, plot_fcn:
-        case ct.describing_function_response, _:
-            sys1 = ct.tf([1], [1, 2, 2, 1], name="sys[1]")
-            sys2 = ct.tf([1.1], [1, 2, 2, 1], name="sys[2]")
-            F = ct.descfcn.saturation_nonlinearity(1)
-            amp = np.linspace(1, 4, 10)
-            args1 = (sys1, F, amp)
-            args2 = (sys2, F, amp)
-            resp_kwargs = plot_kwargs = {'refine': False}
-
         case ct.gangof4_response, _:
             # Multi-axes plot => test in next function
             return
-
-        case ct.frequency_response, ct.nichols_plot:
-            args1 = (sys1, )
-            args2 = (sys2, )
-            meth_kwargs = {'plot_type': 'nichols'}
-
-        case ct.root_locus_map, ct.root_locus_plot:
-            args1 = (sys1, )
-            args2 = (sys2, )
-            plot_kwargs = {'interactive': False}
-
-        case (ct.forced_response | ct.input_output_response, _):
-            timepts = np.linspace(1, 10)
-            U = np.sin(timepts)
-            args1 = (resp_fcn(sys1, timepts, U), )
-            args2 = (resp_fcn(sys2, timepts, U), )
-            argsc = (resp_fcn([sys1, sys2], timepts, U), )
-
-        case (ct.impulse_response | ct.initial_response | ct.step_response, _):
-            args1 = (resp_fcn(sys1), )
-            args2 = (resp_fcn(sys2), )
-            argsc = (resp_fcn([sys1, sys2]), )
-
-        case _, _:
-            args1 = (sys1, )
-            args2 = (sys2, )
 
     if plot_fcn in nolabel_plot_fcns:
         # Make sure that using legend keywords generates an error
@@ -488,49 +487,13 @@ def test_plot_title_processing(resp_fcn, plot_fcn):
     sys2 = ct.rss(2, 1, 1, strictly_proper=True, name="sys[2]")
 
     # Set up arguments
-    kwargs = resp_kwargs = plot_kwargs = meth_kwargs = {}
+    args1, args2, argsc, kwargs, meth_kwargs, plot_kwargs, resp_kwargs = \
+        setup_plot_arguments(resp_fcn, plot_fcn)
     default_title = "sys[1], sys[2]"
     expected_title = "sys1_, sys2_"
     match resp_fcn, plot_fcn:
-        case ct.describing_function_response, _:
-            sys1 = ct.tf([1], [1, 2, 2, 1], name="sys[1]")
-            sys2 = ct.tf([1.1], [1, 2, 2, 1], name="sys[2]")
-            F = ct.descfcn.saturation_nonlinearity(1)
-            amp = np.linspace(1, 4, 10)
-            args1 = (sys1, F, amp)
-            args2 = (sys2, F, amp)
-            resp_kwargs = plot_kwargs = {'refine': False}
-
         case ct.gangof4_response, _:
-            args1 = (sys1, sys1c)
-            args2 = (sys2, sys1c)
             default_title = "P=sys[1], C=sys[1]_C, P=sys[2], C=sys[1]_C"
-
-        case ct.frequency_response, ct.nichols_plot:
-            args1 = (sys1, )
-            args2 = (sys2, )
-            meth_kwargs = {'plot_type': 'nichols'}
-
-        case ct.root_locus_map, ct.root_locus_plot:
-            args1 = (sys1, )
-            args2 = (sys2, )
-            plot_kwargs = {'interactive': False}
-
-        case (ct.forced_response | ct.input_output_response, _):
-            timepts = np.linspace(1, 10)
-            U = np.sin(timepts)
-            args1 = (resp_fcn(sys1, timepts, U), )
-            args2 = (resp_fcn(sys2, timepts, U), )
-            argsc = (resp_fcn([sys1, sys2], timepts, U), )
-
-        case (ct.impulse_response | ct.initial_response | ct.step_response, _):
-            args1 = (resp_fcn(sys1), )
-            args2 = (resp_fcn(sys2), )
-            argsc = (resp_fcn([sys1, sys2]), )
-
-        case _, _:
-            args1 = (sys1, )
-            args2 = (sys2, )
 
     # Store the expected title prefix
     match resp_fcn, plot_fcn:
@@ -619,49 +582,13 @@ def test_rcParams(resp_fcn, plot_fcn):
     sys2 = ct.rss(2, 1, 1, strictly_proper=True, name="sys[2]")
 
     # Set up arguments
-    kwargs = resp_kwargs = plot_kwargs = meth_kwargs = {}
+    args1, args2, argsc, kwargs, meth_kwargs, plot_kwargs, resp_kwargs = \
+        setup_plot_arguments(resp_fcn, plot_fcn)
     default_title = "sys[1], sys[2]"
     expected_title = "sys1_, sys2_"
     match resp_fcn, plot_fcn:
-        case ct.describing_function_response, _:
-            sys1 = ct.tf([1], [1, 2, 2, 1], name="sys[1]")
-            sys2 = ct.tf([1], [1, 2, 2, 1], name="sys[2]")
-            F = ct.descfcn.saturation_nonlinearity(1)
-            amp = np.linspace(1, 4, 10)
-            args1 = (sys1, F, amp)
-            args2 = (sys2, F, amp)
-            resp_kwargs = plot_kwargs = {'refine': False}
-
         case ct.gangof4_response, _:
-            args1 = (sys1, sys1c)
-            args2 = (sys2, sys1c)
             default_title = "P=sys[1], C=sys[1]_C, P=sys[2], C=sys[1]_C"
-
-        case ct.frequency_response, ct.nichols_plot:
-            args1 = (sys1, )
-            args2 = (sys2, )
-            meth_kwargs = {'plot_type': 'nichols'}
-
-        case ct.root_locus_map, ct.root_locus_plot:
-            args1 = (sys1, )
-            args2 = (sys2, )
-            plot_kwargs = {'interactive': False}
-
-        case (ct.forced_response | ct.input_output_response, _):
-            timepts = np.linspace(1, 10)
-            U = np.sin(timepts)
-            args1 = (resp_fcn(sys1, timepts, U), )
-            args2 = (resp_fcn(sys2, timepts, U), )
-            argsc = (resp_fcn([sys1, sys2], timepts, U), )
-
-        case (ct.impulse_response | ct.initial_response | ct.step_response, _):
-            args1 = (resp_fcn(sys1), )
-            args2 = (resp_fcn(sys2), )
-            argsc = (resp_fcn([sys1, sys2]), )
-
-        case _, _:
-            args1 = (sys1, )
-            args2 = (sys2, )
 
     # Create new set of rcParams
     my_rcParams = {}

@@ -130,6 +130,8 @@ def root_locus_plot(
     initial_gain : float, optional
         Mark the point on the root locus diagram corresponding to the
         given gain.
+    color : matplotlib color spec, optional
+        Specify the color of the markers and lines.
 
     Returns
     -------

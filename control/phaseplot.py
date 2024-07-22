@@ -36,7 +36,7 @@ import numpy as np
 from scipy.integrate import odeint
 
 from . import config
-from .ctrlplot import ControlPlot, _add_arrows_to_line2D, \
+from .ctrlplot import ControlPlot, _add_arrows_to_line2D, _get_color, \
     _process_ax_keyword, _update_plot_title
 from .exception import ControlNotImplemented
 from .nlsys import NonlinearIOSystem, find_eqpt, input_output_response
@@ -90,7 +90,7 @@ def phase_plane_plot(
         Parameters to pass to system. For an I/O system, `params` should be
         a dict of parameters and values. For a callable, `params` should be
         dict with key 'args' and value given by a tuple (passed to callable).
-    color : str
+    color : matplotlib color spec, optional
         Plot all elements in the given color (use `plot_<fcn>={'color': c}`
         to set the color in one element of the phase plot.
     ax : matplotlib.axes.Axes, optional
@@ -103,7 +103,7 @@ def phase_plane_plot(
     cplt : :class:`ControlPlot` object
         Object containing the data that were plotted:
 
-          * cplt.lines: list of list of :class:`matplotlib.artist.Artist`
+          * cplt.lines: array of list of :class:`matplotlib.artist.Artist`
             objects:
 
               - lines[0] = list of Line2D objects (streamlines, separatrices).
@@ -153,6 +153,7 @@ def phase_plane_plot(
 
     # Create copy of kwargs for later checking to find unused arguments
     initial_kwargs = dict(kwargs)
+    passed_kwargs = False
 
     # Utility function to create keyword arguments
     def _create_kwargs(global_kwargs, local_kwargs, **other_kwargs):
@@ -163,7 +164,7 @@ def phase_plane_plot(
         return new_kwargs
 
     # Create list for storing outputs
-    out = [[], None, None]
+    out = np.array([[], None, None], dtype=object)
 
     # Plot out the main elements
     if plot_streamlines:
@@ -217,7 +218,6 @@ def phase_plane_plot(
     if initial_kwargs:
         raise TypeError("unrecognized keywords: ", str(initial_kwargs))
 
-    # TODO: update to common code pattern
     if user_ax is None:
         if title is None:
             title = f"Phase portrait for {sys.name}"
@@ -263,7 +263,7 @@ def vectorfield(
         Parameters to pass to system. For an I/O system, `params` should be
         a dict of parameters and values. For a callable, `params` should be
         dict with key 'args' and value given by a tuple (passed to callable).
-    color : str
+    color : matplotlib color spec, optional
         Plot the vector field in the given color.
     ax : matplotlib.axes.Axes
         Use the given axes for the plot, otherwise use the current axes.
@@ -298,7 +298,7 @@ def vectorfield(
     xlim, ylim, maxlim = _set_axis_limits(ax, pointdata)
 
     # Figure out the color to use
-    color = _get_color(kwargs, ax)
+    color = _get_color(kwargs, ax=ax)
 
     # Make sure all keyword arguments were processed
     if check_kwargs and kwargs:
@@ -396,7 +396,7 @@ def streamlines(
     xlim, ylim, maxlim = _set_axis_limits(ax, pointdata)
 
     # Figure out the color to use
-    color = _get_color(kwargs, ax)
+    color = _get_color(kwargs, ax=ax)
 
     # Make sure all keyword arguments were processed
     if check_kwargs and kwargs:
@@ -424,12 +424,11 @@ def streamlines(
         # Plot the trajectory (if there is one)
         if traj.shape[1] > 1:
             with plt.rc_context(rcParams):
-                out.append(
-                    ax.plot(traj[0], traj[1], color=color))
+                out += ax.plot(traj[0], traj[1], color=color)
 
                 # Add arrows to the lines at specified intervals
                 _add_arrows_to_line2D(
-                    ax, out[-1][0], arrow_pos, arrowstyle=arrow_style, dir=1)
+                    ax, out[-1], arrow_pos, arrowstyle=arrow_style, dir=1)
     return out
 
 
@@ -592,7 +591,7 @@ def separatrices(
     xlim, ylim, maxlim = _set_axis_limits(ax, pointdata)
 
     # Figure out the color to use for stable, unstable subspaces
-    color = _get_color(kwargs)
+    color = _get_color(kwargs, ax=ax)
     match color:
         case None:
             stable_color = 'r'
@@ -924,23 +923,6 @@ def _parse_arrow_keywords(kwargs):
 
 
 # TODO: move to ctrlplot?
-def _get_color(kwargs, ax=None):
-    if 'color' in kwargs:
-        return kwargs.pop('color')
-
-    # If we were passed an axis, try to increment color from previous
-    color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    if ax is not None:
-        color_offset = 0
-        if len(ax.lines) > 0:
-            last_color = ax.lines[-1].get_color()
-            if last_color in color_cycle:
-                color_offset = color_cycle.index(last_color) + 1
-        return color_cycle[color_offset % len(color_cycle)]
-    else:
-        return None
-
-
 def _create_trajectory(
         sys, revsys, timepts, X0, params, dir, suppress_warnings=False,
         gridtype=None, gridspec=None, xlim=None, ylim=None):

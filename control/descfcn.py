@@ -429,6 +429,9 @@ def describing_function_plot(
         Otherwise, a new figure is created.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
+    **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
+        Additional keywords passed to `matplotlib` to specify line properties
+        for Nyquist curve.
 
     Returns
     -------

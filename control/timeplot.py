@@ -52,12 +52,6 @@ def time_response_plot(
     ----------
     data : TimeResponseData
         Data to be plotted.
-    ax : array of matplotlib.axes.Axes, optional
-        The matplotlib axes to draw the figure on.  If not specified, the
-        axes for the current figure are used or, if there is no current
-        figure with the correct number and shape of axes, a new figure is
-        created.  The shape of the array must match the shape of the
-        plotted data.
     plot_inputs : bool or str, optional
         Sets how and where to plot the inputs:
             * False: don't plot the inputs
@@ -107,6 +101,12 @@ def time_response_plot(
     add_initial_zero : bool
         Add an initial point of zero at the first time point for all
         inputs with type 'step'.  Default is True.
+    ax : array of matplotlib.axes.Axes, optional
+        The matplotlib axes to draw the figure on.  If not specified, the
+        axes for the current figure are used or, if there is no current
+        figure with the correct number and shape of axes, a new figure is
+        created.  The shape of the array must match the shape of the
+        plotted data.
     input_props : array of dicts
         List of line properties to use when plotting combined inputs.  The
         default values are set by config.defaults['timeplot.input_props'].

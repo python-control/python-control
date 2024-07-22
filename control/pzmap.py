@@ -18,6 +18,7 @@ import numpy as np
 from numpy import cos, exp, imag, linspace, real, sin, sqrt
 
 from . import config
+from .config import _process_legacy_keyword
 from .ctrlplot import ControlPlot, _get_line_labels, _process_ax_keyword, \
     _process_legend_keywords, _process_line_labels, _update_plot_title
 from .freqplot import _freqplot_defaults
@@ -170,10 +171,9 @@ def pole_zero_map(sysdata):
 #    https://matplotlib.org/2.0.2/examples/axes_grid/demo_axisline_style.html
 #    https://matplotlib.org/2.0.2/examples/axes_grid/demo_curvelinear_grid.html
 def pole_zero_plot(
-        data, plot=None, grid=None, title=None, marker_color=None,
-        marker_size=None, marker_width=None,
-        xlim=None, ylim=None, interactive=None, ax=None, scaling=None,
-        initial_gain=None, label=None, **kwargs):
+        data, plot=None, grid=None, title=None, color=None, marker_size=None,
+        marker_width=None, xlim=None, ylim=None, interactive=None, ax=None,
+        scaling=None, initial_gain=None, label=None, **kwargs):
     """Plot a pole/zero map for a linear system.
 
     If the system data include root loci, a root locus diagram for the
@@ -231,9 +231,10 @@ def pole_zero_plot(
         The matplotlib axes to draw the figure on.  If not specified and
         the current figure has a single axes, that axes is used.
         Otherwise, a new figure is created.
+    color : matplotlib color spec, optional
+        Specify the color of the markers and lines.
     initial_gain : float, optional
         If given, the specified system gain will be marked on the plot.
-
     interactive : bool, optional
         Turn off interactive mode for root locus plots.
     label : str or array_like of str, optional
@@ -281,6 +282,7 @@ def pole_zero_plot(
     label = _process_line_labels(label)
     marker_size = config._get_param('pzmap', 'marker_size', marker_size, 6)
     marker_width = config._get_param('pzmap', 'marker_width', marker_width, 1.5)
+    user_color = _process_legacy_keyword(kwargs, 'marker_color', 'color', color)
     rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
     user_ax = ax
     xlim_user, ylim_user = xlim, ylim
@@ -387,10 +389,10 @@ def pole_zero_plot(
         zeros = response.zeros
 
         # Get the color to use for this system
-        if marker_color is None:
+        if user_color is None:
             color = color_cycle[(color_offset + idx) % len(color_cycle)]
         else:
-            color = marker_color
+            color = user_color
 
         # Plot the locations of the poles and zeros
         if len(poles) > 0:

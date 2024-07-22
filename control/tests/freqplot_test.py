@@ -500,7 +500,7 @@ def test_line_labels_bode(kwargs, labels):
     for i, legend in enumerate(legend_texts):
         assert legend.get_text() == labels[i]
     plt.close()
-    
+
 
 @pytest.mark.parametrize(
     "plt_fcn", [

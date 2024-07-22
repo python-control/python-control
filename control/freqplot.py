@@ -1505,8 +1505,6 @@ def nyquist_plot(
         Set of frequencies to be evaluated, in rad/sec. Specifying
         ``omega`` as a list of two elements is equivalent to providing
         ``omega_limits``.
-    color : string, optional
-        Used to specify the color of the line and arrowhead.
     unit_circle : bool, optional
         If ``True``, display the unit circle, to read gain crossover frequency.
     mt_circles : array_like, optional
@@ -1515,7 +1513,7 @@ def nyquist_plot(
         Draw circles corresponding to the given magnitudes of complementary
         sensitivity.
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
-        Additional keywords (passed to `matplotlib`)
+        Additional keywords passed to `matplotlib` to specify line properties.
 
     Returns
     -------
