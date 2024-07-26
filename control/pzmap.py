@@ -19,8 +19,9 @@ from numpy import cos, exp, imag, linspace, real, sin, sqrt
 
 from . import config
 from .config import _process_legacy_keyword
-from .ctrlplot import ControlPlot, _get_line_labels, _process_ax_keyword, \
-    _process_legend_keywords, _process_line_labels, _update_plot_title
+from .ctrlplot import ControlPlot, _get_color, _get_color_offset, \
+    _get_line_labels, _process_ax_keyword, _process_legend_keywords, \
+    _process_line_labels, _update_plot_title
 from .freqplot import _freqplot_defaults
 from .grid import nogrid, sgrid, zgrid
 from .iosys import isctime, isdtime
@@ -367,15 +368,8 @@ def pole_zero_plot(
         if grid is not None:
             warnings.warn("axis already exists; grid keyword ignored")
 
-    # Handle color cycle manually as all root locus segments
-    # of the same system are expected to be of the same color
-    # TODO: replace with common function?
-    color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    color_offset = 0
-    if len(ax.lines) > 0:
-        last_color = ax.lines[-1].get_color()
-        if last_color in color_cycle:
-            color_offset = color_cycle.index(last_color) + 1
+    # Get color offset for the next line to be drawn
+    color_offset, color_cycle = _get_color_offset(ax)
 
     # Create a list of lines for the output
     out = np.empty(
@@ -388,11 +382,8 @@ def pole_zero_plot(
         poles = response.poles
         zeros = response.zeros
 
-        # Get the color to use for this system
-        if user_color is None:
-            color = color_cycle[(color_offset + idx) % len(color_cycle)]
-        else:
-            color = user_color
+        # Get the color to use for this response
+        color = _get_color(user_color, offset=color_offset + idx)
 
         # Plot the locations of the poles and zeros
         if len(poles) > 0:

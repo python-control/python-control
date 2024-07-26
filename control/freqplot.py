@@ -20,8 +20,9 @@ import numpy as np
 from . import config
 from .bdalg import feedback
 from .ctrlplot import ControlPlot, _add_arrows_to_line2D, _find_axes_center, \
-    _get_line_labels, _make_legend_labels, _process_ax_keyword, \
-    _process_legend_keywords, _process_line_labels, _update_plot_title
+    _get_color, _get_color_offset, _get_line_labels, _make_legend_labels, \
+    _process_ax_keyword, _process_legend_keywords, _process_line_labels, \
+    _update_plot_title
 from .ctrlutil import unwrap
 from .exception import ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
@@ -2306,6 +2307,7 @@ def singular_values_plot(
 
     """
     # Keyword processing
+    color = kwargs.pop('color', None)
     dB = config._get_param(
         'freqplot', 'dB', kwargs, _freqplot_defaults, pop=True)
     Hz = config._get_param(
@@ -2370,14 +2372,8 @@ def singular_values_plot(
     legend_loc, _, show_legend = _process_legend_keywords(
         kwargs, None, 'center right')
 
-    # Handle color cycle manually as all singular values
-    # of the same systems are expected to be of the same color
-    color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    color_offset = 0
-    if len(ax_sigma.lines) > 0:
-        last_color = ax_sigma.lines[-1].get_color()
-        if last_color in color_cycle:
-            color_offset = color_cycle.index(last_color) + 1
+    # Get color offset for first (new) line to be drawn
+    color_offset, color_cycle = _get_color_offset(ax_sigma)
 
     # Create a list of lines for the output
     out = np.empty(len(data), dtype=object)
@@ -2392,14 +2388,13 @@ def singular_values_plot(
         else:
             nyq_freq = None
 
-        # See if the color was specified, otherwise rotate
-        if kwargs.get('color', None) or any(
-                [isinstance(arg, str) and
-                 any([c in arg for c in "bgrcmykw#"]) for arg in fmt]):
-            color_arg = {}                      # color set by *fmt, **kwargs
-        else:
-            color_arg = {'color': color_cycle[
-                (idx_sys + color_offset) % len(color_cycle)]}
+        # Determine the color to use for this response
+        color = _get_color(
+            color, fmt=fmt, offset=color_offset + idx_sys,
+            color_cycle=color_cycle)
+
+        # To avoid conflict with *fmt, only pass color kw if non-None
+        color_arg = {} if color is None else {'color': color}
 
         # Decide on the system name
         sysname = response.sysname if response.sysname is not None \

@@ -331,7 +331,7 @@ def test_plot_linestyle_processing(resp_fcn, plot_fcn):
     sys2 = ct.rss(4, 1, 1, strictly_proper=True, name="sys[2]")
 
     # Set up arguments
-    args, _, _, kwargs, meth_kwargs, plot_kwargs, resp_kwargs = \
+    args1, args2, _, kwargs, meth_kwargs, plot_kwargs, resp_kwargs = \
         setup_plot_arguments(resp_fcn, plot_fcn)
     default_labels = ["sys[1]", "sys[2]"]
     expected_labels = ["sys1_", "sys2_"]
@@ -340,8 +340,12 @@ def test_plot_linestyle_processing(resp_fcn, plot_fcn):
             default_labels = ["P=sys[1]", "P=sys[2]"]
 
     # Set line color
-    cplt = plot_fcn(*args, **kwargs, **plot_kwargs, color='r')
-    assert cplt.lines.reshape(-1)[0][0].get_color() == 'r'
+    cplt1 = plot_fcn(*args1, **kwargs, **plot_kwargs, color='r')
+    assert cplt1.lines.reshape(-1)[0][0].get_color() == 'r'
+
+    # Second plot, new line color
+    cplt2 = plot_fcn(*args2, **kwargs, **plot_kwargs, color='g')
+    assert cplt2.lines.reshape(-1)[0][0].get_color() == 'g'
 
     # Make sure that docstring documents line properties
     if plot_fcn not in legacy_plot_fcns:
@@ -350,12 +354,12 @@ def test_plot_linestyle_processing(resp_fcn, plot_fcn):
 
     # Set other characteristics if documentation says we can
     if "line properties" in plot_fcn.__doc__:
-        cplt = plot_fcn(*args, **kwargs, **plot_kwargs, linewidth=5)
+        cplt = plot_fcn(*args1, **kwargs, **plot_kwargs, linewidth=5)
         assert cplt.lines.reshape(-1)[0][0].get_linewidth() == 5
 
     # If fmt string is allowed, use it to set line color and style
     if "*fmt" in plot_fcn.__doc__:
-        cplt = plot_fcn(*args, 'r--', **kwargs, **plot_kwargs)
+        cplt = plot_fcn(*args1, 'r--', **kwargs, **plot_kwargs)
         assert cplt.lines.reshape(-1)[0][0].get_color() == 'r'
         assert cplt.lines.reshape(-1)[0][0].get_linestyle() == '--'
 

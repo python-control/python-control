@@ -5,7 +5,7 @@
 
 # Code pattern for control system plotting functions:
 #
-# def name_plot(sysdata, plot=None, **kwargs):
+# def name_plot(sysdata, *fmt, plot=None, **kwargs):
 #     # Process keywords and set defaults
 #     ax = kwargs.pop('ax', None)
 #     color = kwargs.pop('color', None)
@@ -37,12 +37,13 @@
 #     # Plot the data
 #     lines = np.full(ax_array.shape, [])
 #     line_labels = _process_line_labels(label, ntraces, nrows, ncols)
+#     color_offset, color_cycle = _get_color_offset(ax)
 #     for i, j in itertools.product(range(nrows), range(ncols)):
 #         ax = ax_array[i, j]
-#         color_cycle, color_offset = _process_color_keyword(ax)
 #         for k in range(ntraces):
 #             if color is None:
-#                 color = color_cycle[(k + color_offset) % len(color_cycle)]
+#                 color = _get_color(
+#                     color, fmt=fmt, offset=k, color_cycle=color_cycle)
 #             label = line_labels[k, i, j]
 #             lines[i, j] += ax.plot(data.x, data.y, color=color, label=label)
 #
@@ -656,11 +657,78 @@ def _add_arrows_to_line2D(
     return arrows
 
 
-def _get_color(colorspec, ax=None, lines=None, color_cycle=None):
+def _get_color_offset(ax, color_cycle=None):
+    """Get color offset based on current lines.
+
+    This function determines that the current offset is for the next color
+    to use based on current colors in a plot.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Axes containing already plotted lines.
+    color_cycle : list of matplotlib color specs, optional
+        Colors to use in plotting lines.  Defaults to matplotlib rcParams
+        color cycle.
+
+    Returns
+    -------
+    color_offset : matplotlib color spec
+        Starting color for next line to be drawn.
+    color_cycle : list of matplotlib color specs
+        Color cycle used to determine colors.
+
+    """
+    if color_cycle is None:
+        color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+    color_offset = 0
+    if len(ax.lines) > 0:
+        last_color = ax.lines[-1].get_color()
+        if last_color in color_cycle:
+            color_offset = color_cycle.index(last_color) + 1
+
+    return color_offset % len(color_cycle), color_cycle
+
+
+def _get_color(
+        colorspec, offset=None, fmt=None, ax=None, lines=None,
+        color_cycle=None):
+    """Get color to use for plotting line.
+
+    This function returns the color to be used for the line to be drawn (or
+    None if the detault color cycle for the axes should be used).
+
+    Parameters
+    ----------
+    colorspec : matplotlib color specification
+        User-specified color (or None).
+    offset : int, optional
+        Offset into the color cycle (for multi-trace plots).
+    fmt : str, optional
+        Format string passed to plotting command.
+    ax : matplotlib.axes.Axes, optional
+        Axes containing already plotted lines.
+    lines : list of matplotlib.lines.Line2D, optional
+        List of plotted lines.  If not given, use ax.get_lines().
+    color_cycle : list of matplotlib color specs, optional
+        Colors to use in plotting lines.  Defaults to matplotlib rcParams
+        color cycle.
+
+    Returns
+    -------
+    color : matplotlib color spec
+        Color to use for this line (or None for matplotlib default).
+
+    """
     # See if the color was explicitly specified by the user
     if isinstance(colorspec, dict):
         if 'color' in colorspec:
             return colorspec.pop('color')
+    elif fmt is not None and \
+         [isinstance(arg, str) and
+          any([c in arg for c in "bgrcmykw#"]) for arg in fmt]:
+        return None             # *fmt will set the color
     elif colorspec != None:
         return colorspec
 
@@ -673,7 +741,9 @@ def _get_color(colorspec, ax=None, lines=None, color_cycle=None):
         lines = ax.lines
 
     # If we were passed a set of lines, try to increment color from previous
-    if lines is not None:
+    if offset is not None:
+        return color_cycle[offset]
+    elif lines is not None:
         color_offset = 0
         if len(ax.lines) > 0:
             last_color = ax.lines[-1].get_color()

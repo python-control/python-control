@@ -449,15 +449,15 @@ various ways.  The following general rules apply:
   2x2 array of subplots should be given a 2x2 array of axes for the ``ax``
   keyword).
 
-* The ```color``, ``linestyle``, ``linewidth``, and other matplotlib line
+* The ``color``, ``linestyle``, ``linewidth``, and other matplotlib line
   property arguments can be used to override the default line properties.
   If these arguments are absent, the default matplotlib line properties are
   used and the color cycles through the default matplotlib color cycle.
 
-  The :func:`~control.bode_plot`, :func:`~control.time_response_plot`, and
-  selected other commands can also accept a matplotlib format string (e.g.,
-  'r--').  The format string that must appear as a positional argument
-  right after the required data argumnt.
+  The :func:`~control.bode_plot`, :func:`~control.time_response_plot`,
+  and selected other commands can also accept a matplotlib format
+  string (e.g., 'r--').  The format string must appear as a positional
+  argument right after the required data argumnt.
 
   Note that line property arguments are the same for all lines generated as
   part of a single plotting command call, including when multiple responses

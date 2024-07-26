@@ -548,8 +548,12 @@ def separatrices(
         Parameters to pass to system. For an I/O system, `params` should be
         a dict of parameters and values. For a callable, `params` should be
         dict with key 'args' and value given by a tuple (passed to callable).
-    color : str
-        Plot the streamlines in the given color.
+    color : matplotlib color spec, optional
+        Plot the separatrics in the given color.  If a single color
+        specification is given, this is used for both stable and unstable
+        separatrices.  If a tuple is given, the first element is used as
+        the color specification for stable separatrices and the second
+        elmeent for unstable separatrices.
     ax : matplotlib.axes.Axes
         Use the given axes for the plot, otherwise use the current axes.
 
