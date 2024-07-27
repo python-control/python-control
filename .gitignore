@@ -42,3 +42,6 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Files for MacOS
+.DS_Store
