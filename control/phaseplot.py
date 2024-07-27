@@ -595,7 +595,7 @@ def separatrices(
     xlim, ylim, maxlim = _set_axis_limits(ax, pointdata)
 
     # Figure out the color to use for stable, unstable subspaces
-    color = _get_color(kwargs, ax=ax)
+    color = _get_color(kwargs)
     match color:
         case None:
             stable_color = 'r'
