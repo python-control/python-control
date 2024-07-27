@@ -67,7 +67,7 @@
 #
 #     # Update the plot title (only if ax was not given)
 #     sysnames = [response.sysname for response in data]
-#     if ax == None and title is None:
+#     if ax is None and title is None:
 #         title = "Name plot for " + ", ".join(sysnames)
 #         _update_plot_title(title, fig, rcParams=rcParams)
 #     elif ax == None:

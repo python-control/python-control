@@ -1975,9 +1975,12 @@ def nyquist_plot(
         legend = None
 
     # Add the title
-    if ax_user is None:
-        if title is None:
-            title = "Nyquist plot for " + ", ".join(labels)
+    sysnames = [response.sysname for response in nyquist_responses]
+    if ax_user is None and title is None:
+        title = "Nyquist plot for " + ", ".join(sysnames)
+        _update_plot_title(
+            title, fig=fig, rcParams=rcParams, frame=title_frame)
+    elif ax_user is None:
         _update_plot_title(
             title, fig=fig, rcParams=rcParams, frame=title_frame,
             use_existing=False)
