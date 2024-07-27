@@ -457,7 +457,7 @@ various ways.  The following general rules apply:
   The :func:`~control.bode_plot`, :func:`~control.time_response_plot`,
   and selected other commands can also accept a matplotlib format
   string (e.g., 'r--').  The format string must appear as a positional
-  argument right after the required data argumnt.
+  argument right after the required data argument.
 
   Note that line property arguments are the same for all lines generated as
   part of a single plotting command call, including when multiple responses
