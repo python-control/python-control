@@ -4,7 +4,7 @@
 # This makefile allows cleanup and posting of Jupyter notebooks into
 # Google Colab.
 
-NOTEBOOKS = cds110-L*_*.ipynb cds112-W*_*.ipynb
+NOTEBOOKS = cds110-L*_*.ipynb cds112-L*_*.ipynb
 GDRIVE= gdrive:projects/python-control/public/notebooks
 
 # Clean up notebooks to remove output
