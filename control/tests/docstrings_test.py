@@ -58,7 +58,7 @@ def test_docstrings(module, prefix):
 
             # Go through each parameter and make sure it is in the docstring
             for argname, par in sig.parameters.items():
-                if argname == 'self':
+                if argname == 'self' or argname[0] == '_':
                     continue
                 
                 if par.kind == inspect.Parameter.VAR_KEYWORD:

@@ -271,7 +271,7 @@ class DescribingFunctionResponse:
 # Compute the describing function response + intersections
 def describing_function_response(
         H, F, A, omega=None, refine=True, warn_nyquist=None,
-        plot=False, check_kwargs=True, **kwargs):
+        plot=False, _check_kwargs=True, **kwargs):
     """Compute the describing function response of a system.
 
     This function uses describing function analysis to analyze a closed
@@ -328,7 +328,7 @@ def describing_function_response(
     # Start by drawing a Nyquist curve
     response = nyquist_response(
         H, omega, warn_encirclements=warn_nyquist, warn_nyquist=warn_nyquist,
-        check_kwargs=check_kwargs, **kwargs)
+        _check_kwargs=_check_kwargs, **kwargs)
     H_omega, H_vals = response.contour.imag, H(response.contour)
 
     # Compute the describing function
