@@ -1145,7 +1145,7 @@ class NyquistResponseList(list):
 def nyquist_response(
         sysdata, omega=None, plot=None, omega_limits=None, omega_num=None,
         return_contour=False, warn_encirclements=True, warn_nyquist=True,
-        check_kwargs=True, **kwargs):
+        _check_kwargs=True, **kwargs):
     """Nyquist response for a system.
 
     Computes a Nyquist contour for the system over a (optional) frequency
@@ -1260,7 +1260,7 @@ def nyquist_response(
     indent_points = config._get_param(
         'nyquist', 'indent_points', kwargs, _nyquist_defaults, pop=True)
 
-    if check_kwargs and kwargs:
+    if _check_kwargs and kwargs:
         raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # Convert the first argument to a list
@@ -1769,7 +1769,7 @@ def nyquist_plot(
             warn_encirclements=kwargs.pop('warn_encirclements', True),
             warn_nyquist=kwargs.pop('warn_nyquist', True),
             indent_radius=kwargs.pop('indent_radius', None),
-            check_kwargs=False, **kwargs)
+            _check_kwargs=False, **kwargs)
     else:
         nyquist_responses = data
 

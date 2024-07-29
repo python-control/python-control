@@ -172,7 +172,7 @@ def phase_plane_plot(
             kwargs, plot_streamlines, gridspec=gridspec, gridtype=gridtype,
             ax=ax)
         out[0] += streamlines(
-            sys, pointdata, timedata, check_kwargs=False,
+            sys, pointdata, timedata, _check_kwargs=False,
             suppress_warnings=suppress_warnings, **kwargs_local)
 
         # Get rid of keyword arguments handled by streamlines
@@ -188,7 +188,7 @@ def phase_plane_plot(
         kwargs_local = _create_kwargs(
             kwargs, plot_separatrices, gridspec=gridspec, ax=ax)
         out[0] += separatrices(
-            sys, pointdata, check_kwargs=False, **kwargs_local)
+            sys, pointdata, _check_kwargs=False, **kwargs_local)
 
         # Get rid of keyword arguments handled by separatrices
         for kw in ['arrows', 'arrow_size', 'arrow_style', 'params']:
@@ -198,7 +198,7 @@ def phase_plane_plot(
         kwargs_local = _create_kwargs(
             kwargs, plot_vectorfield, gridspec=gridspec, ax=ax)
         out[1] = vectorfield(
-            sys, pointdata, check_kwargs=False, **kwargs_local)
+            sys, pointdata, _check_kwargs=False, **kwargs_local)
 
         # Get rid of keyword arguments handled by vectorfield
         for kw in ['color', 'params']:
@@ -208,7 +208,7 @@ def phase_plane_plot(
         kwargs_local = _create_kwargs(
             kwargs, plot_equilpoints, gridspec=gridspec, ax=ax)
         out[2] = equilpoints(
-            sys, pointdata, check_kwargs=False, **kwargs_local)
+            sys, pointdata, _check_kwargs=False, **kwargs_local)
 
         # Get rid of keyword arguments handled by equilpoints
         for kw in ['params']:
@@ -231,7 +231,7 @@ def phase_plane_plot(
 
 def vectorfield(
         sys, pointdata, gridspec=None, ax=None, suppress_warnings=False,
-        check_kwargs=True, **kwargs):
+        _check_kwargs=True, **kwargs):
     """Plot a vector field in the phase plane.
 
     This function plots a vector field for a two-dimensional state
@@ -301,7 +301,7 @@ def vectorfield(
     color = _get_color(kwargs, ax=ax)
 
     # Make sure all keyword arguments were processed
-    if check_kwargs and kwargs:
+    if _check_kwargs and kwargs:
         raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # Generate phase plane (quiver) data
@@ -321,7 +321,7 @@ def vectorfield(
 
 def streamlines(
         sys, pointdata, timedata=1, gridspec=None, gridtype=None, dir=None,
-        ax=None, check_kwargs=True, suppress_warnings=False, **kwargs):
+        ax=None, _check_kwargs=True, suppress_warnings=False, **kwargs):
     """Plot stream lines in the phase plane.
 
     This function plots stream lines for a two-dimensional state space
@@ -399,7 +399,7 @@ def streamlines(
     color = _get_color(kwargs, ax=ax)
 
     # Make sure all keyword arguments were processed
-    if check_kwargs and kwargs:
+    if _check_kwargs and kwargs:
         raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # Create reverse time system, if needed
@@ -433,7 +433,7 @@ def streamlines(
 
 
 def equilpoints(
-        sys, pointdata, gridspec=None, color='k', ax=None, check_kwargs=True,
+        sys, pointdata, gridspec=None, color='k', ax=None, _check_kwargs=True,
         **kwargs):
     """Plot equilibrium points in the phase plane.
 
@@ -496,7 +496,7 @@ def equilpoints(
     points, _ = _make_points(pointdata, gridspec, 'meshgrid')
 
     # Make sure all keyword arguments were processed
-    if check_kwargs and kwargs:
+    if _check_kwargs and kwargs:
         raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # Search for equilibrium points
@@ -513,7 +513,7 @@ def equilpoints(
 
 def separatrices(
         sys, pointdata, timedata=None, gridspec=None, ax=None,
-        check_kwargs=True, suppress_warnings=False, **kwargs):
+        _check_kwargs=True, suppress_warnings=False, **kwargs):
     """Plot separatrices in the phase plane.
 
     This function plots separatrices for a two-dimensional state space
@@ -606,7 +606,7 @@ def separatrices(
             stable_color = unstable_color = color
 
     # Make sure all keyword arguments were processed
-    if check_kwargs and kwargs:
+    if _check_kwargs and kwargs:
         raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # Create a "reverse time" system to use for simulation
