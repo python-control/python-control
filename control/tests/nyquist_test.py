@@ -295,7 +295,7 @@ def test_nyquist_indent_dont(indentsys):
     with pytest.warns() as record:
         count, contour = ct.nyquist_response(
             indentsys, omega=[0, 0.2, 0.3, 0.4], indent_radius=.1007,
-            plot=False, return_contour=True)
+            return_contour=True)
     np.testing.assert_allclose(contour[0], .1007+0.j)
     # second value of omega_vector is larger than indent_radius: not indented
     assert np.all(contour.real[2:] == 0.)
@@ -439,9 +439,11 @@ def test_nyquist_legacy():
         response = ct.nyquist_plot(sys)
 
 def test_discrete_nyquist():
+    # TODO: add tests to make sure plots make sense
+
     # Make sure we can handle discrete time systems with negative poles
     sys = ct.tf(1, [1, -0.1], dt=1) * ct.tf(1, [1, 0.1], dt=1)
-    ct.nyquist_response(sys, plot=False)
+    ct.nyquist_response(sys)
 
     # system with a pole at the origin
     sys = ct.zpk([1,], [.3, 0], 1, dt=True)

@@ -83,6 +83,13 @@ def set_defaults(module, **keywords):
     The set_defaults() function can be used to modify multiple parameter
     values for a module at the same time, using keyword arguments.
 
+    Parameters
+    ----------
+    module : str
+        Name of the module for which the defaults are being given.
+    **keywords : keyword arguments
+        Parameter value assignments.
+
     Examples
     --------
     >>> ct.defaults['freqplot.number_of_samples']

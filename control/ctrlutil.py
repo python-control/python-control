@@ -88,7 +88,8 @@ def unwrap(angle, period=2*math.pi):
 def issys(obj):
     """Deprecated function to check if an object is an LTI system.
 
-    Use isinstance(obj, ct.LTI)
+    .. deprecated:: 0.10.0
+        Use isinstance(obj, ct.LTI)
 
     """
     warnings.warn("issys() is deprecated; use isinstance(obj, ct.LTI)",

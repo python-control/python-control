@@ -1576,6 +1576,10 @@ def ss(*args, **kwargs):
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
+    method : str, optional
+        Set the method used for computing the result.  Current methods are
+        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
+        and then 'scipy' (SISO only).
 
     Returns
     -------
@@ -1915,15 +1919,15 @@ def rss(states=1, outputs=1, inputs=1, strictly_proper=False, **kwargs):
 
     Parameters
     ----------
-    inputs : int, list of str, or None
-        Description of the system inputs.  This can be given as an integer
+    states : int, list of str, or None
+        Description of the system states.  Same format as `inputs`.
+    outputs : int, list of str, or None
+        Description of the system outputs. This can be given as an integer
         count or as a list of strings that name the individual signals.  If an
         integer count is specified, the names of the signal will be of the
         form `s[i]` (where `s` is one of `u`, `y`, or `x`).
-    outputs : int, list of str, or None
-        Description of the system outputs.  Same format as `inputs`.
-    states : int, list of str, or None
-        Description of the system states.  Same format as `inputs`.
+    inputs : int, list of str, or None
+        Description of the system inputs. Same format as `outputs`.
     strictly_proper : bool, optional
         If set to 'True', returns a proper system (no direct term).
     dt : None, True or float, optional
