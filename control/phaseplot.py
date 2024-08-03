@@ -119,6 +119,11 @@ def phase_plane_plot(
 
     Other parameters
     ----------------
+    dir : str, optional
+        Direction to draw streamlines: 'forward' to flow forward in time
+        from the reference points, 'reverse' to flow backward in time, or
+        'both' to flow both forward and backward.  The amount of time to
+        simulate in each direction is given by the ``timedata`` argument.
     plot_streamlines : bool or dict, optional
         If `True` (default) then plot streamlines based on the pointdata
         and gridtype.  If set to a dict, pass on the key-value pairs in
@@ -135,6 +140,9 @@ def phase_plane_plot(
         If `True` (default) then plot separatrices starting from each
         equilibrium point.  If set to a dict, pass on the key-value pairs
         in the dict as keywords to :func:`~control.phaseplot.separatrices`.
+    rcParams : dict
+        Override the default parameters used for generating plots.
+        Default is set by config.default['ctrlplot.rcParams'].
     suppress_warnings : bool, optional
         If set to `True`, suppress warning messages in generating trajectories.
     title : str, optional
@@ -274,6 +282,9 @@ def vectorfield(
 
     Other parameters
     ----------------
+    rcParams : dict
+        Override the default parameters used for generating plots.
+        Default is set by config.default['ctrlplot.rcParams'].
     suppress_warnings : bool, optional
         If set to `True`, suppress warning messages in generating trajectories.
 
@@ -352,6 +363,11 @@ def streamlines(
         If gridtype is 'circlegrid', then `gridspec` is a 2-tuple
         specifying the radius and number of points around each point in the
         `pointdata` array.
+    dir : str, optional
+        Direction to draw streamlines: 'forward' to flow forward in time
+        from the reference points, 'reverse' to flow backward in time, or
+        'both' to flow both forward and backward.  The amount of time to
+        simulate in each direction is given by the ``timedata`` argument.
     params : dict or list, optional
         Parameters to pass to system. For an I/O system, `params` should be
         a dict of parameters and values. For a callable, `params` should be
@@ -367,6 +383,9 @@ def streamlines(
 
     Other parameters
     ----------------
+    rcParams : dict
+        Override the default parameters used for generating plots.
+        Default is set by config.default['ctrlplot.rcParams'].
     suppress_warnings : bool, optional
         If set to `True`, suppress warning messages in generating trajectories.
 
@@ -474,6 +493,12 @@ def equilpoints(
     -------
     out : list of Line2D objects
 
+    Other parameters
+    ----------------
+    rcParams : dict
+        Override the default parameters used for generating plots.
+        Default is set by config.default['ctrlplot.rcParams'].
+
     """
     # Process keywords
     rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
@@ -563,6 +588,9 @@ def separatrices(
 
     Other parameters
     ----------------
+    rcParams : dict
+        Override the default parameters used for generating plots.
+        Default is set by config.default['ctrlplot.rcParams'].
     suppress_warnings : bool, optional
         If set to `True`, suppress warning messages in generating trajectories.
 
@@ -686,13 +714,13 @@ def boxgrid(xvals, yvals):
 
     Parameters
     ----------
-    xvals, yvals: 1D array-like
+    xvals, yvals : 1D array-like
         Array of points defining the points on the lower and left edges of
         the box.
 
     Returns
     -------
-    grid: 2D array
+    grid : 2D array
         Array with shape (p, 2) defining the points along the edges of the
         box, where p is the number of points around the edge.
 
@@ -715,7 +743,7 @@ def meshgrid(xvals, yvals):
 
     Parameters
     ----------
-    xvals, yvals: 1D array-like
+    xvals, yvals : 1D array-like
         Array of points defining the points on the lower and left edges of
         the box.
 
@@ -1243,9 +1271,13 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
 def box_grid(xlimp, ylimp):
     """box_grid   generate list of points on edge of box
 
+    .. deprecated:: 0.10.0
+        Use `phaseplot.boxgrid` instead.
+
     list = box_grid([xmin xmax xnum], [ymin ymax ynum]) generates a
     list of points that correspond to a uniform grid at the end of the
     box defined by the corners [xmin ymin] and [xmax ymax].
+
     """
 
     # Generate a deprecation warning

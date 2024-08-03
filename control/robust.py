@@ -52,13 +52,17 @@ def h2syn(P, nmeas, ncon):
 
     Parameters
     ----------
-    P: partitioned lti plant (State-space sys)
-    nmeas: number of measurements (input to controller)
-    ncon: number of control inputs (output from controller)
+    P : StateSpace
+        Partitioned LTI plant (state-space system).
+    nmeas : int
+        Number of measurements (input to controller).
+    ncon : int
+        Number of control inputs (output from controller).
 
     Returns
     -------
-    K: controller to stabilize P (State-space sys)
+    K : StateSpace
+        Controller to stabilize `P`.
 
     Raises
     ------
@@ -121,25 +125,32 @@ def h2syn(P, nmeas, ncon):
 
 
 def hinfsyn(P, nmeas, ncon):
+    # TODO: document significance of rcond
     """H_{inf} control synthesis for plant P.
 
     Parameters
     ----------
-    P: partitioned lti plant
-    nmeas: number of measurements (input to controller)
-    ncon: number of control inputs (output from controller)
+    P : StateSpace
+        Partitioned LTI plant (state-space system).
+    nmeas : int
+        Number of measurements (input to controller).
+    ncon : int
+        Number of control inputs (output from controller).
 
     Returns
     -------
-    K: controller to stabilize P (State-space sys)
-    CL: closed loop system (State-space sys)
-    gam: infinity norm of closed loop system
-    rcond: 4-vector, reciprocal condition estimates of:
-        1: control transformation matrix
-        2: measurement transformation matrix
-        3: X-Riccati equation
-        4: Y-Riccati equation
-    TODO: document significance of rcond
+    K : StateSpace
+        Controller to stabilize `P`.
+    CL : StateSpace
+        Closed loop system.
+    gam : float
+        Infinity norm of closed loop system.
+    rcond : list
+        4-vector, reciprocal condition estimates of:
+            1: control transformation matrix
+            2: measurement transformation matrix
+            3: X-Riccati equation
+            4: Y-Riccati equation
 
     Raises
     ------
@@ -263,18 +274,18 @@ def augw(g, w1=None, w2=None, w3=None):
 
     Parameters
     ----------
-    g: LTI object, ny-by-nu
-        Plant
-    w1: None, scalar, or k1-by-ny LTI object
-        Weighting on S
-    w2: None, scalar, or k2-by-nu LTI object
-        Weighting on KS
-    w3: None, scalar, or k3-by-ny LTI object
-        Weighting on T
+    g : LTI object, ny-by-nu
+        Plant.
+    w1 : None, scalar, or k1-by-ny LTI object
+        Weighting on S.
+    w2 : None, scalar, or k2-by-nu LTI object
+        Weighting on KS.
+    w3 : None, scalar, or k3-by-ny LTI object
+        Weighting on T.
 
     Returns
     -------
-    p: StateSpace
+    p : StateSpace
         Plant augmented with weightings, suitable for submission to hinfsyn or
         h2syn.
 
@@ -375,20 +386,20 @@ def mixsyn(g, w1=None, w2=None, w3=None):
 
     Parameters
     ----------
-    g: LTI
-        The plant for which controller must be synthesized
-    w1: None, or scalar or k1-by-ny LTI
-        Weighting on S = (1+G*K)**-1
-    w2: None, or scalar or k2-by-nu LTI
-        Weighting on K*S
-    w3: None, or scalar or k3-by-ny LTI
-        Weighting on T = G*K*(1+G*K)**-1;
+    g : LTI
+        The plant for which controller must be synthesized.
+    w1 : None, or scalar or k1-by-ny LTI
+        Weighting on S = (1+G*K)**-1.
+    w2 : None, or scalar or k2-by-nu LTI
+        Weighting on K*S.
+    w3 : None, or scalar or k3-by-ny LTI
+        Weighting on T = G*K*(1+G*K)**-1.
 
     Returns
     -------
-    k: StateSpace
-        Synthesized controller;
-    cl: StateSpace
+    k : StateSpace
+        Synthesized controller.
+    cl : StateSpace
         Closed system mapping evaluation inputs to evaluation outputs.
 
         Let p be the augmented plant, with::
@@ -400,10 +411,10 @@ def mixsyn(g, w1=None, w2=None, w3=None):
 
     info: tuple
         gamma: scalar
-            H-infinity norm of cl
+            H-infinity norm of cl.
         rcond: array
-            Estimates of reciprocal condition numbers
-            computed during synthesis.  See hinfsyn for details
+            Estimates of reciprocal condition numbers computed during
+            synthesis.  See hinfsyn for details.
 
     If a weighting w is scalar, it will be replaced by I*w, where I is
     ny-by-ny for w1 and w3, and nu-by-nu for w2.
@@ -411,6 +422,7 @@ def mixsyn(g, w1=None, w2=None, w3=None):
     See Also
     --------
     hinfsyn, augw
+
     """
     nmeas = g.noutputs
     ncon = g.ninputs

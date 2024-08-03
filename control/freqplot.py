@@ -147,8 +147,9 @@ def bode_plot(
         figure with the correct number and shape of axes, a new figure is
         created.  The shape of the array must match the shape of the
         plotted data.
-    freq_label: str, optional
-        Frequency label (defaults to "rad/sec" or "Hertz")
+    freq_label, magnitude_label, phase_label : str, optional
+        Labels to use for the frequency, magnitude, and phase axes.
+        Defaults are set by `config.defaults['freqplot.<keyword>']`.
     grid : bool, optional
         If True, plot grid lines on gain and phase plots.  Default is set by
         `config.defaults['freqplot.grid']`.
@@ -183,21 +184,36 @@ def bode_plot(
         Number of samples to use for the frequeny range.  Defaults to
         config.defaults['freqplot.number_of_samples'].  Ignored if data is
         not a list of systems.
+    overlay_inputs, overlay_outputs : bool, optional
+        If set to True, combine input and/or output signals onto a single
+        plot and use line colors, labels, and a legend to distinguish them.
     phase_label : str, optional
         Label to use for phase axis.  Defaults to "Phase [rad]".
     plot : bool, optional
         (legacy) If given, `bode_plot` returns the legacy return values
         of magnitude, phase, and frequency.  If False, just return the
         values with no plot.
+    plot_magnitude, plot_phase : bool, optional
+        If set to `False`, don't plot the magnitude or phase, respectively.
     rcParams : dict
         Override the default parameters used for generating plots.
         Default is set by config.default['ctrlplot.rcParams'].
+    share_frequency, share_magnitude, share_phase : str or bool, optional
+        Determine whether and how axis limits are shared between the
+        indicated variables.  Can be set set to 'row' to share across all
+        subplots in a row, 'col' to set across all subplots in a column, or
+        `False` to allow independent limits.
     show_legend : bool, optional
         Force legend to be shown if ``True`` or hidden if ``False``.  If
         ``None``, then show legend when there is more than one line on an
         axis or ``legend_loc`` or ``legend_map`` has been specified.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
+    title_frame : str, optional
+        Set the frame of reference used to center the plot title. If set to
+        'axes' (default), the horizontal position of the title will
+        centered relative to the axes.  If set to `figure`, it will be
+        centered with respect to the figure (faster execution).
     wrap_phase : bool or float
         If wrap_phase is `False` (default), then the phase will be unwrapped
         so that it is continuously increasing or decreasing.  If wrap_phase is
@@ -1143,7 +1159,7 @@ class NyquistResponseList(list):
 
 
 def nyquist_response(
-        sysdata, omega=None, plot=None, omega_limits=None, omega_num=None,
+        sysdata, omega=None, omega_limits=None, omega_num=None,
         return_contour=False, warn_encirclements=True, warn_nyquist=True,
         _check_kwargs=True, **kwargs):
     """Nyquist response for a system.
@@ -1221,8 +1237,7 @@ def nyquist_response(
        right of stable poles and the left of unstable poles.  If a pole is
        exactly on the imaginary axis, the `indent_direction` parameter can be
        used to set the direction of indentation.  Setting `indent_direction`
-       to `none` will turn off indentation.  If `return_contour` is True, the
-       exact contour used for evaluation is returned.
+       to `none` will turn off indentation.
 
     3. For those portions of the Nyquist plot in which the contour is
        indented to avoid poles, resuling in a scaling of the Nyquist plot,
@@ -1623,7 +1638,7 @@ def nyquist_plot(
         determined by config.defaults['nyquist.mirror_style'].
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['freqplot.rcParams'].
+        Default is set by config.default['ctrlplot.rcParams'].
     return_contour : bool, optional
         (legacy) If 'True', return the encirclement count and Nyquist
         contour used to generate the Nyquist plot.
@@ -1640,6 +1655,11 @@ def nyquist_plot(
         4 and can be set using config.defaults['nyquist.start_marker_size'].
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
+    title_frame : str, optional
+        Set the frame of reference used to center the plot title. If set to
+        'axes' (default), the horizontal position of the title will
+        centered relative to the axes.  If set to `figure`, it will be
+        centered with respect to the figure (faster execution).
     warn_nyquist : bool, optional
         If set to 'False', turn off warnings about frequencies above Nyquist.
     warn_encirclements : bool, optional
@@ -2206,6 +2226,7 @@ def gangof4_plot(
             *args, omega=omega, omega_limits=omega_limits,
             omega_num=omega_num, Hz=Hz).plot(**kwargs)
 
+
 #
 # Singular values plot
 #
@@ -2339,6 +2360,8 @@ def singular_values_plot(
         The matplotlib axes to draw the figure on.  If not specified and
         the current figure has a single axes, that axes is used.
         Otherwise, a new figure is created.
+    color : matplotlib color spec
+        Color to use for singular values (or None for matplotlib default).
     grid : bool
         If True, plot grid lines on gain and phase plots.  Default is set by
         `config.defaults['freqplot.grid']`.
@@ -2370,6 +2393,11 @@ def singular_values_plot(
         axis or ``legend_loc`` or ``legend_map`` has been specified.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
+    title_frame : str, optional
+        Set the frame of reference used to center the plot title. If set to
+        'axes' (default), the horizontal position of the title will
+        centered relative to the axes.  If set to `figure`, it will be
+        centered with respect to the figure (faster execution).
 
     See Also
     --------

@@ -72,7 +72,7 @@ class OptimalControlProblem():
         Method to use for carrying out the optimization. Currently supported
         methods are 'shooting' and 'collocation' (continuous time only). The
         default value is 'shooting' for discrete time systems and
-        'collocation' for continuous time systems
+        'collocation' for continuous time systems.
     initial_guess : (tuple of) 1D or 2D array_like
         Initial states and/or inputs to use as a guess for the optimal
         trajectory.  For shooting methods, an array of inputs for each time
@@ -732,6 +732,7 @@ class OptimalControlProblem():
             logging.debug("input =\n" + str(inputs))
 
         # Simulate the system to get the state
+        # TODO: update to use response object; remove return_x
         _, _, states = ct.input_output_response(
             self.system, self.timepts, inputs, x0, return_x=True,
             solve_ivp_kwargs=self.solve_ivp_kwargs, t_eval=self.timepts)
@@ -981,7 +982,7 @@ def solve_ocp(
     timepts : 1D array_like
         List of times at which the optimal input should be computed.
 
-    X0: array-like or number, optional
+    X0 : array-like or number, optional
         Initial condition (default = 0).
 
     cost : callable
@@ -1022,6 +1023,16 @@ def solve_ocp(
         1D input of shape (ninputs,) that will be broadcast by extension of
         the time axis.
 
+    basis : BasisFamily, optional
+        Use the given set of basis functions for the inputs instead of
+        setting the value of the input at each point in the timepts vector.
+
+    trajectory_method : string, optional
+        Method to use for carrying out the optimization. Currently supported
+        methods are 'shooting' and 'collocation' (continuous time only). The
+        default value is 'shooting' for discrete time systems and
+        'collocation' for continuous time systems.
+
     log : bool, optional
         If `True`, turn on logging messages (using Python logging module).
 
@@ -1061,6 +1072,11 @@ def solve_ocp(
     res.states : array
         Time evolution of the state vector (if return_states=True).
 
+    Other Parameters
+    ----------------
+    minimize_method : str, optional
+        Set the method used by :func:`scipy.optimize.minimize`.
+
     Notes
     -----
     1. For discrete time systems, the final value of the timepts vector
@@ -1079,9 +1095,9 @@ def solve_ocp(
 
     """
     # Process keyword arguments
-    if trajectory_constraints is None:
-        # Backwards compatibility
-        trajectory_constraints = kwargs.pop('constraints', [])
+    trajectory_constraints = config._process_legacy_keyword(
+        kwargs, 'constraints', 'trajectory_constraints',
+        trajectory_constraints)
 
     # Allow 'return_x` as a synonym for 'return_states'
     return_states = ct.config._get_param(
@@ -1168,6 +1184,10 @@ def create_mpc_iosystem(
     inputs, outputs, states : int or list of str, optional
         Set the names of the inputs, outputs, and states, as described in
         :func:`~control.InputOutputSystem`.
+    log : bool, optional
+        If `True`, turn on logging messages (using Python logging module).
+        Use :py:func:`logging.basicConfig` to enable logging output
+        (e.g., to a file).
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
@@ -1936,12 +1956,12 @@ def solve_oep(
         I/O system for which the optimal input will be computed.
     timepts : 1D array_like
         List of times at which the optimal input should be computed.
-    Y, U: 2D array_like
+    Y, U : 2D array_like
         Values of the outputs and inputs at each time point.
     trajectory_cost : callable
         Function that returns the cost given the current state
         and input.  Called as `cost(y, u, x0)`.
-    X0: 1D array_like, optional
+    X0 : 1D array_like, optional
         Mean value of the initial condition (defaults to 0).
     trajectory_constraints : list of tuples, optional
         List of constraints that should hold at each point in the time vector.

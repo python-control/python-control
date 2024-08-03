@@ -421,7 +421,7 @@ class InputOutputSystem(object):
         ----------
         sys : Named I/O system
             System to be checked
-        strict: bool, optional
+        strict : bool, optional
             If strict is True, make sure that timebase is not None.  Default
             is False.
         """
@@ -436,7 +436,7 @@ class InputOutputSystem(object):
 
         Parameters
         ----------
-        strict: bool, optional
+        strict : bool, optional
             If strict is True, make sure that timebase is not None.  Default
             is False.
         """
@@ -466,7 +466,7 @@ def issiso(sys, strict=False):
     ----------
     sys : I/O or LTI system
         System to be checked
-    strict: bool (default = False)
+    strict : bool (default = False)
         If strict is True, do not treat scalars as SISO
     """
     if isinstance(sys, (int, float, complex, np.number)) and not strict:
@@ -484,7 +484,21 @@ def timebase(sys, strict=True):
     dt = timebase(sys)
 
     returns the timebase for a system 'sys'.  If the strict option is
-    set to False, dt = True will be returned as 1.
+    set to `True`, dt = True will be returned as 1.
+
+    Parameters
+    ----------
+    sys : InputOutputSystem or float
+        System whose timebase is to be determined.
+    strict : bool, optional
+        Whether to implement strict checking.  If set to `True` (default),
+        a float will always be returned (dt = `True` will be returned as 1).
+
+    Returns
+    -------
+    dt : timebase
+        Timebase for the system (0 = continuous time, `None` = unspecified).
+
     """
     # System needs to be either a constant or an I/O or LTI system
     if isinstance(sys, (int, float, complex, np.number)):
@@ -493,9 +507,9 @@ def timebase(sys, strict=True):
         raise ValueError("Timebase not defined")
 
     # Return the sample time, with converstion to float if strict is false
-    if (sys.dt == None):
+    if sys.dt == None:
         return None
-    elif (strict):
+    elif strict:
         return float(sys.dt)
 
     return sys.dt
@@ -506,12 +520,12 @@ def common_timebase(dt1, dt2):
 
     Parameters
     ----------
-    dt1, dt2: number or system with a 'dt' attribute (e.g. TransferFunction
+    dt1, dt2 : number or system with a 'dt' attribute (e.g. TransferFunction
         or StateSpace system)
 
     Returns
     -------
-    dt: number
+    dt : number
         The common timebase of dt1 and dt2, as specified in
         :ref:`conventions-ref`.
 
@@ -560,7 +574,7 @@ def isdtime(sys=None, strict=False, dt=None):
         System to be checked.
     dt : None or number, optional
         Timebase to be checked.
-    strict: bool, default=False
+    strict : bool, default=False
         If strict is True, make sure that timebase is not None.
     """
 
@@ -592,7 +606,7 @@ def isctime(sys=None, dt=None, strict=False):
         System to be checked.
     dt : None or number, optional
         Timebase to be checked.
-    strict: bool (default = False)
+    strict : bool (default = False)
         If strict is True, make sure that timebase is not None.
     """
 

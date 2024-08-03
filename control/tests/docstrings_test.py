@@ -49,7 +49,8 @@ keyword_skiplist = {
     control.sisotool: ['kvect'],                            # deprecated
     control.nyquist_response: ['return_contour'],           # deprecated
     control.create_estimator_iosystem: ['state_labels'],    # deprecated
-    control.bode_plot: ['sharex', 'sharey', 'margin_info']  # deprecated
+    control.bode_plot: ['sharex', 'sharey', 'margin_info'], # deprecated
+    control.eigensys_realization: ['arg'],                  # positional
 }
 
 # Decide on the level of verbosity (use -rP when running pytest)
