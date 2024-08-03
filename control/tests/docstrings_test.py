@@ -20,14 +20,36 @@ import control.flatsys
 function_skiplist = [
     control.ControlPlot.reshape,                # needed for legacy interface
     control.phase_plot,                         # legacy function
+    control.drss,                               # documention in rss
 ]
+
+# Checksums to use for checking whether a docstring has changed
+function_docstring_hash = {
+    control.append:                     'be014503250ef73253a5372a0d082566',
+    control.describing_function_plot:   '726a10eef8f2b50ef46a203653f398c7',
+    control.dlqe:                       '9f637afdf36c7e17b7524f9a736772b6',
+    control.dlqr:                       'a9265c5ed66388661729edb2379fd9a1',
+    control.lqe:                        'd265b0daf0369569e4b755fa35db7a54',
+    control.lqr:                        '0b76455c2b873abcbcd959e069d9d241',
+    control.frd:                        '7ac3076368f11e407653cd1046bbc98d',
+    control.margin:                     '8ee27989f1ca521ce9affe5900605b75',
+    control.parallel:                   'daa3b8708200a364d9b5536b6cbb5c91',
+    control.series:                     '7241169911b641c43f9456bd12168271',
+    control.ss:                         'aa77e816305850502c21bc40ce796f40',
+    control.ss2tf:                      '8d663d474ade2950dd22ec86fe3a53b7',
+    control.tf:                         '4e8d21e71312d83ba2e15b9c095fd962',
+    control.tf2ss:                      '0e5da4f3ed4aaf000f3b454c466f9013',
+}
 
 # List of keywords that we can skip testing (special cases)
 keyword_skiplist = {
     control.input_output_response: ['method'],
-    control.nyquist_plot: ['color'],            # checked separately
-    control.optimal.solve_ocp: ['method'],      # deprecated
-    control.sisotool: ['kvect'],                # deprecated
+    control.nyquist_plot: ['color'],                        # separate check
+    control.optimal.solve_ocp: ['method', 'return_x'],      # deprecated
+    control.sisotool: ['kvect'],                            # deprecated
+    control.nyquist_response: ['return_contour'],           # deprecated
+    control.create_estimator_iosystem: ['state_labels'],    # deprecated
+    control.bode_plot: ['sharex', 'sharey', 'margin_info']  # deprecated
 }
 
 # Decide on the level of verbosity (use -rP when running pytest)
@@ -38,6 +60,8 @@ verbose = 1
     (control.optimal, "optimal."), (control.phaseplot, "phaseplot.")
 ])
 def test_docstrings(module, prefix):
+    checked = set()             # Keep track of functions we have checked
+
     # Look through every object in the package
     if verbose > 1:
         print(f"Checking module {module}")
@@ -56,10 +80,13 @@ def test_docstrings(module, prefix):
             test_docstrings(obj, prefix + name + '.')
 
         if inspect.isfunction(obj):
-            # Skip anything that is inherited, hidden, or deprecated
+            # Skip anything that is inherited, hidden, deprecated, or checked
             if inspect.isclass(module) and name not in module.__dict__ \
-               or name.startswith('_') or obj in function_skiplist:
+               or name.startswith('_') or obj in function_skiplist or \
+               obj in checked:
                 continue
+            else:
+                checked.add(obj)
 
             # Get the docstring (skip w/ warning if there isn't one)
             if verbose > 1:
@@ -73,11 +100,17 @@ def test_docstrings(module, prefix):
                 source = inspect.getsource(obj)
 
             # Skip deprecated functions
-            if f"{name} is deprecated" in docstring or \
-               "function is deprecated" in docstring or \
-               ".. deprecated::" in docstring:
+            if ".. deprecated::" in docstring:
                 if verbose > 1:
                     print("    [deprecated]")
+                continue
+            elif f"{name} is deprecated" in docstring or \
+                 "function is deprecated" in docstring:
+                if verbose > 1:
+                    print("    [deprecated, but not numpydoc compliant]")
+                elif verbose:
+                    print(f"    {name} deprecation is not numpydoc compliant")
+                warnings.warn(f"{name} deprecated, but not numpydoc compliant")
                 continue
 
             elif f"{name} is deprecated" in source:
@@ -99,17 +132,27 @@ def test_docstrings(module, prefix):
 
                 # Check for positional arguments
                 if par.kind == inspect.Parameter.VAR_POSITIONAL:
+                    if obj in function_docstring_hash:
+                        import hashlib
+                        hash = hashlib.md5(
+                            docstring.encode('utf-8')).hexdigest()
+                        assert function_docstring_hash[obj] == hash
+                        continue
+
                     # Too complicated to check
                     if f"*{argname}" not in docstring and verbose:
                         print(f"      {name} has positional arguments; "
                               "check manually")
+                        warnings.warn(
+                            f"{name} {argname} has positional arguments; "
+                            "docstring not checked")
                     continue
 
                 # Check for keyword arguments (then look at code for parsing)
                 elif par.kind == inspect.Parameter.VAR_KEYWORD:
                     # See if we documented the keyward argumnt directly
-                    if f"**{argname}" in docstring:
-                        continue
+                    # if f"**{argname} :" in docstring:
+                    #     continue
 
                     # Look for direct kwargs argument access
                     kwargnames = set()
@@ -121,7 +164,16 @@ def test_docstrings(module, prefix):
                                   kwargname)
                         kwargnames.add(kwargname)
 
-                    # Look for kwargs access via _process_legacy_keyword
+                    # Look for kwargs accessed via _get_param
+                    for kwargname in re.findall(
+                            r"_get_param\(\s*'\w*',\s*'([\w]+)',\s*" + argname,
+                            source):
+                        if verbose > 2:
+                            print("    Found config keyword argument",
+                                  {kwargname})
+                        kwargnames.add(kwargname)
+
+                    # Look for kwargs accessed via _process_legacy_keyword
                     for kwargname in re.findall(
                             r"_process_legacy_keyword\([\s]*" + argname +
                             r",[\s]*'[\w]+',[\s]*'([\w]+)'", source):
@@ -169,6 +221,6 @@ def _check_docstring(funcname, argname, docstring, prefix=""):
         if verbose:
             print(f"      {funcname}: {argname} not documented")
         warnings.warn(f"{funcname} '{argname}' not documented")
-        return True
+        return False
 
     return True
