@@ -56,6 +56,9 @@ jobs:
         if [[ '${{matrix.pandas}}' == 'conda' ]]; then
           mamba install pandas
         fi
+        if [[ '${{matrix.mplbackend}}' == 'QtAgg' ]]; then
+          mamba install pyqt
+        fi
 
     - name: Test with pytest
       shell: bash -l {0}
