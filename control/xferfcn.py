@@ -811,7 +811,7 @@ class TransferFunction(LTI):
             num, den, self.dt, inputs=inputs, outputs=outputs, name=sysname)
 
     def freqresp(self, omega):
-        """(deprecated) Evaluate transfer function at complex frequencies.
+        """Evaluate transfer function at complex frequencies.
 
         .. deprecated::0.9.0
             Method has been given the more pythonic name
@@ -821,7 +821,7 @@ class TransferFunction(LTI):
         warn("TransferFunction.freqresp(omega) will be removed in a "
              "future release of python-control; use "
              "sys.frequency_response(omega), or freqresp(sys, omega) in the "
-             "MATLAB compatibility module instead", DeprecationWarning)
+             "MATLAB compatibility module instead", FutureWarning)
         return self.frequency_response(omega)
 
     def poles(self):

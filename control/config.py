@@ -362,7 +362,7 @@ def _process_legacy_keyword(kwargs, oldkey, newkey, newval):
     if kwargs.get(oldkey) is not None:
         warnings.warn(
             f"keyword '{oldkey}' is deprecated; use '{newkey}'",
-            DeprecationWarning)
+            FutureWarning)
         if newval is not None:
             raise ControlArgument(
                 f"duplicate keywords '{oldkey}' and '{newkey}'")

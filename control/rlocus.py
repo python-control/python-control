@@ -208,8 +208,8 @@ def root_locus_plot(
     #
     if plot is not None:
         warnings.warn(
-            "`root_locus` return values of roots, gains is deprecated; "
-            "use root_locus_map()", DeprecationWarning)
+            "root_locus() return value of roots, gains is deprecated; "
+            "use root_locus_map()", FutureWarning)
 
     if plot is False:
         return responses.loci, responses.gains

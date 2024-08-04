@@ -355,13 +355,13 @@ class StateSpace(NonlinearIOSystem, LTI):
     def _get_states(self):
         warn("The StateSpace `states` attribute will be deprecated in a "
              "future release.  Use `nstates` instead.",
-             DeprecationWarning, stacklevel=2)
+             FutureWarning, stacklevel=2)
         return self.nstates
 
     def _set_states(self, value):
         warn("The StateSpace `states` attribute will be deprecated in a "
              "future release.  Use `nstates` instead.",
-             DeprecationWarning, stacklevel=2)
+             FutureWarning, stacklevel=2)
         self.nstates = value
 
     #: Deprecated attribute; use :attr:`nstates` instead.
@@ -906,7 +906,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         warn("StateSpace.freqresp(omega) will be removed in a "
              "future release of python-control; use "
              "sys.frequency_response(omega), or freqresp(sys, omega) in the "
-             "MATLAB compatibility module instead", DeprecationWarning)
+             "MATLAB compatibility module instead", FutureWarning)
         return self.frequency_response(omega)
 
     # Compute poles and zeros
@@ -1618,8 +1618,8 @@ def ss(*args, **kwargs):
     if len(args) > 0 and (hasattr(args[0], '__call__') or args[0] is None) \
        and not isinstance(args[0], (InputOutputSystem, LTI)):
         # Function as first (or second) argument => assume nonlinear IO system
-        warn("using ss to create nonlinear I/O systems is deprecated; "
-             "use nlsys()", DeprecationWarning)
+        warn("using ss() to create nonlinear I/O systems is deprecated; "
+             "use nlsys()", FutureWarning)
         return NonlinearIOSystem(*args, **kwargs)
 
     elif len(args) == 4 or len(args) == 5:
@@ -1667,7 +1667,7 @@ def ss2io(*args, **kwargs):
     Create an :class:`~control.StateSpace` system with the given signal
     and system names.  See :func:`~control.ss` for more details.
     """
-    warn("ss2io is deprecated; use ss()", DeprecationWarning)
+    warn("ss2io() is deprecated; use ss()", FutureWarning)
     return StateSpace(*args, **kwargs)
 
 
@@ -1743,7 +1743,7 @@ def tf2io(*args, **kwargs):
     (2, 2, 8)
 
     """
-    warn("tf2io is deprecated; use tf2ss() or tf()", DeprecationWarning)
+    warn("tf2io() is deprecated; use tf2ss() or tf()", FutureWarning)
     return tf2ss(*args, **kwargs)
 
 

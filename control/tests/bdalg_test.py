@@ -269,7 +269,7 @@ class TestFeedback:
     def testConnect(self, tsys):
         sys = append(tsys.sys2, tsys.sys3)  # two siso systems
 
-        with pytest.warns(DeprecationWarning, match="use `interconnect`"):
+        with pytest.warns(FutureWarning, match="use interconnect()"):
             # should not raise error
             connect(sys, [[1, 2], [2, -2]], [2], [1, 2])
             connect(sys, [[1, 2], [2, 0]], [2], [1, 2])

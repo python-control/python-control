@@ -1111,14 +1111,14 @@ def solve_ocp(
                 raise ValueError("'minimize_method' specified more than once")
             warnings.warn(
                 "'method' parameter is deprecated; assuming minimize_method",
-                DeprecationWarning)
+                FutureWarning)
             kwargs['minimize_method'] = method
         else:
             if kwargs.get('trajectory_method'):
                 raise ValueError("'trajectory_method' specified more than once")
             warnings.warn(
                 "'method' parameter is deprecated; assuming trajectory_method",
-                DeprecationWarning)
+                FutureWarning)
             kwargs['trajectory_method'] = method
 
     # Set up the optimal control problem

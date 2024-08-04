@@ -60,7 +60,7 @@ verbose = 1
     (control, ""), (control.flatsys, "flatsys."),
     (control.optimal, "optimal."), (control.phaseplot, "phaseplot.")
 ])
-def test_docstrings(module, prefix):
+def test_parameter_docs(module, prefix):
     checked = set()             # Keep track of functions we have checked
 
     # Look through every object in the package
@@ -78,7 +78,7 @@ def test_docstrings(module, prefix):
             if verbose > 1:
                 print(f"  Checking class {name}")
             # Check member functions within the class
-            test_docstrings(obj, prefix + name + '.')
+            test_parameter_docs(obj, prefix + name + '.')
 
         if inspect.isfunction(obj):
             # Skip anything that is inherited, hidden, deprecated, or checked
@@ -105,7 +105,7 @@ def test_docstrings(module, prefix):
                 if verbose > 1:
                     print("    [deprecated]")
                 continue
-            elif f"{name} is deprecated" in docstring or \
+            elif re.search(name + r"(\(\))? is deprecated", docstring) or \
                  "function is deprecated" in docstring:
                 if verbose > 1:
                     print("    [deprecated, but not numpydoc compliant]")
@@ -114,7 +114,7 @@ def test_docstrings(module, prefix):
                 warnings.warn(f"{name} deprecated, but not numpydoc compliant")
                 continue
 
-            elif f"{name} is deprecated" in source:
+            elif re.search(name + r"(\(\))? is deprecated", source):
                 if verbose:
                     print(f"    {name} is deprecated, but not documented")
                 warnings.warn(f"{name} deprecated, but not documented")
@@ -189,7 +189,7 @@ def test_docstrings(module, prefix):
                             continue
                         if verbose > 3:
                             print(f"    Checking keyword argument {kwargname}")
-                        assert _check_docstring(
+                        assert _check_parameter_docs(
                             name, kwargname, inspect.getdoc(obj),
                             prefix=prefix)
 
@@ -197,12 +197,63 @@ def test_docstrings(module, prefix):
                 else:
                     if verbose > 3:
                         print(f"    Checking argument {argname}")
-                    assert _check_docstring(
+                    assert _check_parameter_docs(
                         name, argname, docstring, prefix=prefix)
 
 
+@pytest.mark.parametrize("module, prefix", [
+    (control, ""), (control.flatsys, "flatsys."),
+    (control.optimal, "optimal."), (control.phaseplot, "phaseplot.")
+])
+def test_deprecated_functions(module, prefix):
+    checked = set()             # Keep track of functions we have checked
+
+    # Look through every object in the package
+    for name, obj in inspect.getmembers(module):
+        # Skip anything that is outside of this module
+        if inspect.getmodule(obj) is not None and (
+                not inspect.getmodule(obj).__name__.startswith('control')
+                or prefix != "" and inspect.getmodule(obj) != module):
+            # Skip anything that isn't part of the control package
+            continue
+
+        if inspect.isclass(obj):
+            # Check member functions within the class
+            test_deprecated_functions(obj, prefix + name + '.')
+
+        if inspect.isfunction(obj):
+            # Skip anything that is inherited, hidden, or checked
+            if inspect.isclass(module) and name not in module.__dict__ \
+               or name[0] == '_' or obj in checked:
+                continue
+            else:
+                checked.add(obj)
+
+            # Get the docstring (skip w/ warning if there isn't one)
+            if obj.__doc__ is None:
+                warnings.warn(
+                    f"{module.__name__}.{name} is missing docstring")
+                continue
+            else:
+                docstring = inspect.getdoc(obj)
+                source = inspect.getsource(obj)
+
+            # Look for functions marked as deprecated in doc string
+            if ".. deprecated::" in docstring:
+                # Make sure a FutureWarning is issued
+                if not re.search("FutureWarning", source):
+                    pytest.fail(
+                        f"{name} deprecated but does not issue FutureWarning")
+            else:
+                if re.search(name + r"(\(\))? is deprecated", docstring) or \
+                   re.search(name + r"(\(\))? is deprecated", source):
+                    pytest.fail(
+                        f"{name} deprecated but w/ non-standard docs/warnings")
+                assert name != 'ss2io'
+
+
 # Utility function to check for an argument in a docstring
-def _check_docstring(funcname, argname, docstring, prefix=""):
+def _check_parameter_docs(funcname, argname, docstring, prefix=""):
     funcname = prefix + funcname
     if re.search(
             "\n" + r"((\w+|\.{3}), )*" + argname + r"(, (\w+|\.{3}))*:",

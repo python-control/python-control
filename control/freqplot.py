@@ -432,8 +432,8 @@ def bode_plot(
 
     if plot is not None:
         warnings.warn(
-            "`bode_plot` return values of mag, phase, omega is deprecated; "
-            "use frequency_response()", DeprecationWarning)
+            "bode_plot() return value of mag, phase, omega is deprecated; "
+            "use frequency_response()", FutureWarning)
 
     if plot is False:
         # Process the data to match what we were sent
@@ -1796,8 +1796,8 @@ def nyquist_plot(
     # Legacy return value processing
     if plot is not None or return_contour is not None:
         warnings.warn(
-            "`nyquist_plot` return values of count[, contour] is deprecated; "
-            "use nyquist_response()", DeprecationWarning)
+            "nyquist_plot() return value of count[, contour] is deprecated; "
+            "use nyquist_response()", FutureWarning)
 
         # Extract out the values that we will eventually return
         counts = [response.count for response in nyquist_responses]
@@ -2456,7 +2456,7 @@ def singular_values_plot(
     if plot is not None:
         warnings.warn(
             "`singular_values_plot` return values of sigma, omega is "
-            "deprecated; use singular_values_response()", DeprecationWarning)
+            "deprecated; use singular_values_response()", FutureWarning)
 
     # Warn the user if we got past something that is not real-valued
     if any([not np.allclose(np.imag(response.fresp[:, 0, :]), 0)

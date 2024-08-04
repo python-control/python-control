@@ -392,7 +392,7 @@ class TestStateSpace:
         np.testing.assert_almost_equal(omega, true_omega)
 
         # Deprecated version of the call (should return warning)
-        with pytest.warns(DeprecationWarning, match="will be removed"):
+        with pytest.warns(FutureWarning, match="will be removed"):
             mag, phase, omega = sys.freqresp(true_omega)
             np.testing.assert_almost_equal(mag, true_mag)
 

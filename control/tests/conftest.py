@@ -65,10 +65,10 @@ def legacy_plot_signature():
     import warnings
     warnings.filterwarnings(
         'ignore', message='passing systems .* is deprecated',
-        category=DeprecationWarning)
+        category=FutureWarning)
     warnings.filterwarnings(
-        'ignore', message='.* return values of .* is deprecated',
-        category=DeprecationWarning)
+        'ignore', message='.* return value of .* is deprecated',
+        category=FutureWarning)
     yield
     warnings.resetwarnings()
 
