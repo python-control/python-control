@@ -16,7 +16,7 @@ import control as ct
 from control import TransferFunction, config, pzmap
 
 
-@pytest.mark.filterwarnings("ignore:.*return values.*:DeprecationWarning")
+@pytest.mark.filterwarnings("ignore:.*return value.*:FutureWarning")
 @pytest.mark.parametrize("kwargs",
                          [pytest.param(dict(), id="default"),
                           pytest.param(dict(plot=False), id="plot=False"),
@@ -53,7 +53,8 @@ def test_pzmap(kwargs, setdefaults, dt, editsdefaults, mplcleanup):
 
     if kwargs.get('plot', None) is None:
         pzkwargs['plot'] = True         # use to get legacy return values
-    P, Z = pzmap(T, **pzkwargs)
+    with pytest.warns(FutureWarning, match="return value .* is deprecated"):
+        P, Z = pzmap(T, **pzkwargs)
 
     np.testing.assert_allclose(P, Pref, rtol=1e-3)
     np.testing.assert_allclose(Z, Zref, rtol=1e-3)
@@ -96,7 +97,7 @@ def test_polezerodata():
 
     # Legacy return format
     for plot in [True, False]:
-        with pytest.warns(DeprecationWarning, match=".* values .* deprecated"):
+        with pytest.warns(FutureWarning, match=".* value .* deprecated"):
             poles, zeros = ct.pole_zero_plot(pzdata, plot=False)
         np.testing.assert_equal(poles, sys.poles())
         np.testing.assert_equal(zeros, sys.zeros())

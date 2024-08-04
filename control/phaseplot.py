@@ -1013,6 +1013,9 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
 
     """(legacy) Phase plot for 2D dynamical systems.
 
+    .. deprecated:: 0.10.1
+        This function is deprecated; use `phase_plane_plot` instead.
+
     Produces a vector field or stream line plot for a planar system.  This
     function has been replaced by the :func:`~control.phase_plane_map` and
     :func:`~control.phase_plane_plot` functions.
@@ -1072,7 +1075,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     """
     # Generate a deprecation warning
     warnings.warn(
-        "phase_plot is deprecated; use phase_plot_plot instead",
+        "phase_plot() is deprecated; use phase_plane_plot() instead",
         FutureWarning)
 
     #
@@ -1272,7 +1275,7 @@ def box_grid(xlimp, ylimp):
     """box_grid   generate list of points on edge of box
 
     .. deprecated:: 0.10.0
-        Use `phaseplot.boxgrid` instead.
+        Use :func:`phaseplot.boxgrid` instead.
 
     list = box_grid([xmin xmax xnum], [ymin ymax ynum]) generates a
     list of points that correspond to a uniform grid at the end of the
@@ -1282,7 +1285,7 @@ def box_grid(xlimp, ylimp):
 
     # Generate a deprecation warning
     warnings.warn(
-        "box_grid is deprecated; use phaseplot.boxgrid instead",
+        "box_grid() is deprecated; use phaseplot.boxgrid() instead",
         FutureWarning)
 
     return boxgrid(

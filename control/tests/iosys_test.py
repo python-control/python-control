@@ -77,7 +77,7 @@ class TestIOSys:
         # Create a transfer function from the state space system
         linsys = tsys.siso_linsys
         tfsys = ct.ss2tf(linsys)
-        with pytest.warns(DeprecationWarning, match="use tf2ss"):
+        with pytest.warns(FutureWarning, match="use tf2ss"):
             iosys = ct.tf2io(tfsys)
 
         # Verify correctness via simulation
@@ -90,13 +90,13 @@ class TestIOSys:
         # Make sure that non-proper transfer functions generate an error
         tfsys = ct.tf('s')
         with pytest.raises(ValueError):
-            with pytest.warns(DeprecationWarning, match="use tf2ss"):
+            with pytest.warns(FutureWarning, match="use tf2ss"):
                 iosys=ct.tf2io(tfsys)
 
     def test_ss2io(self, tsys):
         # Create an input/output system from the linear system
         linsys = tsys.siso_linsys
-        with pytest.warns(DeprecationWarning, match="use ss"):
+        with pytest.warns(FutureWarning, match="use ss"):
             iosys = ct.ss2io(linsys)
         np.testing.assert_allclose(linsys.A, iosys.A)
         np.testing.assert_allclose(linsys.B, iosys.B)
@@ -104,7 +104,7 @@ class TestIOSys:
         np.testing.assert_allclose(linsys.D, iosys.D)
 
         # Try adding names to things
-        with pytest.warns(DeprecationWarning, match="use ss"):
+        with pytest.warns(FutureWarning, match="use ss"):
             iosys_named = ct.ss2io(linsys, inputs='u', outputs='y',
                                    states=['x1', 'x2'], name='iosys_named')
         assert iosys_named.find_input('u') == 0
@@ -1942,7 +1942,7 @@ def test_nonuniform_timepts(nstates, noutputs, ninputs):
 
 def test_ss_nonlinear():
     """Test ss() for creating nonlinear systems"""
-    with pytest.warns(DeprecationWarning, match="use nlsys()"):
+    with pytest.warns(FutureWarning, match="use nlsys()"):
         secord = ct.ss(secord_update, secord_output, inputs='u', outputs='y',
                        states = ['x1', 'x2'], name='secord')
     assert secord.name == 'secord'
@@ -1963,12 +1963,12 @@ def test_ss_nonlinear():
     np.testing.assert_almost_equal(ss_response.outputs, io_response.outputs)
 
     # Make sure that optional keywords are allowed
-    with pytest.warns(DeprecationWarning, match="use nlsys()"):
+    with pytest.warns(FutureWarning, match="use nlsys()"):
         secord = ct.ss(secord_update, secord_output, dt=True)
     assert ct.isdtime(secord)
 
     # Make sure that state space keywords are flagged
-    with pytest.warns(DeprecationWarning, match="use nlsys()"):
+    with pytest.warns(FutureWarning, match="use nlsys()"):
         with pytest.raises(TypeError, match="unrecognized keyword"):
             ct.ss(secord_update, remove_useless_states=True)
 

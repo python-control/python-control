@@ -597,12 +597,13 @@ class FrequencyResponseData(LTI):
             Method has been given the more pythonic name
             :meth:`FrequencyResponseData.frequency_response`. Or use
             :func:`freqresp` in the MATLAB compatibility module.
+
         """
         warn("FrequencyResponseData.freqresp(omega) will be removed in a "
              "future release of python-control; use "
              "FrequencyResponseData.frequency_response(omega), or "
              "freqresp(sys, omega) in the MATLAB compatibility module "
-             "instead", DeprecationWarning)
+             "instead", FutureWarning)
         return self.frequency_response(omega)
 
     def feedback(self, other=1, sign=-1):

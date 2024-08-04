@@ -316,8 +316,8 @@ def pole_zero_plot(
     # Legacy return value processing
     if plot is not None:
         warnings.warn(
-            "`pole_zero_plot` return values of poles, zeros is deprecated; "
-            "use pole_zero_map()", DeprecationWarning)
+            "pole_zero_plot() return value of poles, zeros is deprecated; "
+            "use pole_zero_map()", FutureWarning)
 
         # Extract out the values that we will eventually return
         poles = [response.poles for response in pzmap_responses]

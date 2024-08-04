@@ -130,7 +130,7 @@ def time_response_plot(
         Override the default parameters used for generating plots.
         Default is set by config.default['ctrlplot.rcParams'].
     relabel : bool, optional
-        [deprecated] By default, existing figures and axes are relabeled
+        (deprecated) By default, existing figures and axes are relabeled
         when new data are added.  If set to `False`, just plot new data on
         existing axes.
     show_legend : bool, optional

@@ -212,7 +212,7 @@ def suptitle(
 
     """
     warnings.warn(
-        "suptitle is deprecated; use cplt.set_plot_title", FutureWarning)
+        "suptitle() is deprecated; use cplt.set_plot_title()", FutureWarning)
     _update_plot_title(
         title, fig=fig, frame=frame, use_existing=False, **kwargs)
 
@@ -247,7 +247,8 @@ def get_plot_axes(line_array):
     Only the first element of each array entry is used to determine the axes.
 
     """
-    warnings.warn("get_plot_axes is deprecated; use cplt.axes", FutureWarning)
+    warnings.warn(
+        "get_plot_axes() is deprecated; use cplt.axes()", FutureWarning)
     _get_axes = np.vectorize(lambda lines: lines[0].axes)
     if isinstance(line_array, ControlPlot):
         return _get_axes(line_array.lines)

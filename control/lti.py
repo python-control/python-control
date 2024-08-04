@@ -521,7 +521,7 @@ def freqresp(sys, omega):
         Use `frequency_response` instead.
 
     """
-    warn("freqresp is deprecated; use frequency_response", DeprecationWarning)
+    warn("freqresp() is deprecated; use frequency_response()", FutureWarning)
     return frequency_response(sys, omega)
 
 

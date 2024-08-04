@@ -412,8 +412,8 @@ def connect(sys, Q, inputv, outputv):
     """Index-based interconnection of an LTI system.
 
     .. deprecated:: 0.10.0
-        `connect` will be removed in a future version of python-control in
-        favor of `interconnect`, which works with named signals.
+        `connect` will be removed in a future version of python-control.
+        Use :func:`interconnect` instead, which works with named signals.
 
     The system `sys` is a system typically constructed with `append`, with
     multiple inputs and outputs.  The inputs and outputs are connected
@@ -465,7 +465,7 @@ def connect(sys, Q, inputv, outputv):
 
     """
     # TODO: maintain `connect` for use in MATLAB submodule (?)
-    warn("`connect` is deprecated; use `interconnect`", DeprecationWarning)
+    warn("connect() is deprecated; use interconnect()", FutureWarning)
 
     inputv, outputv, Q = \
         np.atleast_1d(inputv), np.atleast_1d(outputv), np.atleast_1d(Q)
