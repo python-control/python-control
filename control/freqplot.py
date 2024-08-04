@@ -2069,6 +2069,18 @@ def gangof4_response(
         Linear input/output systems (process and control).
     omega : array
         Range of frequencies (list or bounds) in rad/sec.
+    omega_limits : array_like of two values
+        Set limits for plotted frequency range. If Hz=True the limits are
+        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
+        elements is equivalent to providing ``omega_limits``. Ignored if
+        data is not a list of systems.
+    omega_num : int
+        Number of samples to use for the frequeny range.  Defaults to
+        config.defaults['freqplot.number_of_samples'].  Ignored if data is
+        not a list of systems.
+    Hz : bool, optional
+        If True, when computing frequency limits automatically set
+        limits to full decades in Hz instead of rad/s.
 
     Returns
     -------
@@ -2123,11 +2135,60 @@ def gangof4_response(
 
 
 def gangof4_plot(
-        P, C, omega=None, omega_limits=None, omega_num=None, **kwargs):
-    """Legacy Gang of 4 plot; use gangof4_response().plot() instead."""
-    return gangof4_response(
-        P, C, omega=omega, omega_limits=omega_limits,
-        omega_num=omega_num).plot(**kwargs)
+        *args, omega=None, omega_limits=None, omega_num=None,
+        Hz=False, **kwargs):
+    """Plot the response of the "Gange of 4" transfer functions for a system.
+
+    Plots a 2x2 frequency response for the "Gang of 4" sensitivity
+    functions [T, PS; CS, S].  Can be called in one of two ways:
+
+        gangof4_plot(response[, ...])
+        gangof4_plot(P, C[, ...])
+
+    Parameters
+    ----------
+    response : FrequencyPlotData
+        Gang of 4 frequency response from `gangof4_response`.
+    P, C : LTI
+        Linear input/output systems (process and control).
+    omega : array
+        Range of frequencies (list or bounds) in rad/sec.
+    omega_limits : array_like of two values
+        Set limits for plotted frequency range. If Hz=True the limits are
+        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
+        elements is equivalent to providing ``omega_limits``. Ignored if
+        data is not a list of systems.
+    omega_num : int
+        Number of samples to use for the frequeny range.  Defaults to
+        config.defaults['freqplot.number_of_samples'].  Ignored if data is
+        not a list of systems.
+    Hz : bool, optional
+        If True, when computing frequency limits automatically set
+        limits to full decades in Hz instead of rad/s.
+
+    Returns
+    -------
+    response : :class:`~control.FrequencyResponseData`
+        Frequency response with inputs 'r' and 'd' and outputs 'y', and 'u'
+        representing the 2x2 matrix of transfer functions in the Gang of 4.
+
+    """
+    if len(args) == 1 and isinstance(arg, FrequencyResponseData):
+        if any([kw is not None
+                for kw in [omega, omega_limits, omega_num, Hz]]):
+            raise ValueError(
+                "omega, omega_limits, omega_num, Hz not allowed when "
+                "given a Gang of 4 response as first argument")
+        return args[0].plot(kwargs)
+    else:
+        if len(args) > 3:
+            raise TypeError(
+                f"expecting 2 or 3 positional arguments; received {len(args)}")
+        omega = omega if len(args) < 3 else args[2]
+        args = args[0:2]
+        return gangof4_response(
+            *args, omega=omega, omega_limits=omega_limits,
+            omega_num=omega_num, Hz=Hz).plot(**kwargs)
 
 #
 # Singular values plot
