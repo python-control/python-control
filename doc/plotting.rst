@@ -660,8 +660,8 @@ returned values from plotting routines.
    :toctree: generated/
 
    ~control.combine_time_responses
+   ~control.pole_zero_subplots
    ~control.reset_rcParams
-   control.ControlPlot.set_plot_title
 
 
 Response and plotting classes

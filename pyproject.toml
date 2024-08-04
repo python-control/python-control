@@ -56,3 +56,9 @@ addopts = "-ra"
 filterwarnings = [
     "error:.*matrix subclass:PendingDeprecationWarning",
 ]
+
+[tool.ruff.lint]
+select = ['D', 'E', 'W', 'DOC']
+
+[tool.ruff.lint.pydocstyle]
+convention = 'numpy'

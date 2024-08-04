@@ -258,7 +258,7 @@ def pole_zero_subplots(
     Parameters
     ----------
     nrows, ncols : int
-        Number of rows and columns
+        Number of rows and columns.
     grid : True, False, or 'empty', optional
         Grid style to use.  Can also be a list, in which case each subplot
         will have a different style (columns then rows).
@@ -326,7 +326,7 @@ def reset_rcParams():
 def _process_ax_keyword(
         axs, shape=(1, 1), rcParams=None, squeeze=False, clear_text=False,
         create_axes=True):
-    """Utility function to process ax keyword to plotting commands.
+    """Process ax keyword to plotting commands.
 
     This function processes the `ax` keyword to plotting commands.  If no
     ax keyword is passed, the current figure is checked to see if it has
@@ -584,16 +584,16 @@ def _add_arrows_to_line2D(
     """
     Add arrows to a matplotlib.lines.Line2D at selected locations.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     axes: Axes object as returned by axes command (or gca)
     line: Line2D object as returned by plot command
     arrow_locs: list of locations where to insert arrows, % of total length
     arrowstyle: style of the arrow
     arrowsize: size of the arrow
 
-    Returns:
-    --------
+    Returns
+    -------
     arrows: list of arrows
 
     Based on https://stackoverflow.com/questions/26911898/
