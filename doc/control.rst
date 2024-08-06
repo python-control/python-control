@@ -133,10 +133,10 @@ Model simplification tools
 .. autosummary::
    :toctree: generated/
 
-    minreal
-    balred
-    hsvd
-    modred
+    minimal_realization
+    balanced_reduction
+    hankel_singular_values
+    model_reduction
     eigensys_realization
     markov
 
