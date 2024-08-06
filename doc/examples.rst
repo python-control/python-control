@@ -36,6 +36,7 @@ other sources.
    mrac_siso_mit
    mrac_siso_lyapunov
    markov
+   era_msd
 
 Jupyter notebooks
 =================
