@@ -7,8 +7,8 @@ import numpy as np
 import pytest
 
 
-from control import StateSpace, forced_response, tf, rss, c2d
-from control.exception import ControlMIMONotImplemented
+from control import StateSpace, forced_response, impulse_response, tf, rss, c2d, TimeResponseData
+from control.exception import ControlArgument, ControlDimension
 from control.tests.conftest import slycotonly
 from control.modelsimp import balred, hsvd, markov, modred
 
@@ -33,36 +33,149 @@ class TestModelsimp:
         assert not isinstance(hsv, np.matrix)
 
     def testMarkovSignature(self):
-        U = np.array([[1., 1., 1., 1., 1.]])
+        U = np.array([[1., 1., 1., 1., 1., 1., 1.]])
         Y = U
+        response = TimeResponseData(time=np.arange(U.shape[-1]),
+                                    outputs=Y,
+                                    output_labels='y',
+                                    inputs=U,
+                                    input_labels='u',
+                                    )
+        
+        # setup
         m = 3
-        H = markov(Y, U, m, transpose=False)
-        Htrue = np.array([[1., 0., 0.]])
-        np.testing.assert_array_almost_equal(H, Htrue)
+        Htrue = np.array([1., 0., 0.])
+        Htrue_l = np.array([1., 0., 0., 0., 0., 0., 0.])
 
-        # Make sure that transposed data also works
-        H = markov(np.transpose(Y), np.transpose(U), m, transpose=True)
-        np.testing.assert_array_almost_equal(H, np.transpose(Htrue))
+        # test not enough input arguments
+        with pytest.raises(ControlArgument):
+            H = markov(Y)
+        with pytest.raises(ControlArgument):
+            H = markov()
 
-        # Generate Markov parameters without any arguments
+        # to many positional arguments
+        with pytest.raises(ControlArgument):
+            H = markov(Y,U,m,1)
+        with pytest.raises(ControlArgument):
+            H = markov(response,m,1)
+
+        # to many positional arguments
+        with pytest.raises(ControlDimension):
+            U2 = np.hstack([U,U])
+            H = markov(Y,U2,m)
+
+        # not enough data
+        with pytest.warns(Warning):
+            H = markov(Y,U,8)
+
+        # Basic Usage, m=l
+        H = markov(Y, U)
+        np.testing.assert_array_almost_equal(H, Htrue_l)
+
+        H = markov(response)
+        np.testing.assert_array_almost_equal(H, Htrue_l)
+
+        # Basic Usage, m
         H = markov(Y, U, m)
         np.testing.assert_array_almost_equal(H, Htrue)
 
+        H = markov(response, m)
+        np.testing.assert_array_almost_equal(H, Htrue)
+
+        H = markov(Y, U, m=m)
+        np.testing.assert_array_almost_equal(H, Htrue)
+
+        H = markov(response, m=m)
+        np.testing.assert_array_almost_equal(H, Htrue)
+
+        response.transpose=False
+        H = markov(response, m=m)
+        np.testing.assert_array_almost_equal(H, Htrue)
+
+        # Make sure that transposed data also works, siso
+        HT = markov(Y.T, U.T, m, transpose=True)
+        np.testing.assert_array_almost_equal(HT, np.transpose(Htrue))
+
+        response.transpose = True
+        HT = markov(response, m)
+        np.testing.assert_array_almost_equal(HT, np.transpose(Htrue))
+        response.transpose=False
+        
+
         # Test example from docstring
+        # TODO: There is a problem here, last markov parameter does not fit
+        # the approximation error could be to big
+        Htrue = np.array([0, 1., -0.5])
         T = np.linspace(0, 10, 100)
         U = np.ones((1, 100))
         T, Y = forced_response(tf([1], [1, 0.5], True), T, U)
-        H = markov(Y, U, 3, transpose=False)
+        H = markov(Y, U, 4, dt=True)
+        np.testing.assert_array_almost_equal(H[:3], Htrue[:3])
+
+        response = forced_response(tf([1], [1, 0.5], True), T, U)
+        H = markov(response, 4, dt=True)
+        np.testing.assert_array_almost_equal(H[:3], Htrue[:3])
 
         # Test example from issue #395
         inp = np.array([1, 2])
         outp = np.array([2, 4])
         mrk = markov(outp, inp, 1, transpose=False)
 
-        # Make sure MIMO generates an error
-        U = np.ones((2, 100))   # 2 inputs (Y unchanged, with 1 output)
-        with pytest.raises(ControlMIMONotImplemented):
-            markov(Y, U, m)
+        # Test mimo example
+        # Mechanical Vibrations: Theory and Application, SI Edition, 1st ed.
+        # Figure 6.5 / Example 6.7
+        m1, k1, c1 = 1., 4., 1.
+        m2, k2, c2 = 2., 2., 1.
+        k3, c3 = 6., 2.
+
+        A = np.array([
+            [0., 0., 1., 0.],
+            [0., 0., 0., 1.],
+            [-(k1+k2)/m1, (k2)/m1, -(c1+c2)/m1, c2/m1],
+            [(k2)/m2, -(k2+k3)/m2, c2/m2, -(c2+c3)/m2]
+        ])
+        B = np.array([[0.,0.],[0.,0.],[1/m1,0.],[0.,1/m2]])
+        C = np.array([[1.0, 0.0, 0.0, 0.0],[0.0, 1.0, 0.0, 0.0]])
+        D = np.zeros((2,2))
+
+        sys = StateSpace(A, B, C, D)
+        dt = 0.25
+        sysd = sys.sample(dt, method='zoh')
+
+        T = np.arange(0,100,dt)
+        U = np.random.randn(sysd.B.shape[-1], len(T))
+        response = forced_response(sysd, U=U)
+        Y = response.outputs
+
+        m = 100
+        _, Htrue = impulse_response(sysd, T=dt*(m-1))
+
+
+        # test array_like
+        H = markov(Y, U, m, dt=dt)
+        np.testing.assert_array_almost_equal(H, Htrue)
+
+        # test array_like, truncate
+        H = markov(Y, U, m, dt=dt, truncate=True)
+        np.testing.assert_array_almost_equal(H, Htrue)
+
+        # test array_like, transpose
+        HT = markov(Y.T, U.T, m, dt=dt, transpose=True)
+        np.testing.assert_array_almost_equal(HT, np.transpose(Htrue))
+
+        # test response data
+        H = markov(response, m, dt=dt)
+        np.testing.assert_array_almost_equal(H, Htrue)
+
+        # test response data
+        H = markov(response, m, dt=dt, truncate=True)
+        np.testing.assert_array_almost_equal(H, Htrue)
+
+        # test response data, transpose
+        response.transpose = True
+        HT = markov(response, m, dt=dt)
+        np.testing.assert_array_almost_equal(HT, np.transpose(Htrue))
+
 
     # Make sure markov() returns the right answer
     @pytest.mark.parametrize("k, m, n",
@@ -98,18 +211,34 @@ class TestModelsimp:
         Mtrue = np.hstack([Hd.D] + [
             Hd.C @ np.linalg.matrix_power(Hd.A, i) @ Hd.B
             for i in range(m-1)])
+        
+        Mtrue = np.squeeze(Mtrue)
 
         # Generate input/output data
         T = np.array(range(n)) * Ts
         U = np.cos(T) + np.sin(T/np.pi)
-        _, Y = forced_response(Hd, T, U, squeeze=True)
-        Mcomp = markov(Y, U, m)
+
+        ir_true = impulse_response(Hd,T)
+        Mtrue_scaled = ir_true[1][:m]
 
         # Compare to results from markov()
         # experimentally determined probability to get non matching results
         # with rtot=1e-6 and atol=1e-8 due to numerical errors
         # for k=5, m=n=10: 0.015 %
+        T, Y = forced_response(Hd, T, U, squeeze=True)
+        Mcomp = markov(Y, U, m, dt=True)
+        Mcomp_scaled = markov(Y, U, m, dt=Ts)
+
         np.testing.assert_allclose(Mtrue, Mcomp, rtol=1e-6, atol=1e-8)
+        np.testing.assert_allclose(Mtrue_scaled, Mcomp_scaled, rtol=1e-6, atol=1e-8)
+
+        response = forced_response(Hd, T, U, squeeze=True)
+        Mcomp = markov(response, m, dt=True)
+        Mcomp_scaled = markov(response, m, dt=Ts)
+
+        np.testing.assert_allclose(Mtrue, Mcomp, rtol=1e-6, atol=1e-8)
+        np.testing.assert_allclose(Mtrue_scaled, Mcomp_scaled, rtol=1e-6, atol=1e-8)
+        
 
     def testModredMatchDC(self):
         #balanced realization computed in matlab for the transfer function:
