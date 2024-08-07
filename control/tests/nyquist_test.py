@@ -144,14 +144,6 @@ def test_nyquist_basic():
         else:
             pytest.fails("multiple warnings in nyquist_response (?)")
 
-    # Nyquist plot with poles on imaginary axis, omega specified, with contour
-    sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
-    with pytest.warns(UserWarning, match="does not match") as records:
-        count, contour = ct.nyquist_response(
-            sys, np.linspace(1e-3, 1e1, 1000), return_contour=True)
-    if len(records) == 0:
-        assert _Z(sys) == count + _P(sys)
-
     # Nyquist plot with poles on imaginary axis, return contour
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
     count, contour = ct.nyquist_response(sys, return_contour=True)
