@@ -71,8 +71,8 @@ jobs:
             unset | Generic | Apple ) ;; # Found in system
             OpenBLAS )
               brew install openblas
-              echo "BLAS_ROOT=/usr/local/opt/openblas/" >> $GITHUB_ENV
-              echo "LAPACK_ROOT=/usr/local/opt/openblas/" >> $GITHUB_ENV
+              echo "LDFLAGS=-L/opt/homebrew/opt/openblas/lib" >> $GITHUB_ENV
+              echo "CPPFLAGS=-I/opt/homebrew/opt/openblas/include" >> $GITHUB_ENV
               ;;
             *)
               echo "bla_vendor option ${{ matrix.bla_vendor }} not supported"
