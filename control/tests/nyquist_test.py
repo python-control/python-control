@@ -132,10 +132,17 @@ def test_nyquist_basic():
     # Nyquist plot with poles on imaginary axis, omega specified
     # (can miss encirclements due to the imaginary poles at +/- 1j)
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
-    with pytest.warns(UserWarning, match="does not match") as records:
+    with warnings.catch_warnings(record=True) as records:
         count = ct.nyquist_response(sys, np.linspace(1e-3, 1e1, 1000))
-    if len(records) == 0:
-        assert _Z(sys) == count + _P(sys)
+        if len(records) == 0:
+            # No warnings (it happens) => make sure count is correct
+            assert _Z(sys) == count + _P(sys)
+        elif len(records) == 1:
+            # Expected case: make sure warning is the right one
+            assert issubclass(records[0].category, UserWarning)
+            assert "encirclements does not match" in str(records[0].message)
+        else:
+            pytest.fails("multiple warnings in nyquist_response (?)")
 
     # Nyquist plot with poles on imaginary axis, omega specified, with contour
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
