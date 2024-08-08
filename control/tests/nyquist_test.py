@@ -142,7 +142,7 @@ def test_nyquist_basic():
             assert issubclass(records[0].category, UserWarning)
             assert "encirclements does not match" in str(records[0].message)
         else:
-            pytest.fails("multiple warnings in nyquist_response (?)")
+            pytest.fail("multiple warnings in nyquist_response (?)")
 
     # Nyquist plot with poles on imaginary axis, return contour
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
