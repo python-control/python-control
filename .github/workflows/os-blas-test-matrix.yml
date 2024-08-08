@@ -204,8 +204,6 @@ jobs:
           path: slycot-src
       - name: Checkout python-control
         uses: actions/checkout@v3
-        with:
-          repository: 'python-control/python-control'
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
