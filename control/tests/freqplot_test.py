@@ -570,7 +570,7 @@ def test_mixed_systypes():
 
 
 def test_suptitle():
-    sys = ct.rss(2, 2, 2)
+    sys = ct.rss(2, 2, 2, strictly_proper=True)
 
     # Default location: center of axes
     cplt = ct.bode_plot(sys)
