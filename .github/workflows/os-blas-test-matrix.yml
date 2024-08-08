@@ -71,8 +71,8 @@ jobs:
             unset | Generic | Apple ) ;; # Found in system
             OpenBLAS )
               brew install openblas
-              echo "BLAS_ROOT=/usr/local/opt/openblas/" >> $GITHUB_ENV
-              echo "LAPACK_ROOT=/usr/local/opt/openblas/" >> $GITHUB_ENV
+              echo "LDFLAGS=-L/opt/homebrew/opt/openblas/lib" >> $GITHUB_ENV
+              echo "CPPFLAGS=-I/opt/homebrew/opt/openblas/include" >> $GITHUB_ENV
               ;;
             *)
               echo "bla_vendor option ${{ matrix.bla_vendor }} not supported"
@@ -204,8 +204,6 @@ jobs:
           path: slycot-src
       - name: Checkout python-control
         uses: actions/checkout@v3
-        with:
-          repository: 'python-control/python-control'
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
