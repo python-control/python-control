@@ -111,7 +111,7 @@ class TimeResponseData:
     :attr:`time`, :attr:`outputs`, :attr:`states`, :attr:`inputs`.  When
     accessing time responses via their properties, squeeze processing is
     applied so that (by default) single-input, single-output systems will have
-    the output and input indices supressed.  This behavior is set using the
+    the output and input indices suppressed.  This behavior is set using the
     ``squeeze`` keyword.
 
     Attributes

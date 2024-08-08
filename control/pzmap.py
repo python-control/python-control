@@ -243,8 +243,8 @@ def pole_zero_plot(
         label(s).  If data is a list, strings should be specified for each
         system.
     legend_loc : int or str, optional
-        Include a legend in the given location. Default is 'center right',
-        with no legend for a single response.  Use False to supress legend.
+        Include a legend in the given location. Default is 'upper right',
+        with no legend for a single response.  Use False to suppress legend.
     marker_color : str, optional
         Set the color of the markers used for poles and zeros.
     marker_size : int, optional
@@ -273,10 +273,10 @@ def pole_zero_plot(
        use matplotlib.pyplot.gca().axis('auto') and then set the axis
        limits to the desired values.
 
-    2. Pole/zero plts that use the continuous time omega-damping grid do
+    2. Pole/zero plots that use the continuous time omega-damping grid do
        not work with the ``ax`` keyword argument, due to the way that axes
        grids are implemented.  The ``grid`` argument must be set to
-       ``False`` or `'empty'`` when using the ``ax`` keyword argument.
+       ``False`` or ``'empty'`` when using the ``ax`` keyword argument.
 
     """
     # Get parameter values

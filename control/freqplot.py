@@ -167,7 +167,7 @@ def bode_plot(
         string (see :func:`~matplotlib.pyplot.legend`).
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'center right',
-        with no legend for a single response.  Use False to supress legend.
+        with no legend for a single response.  Use False to suppress legend.
     margins_method : str, optional
         Method to use in computing margins (see :func:`stability_margins`).
     omega_limits : array_like of two values
@@ -1582,8 +1582,8 @@ def nyquist_plot(
         Label every nth frequency on the plot.  If not specified, no labels
         are generated.
     legend_loc : int or str, optional
-        Include a legend in the given location. Default is 'center right',
-        with no legend for a single response.  Use False to supress legend.
+        Include a legend in the given location. Default is 'upper right',
+        with no legend for a single response.  Use False to suppress legend.
     max_curve_magnitude : float, optional
         Restrict the maximum magnitude of the Nyquist plot to this value.
         Portions of the Nyquist plot whose magnitude is restricted are
@@ -2137,7 +2137,7 @@ def gangof4_response(
 def gangof4_plot(
         *args, omega=None, omega_limits=None, omega_num=None,
         Hz=False, **kwargs):
-    """Plot the response of the "Gange of 4" transfer functions for a system.
+    """Plot the response of the "Gang of 4" transfer functions for a system.
 
     Plots a 2x2 frequency response for the "Gang of 4" sensitivity
     functions [T, PS; CS, S].  Can be called in one of two ways:
@@ -2168,9 +2168,20 @@ def gangof4_plot(
 
     Returns
     -------
-    response : :class:`~control.FrequencyResponseData`
-        Frequency response with inputs 'r' and 'd' and outputs 'y', and 'u'
-        representing the 2x2 matrix of transfer functions in the Gang of 4.
+    cplt : :class:`ControlPlot` object
+        Object containing the data that were plotted:
+
+          * cplt.lines: 2x2 array of :class:`matplotlib.lines.Line2D`
+            objects for each line in the plot.  The value of each array
+            entry is a list of Line2D objects in that subplot.
+
+          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+
+          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+
+          * cplt.legend: legend object(s) contained in the plot
+
+        See :class:`ControlPlot` for more detailed information.
 
     """
     if len(args) == 1 and isinstance(arg, FrequencyResponseData):
@@ -2332,7 +2343,7 @@ def singular_values_plot(
         system.
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'center right',
-        with no legend for a single response.  Use False to supress legend.
+        with no legend for a single response.  Use False to suppress legend.
     omega_limits : array_like of two values
         Set limits for plotted frequency range. If Hz=True the limits are
         in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two

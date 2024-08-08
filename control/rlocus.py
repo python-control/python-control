@@ -171,7 +171,7 @@ def root_locus_plot(
         system.
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'center right',
-        with no legend for a single response.  Use False to supress legend.
+        with no legend for a single response.  Use False to suppress legend.
     show_legend : bool, optional
         Force legend to be shown if ``True`` or hidden if ``False``.  If
         ``None``, then show legend when there is more than one line on the

@@ -122,7 +122,7 @@ def time_response_plot(
         string (see :func:`~matplotlib.pyplot.legend`).
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'center right',
-        with no legend for a single response.  Use False to supress legend.
+        with no legend for a single response.  Use False to suppress legend.
     output_props : array of dicts, optional
         List of line properties to use when plotting combined outputs.  The
         default values are set by config.defaults['timeplot.output_props'].

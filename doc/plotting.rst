@@ -456,7 +456,7 @@ various ways.  The following general rules apply:
 
   The :func:`~control.bode_plot`, :func:`~control.time_response_plot`,
   and selected other commands can also accept a matplotlib format
-  string (e.g., 'r--').  The format string must appear as a positional
+  string (e.g., ``'r--'``).  The format string must appear as a positional
   argument right after the required data argument.
 
   Note that line property arguments are the same for all lines generated as
@@ -482,8 +482,8 @@ various ways.  The following general rules apply:
   locus plots), the default labels are the system name.
 
   If ``label`` is set to ``False``, individual lines are still given
-  labels, but no legend is generated in the plot (this can also be
-  accomplished by setting ``legend_map`` to ``False``.
+  labels, but no legend is generated in the plot. (This can also be
+  accomplished by setting ``legend_map`` to ``False``).
 
   Note: the ``label`` keyword argument is not implemented for describing
   function plots or phase plane plots, since these plots are primarily
@@ -501,7 +501,7 @@ various ways.  The following general rules apply:
   the ``legend_loc`` keyword argument is set to a string or integer, it
   will set the position of the legend as described in the
   :func:`matplotlib.legend` documentation.  Finally, ``legend_map`` can be
-  set to an` array that matches the shape of the subplots, with each item
+  set to an array that matches the shape of the subplots, with each item
   being a string indicating the location of the legend for that axes (or
   ``None`` for no legend).
 
