@@ -39,6 +39,8 @@ function_docstring_hash = {
     control.ss2tf:                      '8d663d474ade2950dd22ec86fe3a53b7',
     control.tf:                         '4e8d21e71312d83ba2e15b9c095fd962',
     control.tf2ss:                      '0e5da4f3ed4aaf000f3b454c466f9013',
+    control.markov:                     '47f3b856ec47df84b2af2c165abaabfc',
+    control.gangof4:                    '5e4b4cf815ef76d6c73939070bcd1489',
 }
 
 # List of keywords that we can skip testing (special cases)
@@ -50,7 +52,7 @@ keyword_skiplist = {
     control.nyquist_response: ['return_contour'],           # deprecated
     control.create_estimator_iosystem: ['state_labels'],    # deprecated
     control.bode_plot: ['sharex', 'sharey', 'margin_info'], # deprecated
-    control.eigensys_realization: ['arg'],                  # positional
+    control.eigensys_realization: ['arg'],                  # quasi-positional
 }
 
 # Decide on the level of verbosity (use -rP when running pytest)
