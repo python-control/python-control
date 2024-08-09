@@ -519,7 +519,7 @@ def _make_legend_labels(labels, ignore_common=False):
 
 def _update_plot_title(
         title, fig=None, frame='axes', use_existing=True, **kwargs):
-    if title is False:
+    if title is False or title is None:
         return
     if fig is None:
         fig = plt.gcf()
