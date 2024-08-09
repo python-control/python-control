@@ -36,7 +36,8 @@ import numpy as np
 from scipy.integrate import odeint
 
 from . import config
-from .ctrlplot import _add_arrows_to_line2D
+from .ctrlplot import ControlPlot, _add_arrows_to_line2D, _get_color, \
+    _process_ax_keyword, _update_plot_title
 from .exception import ControlNotImplemented
 from .nlsys import NonlinearIOSystem, find_eqpt, input_output_response
 
@@ -52,7 +53,8 @@ _phaseplot_defaults = {
 def phase_plane_plot(
         sys, pointdata=None, timedata=None, gridtype=None, gridspec=None,
         plot_streamlines=True, plot_vectorfield=False, plot_equilpoints=True,
-        plot_separatrices=True, ax=None, suppress_warnings=False, **kwargs
+        plot_separatrices=True, ax=None, suppress_warnings=False, title=None,
+        **kwargs
 ):
     """Plot phase plane diagram.
 
@@ -88,18 +90,32 @@ def phase_plane_plot(
         Parameters to pass to system. For an I/O system, `params` should be
         a dict of parameters and values. For a callable, `params` should be
         dict with key 'args' and value given by a tuple (passed to callable).
-    color : str
+    color : matplotlib color spec, optional
         Plot all elements in the given color (use `plot_<fcn>={'color': c}`
         to set the color in one element of the phase plot.
-    ax : Axes
-        Use the given axes for the plot instead of creating a new figure.
+    ax : matplotlib.axes.Axes, optional
+        The matplotlib axes to draw the figure on.  If not specified and
+        the current figure has a single axes, that axes is used.
+        Otherwise, a new figure is created.
 
     Returns
     -------
-    out : list of list of Artists
-        out[0] = list of Line2D objects (streamlines and separatrices)
-        out[1] = Quiver object (vector field arrows)
-        out[2] = list of Line2D objects (equilibrium points)
+    cplt : :class:`ControlPlot` object
+        Object containing the data that were plotted:
+
+          * cplt.lines: array of list of :class:`matplotlib.artist.Artist`
+            objects:
+
+              - lines[0] = list of Line2D objects (streamlines, separatrices).
+              - lines[1] = Quiver object (vector field arrows).
+              - lines[2] = list of Line2D objects (equilibrium points).
+
+          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+
+          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+
+        See :class:`ControlPlot` for more detailed information.
+
 
     Other parameters
     ----------------
@@ -121,21 +137,23 @@ def phase_plane_plot(
         in the dict as keywords to :func:`~control.phaseplot.separatrices`.
     suppress_warnings : bool, optional
         If set to `True`, suppress warning messages in generating trajectories.
+    title : str, optional
+        Set the title of the plot.  Defaults to plot type and system name(s).
 
     """
     # Process arguments
     params = kwargs.get('params', None)
     sys = _create_system(sys, params)
     pointdata = [-1, 1, -1, 1] if pointdata is None else pointdata
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
 
     # Create axis if needed
-    if ax is None:
-        fig, ax = plt.gcf(), plt.gca()
-    else:
-        fig = None              # don't modify figure
+    user_ax = ax
+    fig, ax = _process_ax_keyword(user_ax, squeeze=True, rcParams=rcParams)
 
     # Create copy of kwargs for later checking to find unused arguments
     initial_kwargs = dict(kwargs)
+    passed_kwargs = False
 
     # Utility function to create keyword arguments
     def _create_kwargs(global_kwargs, local_kwargs, **other_kwargs):
@@ -146,7 +164,7 @@ def phase_plane_plot(
         return new_kwargs
 
     # Create list for storing outputs
-    out = [[], None, None]
+    out = np.array([[], None, None], dtype=object)
 
     # Plot out the main elements
     if plot_streamlines:
@@ -200,12 +218,15 @@ def phase_plane_plot(
     if initial_kwargs:
         raise TypeError("unrecognized keywords: ", str(initial_kwargs))
 
-    if fig is not None:
-        ax.set_title(f"Phase portrait for {sys.name}")
+    if user_ax is None:
+        if title is None:
+            title = f"Phase portrait for {sys.name}"
+        _update_plot_title(title, use_existing=False, rcParams=rcParams)
         ax.set_xlabel(sys.state_labels[0])
         ax.set_ylabel(sys.state_labels[1])
+        plt.tight_layout()
 
-    return out
+    return ControlPlot(out, ax, fig)
 
 
 def vectorfield(
@@ -242,9 +263,9 @@ def vectorfield(
         Parameters to pass to system. For an I/O system, `params` should be
         a dict of parameters and values. For a callable, `params` should be
         dict with key 'args' and value given by a tuple (passed to callable).
-    color : str
+    color : matplotlib color spec, optional
         Plot the vector field in the given color.
-    ax : Axes
+    ax : matplotlib.axes.Axes
         Use the given axes for the plot, otherwise use the current axes.
 
     Returns
@@ -257,6 +278,9 @@ def vectorfield(
         If set to `True`, suppress warning messages in generating trajectories.
 
     """
+    # Process keywords
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
+
     # Get system parameters
     params = kwargs.pop('params', None)
 
@@ -274,7 +298,7 @@ def vectorfield(
     xlim, ylim, maxlim = _set_axis_limits(ax, pointdata)
 
     # Figure out the color to use
-    color = _get_color(kwargs, ax)
+    color = _get_color(kwargs, ax=ax)
 
     # Make sure all keyword arguments were processed
     if check_kwargs and kwargs:
@@ -287,9 +311,10 @@ def vectorfield(
         vfdata[i, :2] = x
         vfdata[i, 2:] = sys._rhs(0, x, 0)
 
-    out = ax.quiver(
-        vfdata[:, 0], vfdata[:, 1], vfdata[:, 2], vfdata[:, 3],
-        angles='xy', color=color)
+    with plt.rc_context(rcParams):
+        out = ax.quiver(
+            vfdata[:, 0], vfdata[:, 1], vfdata[:, 2], vfdata[:, 3],
+            angles='xy', color=color)
 
     return out
 
@@ -333,7 +358,7 @@ def streamlines(
         dict with key 'args' and value given by a tuple (passed to callable).
     color : str
         Plot the streamlines in the given color.
-    ax : Axes
+    ax : matplotlib.axes.Axes
         Use the given axes for the plot, otherwise use the current axes.
 
     Returns
@@ -346,6 +371,9 @@ def streamlines(
         If set to `True`, suppress warning messages in generating trajectories.
 
     """
+    # Process keywords
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
+
     # Get system parameters
     params = kwargs.pop('params', None)
 
@@ -368,7 +396,7 @@ def streamlines(
     xlim, ylim, maxlim = _set_axis_limits(ax, pointdata)
 
     # Figure out the color to use
-    color = _get_color(kwargs, ax)
+    color = _get_color(kwargs, ax=ax)
 
     # Make sure all keyword arguments were processed
     if check_kwargs and kwargs:
@@ -395,13 +423,12 @@ def streamlines(
 
         # Plot the trajectory (if there is one)
         if traj.shape[1] > 1:
-            out.append(
-                ax.plot(traj[0], traj[1], color=color))
+            with plt.rc_context(rcParams):
+                out += ax.plot(traj[0], traj[1], color=color)
 
-            # Add arrows to the lines at specified intervals
-            _add_arrows_to_line2D(
-                ax, out[-1][0], arrow_pos, arrowstyle=arrow_style, dir=1)
-
+                # Add arrows to the lines at specified intervals
+                _add_arrows_to_line2D(
+                    ax, out[-1], arrow_pos, arrowstyle=arrow_style, dir=1)
     return out
 
 
@@ -440,7 +467,7 @@ def equilpoints(
         dict with key 'args' and value given by a tuple (passed to callable).
     color : str
         Plot the equilibrium points in the given color.
-    ax : Axes
+    ax : matplotlib.axes.Axes
         Use the given axes for the plot, otherwise use the current axes.
 
     Returns
@@ -448,6 +475,9 @@ def equilpoints(
     out : list of Line2D objects
 
     """
+    # Process keywords
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
+
     # Get system parameters
     params = kwargs.pop('params', None)
 
@@ -475,9 +505,9 @@ def equilpoints(
     # Plot the equilibrium points
     out = []
     for xeq in equilpts:
-        out.append(
-            ax.plot(xeq[0], xeq[1], marker='o', color=color))
-
+        with plt.rc_context(rcParams):
+            out.append(
+                ax.plot(xeq[0], xeq[1], marker='o', color=color))
     return out
 
 
@@ -518,9 +548,13 @@ def separatrices(
         Parameters to pass to system. For an I/O system, `params` should be
         a dict of parameters and values. For a callable, `params` should be
         dict with key 'args' and value given by a tuple (passed to callable).
-    color : str
-        Plot the streamlines in the given color.
-    ax : Axes
+    color : matplotlib color spec, optional
+        Plot the separatrics in the given color.  If a single color
+        specification is given, this is used for both stable and unstable
+        separatrices.  If a tuple is given, the first element is used as
+        the color specification for stable separatrices and the second
+        elmeent for unstable separatrices.
+    ax : matplotlib.axes.Axes
         Use the given axes for the plot, otherwise use the current axes.
 
     Returns
@@ -533,6 +567,9 @@ def separatrices(
         If set to `True`, suppress warning messages in generating trajectories.
 
     """
+    # Process keywords
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
+
     # Get system parameters
     params = kwargs.pop('params', None)
 
@@ -582,8 +619,9 @@ def separatrices(
     out = []
     for i, xeq in enumerate(equilpts):
         # Plot the equilibrium points
-        out.append(
-            ax.plot(xeq[0], xeq[1], marker='o', color='k'))
+        with plt.rc_context(rcParams):
+            out.append(
+                ax.plot(xeq[0], xeq[1], marker='o', color='k'))
 
         # Figure out the linearization and eigenvectors
         evals, evecs = np.linalg.eig(sys.linearize(xeq, 0, params=params).A)
@@ -623,14 +661,15 @@ def separatrices(
 
                 # Plot the trajectory (if there is one)
                 if traj.shape[1] > 1:
-                    out.append(ax.plot(
-                        traj[0], traj[1], color=color, linestyle=linestyle))
+                    with plt.rc_context(rcParams):
+                        out.append(ax.plot(
+                            traj[0], traj[1], color=color, linestyle=linestyle))
 
                     # Add arrows to the lines at specified intervals
-                    _add_arrows_to_line2D(
-                        ax, out[-1][0], arrow_pos, arrowstyle=arrow_style,
-                        dir=1)
-
+                    with plt.rc_context(rcParams):
+                        _add_arrows_to_line2D(
+                            ax, out[-1][0], arrow_pos, arrowstyle=arrow_style,
+                            dir=1)
     return out
 
 
@@ -887,23 +926,7 @@ def _parse_arrow_keywords(kwargs):
     return arrow_pos, arrow_style
 
 
-def _get_color(kwargs, ax=None):
-    if 'color' in kwargs:
-        return kwargs.pop('color')
-
-    # If we were passed an axis, try to increment color from previous
-    color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    if ax is not None:
-        color_offset = 0
-        if len(ax.lines) > 0:
-            last_color = ax.lines[-1].get_color()
-            if last_color in color_cycle:
-                color_offset = color_cycle.index(last_color) + 1
-        return color_cycle[color_offset % len(color_cycle)]
-    else:
-        return None
-
-
+# TODO: move to ctrlplot?
 def _create_trajectory(
         sys, revsys, timepts, X0, params, dir, suppress_warnings=False,
         gridtype=None, gridspec=None, xlim=None, ylim=None):

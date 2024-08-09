@@ -10,6 +10,7 @@
 
 import collections
 import warnings
+
 from .exception import ControlArgument
 
 __all__ = ['defaults', 'set_defaults', 'reset_defaults',
@@ -120,6 +121,10 @@ def reset_defaults():
     """
     # System level defaults
     defaults.update(_control_defaults)
+
+    from .ctrlplot import _ctrlplot_defaults, reset_rcParams
+    reset_rcParams()
+    defaults.update(_ctrlplot_defaults)
 
     from .freqplot import _freqplot_defaults, _nyquist_defaults
     defaults.update(_freqplot_defaults)

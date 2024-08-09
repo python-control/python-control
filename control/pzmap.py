@@ -18,7 +18,10 @@ import numpy as np
 from numpy import cos, exp, imag, linspace, real, sin, sqrt
 
 from . import config
-from .ctrlplot import _get_line_labels
+from .config import _process_legacy_keyword
+from .ctrlplot import ControlPlot, _get_color, _get_color_offset, \
+    _get_line_labels, _process_ax_keyword, _process_legend_keywords, \
+    _process_line_labels, _update_plot_title
 from .freqplot import _freqplot_defaults
 from .grid import nogrid, sgrid, zgrid
 from .iosys import isctime, isdtime
@@ -118,13 +121,6 @@ class PoleZeroData:
         and keywords.
 
         """
-        # If this is a root locus plot, use rlocus defaults for grid
-        if self.loci is not None:
-            from .rlocus import _rlocus_defaults
-            kwargs = kwargs.copy()
-            kwargs['grid'] = config._get_param(
-                'rlocus', 'grid', kwargs.get('grid', None), _rlocus_defaults)
-
         return pole_zero_plot(self, *args, **kwargs)
 
 
@@ -176,10 +172,9 @@ def pole_zero_map(sysdata):
 #    https://matplotlib.org/2.0.2/examples/axes_grid/demo_axisline_style.html
 #    https://matplotlib.org/2.0.2/examples/axes_grid/demo_curvelinear_grid.html
 def pole_zero_plot(
-        data, plot=None, grid=None, title=None, marker_color=None,
-        marker_size=None, marker_width=None, legend_loc='upper right',
-        xlim=None, ylim=None, interactive=None, ax=None, scaling=None,
-        initial_gain=None, **kwargs):
+        data, plot=None, grid=None, title=None, color=None, marker_size=None,
+        marker_width=None, xlim=None, ylim=None, interactive=None, ax=None,
+        scaling=None, initial_gain=None, label=None, **kwargs):
     """Plot a pole/zero map for a linear system.
 
     If the system data include root loci, a root locus diagram for the
@@ -207,14 +202,25 @@ def pole_zero_plot(
 
     Returns
     -------
-    lines : array of list of Line2D
-        Array of Line2D objects for each set of markers in the plot. The
-        shape of the array is given by (nsys, 2) where nsys is the number
-        of systems or responses passed to the function.  The second index
-        specifies the pzmap object type:
+    cplt : :class:`ControlPlot` object
+        Object containing the data that were plotted:
 
-        * lines[idx, 0]: poles
-        * lines[idx, 1]: zeros
+          * cplt.lines: Array of :class:`matplotlib.lines.Line2D` objects
+            for each set of markers in the plot. The shape of the array is
+            given by (`nsys`, 2) where `nsys` is the number of systems or
+            responses passed to the function.  The second index specifies
+            the pzmap object type:
+
+              - lines[idx, 0]: poles
+              - lines[idx, 1]: zeros
+
+          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+
+          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+
+          * cplt.legend: legend object(s) contained in the plot
+
+        See :class:`ControlPlot` for more detailed information.
 
     poles, zeros: list of arrays
         (legacy) If the `plot` keyword is given, the system poles and zeros
@@ -222,47 +228,65 @@ def pole_zero_plot(
 
     Other Parameters
     ----------------
-    scaling : str or list, optional
-        Set the type of axis scaling.  Can be 'equal' (default), 'auto', or
-        a list of the form [xmin, xmax, ymin, ymax].
-    title : str, optional
-        Set the title of the plot.  Defaults plot type and system name(s).
+    ax : matplotlib.axes.Axes, optional
+        The matplotlib axes to draw the figure on.  If not specified and
+        the current figure has a single axes, that axes is used.
+        Otherwise, a new figure is created.
+    color : matplotlib color spec, optional
+        Specify the color of the markers and lines.
+    initial_gain : float, optional
+        If given, the specified system gain will be marked on the plot.
+    interactive : bool, optional
+        Turn off interactive mode for root locus plots.
+    label : str or array_like of str, optional
+        If present, replace automatically generated label(s) with given
+        label(s).  If data is a list, strings should be specified for each
+        system.
+    legend_loc : int or str, optional
+        Include a legend in the given location. Default is 'upper right',
+        with no legend for a single response.  Use False to suppress legend.
     marker_color : str, optional
         Set the color of the markers used for poles and zeros.
     marker_size : int, optional
         Set the size of the markers used for poles and zeros.
     marker_width : int, optional
         Set the line width of the markers used for poles and zeros.
-    legend_loc : str, optional
-        For plots with multiple lines, a legend will be included in the
-        given location.  Default is 'center right'.  Use False to supress.
+    scaling : str or list, optional
+        Set the type of axis scaling.  Can be 'equal' (default), 'auto', or
+        a list of the form [xmin, xmax, ymin, ymax].
+    show_legend : bool, optional
+        Force legend to be shown if ``True`` or hidden if ``False``.  If
+        ``None``, then show legend when there is more than one line on the
+        plot or ``legend_loc`` has been specified.
+    title : str, optional
+        Set the title of the plot.  Defaults to plot type and system name(s).
     xlim : list, optional
         Set the limits for the x axis.
     ylim : list, optional
         Set the limits for the y axis.
-    interactive : bool, optional
-        Turn off interactive mode for root locus plots.
-    initial_gain : float, optional
-        If given, the specified system gain will be marked on the plot.
 
     Notes
     -----
-    By default, the pzmap function calls matplotlib.pyplot.axis('equal'),
-    which means that trying to reset the axis limits may not behave as
-    expected.  To change the axis limits, use the `scaling` keyword of use
-    matplotlib.pyplot.gca().axis('auto') and then set the axis limits to
-    the desired values.
+    1. By default, the pzmap function calls matplotlib.pyplot.axis('equal'),
+       which means that trying to reset the axis limits may not behave as
+       expected.  To change the axis limits, use the `scaling` keyword of
+       use matplotlib.pyplot.gca().axis('auto') and then set the axis
+       limits to the desired values.
+
+    2. Pole/zero plots that use the continuous time omega-damping grid do
+       not work with the ``ax`` keyword argument, due to the way that axes
+       grids are implemented.  The ``grid`` argument must be set to
+       ``False`` or ``'empty'`` when using the ``ax`` keyword argument.
 
     """
     # Get parameter values
-    grid = config._get_param('pzmap', 'grid', grid, _pzmap_defaults)
+    label = _process_line_labels(label)
     marker_size = config._get_param('pzmap', 'marker_size', marker_size, 6)
     marker_width = config._get_param('pzmap', 'marker_width', marker_width, 1.5)
-    xlim_user, ylim_user = xlim, ylim
-    freqplot_rcParams = config._get_param(
-        'freqplot', 'rcParams', kwargs, _freqplot_defaults,
-        pop=True, last=True)
+    user_color = _process_legacy_keyword(kwargs, 'marker_color', 'color', color)
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
     user_ax = ax
+    xlim_user, ylim_user = xlim, ylim
 
     # If argument was a singleton, turn it into a tuple
     if not isinstance(data, (list, tuple)):
@@ -303,58 +327,49 @@ def pole_zero_plot(
             return poles, zeros
 
     # Initialize the figure
-    # TODO: turn into standard utility function (from plotutil.py?)
-    if user_ax is None:
-        fig = plt.gcf()
-        axs = fig.get_axes()
-    else:
-        fig = ax.figure
-        axs = [ax]
+    fig, ax = _process_ax_keyword(
+        user_ax, rcParams=rcParams, squeeze=True, create_axes=False)
+    legend_loc, _, show_legend = _process_legend_keywords(
+        kwargs, None, 'upper right')
 
-    if len(axs) > 1:
-        # Need to generate a new figure
-        fig, axs = plt.figure(), []
+    # Make sure there are no remaining keyword arguments
+    if kwargs:
+        raise TypeError("unrecognized keywords: ", str(kwargs))
 
-    with plt.rc_context(freqplot_rcParams):
-        if grid and grid != 'empty':
-            plt.clf()
-            if all([isctime(dt=response.dt) for response in data]):
-                ax, fig = sgrid(scaling=scaling)
-            elif all([isdtime(dt=response.dt) for response in data]):
-                ax, fig = zgrid(scaling=scaling)
-            else:
-                raise ValueError(
-                    "incompatible time bases; don't know how to grid")
-            # Store the limits for later use
-            xlim, ylim = ax.get_xlim(), ax.get_ylim()
-        elif len(axs) == 0:
-            if grid == 'empty':
-                # Leave off grid entirely
+    if ax is None:
+        # Determine what type of grid to use
+        if rlocus_plot:
+            from .rlocus import _rlocus_defaults
+            grid = config._get_param('rlocus', 'grid', grid, _rlocus_defaults)
+        else:
+            grid = config._get_param('pzmap', 'grid', grid, _pzmap_defaults)
+
+        # Create the axes with the appropriate grid
+        with plt.rc_context(rcParams):
+            if grid and grid != 'empty':
+                if all([isctime(dt=response.dt) for response in data]):
+                    ax, fig = sgrid(scaling=scaling)
+                elif all([isdtime(dt=response.dt) for response in data]):
+                    ax, fig = zgrid(scaling=scaling)
+                else:
+                    raise ValueError(
+                        "incompatible time bases; don't know how to grid")
+                # Store the limits for later use
+                xlim, ylim = ax.get_xlim(), ax.get_ylim()
+            elif grid == 'empty':
                 ax = plt.axes()
                 xlim = ylim = [np.inf, -np.inf] # use data to set limits
             else:
-                # draw stability boundary; use first response timebase
                 ax, fig = nogrid(data[0].dt, scaling=scaling)
                 xlim, ylim = ax.get_xlim(), ax.get_ylim()
-        else:
-            # Use the existing axes and any grid that is there
-            ax = axs[0]
+    else:
+        # Store the limits for later use
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        if grid is not None:
+            warnings.warn("axis already exists; grid keyword ignored")
 
-            # Store the limits for later use
-            xlim, ylim = ax.get_xlim(), ax.get_ylim()
-
-            # Issue a warning if the user tried to set the grid type
-            if grid:
-                warnings.warn("axis already exists; grid keyword ignored")
-
-    # Handle color cycle manually as all root locus segments
-    # of the same system are expected to be of the same color
-    color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    color_offset = 0
-    if len(ax.lines) > 0:
-        last_color = ax.lines[-1].get_color()
-        if last_color in color_cycle:
-            color_offset = color_cycle.index(last_color) + 1
+    # Get color offset for the next line to be drawn
+    color_offset, color_cycle = _get_color_offset(ax)
 
     # Create a list of lines for the output
     out = np.empty(
@@ -367,32 +382,33 @@ def pole_zero_plot(
         poles = response.poles
         zeros = response.zeros
 
-        # Get the color to use for this system
-        if marker_color is None:
-            color = color_cycle[(color_offset + idx) % len(color_cycle)]
-        else:
-            color = marker_color
+        # Get the color to use for this response
+        color = _get_color(user_color, offset=color_offset + idx)
 
         # Plot the locations of the poles and zeros
         if len(poles) > 0:
-            label = response.sysname if response.loci is None else None
+            if label is None:
+                label_ = response.sysname if response.loci is None else None
+            else:
+                label_ = label[idx]
             out[idx, 0] = ax.plot(
                 real(poles), imag(poles), marker='x', linestyle='',
                 markeredgecolor=color, markerfacecolor=color,
                 markersize=marker_size, markeredgewidth=marker_width,
-                label=label)
+                color=color, label=label_)
         if len(zeros) > 0:
             out[idx, 1] = ax.plot(
                 real(zeros), imag(zeros), marker='o', linestyle='',
                 markeredgecolor=color, markerfacecolor='none',
-                markersize=marker_size, markeredgewidth=marker_width)
+                markersize=marker_size, markeredgewidth=marker_width,
+                color=color)
 
         # Plot the loci, if present
         if response.loci is not None:
+            label_ = response.sysname if label is None else label[idx]
             for locus in response.loci.transpose():
                 out[idx, 2] += ax.plot(
-                    real(locus), imag(locus), color=color,
-                    label=response.sysname)
+                    real(locus), imag(locus), color=color, label=label_)
 
             # Compute the axis limits to use based on the response
             resp_xlim, resp_ylim = _compute_root_locus_limits(response)
@@ -423,7 +439,7 @@ def pole_zero_plot(
     lines, labels = _get_line_labels(ax)
 
     # Add legend if there is more than one system plotted
-    if len(labels) > 1 and legend_loc is not False:
+    if show_legend or len(labels) > 1 and show_legend != False:
         if response.loci is None:
             # Use "x o" for the system label, via matplotlib tuple handler
             from matplotlib.legend_handler import HandlerTuple
@@ -436,24 +452,28 @@ def pole_zero_plot(
                     markeredgecolor=pole_line.get_markerfacecolor(),
                     markerfacecolor='none', markersize=marker_size,
                     markeredgewidth=marker_width)
-            handle = (pole_line, zero_line)
-            line_tuples.append(handle)
+                handle = (pole_line, zero_line)
+                line_tuples.append(handle)
 
-            with plt.rc_context(freqplot_rcParams):
-                ax.legend(
+            with plt.rc_context(rcParams):
+                legend = ax.legend(
                     line_tuples, labels, loc=legend_loc,
                     handler_map={tuple: HandlerTuple(ndivide=None)})
         else:
             # Regular legend, with lines
-            with plt.rc_context(freqplot_rcParams):
-                ax.legend(lines, labels, loc=legend_loc)
+            with plt.rc_context(rcParams):
+                legend = ax.legend(lines, labels, loc=legend_loc)
+    else:
+        legend = None
 
     # Add the title
     if title is None:
-        title = "Pole/zero plot for " + ", ".join(labels)
+        title = ("Root locus plot for " if rlocus_plot
+                 else "Pole/zero plot for ") + ", ".join(labels)
     if user_ax is None:
-        with plt.rc_context(freqplot_rcParams):
-            fig.suptitle(title)
+        _update_plot_title(
+            title, fig, rcParams=rcParams, frame='figure',
+            use_existing=False)
 
     # Add dispather to handle choosing a point on the diagram
     if interactive:
@@ -475,7 +495,7 @@ def pole_zero_plot(
                 _mark_root_locus_gain(ax, sys, K)
 
                 # Display the parameters in the axes title
-                with plt.rc_context(freqplot_rcParams):
+                with plt.rc_context(rcParams):
                     ax.set_title(_create_root_locus_label(sys, K, s))
 
             ax.figure.canvas.draw()
@@ -489,7 +509,7 @@ def pole_zero_plot(
         else:
             TypeError("system lists not supported with legacy return values")
 
-    return out
+    return ControlPlot(out, ax, fig, legend=legend)
 
 
 # Utility function to find gain corresponding to a click event

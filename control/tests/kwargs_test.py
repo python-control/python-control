@@ -11,13 +11,14 @@
 # is a unit test that checks for unrecognized keywords.
 
 import inspect
-import pytest
 import warnings
+
 import matplotlib.pyplot as plt
+import pytest
 
 import control
 import control.flatsys
-
+import control.tests.descfcn_test as descfcn_test
 # List of all of the test modules where kwarg unit tests are defined
 import control.tests.flatsys_test as flatsys_test
 import control.tests.frd_test as frd_test
@@ -26,9 +27,9 @@ import control.tests.interconnect_test as interconnect_test
 import control.tests.optimal_test as optimal_test
 import control.tests.statefbk_test as statefbk_test
 import control.tests.stochsys_test as stochsys_test
-import control.tests.trdata_test as trdata_test
 import control.tests.timeplot_test as timeplot_test
-import control.tests.descfcn_test as descfcn_test
+import control.tests.trdata_test as trdata_test
+
 
 @pytest.mark.parametrize("module, prefix", [
     (control, ""), (control.flatsys, "flatsys."),
@@ -54,8 +55,9 @@ def test_kwarg_search(module, prefix):
         # Get the signature for the function
         sig = inspect.signature(obj)
 
-        # Skip anything that is inherited
-        if inspect.isclass(module) and obj.__name__ not in module.__dict__:
+        # Skip anything that is inherited or hidden
+        if inspect.isclass(module) and obj.__name__ not in module.__dict__ \
+           or obj.__name__.startswith('_'):
             continue
 
         # See if there is a variable keyword argument
@@ -297,9 +299,11 @@ kwarg_unittest = {
     'optimal.create_mpc_iosystem': optimal_test.test_mpc_iosystem_rename,
     'optimal.solve_ocp': optimal_test.test_ocp_argument_errors,
     'optimal.solve_oep': optimal_test.test_oep_argument_errors,
+    'ControlPlot.set_plot_title': freqplot_test.test_suptitle,
     'FrequencyResponseData.__init__':
         frd_test.TestFRD.test_unrecognized_keyword,
     'FrequencyResponseData.plot': test_response_plot_kwargs,
+    'FrequencyResponseList.plot': freqplot_test.test_freqresplist_unknown_kw,
     'DescribingFunctionResponse.plot':
         descfcn_test.test_describing_function_exceptions,
     'InputOutputSystem.__init__': test_unrecognized_kwargs,

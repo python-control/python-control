@@ -24,6 +24,7 @@ import scipy.signal  # signal processing toolbox
 from numpy import array, imag, poly1d, real, vstack, zeros_like
 
 from . import config
+from .ctrlplot import ControlPlot
 from .exception import ControlMIMONotImplemented
 from .iosys import isdtime
 from .lti import LTI
@@ -126,28 +127,57 @@ def root_locus_plot(
         for continuous time systems, unit circle for discrete time systems.
         If `empty`, do not draw any additonal lines.  Default value is set
         by config.default['rlocus.grid'].
-    ax : :class:`matplotlib.axes.Axes`
-        Axes on which to create root locus plot
     initial_gain : float, optional
         Mark the point on the root locus diagram corresponding to the
         given gain.
+    color : matplotlib color spec, optional
+        Specify the color of the markers and lines.
 
     Returns
     -------
-    lines : array of list of Line2D
-        Array of Line2D objects for each set of markers in the plot. The
-        shape of the array is given by (nsys, 3) where nsys is the number
-        of systems or responses passed to the function.  The second index
-        specifies the object type:
+    cplt : :class:`ControlPlot` object
+        Object containing the data that were plotted:
 
-        * lines[idx, 0]: poles
-        * lines[idx, 1]: zeros
-        * lines[idx, 2]: loci
+          * cplt.lines: Array of :class:`matplotlib.lines.Line2D` objects
+            for each set of markers in the plot. The shape of the array is
+            given by (nsys, 3) where nsys is the number of systems or
+            responses passed to the function.  The second index specifies
+            the object type:
+
+              - lines[idx, 0]: poles
+              - lines[idx, 1]: zeros
+              - lines[idx, 2]: loci
+
+          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+
+          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+
+        See :class:`ControlPlot` for more detailed information.
 
     roots, gains : ndarray
         (legacy) If the `plot` keyword is given, returns the closed-loop
         root locations, arranged such that each row corresponds to a gain,
         and the array of gains (same as `gains` keyword argument if provided).
+
+    Other Parameters
+    ----------------
+    ax : matplotlib.axes.Axes, optional
+        The matplotlib axes to draw the figure on.  If not specified and
+        the current figure has a single axes, that axes is used.
+        Otherwise, a new figure is created.
+    label : str or array_like of str, optional
+        If present, replace automatically generated label(s) with the given
+        label(s).  If sysdata is a list, strings should be specified for each
+        system.
+    legend_loc : int or str, optional
+        Include a legend in the given location. Default is 'center right',
+        with no legend for a single response.  Use False to suppress legend.
+    show_legend : bool, optional
+        Force legend to be shown if ``True`` or hidden if ``False``.  If
+        ``None``, then show legend when there is more than one line on the
+        plot or ``legend_loc`` has been specified.
+    title : str, optional
+        Set the title of the plot.  Defaults to plot type and system name(s).
 
     Notes
     -----
@@ -162,9 +192,6 @@ def root_locus_plot(
     # Legacy parameters
     for oldkey in ['kvect', 'k']:
         gains = config._process_legacy_keyword(kwargs, oldkey, 'gains', gains)
-
-    # Set default parameters
-    grid = config._get_param('rlocus', 'grid', grid, _rlocus_defaults)
 
     if isinstance(sysdata, list) and all(
             [isinstance(sys, LTI) for sys in sysdata]) or \
@@ -188,13 +215,13 @@ def root_locus_plot(
         return responses.loci, responses.gains
 
     # Plot the root loci
-    out = responses.plot(grid=grid, **kwargs)
+    cplt = responses.plot(grid=grid, **kwargs)
 
     # Legacy processing: return locations of poles and zeros as a tuple
     if plot is True:
         return responses.loci, responses.gains
 
-    return out
+    return ControlPlot(cplt.lines, cplt.axes, cplt.figure)
 
 
 def _default_gains(num, den, xlim, ylim):

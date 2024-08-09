@@ -105,7 +105,7 @@ pygments_style = 'sphinx'
 intersphinx_mapping = \
     {'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
      'numpy': ('https://numpy.org/doc/stable', None),
-     'matplotlib': ('https://matplotlib.org/', None),
+     'matplotlib': ('https://matplotlib.org/stable/', None),
      }
 
 # If this is True, todo and todolist produce output, else they produce nothing.

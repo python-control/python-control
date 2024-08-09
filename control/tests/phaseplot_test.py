@@ -10,15 +10,16 @@ the figures so that you can check them visually.
 """
 
 import warnings
+from math import pi
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-from math import pi
 
 import control as ct
 import control.phaseplot as pp
 from control import phase_plot
+from control.tests.conftest import mplcleanup
 
 
 # Legacy tests
@@ -116,6 +117,7 @@ class TestPhasePlot:
         [ct.phaseplot.separatrices, [5], {'params': {}, 'gridspec': [5, 5]}],
         [ct.phaseplot.separatrices, [5], {'color': ('r', 'g')}],
     ])
+@pytest.mark.usefixtures('mplcleanup')
 def test_helper_functions(func, args, kwargs):
     # Test with system
     sys = ct.nlsys(
@@ -128,6 +130,7 @@ def test_helper_functions(func, args, kwargs):
     out = func(rhsfcn, [-1, 1, -1, 1], *args, **kwargs)
 
 
+@pytest.mark.usefixtures('mplcleanup')
 def test_system_types():
     # Sample dynamical systems - inverted pendulum
     def invpend_ode(t, x, m=0, l=0, b=0, g=0):
@@ -135,13 +138,14 @@ def test_system_types():
 
     # Use callable form, with parameters (if not correct, will get /0 error)
     ct.phase_plane_plot(
-        invpend_ode, [-5, 5, 2, 2], params={'args': (1, 1, 0.2, 1)})
+        invpend_ode, [-5, 5, -2, 2], params={'args': (1, 1, 0.2, 1)})
 
     # Linear I/O system
     ct.phase_plane_plot(
         ct.ss([[0, 1], [-1, -1]], [[0], [1]], [[1, 0]], 0))
 
 
+@pytest.mark.usefixtures('mplcleanup')
 def test_phaseplane_errors():
     with pytest.raises(ValueError, match="invalid grid specification"):
         ct.phase_plane_plot(ct.rss(2, 1, 1), gridspec='bad')
@@ -176,6 +180,7 @@ def test_phaseplane_errors():
             plot_separatrices=False, suppress_warnings=True)
 
 
+@pytest.mark.usefixtures('mplcleanup')
 def test_basic_phase_plots(savefigs=False):
     sys = ct.nlsys(
         lambda t, x, u, params: np.array([[0, 1], [-1, -1]]) @ x,

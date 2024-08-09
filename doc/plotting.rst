@@ -24,11 +24,12 @@ resulting in the following standard pattern::
 
   response = ct.nyquist_response([sys1, sys2])
   count = ct.response.count          # number of encirclements of -1
-  lines = ct.nyquist_plot(response)  # Nyquist plot
+  cplt = ct.nyquist_plot(response)  # Nyquist plot
 
-The returned value `lines` provides access to the individual lines in the
-generated plot, allowing various aspects of the plot to be modified to suit
-specific needs.
+Plotting commands return a :class:`~control.ControlPlot` object that
+provides access to the individual lines in the generated plot using
+`cplt.lines`, allowing various aspects of the plot to be modified to
+suit specific needs.
 
 The plotting function is also available via the `plot()` method of the
 analysis object, allowing the following type of calls::
@@ -146,7 +147,7 @@ Additional customization is possible using the `input_props`,
 `output_props`, and `trace_props` keywords to set complementary line colors
 and styles for various signals and traces::
 
-  out = ct.step_response(sys_mimo).plot(
+  cplt = ct.step_response(sys_mimo).plot(
       plot_inputs='overlay', overlay_signals=True, overlay_traces=True,
       output_props=[{'color': c} for c in ['blue', 'orange']],
       input_props=[{'color': c} for c in ['red', 'green']],
@@ -422,6 +423,185 @@ Instead, the plot is generated directly be a call to the
 :mod:`~control.phaseplot` helper functions.
 
 
+Customizing control plots
+=========================
+
+A set of common options are available to customize control plots in
+various ways.  The following general rules apply:
+
+* If a plotting function is called multiple times with data that generate
+  control plots with the same shape for the array of subplots, the new data
+  will be overlaid with the old data, with a change in color(s) for the
+  new data (chosen from the standard matplotlib color cycle).  If not
+  overridden, the plot title and legends will be updated to reflect all
+  data shown on the plot.
+
+* If a plotting function is called and the shape for the array of subplots
+  does not match the currently displayed plot, a new figure is created.
+  Note that only the shape is checked, so if two different types of
+  plotting commands that generate the same shape of subplots are called
+  sequentially, the :func:`matplotlib.pyplot.figure` command should be used
+  to explicitly create a new figure.
+
+* The ``ax`` keyword argument can be used to direct the plotting function
+  to use a specific axes or array of axes.  The value of the ``ax`` keyword
+  must have the proper number of axes for the plot (so a plot generating a
+  2x2 array of subplots should be given a 2x2 array of axes for the ``ax``
+  keyword).
+
+* The ``color``, ``linestyle``, ``linewidth``, and other matplotlib line
+  property arguments can be used to override the default line properties.
+  If these arguments are absent, the default matplotlib line properties are
+  used and the color cycles through the default matplotlib color cycle.
+
+  The :func:`~control.bode_plot`, :func:`~control.time_response_plot`,
+  and selected other commands can also accept a matplotlib format
+  string (e.g., ``'r--'``).  The format string must appear as a positional
+  argument right after the required data argument.
+
+  Note that line property arguments are the same for all lines generated as
+  part of a single plotting command call, including when multiple responses
+  are passed as a list to the plotting command.  For this reason it is
+  often easiest to call multiple plot commands in sequence, with each
+  command setting the line properties for that system/trace.
+
+* The ``label`` keyword argument can be used to override the line labels
+  that are used in generating the title and legend.  If more than one line
+  is being plotted in a given call to a plot command, the ``label``
+  argument value should be a list of labels, one for each line, in the
+  order they will appear in the legend.
+
+  For input/output plots (frequency and time responses), the labels that
+  appear in the legend are of the form "<output name>, <input name>, <trace
+  name>, <system name>".  The trace name is used only for multi-trace time
+  plots (for example, step responses for MIMO systems).  Common information
+  present in all traces is removed, so that the labels appearing in the
+  legend represent the unique characteristics of each line.
+
+  For non-input/output plots (e.g., Nyquist plots, pole/zero plots, root
+  locus plots), the default labels are the system name.
+
+  If ``label`` is set to ``False``, individual lines are still given
+  labels, but no legend is generated in the plot. (This can also be
+  accomplished by setting ``legend_map`` to ``False``).
+
+  Note: the ``label`` keyword argument is not implemented for describing
+  function plots or phase plane plots, since these plots are primarily
+  intended to be for a single system.  Standard ``matplotlib`` commands can
+  be used to customize these plots for displaying information for multiple
+  systems.
+
+* The ``legend_loc``, ``legend_map`` and ``show_legend`` keyword arguments
+  can be used to customize the locations for legends.  By default, a
+  minimal number of legends are used such that lines can be uniquely
+  identified and no legend is generated if there is only one line in the
+  plot.  Setting ``show_legend`` to ``False`` will suppress the legend and
+  setting it to ``True`` will force the legend to be displayed even if
+  there is only a single line in each axes.  In addition, if the value of
+  the ``legend_loc`` keyword argument is set to a string or integer, it
+  will set the position of the legend as described in the
+  :func:`matplotlib.legend` documentation.  Finally, ``legend_map`` can be
+  set to an array that matches the shape of the subplots, with each item
+  being a string indicating the location of the legend for that axes (or
+  ``None`` for no legend).
+
+* The ``rcParams`` keyword argument can be used to override the default
+  matplotlib style parameters used when creating a plot.  The default
+  parameters for all control plots are given by the ``ct.rcParams``
+  dictionary and have the following values:
+
+  .. list-table::
+     :widths: 50 50
+     :header-rows: 1
+
+     * - Key
+       - Value
+     * - 'axes.labelsize'
+       - 'small'
+     * - 'axes.titlesize'
+       - 'small'
+     * - 'figure.titlesize'
+       - 'medium'
+     * - 'legend.fontsize'
+       - 'x-small'
+     * - 'xtick.labelsize'
+       - 'small'
+     * - 'ytick.labelsize'
+       - 'small'
+
+  Only those values that should be changed from the default need to be
+  specified in the ``rcParams`` keyword argument.  To override the defaults
+  for all control plots, update the ``ct.rcParams`` dictionary entries.
+
+  The default values for style parameters for control plots can be restored
+  using :func:`~control.reset_rcParams`.
+
+* The ``title`` keyword can be used to override the automatic creation of
+  the plot title.  The default title is a string of the form "<Type> plot
+  for <syslist>" where <syslist> is a list of the sys names contained in
+  the plot (which can be updated if the plotting is called multiple times).
+  Use ``title=False`` to suppress the title completely.  The title can also
+  be updated using the :func:`~control.ControlPlot.set_plot_title` method
+  for the returned control plot object.
+
+  The plot title is only generated if ``ax`` is ``None``.
+
+The following code illustrates the use of some of these customization
+features::
+
+    P = ct.tf([0.02], [1, 0.1, 0.01])   # servomechanism
+    C1 = ct.tf([1, 1], [1, 0])          # unstable
+    L1 = P * C1
+    C2 = ct.tf([1, 0.05], [1, 0])       # stable
+    L2 = P * C2
+
+    plt.rcParams.update(ct.rcParams)
+    fig = plt.figure(figsize=[7, 4])
+    ax_mag = fig.add_subplot(2, 2, 1)
+    ax_phase = fig.add_subplot(2, 2, 3)
+    ax_nyquist = fig.add_subplot(1, 2, 2)
+
+    ct.bode_plot(
+        [L1, L2], ax=[ax_mag, ax_phase],
+        label=["$L_1$ (unstable)", "$L_2$ (unstable)"],
+        show_legend=False)
+    ax_mag.set_title("Bode plot for $L_1$, $L_2$")
+    ax_mag.tick_params(labelbottom=False)
+    fig.align_labels()
+
+    ct.nyquist_plot(L1, ax=ax_nyquist, label="$L_1$ (unstable)")
+    ct.nyquist_plot(
+        L2, ax=ax_nyquist, label="$L_2$ (stable)",
+        max_curve_magnitude=22, legend_loc='upper right')
+    ax_nyquist.set_title("Nyquist plot for $L_1$, $L_2$")
+
+    fig.suptitle("Loop analysis for servomechanism control design")
+    plt.tight_layout()
+
+.. image:: ctrlplot-servomech.png
+
+As this example illustrates, python-control plotting functions and
+Matplotlib plotting functions can generally be intermixed.  One type of
+plot for which this does not currently work is pole/zero plots with a
+continuous time omega-damping grid (including root locus diagrams), due to
+the way that axes grids are implemented.  As a workaround, the
+:func:`~control.pole_zero_subplots` command can be used to create an array
+of subplots with different grid types, as illustrated in the following
+example::
+
+    ax_array = ct.pole_zero_subplots(2, 1, grid=[True, False])
+    sys1 = ct.tf([1, 2], [1, 2, 3], name='sys1')
+    sys2 = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='sys2')
+    ct.root_locus_plot([sys1, sys2], ax=ax_array[0, 0])
+    cplt = ct.root_locus_plot([sys1, sys2], ax=ax_array[1, 0])
+    cplt.set_plot_title("Root locus plots (w/ specified axes)")
+
+.. image:: ctrlplot-pole_zero_subplots.png
+
+Alternatively, turning off the omega-damping grid (using ``grid=False`` or
+``grid='empty'``) allows use of Matplotlib layout commands.
+
+
 Response and plotting functions
 ===============================
 
@@ -431,7 +611,7 @@ Response functions
 Response functions take a system or list of systems and return a response
 object that can be used to retrieve information about the system (e.g., the
 number of encirclements for a Nyquist plot) as well as plotting (via the
-`plot` method).
+``plot`` method).
 
 .. autosummary::
    :toctree: generated/
@@ -480,18 +660,19 @@ returned values from plotting routines.
    :toctree: generated/
 
    ~control.combine_time_responses
-   ~control.get_plot_axes
-   ~control.suptitle
+   ~control.pole_zero_subplots
+   ~control.reset_rcParams
 
 
-Response classes
-----------------
+Response and plotting classes
+-----------------------------
 
 The following classes are used in generating response data.
 
 .. autosummary::
    :toctree: generated/
 
+   ~control.ControlPlot
    ~control.DescribingFunctionResponse
    ~control.FrequencyResponseData
    ~control.FrequencyResponseList

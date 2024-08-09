@@ -19,9 +19,10 @@ import numpy as np
 
 from . import config
 from .bdalg import feedback
-from .ctrlplot import _add_arrows_to_line2D, _ctrlplot_rcParams, \
-    _find_axes_center, _get_line_labels, _make_legend_labels, \
-    _process_ax_keyword, _process_line_labels, _update_suptitle, suptitle
+from .ctrlplot import ControlPlot, _add_arrows_to_line2D, _find_axes_center, \
+    _get_color, _get_color_offset, _get_line_labels, _make_legend_labels, \
+    _process_ax_keyword, _process_legend_keywords, _process_line_labels, \
+    _update_plot_title
 from .ctrlutil import unwrap
 from .exception import ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
@@ -33,11 +34,10 @@ from .xferfcn import TransferFunction
 __all__ = ['bode_plot', 'NyquistResponseData', 'nyquist_response',
            'nyquist_plot', 'singular_values_response',
            'singular_values_plot', 'gangof4_plot', 'gangof4_response',
-           'bode', 'nyquist', 'gangof4']
+           'bode', 'nyquist', 'gangof4', 'FrequencyResponseList']
 
 # Default values for module parameter variables
 _freqplot_defaults = {
-    'freqplot.rcParams': _ctrlplot_rcParams,
     'freqplot.feature_periphery_decades': 1,
     'freqplot.number_of_samples': 1000,
     'freqplot.dB': False,  # Plot gain in dB
@@ -49,7 +49,7 @@ _freqplot_defaults = {
     'freqplot.share_magnitude': 'row',
     'freqplot.share_phase': 'row',
     'freqplot.share_frequency': 'col',
-    'freqplot.suptitle_frame': 'axes',
+    'freqplot.title_frame': 'axes',
 }
 
 #
@@ -87,8 +87,7 @@ def bode_plot(
         plot=None, plot_magnitude=True, plot_phase=None,
         overlay_outputs=None, overlay_inputs=None, phase_label=None,
         magnitude_label=None, label=None, display_margins=None,
-        margins_method='best', legend_map=None, legend_loc=None,
-        sharex=None, sharey=None, title=None, **kwargs):
+        margins_method='best', title=None, sharex=None, sharey=None, **kwargs):
     """Bode plot for a system.
 
     Plot the magnitude and phase of the frequency response over a
@@ -124,26 +123,51 @@ def bode_plot(
 
     Returns
     -------
-    lines : array of Line2D
-        Array of Line2D objects for each line in the plot.  The shape of
-        the array matches the subplots shape and the value of the array is a
-        list of Line2D objects in that subplot.
+    cplt : :class:`ControlPlot` object
+        Object containing the data that were plotted:
+
+          * cplt.lines: Array of :class:`matplotlib.lines.Line2D` objects
+            for each line in the plot.  The shape of the array matches the
+            subplots shape and the value of the array is a list of Line2D
+            objects in that subplot.
+
+          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+
+          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+
+          * cplt.legend: legend object(s) contained in the plot
+
+        See :class:`ControlPlot` for more detailed information.
 
     Other Parameters
     ----------------
-    grid : bool
+    ax : array of matplotlib.axes.Axes, optional
+        The matplotlib axes to draw the figure on.  If not specified, the
+        axes for the current figure are used or, if there is no current
+        figure with the correct number and shape of axes, a new figure is
+        created.  The shape of the array must match the shape of the
+        plotted data.
+    grid : bool, optional
         If True, plot grid lines on gain and phase plots.  Default is set by
         `config.defaults['freqplot.grid']`.
-    initial_phase : float
+    initial_phase : float, optional
         Set the reference phase to use for the lowest frequency.  If set, the
         initial phase of the Bode plot will be set to the value closest to the
         value specified.  Units are in either degrees or radians, depending on
         the `deg` parameter. Default is -180 if wrap_phase is False, 0 if
         wrap_phase is True.
-    label : str or array-like of str
+    label : str or array_like of str, optional
         If present, replace automatically generated label(s) with the given
         label(s).  If sysdata is a list, strings should be specified for each
         system.  If MIMO, strings required for each system, output, and input.
+    legend_map : array of str, optional
+        Location of the legend for multi-axes plots.  Specifies an array
+        of legend location strings matching the shape of the subplots, with
+        each entry being either None (for no legend) or a legend location
+        string (see :func:`~matplotlib.pyplot.legend`).
+    legend_loc : int or str, optional
+        Include a legend in the given location. Default is 'center right',
+        with no legend for a single response.  Use False to suppress legend.
     margins_method : str, optional
         Method to use in computing margins (see :func:`stability_margins`).
     omega_limits : array_like of two values
@@ -161,7 +185,13 @@ def bode_plot(
         values with no plot.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['freqplot.rcParams'].
+        Default is set by config.default['ctrlplot.rcParams'].
+    show_legend : bool, optional
+        Force legend to be shown if ``True`` or hidden if ``False``.  If
+        ``None``, then show legend when there is more than one line on an
+        axis or ``legend_loc`` or ``legend_map`` has been specified.
+    title : str, optional
+        Set the title of the plot.  Defaults to plot type and system name(s).
     wrap_phase : bool or float
         If wrap_phase is `False` (default), then the phase will be unwrapped
         so that it is continuously increasing or decreasing.  If wrap_phase is
@@ -220,10 +250,9 @@ def bode_plot(
         'freqplot', 'wrap_phase', kwargs, _freqplot_defaults, pop=True)
     initial_phase = config._get_param(
         'freqplot', 'initial_phase', kwargs, None, pop=True)
-    rcParams = config._get_param(
-        'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
-    suptitle_frame = config._get_param(
-        'freqplot', 'suptitle_frame', kwargs, _freqplot_defaults, pop=True)
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
+    title_frame = config._get_param(
+        'freqplot', 'title_frame', kwargs, _freqplot_defaults, pop=True)
 
     # Set the default labels
     freq_label = config._get_param(
@@ -459,8 +488,10 @@ def bode_plot(
             if kw not in kwargs or kwargs[kw] is None:
                 kwargs[kw] = config.defaults['freqplot.' + kw]
 
-    fig, ax_array = _process_ax_keyword(ax, (
-        nrows, ncols), squeeze=False, rcParams=rcParams, clear_text=True)
+    fig, ax_array = _process_ax_keyword(
+        ax, (nrows, ncols), squeeze=False, rcParams=rcParams, clear_text=True)
+    legend_loc, legend_map, show_legend = _process_legend_keywords(
+        kwargs, (nrows,ncols), 'center right')
 
     # Get the values for sharing axes limits
     share_magnitude = kwargs.pop('share_magnitude', None)
@@ -937,13 +968,18 @@ def bode_plot(
     seen = set()
     sysnames = [response.sysname for response in data \
                 if not (response.sysname in seen or seen.add(response.sysname))]
-    if title is None:
+
+    if ax is None and title is None:
         if data[0].title is None:
             title = "Bode plot for " + ", ".join(sysnames)
         else:
+            # Allow data to set the title (used by gangof4)
             title = data[0].title
-
-    _update_suptitle(fig, title, rcParams=rcParams, frame=suptitle_frame)
+        _update_plot_title(title, fig, rcParams=rcParams, frame=title_frame)
+    elif ax is None:
+        _update_plot_title(
+            title, fig=fig, rcParams=rcParams, frame=title_frame,
+            use_existing=False)
 
     #
     # Create legends
@@ -965,21 +1001,19 @@ def bode_plot(
     # different response (system).
     #
 
-    # Figure out where to put legends
-    if legend_map is None:
-        legend_map = np.full(ax_array.shape, None, dtype=object)
-        if legend_loc == None:
-            legend_loc = 'center right'
-
-        # TODO: add in additional processing later
-
-        # Put legend in the upper right
-        legend_map[0, -1] = legend_loc
-
     # Create axis legends
-    for i in range(nrows):
-        for j in range(ncols):
+    if show_legend != False:
+        # Figure out where to put legends
+        if legend_map is None:
+            legend_map = np.full(ax_array.shape, None, dtype=object)
+            legend_map[0, -1] = legend_loc
+
+        legend_array = np.full(ax_array.shape, None, dtype=object)
+        for i, j in itertools.product(range(nrows), range(ncols)):
+            if legend_map[i, j] is None:
+                continue
             ax = ax_array[i, j]
+
             # Get the labels to use, removing common strings
             lines = [line for line in ax.get_lines()
                      if line.get_label()[0] != '_']
@@ -988,9 +1022,12 @@ def bode_plot(
                 ignore_common=line_labels is not None)
 
             # Generate the label, if needed
-            if len(labels) > 1 and legend_map[i, j] != None:
+            if show_legend == True or len(labels) > 1:
                 with plt.rc_context(rcParams):
-                    ax.legend(lines, labels, loc=legend_map[i, j])
+                    legend_array[i, j] = ax.legend(
+                        lines, labels, loc=legend_map[i, j])
+    else:
+        legend_array = None
 
     #
     # Legacy return pocessing
@@ -1008,7 +1045,7 @@ def bode_plot(
         else:
             return mag_data, phase_data, omega_data
 
-    return out
+    return ControlPlot(out, ax_array, fig, legend=legend_array)
 
 
 #
@@ -1447,7 +1484,7 @@ def nyquist_response(
 
 def nyquist_plot(
         data, omega=None, plot=None, label_freq=0, color=None, label=None,
-        return_contour=None, title=None, legend_loc='upper right', ax=None,
+        return_contour=None, title=None, ax=None,
         unit_circle=False, mt_circles=None, ms_circles=None, **kwargs):
     """Nyquist plot for a system.
 
@@ -1469,8 +1506,6 @@ def nyquist_plot(
         Set of frequencies to be evaluated, in rad/sec. Specifying
         ``omega`` as a list of two elements is equivalent to providing
         ``omega_limits``.
-    color : string, optional
-        Used to specify the color of the line and arrowhead.
     unit_circle : bool, optional
         If ``True``, display the unit circle, to read gain crossover frequency.
     mt_circles : array_like, optional
@@ -1479,20 +1514,31 @@ def nyquist_plot(
         Draw circles corresponding to the given magnitudes of complementary
         sensitivity.
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
-        Additional keywords (passed to `matplotlib`)
+        Additional keywords passed to `matplotlib` to specify line properties.
 
     Returns
     -------
-    lines : array of Line2D
-        2D array of Line2D objects for each line in the plot.  The shape of
-        the array is given by (nsys, 4) where nsys is the number of systems
-        or Nyquist responses passed to the function.  The second index
-        specifies the segment type:
+    cplt : :class:`ControlPlot` object
+        Object containing the data that were plotted:
 
-        * lines[idx, 0]: unscaled portion of the primary curve
-        * lines[idx, 1]: scaled portion of the primary curve
-        * lines[idx, 2]: unscaled portion of the mirror curve
-        * lines[idx, 3]: scaled portion of the mirror curve
+          * cplt.lines: 2D array of :class:`matplotlib.lines.Line2D`
+            objects for each line in the plot.  The shape of the array is
+            given by (nsys, 4) where nsys is the number of systems or
+            Nyquist responses passed to the function.  The second index
+            specifies the segment type:
+
+              - lines[idx, 0]: unscaled portion of the primary curve
+              - lines[idx, 1]: scaled portion of the primary curve
+              - lines[idx, 2]: unscaled portion of the mirror curve
+              - lines[idx, 3]: scaled portion of the mirror curve
+
+          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+
+          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+
+          * cplt.legend: legend object(s) contained in the plot
+
+        See :class:`ControlPlot` for more detailed information.
 
     Other Parameters
     ----------------
@@ -1510,6 +1556,10 @@ def nyquist_plot(
         8 and can be set using config.defaults['nyquist.arrow_size'].
     arrow_style : matplotlib.patches.ArrowStyle, optional
         Define style used for Nyquist curve arrows (overrides `arrow_size`).
+    ax : matplotlib.axes.Axes, optional
+        The matplotlib axes to draw the figure on.  If not specified and
+        the current figure has a single axes, that axes is used.
+        Otherwise, a new figure is created.
     encirclement_threshold : float, optional
         Define the threshold for generating a warning if the number of net
         encirclements is a non-integer value.  Default value is 0.05 and can
@@ -1524,13 +1574,16 @@ def nyquist_plot(
         Amount to indent the Nyquist contour around poles on or near the
         imaginary axis. Portions of the Nyquist plot corresponding to indented
         portions of the contour are plotted using a different line style.
-    label : str or array-like of str
+    label : str or array_like of str, optional
         If present, replace automatically generated label(s) with the given
         label(s).  If sysdata is a list, strings should be specified for each
         system.
     label_freq : int, optiona
         Label every nth frequency on the plot.  If not specified, no labels
         are generated.
+    legend_loc : int or str, optional
+        Include a legend in the given location. Default is 'upper right',
+        with no legend for a single response.  Use False to suppress legend.
     max_curve_magnitude : float, optional
         Restrict the maximum magnitude of the Nyquist plot to this value.
         Portions of the Nyquist plot whose magnitude is restricted are
@@ -1569,6 +1622,10 @@ def nyquist_plot(
     return_contour : bool, optional
         (legacy) If 'True', return the encirclement count and Nyquist
         contour used to generate the Nyquist plot.
+    show_legend : bool, optional
+        Force legend to be shown if ``True`` or hidden if ``False``.  If
+        ``None``, then show legend when there is more than one line on the
+        plot or ``legend_loc`` has been specified.
     start_marker : str, optional
         Matplotlib marker to use to mark the starting point of the Nyquist
         plot.  Defaults value is 'o' and can be set using
@@ -1576,6 +1633,8 @@ def nyquist_plot(
     start_marker_size : float, optional
         Start marker size (in display coordinates).  Default value is
         4 and can be set using config.defaults['nyquist.start_marker_size'].
+    title : str, optional
+        Set the title of the plot.  Defaults to plot type and system name(s).
     warn_nyquist : bool, optional
         If set to 'False', turn off warnings about frequencies above Nyquist.
     warn_encirclements : bool, optional
@@ -1637,18 +1696,18 @@ def nyquist_plot(
     arrow_size = config._get_param(
         'nyquist', 'arrow_size', kwargs, _nyquist_defaults, pop=True)
     arrow_style = config._get_param('nyquist', 'arrow_style', kwargs, None)
+    ax_user = ax
     max_curve_magnitude = config._get_param(
         'nyquist', 'max_curve_magnitude', kwargs, _nyquist_defaults, pop=True)
     max_curve_offset = config._get_param(
         'nyquist', 'max_curve_offset', kwargs, _nyquist_defaults, pop=True)
-    rcParams = config._get_param(
-        'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
     start_marker = config._get_param(
         'nyquist', 'start_marker', kwargs, _nyquist_defaults, pop=True)
     start_marker_size = config._get_param(
         'nyquist', 'start_marker_size', kwargs, _nyquist_defaults, pop=True)
-    suptitle_frame = config._get_param(
-        'freqplot', 'suptitle_frame', kwargs, _freqplot_defaults, pop=True)
+    title_frame = config._get_param(
+        'freqplot', 'title_frame', kwargs, _freqplot_defaults, pop=True)
 
     # Set line styles for the curves
     def _parse_linestyle(style_name, allow_false=False):
@@ -1731,7 +1790,9 @@ def nyquist_plot(
         return (counts, contours) if return_contour else counts
 
     fig, ax = _process_ax_keyword(
-        ax, shape=(1, 1), squeeze=True, rcParams=rcParams)
+        ax_user, shape=(1, 1), squeeze=True, rcParams=rcParams)
+    legend_loc, _, show_legend = _process_legend_keywords(
+        kwargs, None, 'upper right')
 
     # Create a list of lines for the output
     out = np.empty(len(nyquist_responses), dtype=object)
@@ -1843,7 +1904,7 @@ def nyquist_plot(
         # Display the unit circle, to read gain crossover frequency
         if unit_circle:
             plt.plot(cos, sin, **config.defaults['nyquist.circle_style'])
-        
+
         # Draw circles for given magnitudes of sensitivity
         if ms_circles is not None:
             for ms in ms_circles:
@@ -1907,13 +1968,22 @@ def nyquist_plot(
     lines, labels = _get_line_labels(ax)
 
     # Add legend if there is more than one system plotted
-    if len(labels) > 1:
-        ax.legend(lines, labels, loc=legend_loc)
+    if show_legend == True or (show_legend != False and len(labels) > 1):
+        with plt.rc_context(rcParams):
+            legend = ax.legend(lines, labels, loc=legend_loc)
+    else:
+        legend = None
 
     # Add the title
-    if title is None:
-        title = "Nyquist plot for " + ", ".join(labels)
-    suptitle(title, fig=fig, rcParams=rcParams, frame=suptitle_frame)
+    sysnames = [response.sysname for response in nyquist_responses]
+    if ax_user is None and title is None:
+        title = "Nyquist plot for " + ", ".join(sysnames)
+        _update_plot_title(
+            title, fig=fig, rcParams=rcParams, frame=title_frame)
+    elif ax_user is None:
+        _update_plot_title(
+            title, fig=fig, rcParams=rcParams, frame=title_frame,
+            use_existing=False)
 
     # Legacy return pocessing
     if plot is True or return_contour is not None:
@@ -1923,7 +1993,7 @@ def nyquist_plot(
         # Return counts and (optionally) the contour we used
         return (counts, contours) if return_contour else counts
 
-    return out
+    return ControlPlot(out, ax, fig, legend=legend)
 
 
 #
@@ -1999,6 +2069,18 @@ def gangof4_response(
         Linear input/output systems (process and control).
     omega : array
         Range of frequencies (list or bounds) in rad/sec.
+    omega_limits : array_like of two values
+        Set limits for plotted frequency range. If Hz=True the limits are
+        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
+        elements is equivalent to providing ``omega_limits``. Ignored if
+        data is not a list of systems.
+    omega_num : int
+        Number of samples to use for the frequeny range.  Defaults to
+        config.defaults['freqplot.number_of_samples'].  Ignored if data is
+        not a list of systems.
+    Hz : bool, optional
+        If True, when computing frequency limits automatically set
+        limits to full decades in Hz instead of rad/s.
 
     Returns
     -------
@@ -2048,15 +2130,76 @@ def gangof4_response(
 
     return FrequencyResponseData(
         data, omega, outputs=['y', 'u'], inputs=['r', 'd'],
-        title=f"Gang of Four for P={P.name}, C={C.name}", plot_phase=False)
+        title=f"Gang of Four for P={P.name}, C={C.name}",
+        sysname=f"P={P.name}, C={C.name}", plot_phase=False)
 
 
 def gangof4_plot(
-        P, C, omega=None, omega_limits=None, omega_num=None, **kwargs):
-    """Legacy Gang of 4 plot; use gangof4_response().plot() instead."""
-    return gangof4_response(
-        P, C, omega=omega, omega_limits=omega_limits,
-        omega_num=omega_num).plot(**kwargs)
+        *args, omega=None, omega_limits=None, omega_num=None,
+        Hz=False, **kwargs):
+    """Plot the response of the "Gang of 4" transfer functions for a system.
+
+    Plots a 2x2 frequency response for the "Gang of 4" sensitivity
+    functions [T, PS; CS, S].  Can be called in one of two ways:
+
+        gangof4_plot(response[, ...])
+        gangof4_plot(P, C[, ...])
+
+    Parameters
+    ----------
+    response : FrequencyPlotData
+        Gang of 4 frequency response from `gangof4_response`.
+    P, C : LTI
+        Linear input/output systems (process and control).
+    omega : array
+        Range of frequencies (list or bounds) in rad/sec.
+    omega_limits : array_like of two values
+        Set limits for plotted frequency range. If Hz=True the limits are
+        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
+        elements is equivalent to providing ``omega_limits``. Ignored if
+        data is not a list of systems.
+    omega_num : int
+        Number of samples to use for the frequeny range.  Defaults to
+        config.defaults['freqplot.number_of_samples'].  Ignored if data is
+        not a list of systems.
+    Hz : bool, optional
+        If True, when computing frequency limits automatically set
+        limits to full decades in Hz instead of rad/s.
+
+    Returns
+    -------
+    cplt : :class:`ControlPlot` object
+        Object containing the data that were plotted:
+
+          * cplt.lines: 2x2 array of :class:`matplotlib.lines.Line2D`
+            objects for each line in the plot.  The value of each array
+            entry is a list of Line2D objects in that subplot.
+
+          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+
+          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+
+          * cplt.legend: legend object(s) contained in the plot
+
+        See :class:`ControlPlot` for more detailed information.
+
+    """
+    if len(args) == 1 and isinstance(arg, FrequencyResponseData):
+        if any([kw is not None
+                for kw in [omega, omega_limits, omega_num, Hz]]):
+            raise ValueError(
+                "omega, omega_limits, omega_num, Hz not allowed when "
+                "given a Gang of 4 response as first argument")
+        return args[0].plot(kwargs)
+    else:
+        if len(args) > 3:
+            raise TypeError(
+                f"expecting 2 or 3 positional arguments; received {len(args)}")
+        omega = omega if len(args) < 3 else args[2]
+        args = args[0:2]
+        return gangof4_response(
+            *args, omega=omega, omega_limits=omega_limits,
+            omega_num=omega_num, Hz=Hz).plot(**kwargs)
 
 #
 # Singular values plot
@@ -2143,7 +2286,7 @@ def singular_values_response(
 
 def singular_values_plot(
         data, omega=None, *fmt, plot=None, omega_limits=None, omega_num=None,
-        ax=None, label=None, title=None, legend_loc='center right', **kwargs):
+        ax=None, label=None, title=None, **kwargs):
     """Plot the singular values for a system.
 
     Plot the singular values as a function of frequency for a system or
@@ -2170,29 +2313,37 @@ def singular_values_plot(
 
     Returns
     -------
-    legend_loc : str, optional
-        For plots with multiple lines, a legend will be included in the
-        given location.  Default is 'center right'.  Use False to suppress.
-    lines : array of Line2D
-        1-D array of Line2D objects.  The size of the array matches
-        the number of systems and the value of the array is a list of
-        Line2D objects for that system.
-    mag : ndarray (or list of ndarray if len(data) > 1))
-        If plot=False, magnitude of the response (deprecated).
-    phase : ndarray (or list of ndarray if len(data) > 1))
-        If plot=False, phase in radians of the response (deprecated).
-    omega : ndarray (or list of ndarray if len(data) > 1))
-        If plot=False, frequency in rad/sec (deprecated).
+    cplt : :class:`ControlPlot` object
+        Object containing the data that were plotted:
+
+          * cplt.lines: 1-D array of :class:`matplotlib.lines.Line2D` objects.
+            The size of the array matches the number of systems and the
+            value of the array is a list of Line2D objects for that system.
+
+          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+
+          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+
+          * cplt.legend: legend object(s) contained in the plot
+
+        See :class:`ControlPlot` for more detailed information.
 
     Other Parameters
     ----------------
+    ax : matplotlib.axes.Axes, optional
+        The matplotlib axes to draw the figure on.  If not specified and
+        the current figure has a single axes, that axes is used.
+        Otherwise, a new figure is created.
     grid : bool
         If True, plot grid lines on gain and phase plots.  Default is set by
         `config.defaults['freqplot.grid']`.
-    label : str or array-like of str
+    label : str or array_like of str, optional
         If present, replace automatically generated label(s) with the given
         label(s).  If sysdata is a list, strings should be specified for each
         system.
+    legend_loc : int or str, optional
+        Include a legend in the given location. Default is 'center right',
+        with no legend for a single response.  Use False to suppress legend.
     omega_limits : array_like of two values
         Set limits for plotted frequency range. If Hz=True the limits are
         in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
@@ -2208,23 +2359,39 @@ def singular_values_plot(
     rcParams : dict
         Override the default parameters used for generating plots.
         Default is set up config.default['freqplot.rcParams'].
+    show_legend : bool, optional
+        Force legend to be shown if ``True`` or hidden if ``False``.  If
+        ``None``, then show legend when there is more than one line on an
+        axis or ``legend_loc`` or ``legend_map`` has been specified.
+    title : str, optional
+        Set the title of the plot.  Defaults to plot type and system name(s).
 
     See Also
     --------
     singular_values_response
 
+    Notes
+    -----
+    1. If plot==False, the following legacy values are returned:
+         * mag : ndarray (or list of ndarray if len(data) > 1))
+             Magnitude of the response (deprecated).
+         * phase : ndarray (or list of ndarray if len(data) > 1))
+             Phase in radians of the response (deprecated).
+         * omega : ndarray (or list of ndarray if len(data) > 1))
+             Frequency in rad/sec (deprecated).
+
     """
     # Keyword processing
+    color = kwargs.pop('color', None)
     dB = config._get_param(
         'freqplot', 'dB', kwargs, _freqplot_defaults, pop=True)
     Hz = config._get_param(
         'freqplot', 'Hz', kwargs, _freqplot_defaults, pop=True)
     grid = config._get_param(
         'freqplot', 'grid', kwargs, _freqplot_defaults, pop=True)
-    rcParams = config._get_param(
-        'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
-    suptitle_frame = config._get_param(
-        'freqplot', 'suptitle_frame', kwargs, _freqplot_defaults, pop=True)
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
+    title_frame = config._get_param(
+        'freqplot', 'title_frame', kwargs, _freqplot_defaults, pop=True)
 
     # If argument was a singleton, turn it into a tuple
     data = data if isinstance(data, (list, tuple)) else (data,)
@@ -2277,15 +2444,11 @@ def singular_values_plot(
     fig, ax_sigma = _process_ax_keyword(
         ax, shape=(1, 1), squeeze=True, rcParams=rcParams)
     ax_sigma.set_label('control-sigma')         # TODO: deprecate?
+    legend_loc, _, show_legend = _process_legend_keywords(
+        kwargs, None, 'center right')
 
-    # Handle color cycle manually as all singular values
-    # of the same systems are expected to be of the same color
-    color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    color_offset = 0
-    if len(ax_sigma.lines) > 0:
-        last_color = ax_sigma.lines[-1].get_color()
-        if last_color in color_cycle:
-            color_offset = color_cycle.index(last_color) + 1
+    # Get color offset for first (new) line to be drawn
+    color_offset, color_cycle = _get_color_offset(ax_sigma)
 
     # Create a list of lines for the output
     out = np.empty(len(data), dtype=object)
@@ -2300,14 +2463,13 @@ def singular_values_plot(
         else:
             nyq_freq = None
 
-        # See if the color was specified, otherwise rotate
-        if kwargs.get('color', None) or any(
-                [isinstance(arg, str) and
-                 any([c in arg for c in "bgrcmykw#"]) for arg in fmt]):
-            color_arg = {}                      # color set by *fmt, **kwargs
-        else:
-            color_arg = {'color': color_cycle[
-                (idx_sys + color_offset) % len(color_cycle)]}
+        # Determine the color to use for this response
+        color = _get_color(
+            color, fmt=fmt, offset=color_offset + idx_sys,
+            color_cycle=color_cycle)
+
+        # To avoid conflict with *fmt, only pass color kw if non-None
+        color_arg = {} if color is None else {'color': color}
 
         # Decide on the system name
         sysname = response.sysname if response.sysname is not None \
@@ -2347,14 +2509,19 @@ def singular_values_plot(
     lines, labels = _get_line_labels(ax_sigma)
 
     # Add legend if there is more than one system plotted
-    if len(labels) > 1 and legend_loc is not False:
+    if show_legend == True or (show_legend != False and len(labels) > 1):
         with plt.rc_context(rcParams):
-            ax_sigma.legend(lines, labels, loc=legend_loc)
+            legend = ax_sigma.legend(lines, labels, loc=legend_loc)
+    else:
+        legend = None
 
     # Add the title
-    if title is None:
-        title = "Singular values for " + ", ".join(labels)
-    suptitle(title, fig=fig, rcParams=rcParams, frame=suptitle_frame)
+    if ax is None:
+        if title is None:
+            title = "Singular values for " + ", ".join(labels)
+        _update_plot_title(
+            title, fig=fig, rcParams=rcParams, frame=title_frame,
+            use_existing=False)
 
     # Legacy return processing
     if plot is not None:
@@ -2363,7 +2530,7 @@ def singular_values_plot(
         else:
             return sigmas, omegas
 
-    return out
+    return ControlPlot(out, ax_sigma, fig, legend=legend)
 
 #
 # Utility functions

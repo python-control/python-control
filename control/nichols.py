@@ -18,7 +18,8 @@ import matplotlib.transforms
 import numpy as np
 
 from . import config
-from .ctrlplot import _get_line_labels, _process_ax_keyword, suptitle
+from .ctrlplot import ControlPlot, _get_line_labels, _process_ax_keyword, \
+    _process_legend_keywords, _process_line_labels, _update_plot_title
 from .ctrlutil import unwrap
 from .freqplot import _default_frequency_range, _freqplot_defaults
 from .lti import frequency_response
@@ -35,7 +36,7 @@ _nichols_defaults = {
 
 def nichols_plot(
         data, omega=None, *fmt, grid=None, title=None, ax=None,
-        legend_loc='upper left', **kwargs):
+        label=None, **kwargs):
     """Nichols plot for a system.
 
     Plots a Nichols plot for the system over a (optional) frequency range.
@@ -52,23 +53,53 @@ def nichols_plot(
         The `omega` parameter must be present (use omega=None if needed).
     grid : boolean, optional
         True if the plot should include a Nichols-chart grid. Default is True.
-    legend_loc : str, optional
-        For plots with multiple lines, a legend will be included in the
-        given location.  Default is 'upper left'.  Use False to supress.
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
     Returns
     -------
-    lines : array of Line2D
-        1-D array of Line2D objects.  The size of the array matches
-        the number of systems and the value of the array is a list of
-        Line2D objects for that system.
+    cplt : :class:`ControlPlot` object
+        Object containing the data that were plotted:
+
+          * cplt.lines: 1D array of :class:`matplotlib.lines.Line2D` objects.
+            The size of the array matches the number of systems and the
+            value of the array is a list of Line2D objects for that system.
+
+          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+
+          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+
+          * cplt.legend: legend object(s) contained in the plot
+
+        See :class:`ControlPlot` for more detailed information.
+
+      lines : array of Line2D
+
+    Other Parameters
+    ----------------
+    ax : matplotlib.axes.Axes, optional
+        The matplotlib axes to draw the figure on.  If not specified and
+        the current figure has a single axes, that axes is used.
+        Otherwise, a new figure is created.
+    label : str or array_like of str, optional
+        If present, replace automatically generated label(s) with given
+        label(s).  If sysdata is a list, strings should be specified for each
+        system.
+    legend_loc : int or str, optional
+        Include a legend in the given location. Default is 'upper left',
+        with no legend for a single response.  Use False to suppress legend.
+    show_legend : bool, optional
+        Force legend to be shown if ``True`` or hidden if ``False``.  If
+        ``None``, then show legend when there is more than one line on the
+        plot or ``legend_loc`` has been specified.
+    title : str, optional
+        Set the title of the plot.  Defaults to plot type and system name(s).
+
     """
     # Get parameter values
     grid = config._get_param('nichols', 'grid', grid, True)
-    rcParams = config._get_param(
-        'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
+    label = _process_line_labels(label)
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
 
     # If argument was a singleton, turn it into a list
     if not isinstance(data, (tuple, list)):
@@ -84,6 +115,8 @@ def nichols_plot(
         raise NotImplementedError("MIMO Nichols plots not implemented")
 
     fig, ax_nichols = _process_ax_keyword(ax, rcParams=rcParams, squeeze=True)
+    legend_loc, _, show_legend = _process_legend_keywords(
+        kwargs, None, 'upper left')
 
     # Create a list of lines for the output
     out = np.empty(len(data), dtype=object)
@@ -99,12 +132,13 @@ def nichols_plot(
         x = unwrap(np.degrees(phase), 360)
         y = 20*np.log10(mag)
 
-        # Decide on the system name
+        # Decide on the system name and label
         sysname = response.sysname if response.sysname is not None \
             else f"Unknown-{idx_sys}"
+        label_ = sysname if label is None else label[idx]
 
         # Generate the plot
-        out[idx] = ax_nichols.plot(x, y, *fmt, label=sysname, **kwargs)
+        out[idx] = ax_nichols.plot(x, y, *fmt, label=label_, **kwargs)
 
     # Label the plot axes
     plt.xlabel('Phase [deg]')
@@ -121,16 +155,20 @@ def nichols_plot(
     lines, labels = _get_line_labels(ax_nichols)
 
     # Add legend if there is more than one system plotted
-    if len(labels) > 1 and legend_loc is not False:
+    if show_legend == True or (show_legend != False and len(labels) > 1):
         with plt.rc_context(rcParams):
-            ax_nichols.legend(lines, labels, loc=legend_loc)
+            legend = ax_nichols.legend(lines, labels, loc=legend_loc)
+    else:
+        legend = None
 
     # Add the title
-    if title is None:
-        title = "Nichols plot for " + ", ".join(labels)
-    suptitle(title, fig=fig, rcParams=rcParams)
+    if ax is None:
+        if title is None:
+            title = "Nichols plot for " + ", ".join(labels)
+        _update_plot_title(
+            title, fig=fig, rcParams=rcParams, use_existing=False)
 
-    return out
+    return ControlPlot(out, ax_nichols, fig, legend=legend)
 
 
 def _inner_extents(ax):
@@ -162,7 +200,7 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
         :doc:`Matplotlib linestyle \
             <matplotlib:gallery/lines_bars_and_markers/linestyles>`
     ax : matplotlib.axes.Axes, optional
-        Axes to add grid to.  If ``None``, use ``plt.gca()``.
+        Axes to add grid to.  If ``None``, use ``matplotlib.pyplot.gca()``.
     label_cl_phases: bool, optional
         If True, closed-loop phase lines will be labelled.
 

@@ -136,7 +136,7 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
     #     ax=fig.axes[1])
     ax_rlocus = fig.axes[1]
     root_locus_map(sys[0, 0]).plot(
-        xlim=xlim_rlocus, ylim=ylim_rlocus, grid=rlocus_grid,
+        xlim=xlim_rlocus, ylim=ylim_rlocus,
         initial_gain=initial_gain, ax=ax_rlocus)
     if rlocus_grid is False:
         # Need to generate grid manually, since root_locus_plot() won't

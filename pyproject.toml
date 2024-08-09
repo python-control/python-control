@@ -40,7 +40,7 @@ dynamic = ["version"]
 packages = ["control"]
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-timeout"]
+test = ["pytest", "pytest-timeout", "ruff"]
 slycot = [ "slycot>=0.4.0" ]
 cvxopt = [ "cvxopt>=1.2.0" ]
 
@@ -56,3 +56,9 @@ addopts = "-ra"
 filterwarnings = [
     "error:.*matrix subclass:PendingDeprecationWarning",
 ]
+
+[tool.ruff.lint]
+select = ['D', 'E', 'W', 'DOC']
+
+[tool.ruff.lint.pydocstyle]
+convention = 'numpy'

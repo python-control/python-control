@@ -74,7 +74,7 @@ class ModifiedExtremeFinderCycle(angle_helper.ExtremeFinderCycle):
         return lon_min, lon_max, lat_min, lat_max
 
 
-def sgrid(scaling=None):
+def sgrid(subplot=(1, 1, 1), scaling=None):
     # From matplotlib demos:
     # https://matplotlib.org/gallery/axisartist/demo_curvelinear_grid.html
     # https://matplotlib.org/gallery/axisartist/demo_floating_axis.html
@@ -101,11 +101,10 @@ def sgrid(scaling=None):
 
     # Set up an axes with a specialized grid helper
     fig = plt.gcf()
-    ax = SubplotHost(fig, 1, 1, 1, grid_helper=grid_helper)
+    ax = SubplotHost(fig, *subplot, grid_helper=grid_helper)
 
     # make ticklabels of right invisible, and top axis visible.
-    visible = True
-    ax.axis[:].major_ticklabels.set_visible(visible)
+    ax.axis[:].major_ticklabels.set_visible(True)
     ax.axis[:].major_ticks.set_visible(False)
     ax.axis[:].invert_ticklabel_direction()
     ax.axis[:].major_ticklabels.set_color('gray')

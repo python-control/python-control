@@ -13,13 +13,15 @@ describing function analysis.
 """
 
 import math
-import numpy as np
-import matplotlib.pyplot as plt
-import scipy
 from warnings import warn
 
-from .freqplot import nyquist_response
+import matplotlib.pyplot as plt
+import numpy as np
+import scipy
+
 from . import config
+from .ctrlplot import ControlPlot
+from .freqplot import nyquist_response
 
 __all__ = ['describing_function', 'describing_function_plot',
            'describing_function_response', 'DescribingFunctionResponse',
@@ -378,7 +380,7 @@ def describing_function_response(
 
 
 def describing_function_plot(
-        *sysdata, label="%5.2g @ %-5.2g", **kwargs):
+        *sysdata, point_label="%5.2g @ %-5.2g", label=None, **kwargs):
     """describing_function_plot(data, *args, **kwargs)
 
     Plot a Nyquist plot with a describing function for a nonlinear system.
@@ -399,7 +401,7 @@ def describing_function_plot(
 
     Parameters
     ----------
-    data : :class:`~control.DescribingFunctionData`
+    data : :class:`~control.DescribingFunctionResponse`
         A describing function response data object created by
         :func:`~control.describing_function_response`.
     H : LTI system
@@ -418,18 +420,36 @@ def describing_function_plot(
         If True (default), refine the location of the intersection of the
         Nyquist curve for the linear system and the describing function to
         determine the intersection point
-    label : str, optional
+    point_label : str, optional
         Formatting string used to label intersection points on the Nyquist
         plot.  Defaults to "%5.2g @ %-5.2g".  Set to `None` to omit labels.
+    ax : matplotlib.axes.Axes, optional
+        The matplotlib axes to draw the figure on.  If not specified and
+        the current figure has a single axes, that axes is used.
+        Otherwise, a new figure is created.
+    title : str, optional
+        Set the title of the plot.  Defaults to plot type and system name(s).
+    **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
+        Additional keywords passed to `matplotlib` to specify line properties
+        for Nyquist curve.
 
     Returns
     -------
-    lines : 1D array of Line2D
-        Arrray of Line2D objects for each line in the plot.  The first
-        element of the array is a list of lines (typically only one) for
-        the Nyquist plot of the linear I/O styem.  The second element of
-        the array is a list of lines (typically only one) for the
-        describing function curve.
+    cplt : :class:`ControlPlot` object
+        Object containing the data that were plotted:
+
+          * cplt.lines: Array of :class:`matplotlib.lines.Line2D` objects
+            for each line in the plot.  The first element of the array is a
+            list of lines (typically only one) for the Nyquist plot of the
+            linear I/O system.  The second element of the array is a list
+            of lines (typically only one) for the describing function
+            curve.
+
+          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+
+          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+
+        See :class:`ControlPlot` for more detailed information.
 
     Examples
     --------
@@ -442,7 +462,10 @@ def describing_function_plot(
     # Process keywords
     warn_nyquist = config._process_legacy_keyword(
         kwargs, 'warn', 'warn_nyquist', kwargs.pop('warn_nyquist', None))
+    point_label = config._process_legacy_keyword(
+        kwargs, 'label', 'point_label', point_label)
 
+    # TODO: update to be consistent with ctrlplot use of `label`
     if label not in (False, None) and not isinstance(label, str):
         raise ValueError("label must be formatting string, False, or None")
 
@@ -454,27 +477,35 @@ def describing_function_plot(
             *sysdata, refine=kwargs.pop('refine', True),
             warn_nyquist=warn_nyquist)
     elif len(sysdata) == 1:
-        dfresp = sysdata[0]
+        if not isinstance(sysdata[0], DescribingFunctionResponse):
+            raise TypeError("data must be DescribingFunctionResponse")
+        else:
+            dfresp = sysdata[0]
     else:
         raise TypeError("1, 3, or 4 position arguments required")
 
+    # Don't allow legend keyword arguments
+    for kw in ['legend_loc', 'legend_map', 'show_legend']:
+        if kw in kwargs:
+            raise TypeError(f"unexpected keyword argument '{kw}'")
+
     # Create a list of lines for the output
-    out = np.empty(2, dtype=object)
+    lines = np.empty(2, dtype=object)
 
     # Plot the Nyquist response
-    out[0] = dfresp.response.plot(**kwargs)[0]
+    cfig = dfresp.response.plot(**kwargs)
+    lines[0] = cfig.lines[0]    # Return Nyquist lines for first system
 
     # Add the describing function curve to the plot
-    lines = plt.plot(dfresp.N_vals.real, dfresp.N_vals.imag)
-    out[1] = lines
+    lines[1] = plt.plot(dfresp.N_vals.real, dfresp.N_vals.imag)
 
     # Label the intersection points
-    if label:
+    if point_label:
         for pos, (a, omega) in zip(dfresp.positions, dfresp.intersections):
             # Add labels to the intersection points
-            plt.text(pos.real, pos.imag, label % (a, omega))
+            plt.text(pos.real, pos.imag, point_label % (a, omega))
 
-    return out
+    return ControlPlot(lines, cfig.axes, cfig.figure)
 
 
 # Utility function to figure out whether two line segments intersection

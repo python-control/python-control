@@ -119,7 +119,7 @@ def test_pzmap_raises():
 
 def test_pzmap_limits():
     sys = ct.tf([1, 2], [1, 2, 3])
-    out = ct.pole_zero_plot(sys, xlim=[-1, 1], ylim=[-1, 1])
-    ax = ct.get_plot_axes(out)[0, 0]
+    cplt = ct.pole_zero_plot(sys, xlim=[-1, 1], ylim=[-1, 1])
+    ax = cplt.axes[0, 0]
     assert ax.get_xlim() == (-1, 1)
     assert ax.get_ylim() == (-1, 1)

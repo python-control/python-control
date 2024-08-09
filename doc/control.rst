@@ -51,7 +51,6 @@ Frequency domain plotting
     gangof4_plot
     nichols_plot
     nichols_grid
-    suptitle
 
 Note: For plotting commands that create multiple axes on the same plot, the
 individual axes can be retrieved using the axes label (retrieved using the
@@ -74,7 +73,6 @@ Time domain simulation
     input_output_response
     phase_plot
     step_response
-    TimeResponseData
 
 Control system analysis
 =======================

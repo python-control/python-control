@@ -79,7 +79,6 @@ from numpy import einsum, maximum, minimum
 from scipy.linalg import eig, eigvals, matrix_balance, norm
 
 from . import config
-from .ctrlplot import _update_suptitle
 from .exception import pandas_check
 from .iosys import isctime, isdtime
 from .timeplot import time_response_plot
@@ -112,7 +111,7 @@ class TimeResponseData:
     :attr:`time`, :attr:`outputs`, :attr:`states`, :attr:`inputs`.  When
     accessing time responses via their properties, squeeze processing is
     applied so that (by default) single-input, single-output systems will have
-    the output and input indices supressed.  This behavior is set using the
+    the output and input indices suppressed.  This behavior is set using the
     ``squeeze`` keyword.
 
     Attributes
@@ -192,6 +191,9 @@ class TimeResponseData:
         Number of independent traces represented in the input/output
         response.  If ntraces is 0 (default) then the data represents a
         single trace with the trace index surpressed in the data.
+
+    title : str, optional
+        Set the title to use when plotting.
 
     trace_labels : array of string, optional
         Labels to use for traces (set to sysname it ntraces is 0)
@@ -745,19 +747,21 @@ class TimeResponseList(list):
 
     """
     def plot(self, *args, **kwargs):
-        out_full = None
+        from .ctrlplot import ControlPlot
+
+        lines = None
         label = kwargs.pop('label', [None] * len(self))
         for i, response in enumerate(self):
-            out = TimeResponseData.plot(
+            cplt = TimeResponseData.plot(
                 response, *args, label=label[i], **kwargs)
-            if out_full is None:
-                out_full = out
+            if lines is None:
+                lines = cplt.lines
             else:
                 # Append the lines in the new plot to previous lines
-                for row in range(out.shape[0]):
-                    for col in range(out.shape[1]):
-                        out_full[row, col] += out[row, col]
-        return out_full
+                for row in range(cplt.lines.shape[0]):
+                    for col in range(cplt.lines.shape[1]):
+                        lines[row, col] += cplt.lines[row, col]
+        return ControlPlot(lines, cplt.axes, cplt.figure)
 
 
 # Process signal labels
