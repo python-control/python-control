@@ -147,6 +147,8 @@ def bode_plot(
         figure with the correct number and shape of axes, a new figure is
         created.  The shape of the array must match the shape of the
         plotted data.
+    freq_label: str, optional
+        Frequency label (defaults to "rad/sec" or "Hertz")
     grid : bool, optional
         If True, plot grid lines on gain and phase plots.  Default is set by
         `config.defaults['freqplot.grid']`.
@@ -168,6 +170,8 @@ def bode_plot(
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'center right',
         with no legend for a single response.  Use False to suppress legend.
+    magnitude_label : str, optional
+        Label to use for magnitude axis.  Defaults to "Magnitude".
     margins_method : str, optional
         Method to use in computing margins (see :func:`stability_margins`).
     omega_limits : array_like of two values
@@ -179,6 +183,8 @@ def bode_plot(
         Number of samples to use for the frequeny range.  Defaults to
         config.defaults['freqplot.number_of_samples'].  Ignored if data is
         not a list of systems.
+    phase_label : str, optional
+        Label to use for magnitude axis.  Defaults to "Phase [rad]".
     plot : bool, optional
         (legacy) If given, `bode_plot` returns the legacy return values
         of magnitude, phase, and frequency.  If False, just return the
