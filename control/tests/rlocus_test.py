@@ -45,7 +45,7 @@ class TestRootLocus:
             poles = np.sort(poles)
             np.testing.assert_array_almost_equal(poles, poles_expected)
 
-    @pytest.mark.filterwarnings("ignore:.*return values.*:DeprecationWarning")
+    @pytest.mark.filterwarnings("ignore:.*return value.*:FutureWarning")
     def testRootLocus(self, sys):
         """Basic root locus (no plot)"""
         klist = [-1, 0, 1]
@@ -61,7 +61,7 @@ class TestRootLocus:
         np.testing.assert_allclose(klist, k_out)
         self.check_cl_poles(sys, roots, klist)
 
-    @pytest.mark.filterwarnings("ignore:.*return values.*:DeprecationWarning")
+    @pytest.mark.filterwarnings("ignore:.*return value.*:FutureWarning")
     def test_without_gains(self, sys):
         roots, kvect = root_locus(sys, plot=False)
         self.check_cl_poles(sys, roots, kvect)
@@ -109,7 +109,7 @@ class TestRootLocus:
 
         # TODO: check validity of grid
 
-    @pytest.mark.filterwarnings("ignore:.*return values.*:DeprecationWarning")
+    @pytest.mark.filterwarnings("ignore:.*return value.*:FutureWarning")
     def test_root_locus_neg_false_gain_nonproper(self):
         """ Non proper TranferFunction with negative gain: Not implemented"""
         with pytest.raises(ValueError, match="with equal order"):
@@ -147,7 +147,7 @@ class TestRootLocus:
         assert_array_almost_equal(zoom_x, zoom_x_valid)
         assert_array_almost_equal(zoom_y, zoom_y_valid)
 
-    @pytest.mark.filterwarnings("ignore:.*return values.*:DeprecationWarning")
+    @pytest.mark.filterwarnings("ignore:.*return value.*:FutureWarning")
     @pytest.mark.timeout(2)
     def test_rlocus_default_wn(self):
         """Check that default wn calculation works properly"""
@@ -186,7 +186,7 @@ def test_root_locus_plots(sys, grid, xlim, ylim, interactive):
 @pytest.mark.usefixtures("mplcleanup")
 def test_root_locus_legacy(keyword):
     sys = ct.rss(2, 1, 1)
-    with pytest.warns(DeprecationWarning, match=f"'{keyword}' is deprecated"):
+    with pytest.warns(FutureWarning, match=f"'{keyword}' is deprecated"):
         ct.root_locus_plot(sys, **{keyword: [0, 1, 2]})
 
 

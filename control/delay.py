@@ -57,10 +57,10 @@ def pade(T, n=1, numdeg=None):
         time delay
     n : positive integer
         degree of denominator of approximation
-    numdeg: integer, or None (the default)
-            If None, numerator degree equals denominator degree
-            If >= 0, specifies degree of numerator
-            If < 0, numerator degree is n+numdeg
+    numdeg : integer, or None (the default)
+        If numdeg is `None`, numerator degree equals denominator degree.
+        If numdeg >= 0, specifies degree of numerator.
+        If numdeg < 0, numerator degree is n+numdeg.
 
     Returns
     -------

@@ -204,7 +204,7 @@ def similarity_transform(xsys, T, timescale=1, inverse=False):
         The matrix `T` defines the new set of coordinates z = T x.
     timescale : float, optional
         If present, also rescale the time unit to tau = timescale * t
-    inverse: boolean, optional
+    inverse : bool, optional
         If True (default), transform so z = T x.  If False, transform
         so x = T z.
 
@@ -397,21 +397,21 @@ def bdschur(a, condmax=None, sort=None):
 
     Parameters
     ----------
-        a : (M, M) array_like
-            Real matrix to decompose
-        condmax : None or float, optional
-            If None (default), use 1/sqrt(eps), which is approximately 1e8
-        sort : {None, 'continuous', 'discrete'}
-            Block sorting; see below.
+    a : (M, M) array_like
+        Real matrix to decompose
+    condmax : None or float, optional
+        If None (default), use 1/sqrt(eps), which is approximately 1e8
+    sort : {None, 'continuous', 'discrete'}
+        Block sorting; see below.
 
     Returns
     -------
-        amodal : (M, M) real ndarray
-            Block-diagonal Schur decomposition of `a`
-        tmodal : (M, M) real ndarray
-            Similarity transform relating `a` and `amodal`
-        blksizes : (N,) int ndarray
-            Array of Schur block sizes
+    amodal : (M, M) real ndarray
+        Block-diagonal Schur decomposition of `a`
+    tmodal : (M, M) real ndarray
+        Similarity transform relating `a` and `amodal`
+    blksizes : (N,) int ndarray
+        Array of Schur block sizes
 
     Notes
     -----

@@ -103,7 +103,7 @@ pygments_style = 'sphinx'
 # This config value contains the locations and names of other projects that
 # should be linked to in this documentation.
 intersphinx_mapping = \
-    {'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
+    {'scipy': ('https://docs.scipy.org/doc/scipy', None),
      'numpy': ('https://numpy.org/doc/stable', None),
      'matplotlib': ('https://matplotlib.org/stable/', None),
      }

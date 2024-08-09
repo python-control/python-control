@@ -88,6 +88,9 @@ def nichols_plot(
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'upper left',
         with no legend for a single response.  Use False to suppress legend.
+    rcParams : dict
+        Override the default parameters used for generating plots.
+        Default is set by config.default['ctrlplot.rcParams'].
     show_legend : bool, optional
         Force legend to be shown if ``True`` or hidden if ``False``.  If
         ``None``, then show legend when there is more than one line on the
@@ -201,7 +204,7 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
             <matplotlib:gallery/lines_bars_and_markers/linestyles>`
     ax : matplotlib.axes.Axes, optional
         Axes to add grid to.  If ``None``, use ``matplotlib.pyplot.gca()``.
-    label_cl_phases: bool, optional
+    label_cl_phases : bool, optional
         If True, closed-loop phase lines will be labelled.
 
     Returns

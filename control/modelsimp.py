@@ -109,24 +109,25 @@ def hankel_singular_values(sys):
 
 
 def model_reduction(sys, ELIM, method='matchdc'):
-    """
+    """Model reduction by state elimination.
+    
     Model reduction of `sys` by eliminating the states in `ELIM` using a given
     method.
 
     Parameters
     ----------
-    sys: StateSpace
-        Original system to reduce
-    ELIM: array
-        Vector of states to eliminate
-    method: string
-        Method of removing states in `ELIM`: either ``'truncate'`` or
-        ``'matchdc'``.
+    sys : StateSpace
+        Original system to reduce.
+    ELIM : array
+        Vector of states to eliminate.
+    method : string
+        Method of removing states in `ELIM`: either 'truncate' or
+        'matchdc'.
 
     Returns
     -------
-    rsys: StateSpace
-        A reduced order model
+    rsys : StateSpace
+        A reduced order model.
 
     Raises
     ------
@@ -220,6 +221,7 @@ def model_reduction(sys, ELIM, method='matchdc'):
 
 def balanced_reduction(sys, orders, method='truncate', alpha=None):
     """Balanced reduced order model of sys of a given order.
+    
     States are eliminated based on Hankel singular value.
     If sys has unstable modes, they are removed, the
     balanced realization is done on the stable part, then
@@ -231,14 +233,14 @@ def balanced_reduction(sys, orders, method='truncate', alpha=None):
 
     Parameters
     ----------
-    sys: StateSpace
-        Original system to reduce
-    orders: integer or array of integer
+    sys : StateSpace
+        Original system to reduce.
+    orders : integer or array of integer
         Desired order of reduced order model (if a vector, returns a vector
-        of systems)
-    method: string
-        Method of removing states, either ``'truncate'`` or ``'matchdc'``.
-    alpha: float
+        of systems).
+    method : string
+        Method of removing states, either ``'truncate'`` or ``'matchdc'``..
+    alpha : float
         Redefines the stability boundary for eigenvalues of the system
         matrix A.  By default for continuous-time systems, alpha <= 0
         defines the stability boundary for the real part of A's eigenvalues
@@ -248,7 +250,7 @@ def balanced_reduction(sys, orders, method='truncate', alpha=None):
 
     Returns
     -------
-    rsys: StateSpace
+    rsys : StateSpace
         A reduced order model or a list of reduced order models if orders is
         a list.
 
@@ -343,7 +345,8 @@ def balanced_reduction(sys, orders, method='truncate', alpha=None):
 
 
 def minimal_realization(sys, tol=None, verbose=True):
-    '''
+    """ Eliminate uncontrollable or unobservable states.
+    
     Eliminates uncontrollable or unobservable states in state-space
     models or cancelling pole-zero pairs in transfer functions. The
     output sysr has minimal order and the same response
@@ -351,18 +354,19 @@ def minimal_realization(sys, tol=None, verbose=True):
 
     Parameters
     ----------
-    sys: StateSpace or TransferFunction
-        Original system
-    tol: real
-        Tolerance
-    verbose: bool
-        Print results if True
+    sys : StateSpace or TransferFunction
+        Original system.
+    tol : real
+        Tolerance.
+    verbose : bool
+        Print results if True.
 
     Returns
     -------
-    rsys: StateSpace or TransferFunction
-        Cleaned model
-    '''
+    rsys : StateSpace or TransferFunction
+        Cleaned model.
+
+    """
     sysr = sys.minreal(tol)
     if verbose:
         print("{nstates} states have been removed from the model".format(
@@ -371,7 +375,7 @@ def minimal_realization(sys, tol=None, verbose=True):
 
 
 def _block_hankel(Y, m, n):
-    """Create a block Hankel matrix from impulse response"""
+    """Create a block Hankel matrix from impulse response."""
     q, p, _ = Y.shape
     YY = Y.transpose(0,2,1) # transpose for reshape
     

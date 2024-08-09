@@ -60,7 +60,7 @@ def test_freqresp_siso(ss_siso):
     ctrl.frequency_response(ss_siso, omega)
 
 
-@pytest.mark.filterwarnings("ignore:freqresp is deprecated")
+@pytest.mark.filterwarnings(r"ignore:freqresp\(\) is deprecated")
 @slycotonly
 def test_freqresp_mimo_legacy(ss_mimo):
     """Test MIMO frequency response calls"""
@@ -112,7 +112,7 @@ def test_nyquist_basic(ss_siso):
     # Check known warnings happened as expected
     assert len(record) == 2
     assert re.search("encirclements was a non-integer", str(record[0].message))
-    assert re.search("return values .* deprecated", str(record[1].message))
+    assert re.search("return value .* deprecated", str(record[1].message))
 
     response = nyquist_response(tf_siso, omega=np.logspace(-1, 1, 10))
     assert len(response.contour) == 10

@@ -177,7 +177,7 @@ def lqe(*args, **kwargs):
 
     # Compute the result (dimension and symmetry checking done in care())
     P, E, LT = care(A.T, C.T, G @ QN @ G.T, RN, method=method,
-                    B_s="C", Q_s="QN", R_s="RN", S_s="NN")
+                    _Bs="C", _Qs="QN", _Rs="RN", _Ss="NN")
     return _ssmatrix(LT.T), _ssmatrix(P), E
 
 
@@ -297,7 +297,7 @@ def dlqe(*args, **kwargs):
 
     # Compute the result (dimension and symmetry checking done in dare())
     P, E, LT = dare(A.T, C.T, G @ QN @ G.T, RN, method=method,
-                    B_s="C", Q_s="QN", R_s="RN", S_s="NN")
+                    _Bs="C", _Qs="QN", _Rs="RN", _Ss="NN")
     return _ssmatrix(LT.T), _ssmatrix(P), E
 
 
@@ -603,6 +603,21 @@ def white_noise(T, Q, dt=0):
     a white noise signal.  In discrete time, the white noise signal has
     covariance Q at each point in time (without any scaling based on the
     sample time).
+
+    Parameters
+    ----------
+    T : 1D array_like
+        Array of linearly spaced times.
+    Q : 2D array_like
+        Noise intensity matrix of dimension nxn.
+    dt : float, optional
+        If 0, generate continuous time noise signal, otherwise discrete time.
+
+    Returns
+    -------
+    V : array
+        Noise signal indexed as `V[i, j]` where `i` is the signal index and
+        `j` is the time index.
 
     """
     # Convert input arguments to arrays

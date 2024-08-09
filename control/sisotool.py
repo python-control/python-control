@@ -324,30 +324,30 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     ----------
     plant : :class:`LTI` (:class:`TransferFunction` or :class:`StateSpace` system)
         The dynamical system to be controlled.
-    gain : string (optional)
+    gain : string, optional
         Which gain to vary by `deltaK`. Must be one of `'P'`, `'I'`, or `'D'`
         (proportional, integral, or derative).
-    sign : int (optional)
+    sign : int, optional
         The sign of deltaK gain perturbation.
-    input : string (optional)
+    input_signal : string, optional
         The input used for the step response; must be `'r'` (reference) or
         `'d'` (disturbance) (see figure above).
-    Kp0, Ki0, Kd0 : float (optional)
+    Kp0, Ki0, Kd0 : float, optional
         Initial values for proportional, integral, and derivative gains,
         respectively.
-    deltaK : float (optional)
+    deltaK : float, optional
         Perturbation value for gain specified by the `gain` keywoard.
-    tau : float (optional)
+    tau : float, optional
         The time constant associated with the pole in the continuous-time
         derivative term. This is required to make the derivative transfer
         function proper.
-    C_ff : float or :class:`LTI` system (optional)
+    C_ff : float or :class:`LTI` system, optional
         Feedforward controller. If :class:`LTI`, must have timebase that is
         compatible with plant.
-    derivative_in_feedback_path : bool (optional)
+    derivative_in_feedback_path : bool, optional
         Whether to place the derivative term in feedback transfer function
         `C_b` instead of the forward transfer function `C_f`.
-    plot : bool (optional)
+    plot : bool, optional
         Whether to create Sisotool interactive plot.
 
     Returns
