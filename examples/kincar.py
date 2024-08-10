@@ -86,7 +86,7 @@ kincar = fs.FlatSystem(
     states=('x', 'y', 'theta'))
 
 #
-# Utility function to plot lane change manuever
+# Utility function to plot lane change maneuver
 #
 
 def plot_lanechange(t, y, u, figure=None, yf=None):
