@@ -198,7 +198,12 @@ def bode_plot(
         Determine whether and how axis limits are shared between the
         indicated variables.  Can be set set to 'row' to share across all
         subplots in a row, 'col' to set across all subplots in a column, or
-        `False` to allow independent limits.
+        `False` to allow independent limits.  Note: if `sharex` is given,
+        it sets the value of `share_frequency`; if `sharey` is given, it
+        sets the value of both `share_magnitude` and `share_phase`.
+        Default values are 'row' for `share_magnitude` and `share_phase',
+        'col', for `share_frequency`, and can be set using
+        config.defaults['freqplot.share_<axis>'].
     show_legend : bool, optional
         Force legend to be shown if ``True`` or hidden if ``False``.  If
         ``None``, then show legend when there is more than one line on an
@@ -228,12 +233,12 @@ def bode_plot(
 
     Notes
     -----
-    1. Starting with python-control version 0.10, `bode_plot`returns an
-       array of lines instead of magnitude, phase, and frequency. To
-       recover the old behavior, call `bode_plot` with `plot=True`, which
-       will force the legacy values (mag, phase, omega) to be returned
-       (with a warning).  To obtain just the frequency response of a system
-       (or list of systems) without plotting, use the
+    1. Starting with python-control version 0.10, `bode_plot`returns a
+       :class:`ControlPlot` object instead of magnitude, phase, and
+       frequency. To recover the old behavior, call `bode_plot` with
+       `plot=True`, which will force the legacy values (mag, phase, omega)
+       to be returned (with a warning).  To obtain just the frequency
+       response of a system (or list of systems) without plotting, use the
        :func:`~control.frequency_response` command.
 
     2. If a discrete time model is given, the frequency response is plotted
@@ -583,7 +588,7 @@ def bode_plot(
     # axes are available and no updates should be made.
     #
 
-    # Utility function to turn off sharing
+    # Utility function to turn on sharing
     def _share_axes(ref, share_map, axis):
         ref_ax = ax_array[ref]
         for index in np.nditer(share_map, flags=["refs_ok"]):

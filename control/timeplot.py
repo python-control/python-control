@@ -32,6 +32,8 @@ _timeplot_defaults = {
         {'color': c} for c in [
             'tab:red', 'tab:purple', 'tab:brown', 'tab:olive', 'tab:cyan']],
     'timeplot.time_label': "Time [s]",
+    'timeplot.sharex': 'col',
+    'timeplot.sharey': False,
 }
 
 
@@ -66,6 +68,14 @@ def time_response_plot(
     overlay_signals : bool, optional
         If set to True, combine all input and output signals onto a single
         plot (for each).
+    sharex, sharey : str or bool, optional
+        Determine whether and how x- and y-axis limits are shared between
+        subplots.  Can be set set to 'row' to share across all subplots in
+        a row, 'col' to set across all subplots in a column, 'all' to share
+        across all subplots, or `False` to allow independent limits.
+        Default values are `False` for `sharex' and 'col' for `sharey`, and
+        can be set using config.defaults['timeplot.sharex'] and
+        config.defaults['timeplot.sharey'].
     transpose : bool, optional
         If transpose is False (default), signals are plotted from top to
         bottom, starting with outputs (if plotted) and then inputs.
@@ -176,6 +186,8 @@ def time_response_plot(
     #
     # Set up defaults
     ax_user = ax
+    sharex = config._get_param('timeplot', 'sharex', kwargs, pop=True)
+    sharey = config._get_param('timeplot', 'sharey', kwargs, pop=True)
     time_label = config._get_param(
         'timeplot', 'time_label', kwargs, _timeplot_defaults, pop=True)
     rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
@@ -289,7 +301,8 @@ def time_response_plot(
         nrows, ncols = ncols, nrows
 
     # See if we can use the current figure axes
-    fig, ax_array = _process_ax_keyword(ax, (nrows, ncols), rcParams=rcParams)
+    fig, ax_array = _process_ax_keyword(
+        ax, (nrows, ncols), rcParams=rcParams, sharex=sharex, sharey=sharey)
     legend_loc, legend_map, show_legend = _process_legend_keywords(
         kwargs, (nrows, ncols), 'center right')
 
