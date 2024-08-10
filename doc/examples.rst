@@ -7,7 +7,7 @@ Examples
 
 The source code for the examples below are available in the `examples/`
 subdirectory of the source code distribution. They can also be accessed online
-via the [python-control GitHub repository](https://github.com/python-control/python-control/tree/master/examples).
+via the `python-control GitHub repository <https://github.com/python-control/python-control/tree/master/examples>`_.
 
 
 Python scripts
@@ -69,11 +69,10 @@ Google Colab Notebooks
 A collection of Jupyter notebooks are available on [Google Colab](),
 where they can be executed through a web browser:
 
-* [Caltech CDS 110/112 Google Colab
-  notebooks](https://drive.google.com/drive/folders/1LI2xWVn1kqrZ5lIcM5Ktxr2B7X730cCj?usp=share_link):
+* `Caltech CDS 110 Google Colab notebooks
+  <https://drive.google.com/drive/folders/1LI2xWVn1kqrZ5lIcM5Ktxr2B7X730cCj?usp=share_link>`_:
   Jupyter notebooks created by Richard Murray for CDS 110 (Analysis
-  and Design of Feedback Systems) and CDS 112 (Optimization-Based
-  Control) at Caltech.
+  and Design of Feedback Systems) at Caltech.
 
 Note: in order to execute the Jupyter notebooks in this collection,
 you will need a Google account that has access to the Google
