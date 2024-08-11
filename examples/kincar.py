@@ -1,4 +1,4 @@
-# vehicle.py - planar vehicle model (with flatness)
+# kincar.py - planar vehicle model (with flatness)
 # RMM, 16 Jan 2022
 
 import numpy as np
@@ -7,13 +7,14 @@ import control as ct
 import control.flatsys as fs
 
 #
-# Vehicle dynamics
+# Vehicle dynamics (bicycle model)
 #
 
 # Function to take states, inputs and return the flat flag
-def _vehicle_flat_forward(x, u, params={}):
+def _kincar_flat_forward(x, u, params={}):
     # Get the parameter values
     b = params.get('wheelbase', 3.)
+    #! TODO: add dir processing
 
     # Create a list of arrays to store the flat output and its derivatives
     zflag = [np.zeros(3), np.zeros(3)]
@@ -36,7 +37,7 @@ def _vehicle_flat_forward(x, u, params={}):
     return zflag
 
 # Function to take the flat flag and return states, inputs
-def _vehicle_flat_reverse(zflag, params={}):
+def _kincar_flat_reverse(zflag, params={}):
     # Get the parameter values
     b = params.get('wheelbase', 3.)
     dir = params.get('dir', 'f')
@@ -64,8 +65,9 @@ def _vehicle_flat_reverse(zflag, params={}):
     return x, u
 
 # Function to compute the RHS of the system dynamics
-def _vehicle_update(t, x, u, params):
+def _kincar_update(t, x, u, params):
     b = params.get('wheelbase', 3.)             # get parameter values
+    #! TODO: add dir processing
     dx = np.array([
         np.cos(x[2]) * u[0],
         np.sin(x[2]) * u[0],
@@ -73,13 +75,13 @@ def _vehicle_update(t, x, u, params):
     ])
     return dx
 
-def _vehicle_output(t, x, u, params):
+def _kincar_output(t, x, u, params):
     return x                            # return x, y, theta (full state)
 
 # Create differentially flat input/output system
-vehicle = fs.FlatSystem(
-    _vehicle_flat_forward, _vehicle_flat_reverse, name="vehicle",
-    updfcn=_vehicle_update, outfcn=_vehicle_output,
+kincar = fs.FlatSystem(
+    _kincar_flat_forward, _kincar_flat_reverse, name="kincar",
+    updfcn=_kincar_update, outfcn=_kincar_output,
     inputs=('v', 'delta'), outputs=('x', 'y', 'theta'),
     states=('x', 'y', 'theta'))
 
@@ -93,19 +95,19 @@ def plot_lanechange(t, y, u, figure=None, yf=None):
     plt.plot(y[0], y[1])
     plt.xlabel("x [m]")
     plt.ylabel("y [m]")
-    if yf:
+    if yf is not None:
         plt.plot(yf[0], yf[1], 'ro')
 
     # Plot the inputs as a function of time
     plt.subplot(3, 1, 2, label='v')
     plt.plot(t, u[0])
-    plt.xlabel("t [sec]")
-    plt.ylabel("velocity [m/s]")
+    plt.xlabel("Time $t$ [sec]")
+    plt.ylabel("$v$ [m/s]")
 
     plt.subplot(3, 1, 3, label='delta')
     plt.plot(t, u[1])
-    plt.xlabel("t [sec]")
-    plt.ylabel("steering [rad/s]")
+    plt.xlabel("Time $t$ [sec]")
+    plt.ylabel("$\\delta$ [rad]")
 
     plt.suptitle("Lane change maneuver")
     plt.tight_layout()

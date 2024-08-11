@@ -309,7 +309,7 @@ def vectorfield(
     sys._update_params(params)
     for i, x in enumerate(points):
         vfdata[i, :2] = x
-        vfdata[i, 2:] = sys._rhs(0, x, 0)
+        vfdata[i, 2:] = sys._rhs(0, x, np.zeros(sys.ninputs))
 
     with plt.rc_context(rcParams):
         out = ax.quiver(
