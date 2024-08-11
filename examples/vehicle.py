@@ -84,7 +84,7 @@ vehicle = fs.FlatSystem(
     states=('x', 'y', 'theta'))
 
 #
-# Utility function to plot lane change manuever
+# Utility function to plot lane change maneuver
 #
 
 def plot_lanechange(t, y, u, figure=None, yf=None):
@@ -107,5 +107,5 @@ def plot_lanechange(t, y, u, figure=None, yf=None):
     plt.xlabel("t [sec]")
     plt.ylabel("steering [rad/s]")
 
-    plt.suptitle("Lane change manuever")
+    plt.suptitle("Lane change maneuver")
     plt.tight_layout()

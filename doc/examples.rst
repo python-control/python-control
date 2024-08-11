@@ -66,8 +66,9 @@ online sources.
 Google Colab Notebooks
 ======================
 
-A collection of Jupyter notebooks are available on [Google Colab](),
-where they can be executed through a web browser:
+A collection of Jupyter notebooks are available on `Google Colab
+<https://colab.research.google.com>`_, where they can be executed
+through a web browser:
 
 * `Caltech CDS 110 Google Colab notebooks
   <https://drive.google.com/drive/folders/1LI2xWVn1kqrZ5lIcM5Ktxr2B7X730cCj?usp=share_link>`_:

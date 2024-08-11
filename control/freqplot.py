@@ -184,7 +184,7 @@ def bode_plot(
         config.defaults['freqplot.number_of_samples'].  Ignored if data is
         not a list of systems.
     phase_label : str, optional
-        Label to use for magnitude axis.  Defaults to "Phase [rad]".
+        Label to use for phase axis.  Defaults to "Phase [rad]".
     plot : bool, optional
         (legacy) If given, `bode_plot` returns the legacy return values
         of magnitude, phase, and frequency.  If False, just return the

@@ -79,14 +79,14 @@ def plot_lanechange(t, y, u, yf=None, figure=None):
     plt.xlabel("t [sec]")
     plt.ylabel("steering [rad/s]")
 
-    plt.suptitle("Lane change manuever")
+    plt.suptitle("Lane change maneuver")
     plt.tight_layout()
     plt.show(block=False)
 
 #
 # Optimal control problem
 #
-# Perform a "lane change" manuever over the course of 10 seconds.
+# Perform a "lane change" maneuver over the course of 10 seconds.
 #
 
 # Initial and final conditions

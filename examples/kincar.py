@@ -109,5 +109,5 @@ def plot_lanechange(t, y, u, figure=None, yf=None):
     plt.xlabel("Time $t$ [sec]")
     plt.ylabel("$\\delta$ [rad]")
 
-    plt.suptitle("Lane change manuever")
+    plt.suptitle("Lane change maneuver")
     plt.tight_layout()
