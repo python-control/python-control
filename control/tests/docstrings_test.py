@@ -191,7 +191,7 @@ def test_parameter_docs(module, prefix):
                             continue
                         if verbose > 3:
                             print(f"    Checking keyword argument {kwargname}")
-                        assert _check_parameter_docs(
+                        _check_parameter_docs(
                             name, kwargname, inspect.getdoc(obj),
                             prefix=prefix)
 
@@ -199,7 +199,7 @@ def test_parameter_docs(module, prefix):
                 else:
                     if verbose > 3:
                         print(f"    Checking argument {argname}")
-                    assert _check_parameter_docs(
+                    _check_parameter_docs(
                         name, argname, docstring, prefix=prefix)
 
 
@@ -257,24 +257,46 @@ def test_deprecated_functions(module, prefix):
 # Utility function to check for an argument in a docstring
 def _check_parameter_docs(funcname, argname, docstring, prefix=""):
     funcname = prefix + funcname
-    if re.search(
+
+    # Find the "Parameters" section of docstring, where we start searching
+    if not (match := re.search(r"\nParameters\n----", docstring)):
+        pytest.fail(f"{funcname} docstring missing Parameters section")
+    else:
+        start = match.start()
+
+    # Find the "Returns" section of the docstring (to be skipped, if present)
+    match_returns = re.search(r"\nReturns\n----", docstring)
+
+    # Find the "Other Parameters" section of the docstring, if present
+    match_other = re.search(r"\nOther Parameters\n----", docstring)
+
+    # Remove the returns section from docstring, in case output arguments
+    # match input argument names (it happens...)
+    if match_other and match_returns:
+        docstring = docstring[start:match_returns.start()] + \
+            docstring[match_other.start():]
+    else:
+        docstring = docstring[start:]
+
+    # Look for the parameter name in the docstring
+    if match := re.search(
             "\n" + r"((\w+|\.{3}), )*" + argname + r"(, (\w+|\.{3}))*:",
             docstring):
         # Found the string, but not in numpydoc form
         if verbose:
             print(f"      {funcname}: {argname} docstring missing space")
         warnings.warn(f"{funcname} '{argname}' docstring missing space")
-        return True
 
-    elif not re.search(
+    elif not (match := re.search(
             "\n" + r"((\w+|\.{3}), )*" + argname + r"(, (\w+|\.{3}))* :",
-            docstring):
-        # return False
-        #
-        # Just issue a warning for now
+            docstring)):
         if verbose:
             print(f"      {funcname}: {argname} not documented")
-        warnings.warn(f"{funcname} '{argname}' not documented")
-        return False
+        pytest.fail(f"{funcname} '{argname}' not documented")
 
-    return True
+    # Make sure there isn't another instance
+    second_match = re.search(
+            "\n" + r"((\w+|\.{3}), )*" + argname + r"(, (\w+|\.{3}))*[ ]*:",
+            docstring[match.end():])
+    if second_match:
+        pytest.fail(f"{funcname} '{argname}' documented twice")
