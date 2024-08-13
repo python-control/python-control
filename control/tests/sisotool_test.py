@@ -153,6 +153,7 @@ class TestSisotool:
         with pytest.warns(FutureWarning):
             sisotool(tsys, kvect=1.2)
 
+    @pytest.mark.filterwarnings("ignore:connect:FutureWarning")
     def test_sisotool_mimo(self,  sys222, sys221):
         # a 2x2 should not raise an error:
         sisotool(sys222)
@@ -196,6 +197,7 @@ class TestPidDesigner:
         {'input_signal':'r', 'Kp0':0.01, 'derivative_in_feedback_path':True},
         {'input_signal':'d', 'Kp0':0.01, 'derivative_in_feedback_path':True},
         {'input_signal':'r', 'Kd0':0.01, 'derivative_in_feedback_path':True}])
+    @pytest.mark.filterwarnings("ignore:connect:FutureWarning")
     def test_pid_designer_2(self, plant, kwargs):
         rootlocus_pid_designer(plant, **kwargs)
 

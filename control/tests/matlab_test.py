@@ -83,6 +83,7 @@ class tsystems:
 
 
 @pytest.mark.usefixtures("fixedseed")
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 class TestMatlab:
     """Test matlab style functions"""
 
