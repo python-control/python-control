@@ -119,6 +119,11 @@ def phase_plane_plot(
 
     Other parameters
     ----------------
+    dir : str, optional
+        Direction to draw streamlines: 'forward' to flow forward in time
+        from the reference points, 'reverse' to flow backward in time, or
+        'both' to flow both forward and backward.  The amount of time to
+        simulate in each direction is given by the ``timedata`` argument.
     plot_streamlines : bool or dict, optional
         If `True` (default) then plot streamlines based on the pointdata
         and gridtype.  If set to a dict, pass on the key-value pairs in
@@ -135,6 +140,9 @@ def phase_plane_plot(
         If `True` (default) then plot separatrices starting from each
         equilibrium point.  If set to a dict, pass on the key-value pairs
         in the dict as keywords to :func:`~control.phaseplot.separatrices`.
+    rcParams : dict
+        Override the default parameters used for generating plots.
+        Default is set by config.default['ctrlplot.rcParams'].
     suppress_warnings : bool, optional
         If set to `True`, suppress warning messages in generating trajectories.
     title : str, optional
@@ -172,7 +180,7 @@ def phase_plane_plot(
             kwargs, plot_streamlines, gridspec=gridspec, gridtype=gridtype,
             ax=ax)
         out[0] += streamlines(
-            sys, pointdata, timedata, check_kwargs=False,
+            sys, pointdata, timedata, _check_kwargs=False,
             suppress_warnings=suppress_warnings, **kwargs_local)
 
         # Get rid of keyword arguments handled by streamlines
@@ -188,7 +196,7 @@ def phase_plane_plot(
         kwargs_local = _create_kwargs(
             kwargs, plot_separatrices, gridspec=gridspec, ax=ax)
         out[0] += separatrices(
-            sys, pointdata, check_kwargs=False, **kwargs_local)
+            sys, pointdata, _check_kwargs=False, **kwargs_local)
 
         # Get rid of keyword arguments handled by separatrices
         for kw in ['arrows', 'arrow_size', 'arrow_style', 'params']:
@@ -198,7 +206,7 @@ def phase_plane_plot(
         kwargs_local = _create_kwargs(
             kwargs, plot_vectorfield, gridspec=gridspec, ax=ax)
         out[1] = vectorfield(
-            sys, pointdata, check_kwargs=False, **kwargs_local)
+            sys, pointdata, _check_kwargs=False, **kwargs_local)
 
         # Get rid of keyword arguments handled by vectorfield
         for kw in ['color', 'params']:
@@ -208,7 +216,7 @@ def phase_plane_plot(
         kwargs_local = _create_kwargs(
             kwargs, plot_equilpoints, gridspec=gridspec, ax=ax)
         out[2] = equilpoints(
-            sys, pointdata, check_kwargs=False, **kwargs_local)
+            sys, pointdata, _check_kwargs=False, **kwargs_local)
 
         # Get rid of keyword arguments handled by equilpoints
         for kw in ['params']:
@@ -231,7 +239,7 @@ def phase_plane_plot(
 
 def vectorfield(
         sys, pointdata, gridspec=None, ax=None, suppress_warnings=False,
-        check_kwargs=True, **kwargs):
+        _check_kwargs=True, **kwargs):
     """Plot a vector field in the phase plane.
 
     This function plots a vector field for a two-dimensional state
@@ -274,6 +282,9 @@ def vectorfield(
 
     Other parameters
     ----------------
+    rcParams : dict
+        Override the default parameters used for generating plots.
+        Default is set by config.default['ctrlplot.rcParams'].
     suppress_warnings : bool, optional
         If set to `True`, suppress warning messages in generating trajectories.
 
@@ -301,7 +312,7 @@ def vectorfield(
     color = _get_color(kwargs, ax=ax)
 
     # Make sure all keyword arguments were processed
-    if check_kwargs and kwargs:
+    if _check_kwargs and kwargs:
         raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # Generate phase plane (quiver) data
@@ -321,7 +332,7 @@ def vectorfield(
 
 def streamlines(
         sys, pointdata, timedata=1, gridspec=None, gridtype=None, dir=None,
-        ax=None, check_kwargs=True, suppress_warnings=False, **kwargs):
+        ax=None, _check_kwargs=True, suppress_warnings=False, **kwargs):
     """Plot stream lines in the phase plane.
 
     This function plots stream lines for a two-dimensional state space
@@ -352,6 +363,11 @@ def streamlines(
         If gridtype is 'circlegrid', then `gridspec` is a 2-tuple
         specifying the radius and number of points around each point in the
         `pointdata` array.
+    dir : str, optional
+        Direction to draw streamlines: 'forward' to flow forward in time
+        from the reference points, 'reverse' to flow backward in time, or
+        'both' to flow both forward and backward.  The amount of time to
+        simulate in each direction is given by the ``timedata`` argument.
     params : dict or list, optional
         Parameters to pass to system. For an I/O system, `params` should be
         a dict of parameters and values. For a callable, `params` should be
@@ -367,6 +383,9 @@ def streamlines(
 
     Other parameters
     ----------------
+    rcParams : dict
+        Override the default parameters used for generating plots.
+        Default is set by config.default['ctrlplot.rcParams'].
     suppress_warnings : bool, optional
         If set to `True`, suppress warning messages in generating trajectories.
 
@@ -399,7 +418,7 @@ def streamlines(
     color = _get_color(kwargs, ax=ax)
 
     # Make sure all keyword arguments were processed
-    if check_kwargs and kwargs:
+    if _check_kwargs and kwargs:
         raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # Create reverse time system, if needed
@@ -433,7 +452,7 @@ def streamlines(
 
 
 def equilpoints(
-        sys, pointdata, gridspec=None, color='k', ax=None, check_kwargs=True,
+        sys, pointdata, gridspec=None, color='k', ax=None, _check_kwargs=True,
         **kwargs):
     """Plot equilibrium points in the phase plane.
 
@@ -474,6 +493,12 @@ def equilpoints(
     -------
     out : list of Line2D objects
 
+    Other parameters
+    ----------------
+    rcParams : dict
+        Override the default parameters used for generating plots.
+        Default is set by config.default['ctrlplot.rcParams'].
+
     """
     # Process keywords
     rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
@@ -496,7 +521,7 @@ def equilpoints(
     points, _ = _make_points(pointdata, gridspec, 'meshgrid')
 
     # Make sure all keyword arguments were processed
-    if check_kwargs and kwargs:
+    if _check_kwargs and kwargs:
         raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # Search for equilibrium points
@@ -513,7 +538,7 @@ def equilpoints(
 
 def separatrices(
         sys, pointdata, timedata=None, gridspec=None, ax=None,
-        check_kwargs=True, suppress_warnings=False, **kwargs):
+        _check_kwargs=True, suppress_warnings=False, **kwargs):
     """Plot separatrices in the phase plane.
 
     This function plots separatrices for a two-dimensional state space
@@ -563,6 +588,9 @@ def separatrices(
 
     Other parameters
     ----------------
+    rcParams : dict
+        Override the default parameters used for generating plots.
+        Default is set by config.default['ctrlplot.rcParams'].
     suppress_warnings : bool, optional
         If set to `True`, suppress warning messages in generating trajectories.
 
@@ -606,7 +634,7 @@ def separatrices(
             stable_color = unstable_color = color
 
     # Make sure all keyword arguments were processed
-    if check_kwargs and kwargs:
+    if _check_kwargs and kwargs:
         raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # Create a "reverse time" system to use for simulation
@@ -686,13 +714,13 @@ def boxgrid(xvals, yvals):
 
     Parameters
     ----------
-    xvals, yvals: 1D array-like
+    xvals, yvals : 1D array-like
         Array of points defining the points on the lower and left edges of
         the box.
 
     Returns
     -------
-    grid: 2D array
+    grid : 2D array
         Array with shape (p, 2) defining the points along the edges of the
         box, where p is the number of points around the edge.
 
@@ -715,7 +743,7 @@ def meshgrid(xvals, yvals):
 
     Parameters
     ----------
-    xvals, yvals: 1D array-like
+    xvals, yvals : 1D array-like
         Array of points defining the points on the lower and left edges of
         the box.
 
@@ -985,6 +1013,9 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
 
     """(legacy) Phase plot for 2D dynamical systems.
 
+    .. deprecated:: 0.10.1
+        This function is deprecated; use :func:`phase_plane_plot` instead.
+
     Produces a vector field or stream line plot for a planar system.  This
     function has been replaced by the :func:`~control.phase_plane_map` and
     :func:`~control.phase_plane_plot` functions.
@@ -1044,7 +1075,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     """
     # Generate a deprecation warning
     warnings.warn(
-        "phase_plot is deprecated; use phase_plot_plot instead",
+        "phase_plot() is deprecated; use phase_plane_plot() instead",
         FutureWarning)
 
     #
@@ -1243,14 +1274,18 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
 def box_grid(xlimp, ylimp):
     """box_grid   generate list of points on edge of box
 
+    .. deprecated:: 0.10.0
+        Use :func:`phaseplot.boxgrid` instead.
+
     list = box_grid([xmin xmax xnum], [ymin ymax ynum]) generates a
     list of points that correspond to a uniform grid at the end of the
     box defined by the corners [xmin ymin] and [xmax ymax].
+
     """
 
     # Generate a deprecation warning
     warnings.warn(
-        "box_grid is deprecated; use phaseplot.boxgrid instead",
+        "box_grid() is deprecated; use phaseplot.boxgrid() instead",
         FutureWarning)
 
     return boxgrid(

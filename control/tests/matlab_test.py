@@ -83,6 +83,7 @@ class tsystems:
 
 
 @pytest.mark.usefixtures("fixedseed")
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 class TestMatlab:
     """Test matlab style functions"""
 
@@ -173,6 +174,7 @@ class TestMatlab:
         # pzmap(siso.ss1);         not implemented
         # pzmap(siso.ss2);         not implemented
         pzmap(getattr(siso, subsys))
+        # TODO: check to make sure a plot got generated
         pzmap(getattr(siso, subsys), plot=False)
 
     def testStep(self, siso):
@@ -404,6 +406,7 @@ class TestMatlab:
 
     def testBode(self, siso, mplcleanup):
         """Call bode()"""
+        # TODO: make sure plots are generated
         bode(siso.ss1)
         bode(siso.tf1)
         bode(siso.tf2)

@@ -73,7 +73,7 @@ def series(sys1, *sysn, **kwargs):
 
     Parameters
     ----------
-    sys1, sys2, ..., sysn: scalar, array, or :class:`InputOutputSystem`
+    sys1, sys2, ..., sysn : scalar, array, or :class:`InputOutputSystem`
         I/O systems to combine.
 
     Returns
@@ -145,7 +145,7 @@ def parallel(sys1, *sysn, **kwargs):
 
     Parameters
     ----------
-    sys1, sys2, ..., sysn: scalar, array, or :class:`InputOutputSystem`
+    sys1, sys2, ..., sysn : scalar, array, or :class:`InputOutputSystem`
         I/O systems to combine.
 
     Returns
@@ -213,7 +213,7 @@ def negate(sys, **kwargs):
 
     Parameters
     ----------
-    sys: scalar, array, or :class:`InputOutputSystem`
+    sys : scalar, array, or :class:`InputOutputSystem`
         I/O systems to negate.
 
     Returns
@@ -265,9 +265,9 @@ def feedback(sys1, sys2=1, sign=-1, **kwargs):
 
     Parameters
     ----------
-    sys1, sys2: scalar, array, or :class:`InputOutputSystem`
+    sys1, sys2 : scalar, array, or :class:`InputOutputSystem`
         I/O systems to combine.
-    sign: scalar
+    sign : scalar
         The sign of feedback.  `sign` = -1 indicates negative feedback, and
         `sign` = 1 indicates positive feedback.  `sign` is an optional
         argument; it assumes a value of -1 if not specified.
@@ -412,8 +412,8 @@ def connect(sys, Q, inputv, outputv):
     """Index-based interconnection of an LTI system.
 
     .. deprecated:: 0.10.0
-        `connect` will be removed in a future version of python-control in
-        favor of `interconnect`, which works with named signals.
+        `connect` will be removed in a future version of python-control.
+        Use :func:`interconnect` instead, which works with named signals.
 
     The system `sys` is a system typically constructed with `append`, with
     multiple inputs and outputs.  The inputs and outputs are connected
@@ -465,7 +465,7 @@ def connect(sys, Q, inputv, outputv):
 
     """
     # TODO: maintain `connect` for use in MATLAB submodule (?)
-    warn("`connect` is deprecated; use `interconnect`", DeprecationWarning)
+    warn("connect() is deprecated; use interconnect()", FutureWarning)
 
     inputv, outputv, Q = \
         np.atleast_1d(inputv), np.atleast_1d(outputv), np.atleast_1d(Q)

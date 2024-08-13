@@ -355,13 +355,13 @@ class StateSpace(NonlinearIOSystem, LTI):
     def _get_states(self):
         warn("The StateSpace `states` attribute will be deprecated in a "
              "future release.  Use `nstates` instead.",
-             DeprecationWarning, stacklevel=2)
+             FutureWarning, stacklevel=2)
         return self.nstates
 
     def _set_states(self, value):
         warn("The StateSpace `states` attribute will be deprecated in a "
              "future release.  Use `nstates` instead.",
-             DeprecationWarning, stacklevel=2)
+             FutureWarning, stacklevel=2)
         self.nstates = value
 
     #: Deprecated attribute; use :attr:`nstates` instead.
@@ -906,7 +906,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         warn("StateSpace.freqresp(omega) will be removed in a "
              "future release of python-control; use "
              "sys.frequency_response(omega), or freqresp(sys, omega) in the "
-             "MATLAB compatibility module instead", DeprecationWarning)
+             "MATLAB compatibility module instead", FutureWarning)
         return self.frequency_response(omega)
 
     # Compute poles and zeros
@@ -1576,6 +1576,10 @@ def ss(*args, **kwargs):
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
+    method : str, optional
+        Set the method used for computing the result.  Current methods are
+        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
+        and then 'scipy' (SISO only).
 
     Returns
     -------
@@ -1614,8 +1618,8 @@ def ss(*args, **kwargs):
     if len(args) > 0 and (hasattr(args[0], '__call__') or args[0] is None) \
        and not isinstance(args[0], (InputOutputSystem, LTI)):
         # Function as first (or second) argument => assume nonlinear IO system
-        warn("using ss to create nonlinear I/O systems is deprecated; "
-             "use nlsys()", DeprecationWarning)
+        warn("using ss() to create nonlinear I/O systems is deprecated; "
+             "use nlsys()", FutureWarning)
         return NonlinearIOSystem(*args, **kwargs)
 
     elif len(args) == 4 or len(args) == 5:
@@ -1663,7 +1667,7 @@ def ss2io(*args, **kwargs):
     Create an :class:`~control.StateSpace` system with the given signal
     and system names.  See :func:`~control.ss` for more details.
     """
-    warn("ss2io is deprecated; use ss()", DeprecationWarning)
+    warn("ss2io() is deprecated; use ss()", FutureWarning)
     return StateSpace(*args, **kwargs)
 
 
@@ -1739,7 +1743,7 @@ def tf2io(*args, **kwargs):
     (2, 2, 8)
 
     """
-    warn("tf2io is deprecated; use tf2ss() or tf()", DeprecationWarning)
+    warn("tf2io() is deprecated; use tf2ss() or tf()", FutureWarning)
     return tf2ss(*args, **kwargs)
 
 
@@ -1915,15 +1919,12 @@ def rss(states=1, outputs=1, inputs=1, strictly_proper=False, **kwargs):
 
     Parameters
     ----------
-    inputs : int, list of str, or None
-        Description of the system inputs.  This can be given as an integer
-        count or as a list of strings that name the individual signals.  If an
-        integer count is specified, the names of the signal will be of the
-        form `s[i]` (where `s` is one of `u`, `y`, or `x`).
-    outputs : int, list of str, or None
-        Description of the system outputs.  Same format as `inputs`.
-    states : int, list of str, or None
-        Description of the system states.  Same format as `inputs`.
+    states, outputs, inputs : int, list of str, or None
+        Description of the system states, outputs, and inputs. This can be
+        given as an integer count or as a list of strings that name the
+        individual signals.  If an integer count is specified, the names of
+        the signal will be of the form 's[i]' (where 's' is one of 'x',
+        'y', or 'u').
     strictly_proper : bool, optional
         If set to 'True', returns a proper system (no direct term).
     dt : None, True or float, optional

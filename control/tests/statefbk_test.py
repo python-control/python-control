@@ -892,7 +892,7 @@ class TestStatefbk:
         with pytest.raises(ControlArgument, match="gain must be an array"):
             ctrl, clsys = ct.create_statefbk_iosystem(sys, "bad argument")
 
-        with pytest.warns(DeprecationWarning, match="'type' is deprecated"):
+        with pytest.warns(FutureWarning, match="'type' is deprecated"):
             ctrl, clsys = ct.create_statefbk_iosystem(sys, K, type='nonlinear')
 
         with pytest.raises(ControlArgument, match="duplicate keywords"):

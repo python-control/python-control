@@ -454,7 +454,7 @@ class TestFRD:
     def test_freqresp_deprecated(self):
         sys_tf = ct.tf([1], [1, 2, 1])
         frd_tf = frd(sys_tf, np.logspace(-1, 1, 3))
-        with pytest.warns(DeprecationWarning):
+        with pytest.warns(FutureWarning):
             frd_tf.freqresp(1.)
 
     def test_repr_str(self):

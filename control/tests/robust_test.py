@@ -48,6 +48,7 @@ class TestH2:
         np.testing.assert_array_almost_equal(k.D, [[0]])
 
 
+@pytest.mark.filterwarnings("ignore:connect:FutureWarning")
 class TestAugw:
 
     # tolerance for system equality
@@ -324,6 +325,7 @@ class TestAugw:
             augw(g1by1, w3=g2by2)
 
 
+@pytest.mark.filterwarnings("ignore:connect:FutureWarning")
 class TestMixsyn:
     """Test control.robust.mixsyn"""
 

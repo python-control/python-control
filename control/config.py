@@ -83,6 +83,13 @@ def set_defaults(module, **keywords):
     The set_defaults() function can be used to modify multiple parameter
     values for a module at the same time, using keyword arguments.
 
+    Parameters
+    ----------
+    module : str
+        Name of the module for which the defaults are being given.
+    **keywords : keyword arguments
+        Parameter value assignments.
+
     Examples
     --------
     >>> ct.defaults['freqplot.number_of_samples']
@@ -355,7 +362,7 @@ def _process_legacy_keyword(kwargs, oldkey, newkey, newval):
     if kwargs.get(oldkey) is not None:
         warnings.warn(
             f"keyword '{oldkey}' is deprecated; use '{newkey}'",
-            DeprecationWarning)
+            FutureWarning)
         if newval is not None:
             raise ControlArgument(
                 f"duplicate keywords '{oldkey}' and '{newkey}'")

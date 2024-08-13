@@ -47,7 +47,7 @@ def root_locus_map(sysdata, gains=None):
 
     Parameters
     ----------
-    sys : LTI system or list of LTI systems
+    sysdata : LTI system or list of LTI systems
         Linear input/output systems (SISO only, for now).
     gains : array_like, optional
         Gains to use in computing plot of closed-loop poles.  If not given,
@@ -208,8 +208,8 @@ def root_locus_plot(
     #
     if plot is not None:
         warnings.warn(
-            "`root_locus` return values of roots, gains is deprecated; "
-            "use root_locus_map()", DeprecationWarning)
+            "root_locus() return value of roots, gains is deprecated; "
+            "use root_locus_map()", FutureWarning)
 
     if plot is False:
         return responses.loci, responses.gains

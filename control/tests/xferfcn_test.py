@@ -487,7 +487,7 @@ class TestXferFcn:
     def test_freqresp_deprecated(self):
         sys = TransferFunction([1., 3., 5], [1., 6., 2., -1.])
         # Deprecated version of the call (should generate warning)
-        with pytest.warns(DeprecationWarning):
+        with pytest.warns(FutureWarning):
             sys.freqresp(1.)
 
     def test_frequency_response_siso(self):

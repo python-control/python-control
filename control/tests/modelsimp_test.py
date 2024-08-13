@@ -54,13 +54,13 @@ class TestModelsimp:
         with pytest.raises(ControlArgument):
             H = markov()
 
-        # to many positional arguments
+        # too many positional arguments
         with pytest.raises(ControlArgument):
             H = markov(Y,U,m,1)
         with pytest.raises(ControlArgument):
             H = markov(response,m,1)
 
-        # to many positional arguments
+        # too many positional arguments
         with pytest.raises(ControlDimension):
             U2 = np.hstack([U,U])
             H = markov(Y,U2,m)

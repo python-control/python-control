@@ -222,7 +222,7 @@ controller, _ = ct.create_statefbk_iosystem(
     vehicle, (gains, points), name='controller', ud_labels=['vd', 'phid'],
     gainsched_indices=['vd', 'theta'], gainsched_method='linear')
 
-# Connect everything together (note that controller inputs are different
+# Connect everything together (note that controller inputs are different)
 steering = ct.interconnect(
     # List of subsystems
     (trajgen, controller, vehicle), name='steering',
@@ -235,7 +235,7 @@ steering = ct.interconnect(
         ['controller.x', 'vehicle.x'],
         ['controller.y', 'vehicle.y'],
         ['controller.theta', 'vehicle.theta'],
-        ['controller.vd', ('trajgen', 'vd', 0.2)],      # create error
+        ['controller.vd', ('trajgen', 'vd', 0.2)],      # create some error
         ['controller.phid', 'trajgen.phid'],
         ['vehicle.v', 'controller.v'],
         ['vehicle.phi', 'controller.phi']

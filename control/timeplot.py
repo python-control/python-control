@@ -39,8 +39,8 @@ _timeplot_defaults = {
 def time_response_plot(
         data, *fmt, ax=None, plot_inputs=None, plot_outputs=True,
         transpose=False, overlay_traces=False, overlay_signals=False,
-        legend=None, add_initial_zero=True, label=None,
-        trace_labels=None, title=None, relabel=True, **kwargs):
+        add_initial_zero=True, label=None, trace_labels=None, title=None,
+        relabel=True, **kwargs):
     """Plot the time response of an input/output system.
 
     This function creates a standard set of plots for the input/output
@@ -126,8 +126,11 @@ def time_response_plot(
     output_props : array of dicts, optional
         List of line properties to use when plotting combined outputs.  The
         default values are set by config.defaults['timeplot.output_props'].
+    rcParams : dict
+        Override the default parameters used for generating plots.
+        Default is set by config.default['ctrlplot.rcParams'].
     relabel : bool, optional
-        [deprecated] By default, existing figures and axes are relabeled
+        (deprecated) By default, existing figures and axes are relabeled
         when new data are added.  If set to `False`, just plot new data on
         existing axes.
     show_legend : bool, optional

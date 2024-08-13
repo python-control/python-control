@@ -438,7 +438,7 @@ def lqr(*args, **kwargs):
         raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # Compute the result (dimension and symmetry checking done in care())
-    X, L, G = care(A, B, Q, R, N, None, method=method, S_s="N")
+    X, L, G = care(A, B, Q, R, N, None, method=method, _Ss="N")
     return G, X, L
 
 
@@ -575,7 +575,7 @@ def dlqr(*args, **kwargs):
         raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # Compute the result (dimension and symmetry checking done in dare())
-    S, E, K = dare(A, B, Q, R, N, method=method, S_s="N")
+    S, E, K = dare(A, B, Q, R, N, method=method, _Ss="N")
     return _ssmatrix(K), _ssmatrix(S), E
 
 
@@ -716,10 +716,10 @@ def create_statefbk_iosystem(
         specified as either integer offsets or as estimator/system output
         signal names.  If not specified, defaults to the system states.
 
-    inputs, outputs : str, or list of str, optional
+    inputs, outputs, states : str, or list of str, optional
         List of strings that name the individual signals of the transformed
-        system.  If not given, the inputs and outputs are the same as the
-        original system.
+        system.  If not given, the inputs, outputs, and states are the same
+        as the original system.
 
     name : string, optional
         System name. If unspecified, a generic name <sys[id]> is generated

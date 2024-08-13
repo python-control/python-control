@@ -66,7 +66,7 @@ class NonlinearIOSystem(InputOutputSystem):
         Description of the system inputs.  This can be given as an integer
         count or as a list of strings that name the individual signals.
         If an integer count is specified, the names of the signal will be
-        of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
+        of the form 's[i]' (where 's' is one of 'u', 'y', or 'x').  If
         this parameter is not given or given as `None`, the relevant
         quantity will be determined when possible based on other
         information provided to functions using the system.
@@ -92,9 +92,8 @@ class NonlinearIOSystem(InputOutputSystem):
         generic name <sys[id]> is generated with a unique integer id.
 
     params : dict, optional
-        Parameter values for the systems.  Passed to the evaluation
-        functions for the system as default values, overriding internal
-        defaults.
+        Parameter values for the system.  Passed to the evaluation functions
+        for the system as default values, overriding internal defaults.
 
     See Also
     --------
@@ -1244,7 +1243,7 @@ def nlsys(
         Description of the system inputs.  This can be given as an integer
         count or as a list of strings that name the individual signals.
         If an integer count is specified, the names of the signal will be
-        of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
+        of the form 's[i]' (where 's' is one of 'u', 'y', or 'x').  If
         this parameter is not given or given as `None`, the relevant
         quantity will be determined when possible based on other
         information provided to functions using the system.
@@ -1270,9 +1269,8 @@ def nlsys(
         generic name <sys[id]> is generated with a unique integer id.
 
     params : dict, optional
-        Parameter values for the systems.  Passed to the evaluation
-        functions for the system as default values, overriding internal
-        defaults.
+        Parameter values for the system.  Passed to the evaluation functions
+        for the system as default values, overriding internal defaults.
 
     Returns
     -------
@@ -1320,31 +1318,28 @@ def input_output_response(
     ----------
     sys : NonlinearIOSystem or list of NonlinearIOSystem
         I/O system(s) for which input/output response is simulated.
-
     T : array-like
         Time steps at which the input is defined; values must be evenly spaced.
-
     U : array-like, list, or number, optional
         Input array giving input at each time `T` (default = 0).  If a list
         is specified, each element in the list will be treated as a portion
         of the input and broadcast (if necessary) to match the time vector.
-
     X0 : array-like, list, or number, optional
         Initial condition (default = 0).  If a list is given, each element
         in the list will be flattened and stacked into the initial
         condition.  If a smaller number of elements are given that the
         number of states in the system, the initial condition will be padded
         with zeros.
-
     t_eval : array-list, optional
         List of times at which the time response should be computed.
         Defaults to ``T``.
-
     return_x : bool, optional
         If True, return the state vector when assigning to a tuple (default =
         False).  See :func:`forced_response` for more details.
         If True, return the values of the state at each time (default = False).
-
+    params : dict, optional
+        Parameter values for the system.  Passed to the evaluation functions
+        for the system as default values, overriding internal defaults.
     squeeze : bool, optional
         If True and if the system has a single output, return the system
         output as a 1D array rather than a 2D array.  If False, return the
@@ -1379,16 +1374,19 @@ def input_output_response(
 
     Other parameters
     ----------------
-    solve_ivp_method : str, optional
-        Set the method used by :func:`scipy.integrate.solve_ivp`.  Defaults
-        to 'RK45'.
-    solve_ivp_kwargs : dict, optional
-        Pass additional keywords to :func:`scipy.integrate.solve_ivp`.
     ignore_errors : bool, optional
         If ``False`` (default), errors during computation of the trajectory
         will raise a ``RuntimeError`` exception.  If ``True``, do not raise
         an exception and instead set ``results.success`` to ``False`` and
         place an error message in ``results.message``.
+    solve_ivp_method : str, optional
+        Set the method used by :func:`scipy.integrate.solve_ivp`.  Defaults
+        to 'RK45'.
+    solve_ivp_kwargs : dict, optional
+        Pass additional keywords to :func:`scipy.integrate.solve_ivp`.
+    transpose : bool, default=False
+        If True, transpose all input and output arrays (for backward
+        compatibility with MATLAB and :func:`scipy.signal.lsim`).
 
     Raises
     ------
@@ -1675,6 +1673,8 @@ def find_eqpt(sys, x0, u0=None, y0=None, t=0, params=None,
 
     Parameters
     ----------
+    sys : NonlinearIOSystem
+        I/O system for which the equilibrium point is sought.
     x0 : list of initial state values
         Initial guess for the value of the state near the equilibrium point.
     u0 : list of input values, optional
@@ -1935,7 +1935,7 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
     Parameters
     ----------
     sys : InputOutputSystem
-        The system to be linearized
+        The system to be linearized.
     xeq : array
         The state at which the linearization will be evaluated (does not need
         to be an equilibrium state).
@@ -1969,7 +1969,7 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
     Other Parameters
     ----------------
     inputs : int, list of str or None, optional
-        Description of the system inputs.  If not specified, the origional
+        Description of the system inputs.  If not specified, the original
         system inputs are used.  See :class:`InputOutputSystem` for more
         information.
     outputs : int, list of str or None, optional
@@ -2101,7 +2101,7 @@ def interconnect(
         Description of the system inputs.  This can be given as an integer
         count or as a list of strings that name the individual signals.  If an
         integer count is specified, the names of the signal will be of the
-        form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If this parameter
+        form 's[i]' (where 's' is one of 'u', 'y', or 'x').  If this parameter
         is not given or given as `None`, the relevant quantity will be
         determined when possible based on other information provided to
         functions using the system.

@@ -98,7 +98,7 @@ class TransferFunction(LTI):
         time, positive number is discrete time with specified
         sampling time, None indicates unspecified timebase (either
         continuous or discrete time).
-    display_format: None, 'poly' or 'zpk'
+    display_format : None, 'poly' or 'zpk', optional
         Set the display format used in printing the TransferFunction object.
         Default behavior is polynomial display and can be changed by
         changing config.defaults['xferfcn.display_format'].
@@ -811,7 +811,7 @@ class TransferFunction(LTI):
             num, den, self.dt, inputs=inputs, outputs=outputs, name=sysname)
 
     def freqresp(self, omega):
-        """(deprecated) Evaluate transfer function at complex frequencies.
+        """Evaluate transfer function at complex frequencies.
 
         .. deprecated::0.9.0
             Method has been given the more pythonic name
@@ -821,7 +821,7 @@ class TransferFunction(LTI):
         warn("TransferFunction.freqresp(omega) will be removed in a "
              "future release of python-control; use "
              "sys.frequency_response(omega), or freqresp(sys, omega) in the "
-             "MATLAB compatibility module instead", DeprecationWarning)
+             "MATLAB compatibility module instead", FutureWarning)
         return self.frequency_response(omega)
 
     def poles(self):
@@ -1578,13 +1578,13 @@ def tf(*args, **kwargs):
 
     Parameters
     ----------
-    sys: LTI (StateSpace or TransferFunction)
+    sys : LTI (StateSpace or TransferFunction)
         A linear system
-    num: array_like, or list of list of array_like
+    num : array_like, or list of list of array_like
         Polynomial coefficients of the numerator
-    den: array_like, or list of list of array_like
+    den : array_like, or list of list of array_like
         Polynomial coefficients of the denominator
-    display_format: None, 'poly' or 'zpk'
+    display_format : None, 'poly' or 'zpk'
         Set the display format used in printing the TransferFunction object.
         Default behavior is polynomial display and can be changed by
         changing config.defaults['xferfcn.display_format']..
@@ -1677,7 +1677,7 @@ def tf(*args, **kwargs):
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
 
-def zpk(zeros, poles, gain, *args, **kwargs):
+def zpk(zeros, poles, gain, dt=None, **kwargs):
     """zpk(zeros, poles, gain[, dt])
 
     Create a transfer function from zeros, poles, gain.
@@ -1711,7 +1711,7 @@ def zpk(zeros, poles, gain, *args, **kwargs):
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
-    display_format: None, 'poly' or 'zpk'
+    display_format : None, 'poly' or 'zpk', optional
         Set the display format used in printing the TransferFunction object.
         Default behavior is polynomial display and can be changed by
         changing config.defaults['xferfcn.display_format'].
@@ -1732,7 +1732,7 @@ def zpk(zeros, poles, gain, *args, **kwargs):
 
     """
     num, den = zpk2tf(zeros, poles, gain)
-    return TransferFunction(num, den, *args, **kwargs)
+    return TransferFunction(num, den, dt=dt, **kwargs)
 
 
 def ss2tf(*args, **kwargs):
@@ -1755,16 +1755,18 @@ def ss2tf(*args, **kwargs):
 
     Parameters
     ----------
-    sys: StateSpace
+    sys : StateSpace
         A linear system
-    A: array_like or string
+    A : array_like or string
         System matrix
-    B: array_like or string
+    B : array_like or string
         Control matrix
-    C: array_like or string
+    C : array_like or string
         Output matrix
-    D: array_like or string
+    D : array_like or string
         Feedthrough matrix
+    **kwargs : keyword arguments
+        Additional arguments passed to :func:`tf` (e.g., signal names)
 
     Returns
     -------
@@ -1839,7 +1841,7 @@ def tfdata(sys):
 
     Parameters
     ----------
-    sys: LTI (StateSpace, or TransferFunction)
+    sys : LTI (StateSpace, or TransferFunction)
         LTI system whose data will be returned
 
     Returns
@@ -1859,7 +1861,7 @@ def _clean_part(data):
 
     Parameters
     ----------
-    data: numerator or denominator of a transfer function.
+    data : numerator or denominator of a transfer function.
 
     Returns
     -------

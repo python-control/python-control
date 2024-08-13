@@ -82,7 +82,7 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
     Other Parameters
     ----------------
     inputs : int, list of str or None, optional
-        Description of the system inputs.  If not specified, the origional
+        Description of the system inputs.  If not specified, the original
         system inputs are used.  See :class:`InputOutputSystem` for more
         information.
     outputs : int, list of str or None, optional

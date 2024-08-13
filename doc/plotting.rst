@@ -654,11 +654,13 @@ Utility functions
 -----------------
 
 These additional functions can be used to manipulate response data or
-returned values from plotting routines.
+carry out other operations in creating control plots.
+
 
 .. autosummary::
    :toctree: generated/
 
+   ~control.box_grid
    ~control.combine_time_responses
    ~control.pole_zero_subplots
    ~control.reset_rcParams

@@ -207,11 +207,12 @@ def suptitle(
         title, fig=None, frame='axes', **kwargs):
     """Add a centered title to a figure.
 
-    This function is deprecated.  Use :func:`ControlPlot.set_plot_title`.
+    .. deprecated:: 0.10.1
+        Use :func:`ControlPlot.set_plot_title`.
 
     """
     warnings.warn(
-        "suptitle is deprecated; use cplt.set_plot_title", FutureWarning)
+        "suptitle() is deprecated; use cplt.set_plot_title()", FutureWarning)
     _update_plot_title(
         title, fig=fig, frame=frame, use_existing=False, **kwargs)
 
@@ -219,6 +220,10 @@ def suptitle(
 # Create vectorized function to find axes from lines
 def get_plot_axes(line_array):
     """Get a list of axes from an array of lines.
+
+    .. deprecated:: 0.10.1
+        This function will be removed in a future version of python-control.
+        Use `cplt.axes` to obtain axes for an instance of :class:`ControlPlot`.
 
     This function can be used to return the set of axes corresponding
     to the line array that is returned by `time_response_plot`.  This
@@ -242,7 +247,8 @@ def get_plot_axes(line_array):
     Only the first element of each array entry is used to determine the axes.
 
     """
-    warnings.warn("get_plot_axes is deprecated; use cplt.axes", FutureWarning)
+    warnings.warn(
+        "get_plot_axes() is deprecated; use cplt.axes()", FutureWarning)
     _get_axes = np.vectorize(lambda lines: lines[0].axes)
     if isinstance(line_array, ControlPlot):
         return _get_axes(line_array.lines)
@@ -268,6 +274,9 @@ def pole_zero_subplots(
         Scaling to apply to the subplots.
     fig : :class:`matplotlib.figure.Figure`
         Figure to use for creating subplots.
+    rcParams : dict
+        Override the default parameters used for generating plots.
+        Default is set up config.default['ctrlplot.rcParams'].
 
     Returns
     -------

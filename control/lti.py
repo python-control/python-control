@@ -210,12 +210,12 @@ def poles(sys):
 
     Parameters
     ----------
-    sys: StateSpace or TransferFunction
+    sys : StateSpace or TransferFunction
         Linear system
 
     Returns
     -------
-    poles: ndarray
+    poles : ndarray
         Array that contains the system's poles.
 
     See Also
@@ -235,7 +235,7 @@ def zeros(sys):
 
     Parameters
     ----------
-    sys: StateSpace or TransferFunction
+    sys : StateSpace or TransferFunction
         Linear system
 
     Returns
@@ -330,7 +330,7 @@ def evalfr(sys, x, squeeze=None):
 
     Parameters
     ----------
-    sys: StateSpace or TransferFunction
+    sys : StateSpace or TransferFunction
         Linear system
     x : complex scalar or 1D array_like
         Complex frequency(s)
@@ -514,13 +514,24 @@ def frequency_response(
 
 # Alternative name (legacy)
 def freqresp(sys, omega):
-    """Legacy version of frequency_response."""
-    warn("freqresp is deprecated; use frequency_response", DeprecationWarning)
+    """Legacy version of frequency_response.
+
+    .. deprecated:: 0.9.0
+        This function will be removed in a future version of python-control.
+        Use `frequency_response` instead.
+
+    """
+    warn("freqresp() is deprecated; use frequency_response()", FutureWarning)
     return frequency_response(sys, omega)
 
 
 def dcgain(sys):
     """Return the zero-frequency (or DC) gain of the given system.
+
+    Parameters
+    ----------
+    sys : LTI
+        System for which the zero-frequency gain is computed.
 
     Returns
     -------
@@ -544,11 +555,11 @@ def bandwidth(sys, dbdrop=-3):
 
     Parameters
     ----------
-    sys: StateSpace or TransferFunction
-        Linear system
+    sys : StateSpace or TransferFunction
+        Linear system for which the bandwidth should be computed.
     dbdrop : float, optional
         By how much the gain drop in dB (default = -3) that defines the
-        bandwidth. Should be a negative scalar
+        bandwidth. Should be a negative scalar.
 
     Returns
     -------
