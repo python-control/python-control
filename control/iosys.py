@@ -56,7 +56,7 @@ class InputOutputSystem(object):
         Description of the system inputs.  This can be given as an integer
         count or a list of strings that name the individual signals.  If an
         integer count is specified, the names of the signal will be of the
-        form `s[i]` (where `s` is given by the `input_prefix` parameter and
+        form 's[i]' (where 's' is given by the `input_prefix` parameter and
         has default value 'u').  If this parameter is not given or given as
         `None`, the relevant quantity will be determined when possible
         based on other information provided to functions using the system.

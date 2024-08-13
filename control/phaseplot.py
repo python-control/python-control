@@ -1014,7 +1014,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     """(legacy) Phase plot for 2D dynamical systems.
 
     .. deprecated:: 0.10.1
-        This function is deprecated; use `phase_plane_plot` instead.
+        This function is deprecated; use :func:`phase_plane_plot` instead.
 
     Produces a vector field or stream line plot for a planar system.  This
     function has been replaced by the :func:`~control.phase_plane_map` and

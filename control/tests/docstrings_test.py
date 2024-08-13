@@ -147,9 +147,10 @@ def test_parameter_docs(module, prefix):
                         continue
 
                     # Too complicated to check
-                    if f"*{argname}" not in docstring and verbose:
-                        print(f"      {name} has positional arguments; "
-                              "check manually")
+                    if f"*{argname}" not in docstring:
+                        if verbose:
+                            print(f"      {name} has positional arguments; "
+                                  "check manually")
                         warnings.warn(
                             f"{name} {argname} has positional arguments; "
                             "docstring not checked")

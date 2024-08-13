@@ -66,7 +66,7 @@ class NonlinearIOSystem(InputOutputSystem):
         Description of the system inputs.  This can be given as an integer
         count or as a list of strings that name the individual signals.
         If an integer count is specified, the names of the signal will be
-        of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
+        of the form 's[i]' (where 's' is one of 'u', 'y', or 'x').  If
         this parameter is not given or given as `None`, the relevant
         quantity will be determined when possible based on other
         information provided to functions using the system.
@@ -1243,7 +1243,7 @@ def nlsys(
         Description of the system inputs.  This can be given as an integer
         count or as a list of strings that name the individual signals.
         If an integer count is specified, the names of the signal will be
-        of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
+        of the form 's[i]' (where 's' is one of 'u', 'y', or 'x').  If
         this parameter is not given or given as `None`, the relevant
         quantity will be determined when possible based on other
         information provided to functions using the system.
@@ -1969,7 +1969,7 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
     Other Parameters
     ----------------
     inputs : int, list of str or None, optional
-        Description of the system inputs.  If not specified, the origional
+        Description of the system inputs.  If not specified, the original
         system inputs are used.  See :class:`InputOutputSystem` for more
         information.
     outputs : int, list of str or None, optional
@@ -2101,7 +2101,7 @@ def interconnect(
         Description of the system inputs.  This can be given as an integer
         count or as a list of strings that name the individual signals.  If an
         integer count is specified, the names of the signal will be of the
-        form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If this parameter
+        form 's[i]' (where 's' is one of 'u', 'y', or 'x').  If this parameter
         is not given or given as `None`, the relevant quantity will be
         determined when possible based on other information provided to
         functions using the system.

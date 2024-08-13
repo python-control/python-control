@@ -171,8 +171,6 @@ def bode_plot(
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'center right',
         with no legend for a single response.  Use False to suppress legend.
-    magnitude_label : str, optional
-        Label to use for magnitude axis.  Defaults to "Magnitude".
     margins_method : str, optional
         Method to use in computing margins (see :func:`stability_margins`).
     omega_limits : array_like of two values
@@ -187,8 +185,6 @@ def bode_plot(
     overlay_inputs, overlay_outputs : bool, optional
         If set to True, combine input and/or output signals onto a single
         plot and use line colors, labels, and a legend to distinguish them.
-    phase_label : str, optional
-        Label to use for phase axis.  Defaults to "Phase [rad]".
     plot : bool, optional
         (legacy) If given, `bode_plot` returns the legacy return values
         of magnitude, phase, and frequency.  If False, just return the
@@ -211,8 +207,8 @@ def bode_plot(
         Set the title of the plot.  Defaults to plot type and system name(s).
     title_frame : str, optional
         Set the frame of reference used to center the plot title. If set to
-        'axes' (default), the horizontal position of the title will
-        centered relative to the axes.  If set to `figure`, it will be
+        'axes' (default), the horizontal position of the title will be
+        centered relative to the axes.  If set to 'figure', it will be
         centered with respect to the figure (faster execution).
     wrap_phase : bool or float
         If wrap_phase is `False` (default), then the phase will be unwrapped
@@ -1658,7 +1654,7 @@ def nyquist_plot(
     title_frame : str, optional
         Set the frame of reference used to center the plot title. If set to
         'axes' (default), the horizontal position of the title will
-        centered relative to the axes.  If set to `figure`, it will be
+        centered relative to the axes.  If set to 'figure', it will be
         centered with respect to the figure (faster execution).
     warn_nyquist : bool, optional
         If set to 'False', turn off warnings about frequencies above Nyquist.
@@ -2386,7 +2382,7 @@ def singular_values_plot(
         the values with no plot.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set up config.default['freqplot.rcParams'].
+        Default is set up config.default['ctrlplot.rcParams'].
     show_legend : bool, optional
         Force legend to be shown if ``True`` or hidden if ``False``.  If
         ``None``, then show legend when there is more than one line on an
@@ -2396,7 +2392,7 @@ def singular_values_plot(
     title_frame : str, optional
         Set the frame of reference used to center the plot title. If set to
         'axes' (default), the horizontal position of the title will
-        centered relative to the axes.  If set to `figure`, it will be
+        centered relative to the axes.  If set to 'figure', it will be
         centered with respect to the figure (faster execution).
 
     See Also

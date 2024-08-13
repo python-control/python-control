@@ -1919,15 +1919,12 @@ def rss(states=1, outputs=1, inputs=1, strictly_proper=False, **kwargs):
 
     Parameters
     ----------
-    states : int, list of str, or None
-        Description of the system states.  Same format as `inputs`.
-    outputs : int, list of str, or None
-        Description of the system outputs. This can be given as an integer
-        count or as a list of strings that name the individual signals.  If an
-        integer count is specified, the names of the signal will be of the
-        form `s[i]` (where `s` is one of `u`, `y`, or `x`).
-    inputs : int, list of str, or None
-        Description of the system inputs. Same format as `outputs`.
+    states, outputs, inputs : int, list of str, or None
+        Description of the system states, outputs, and inputs. This can be
+        given as an integer count or as a list of strings that name the
+        individual signals.  If an integer count is specified, the names of
+        the signal will be of the form 's[i]' (where 's' is one of 'x',
+        'y', or 'u').
     strictly_proper : bool, optional
         If set to 'True', returns a proper system (no direct term).
     dt : None, True or float, optional

@@ -223,7 +223,7 @@ def get_plot_axes(line_array):
 
     .. deprecated:: 0.10.1
         This function will be removed in a future version of python-control.
-        Use `cplt.axes` to obtain axes for a control plot `cplt`.
+        Use `cplt.axes` to obtain axes for an instance of :class:`ControlPlot`.
 
     This function can be used to return the set of axes corresponding
     to the line array that is returned by `time_response_plot`.  This
@@ -276,7 +276,7 @@ def pole_zero_subplots(
         Figure to use for creating subplots.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set up config.default['freqplot.rcParams'].
+        Default is set up config.default['ctrlplot.rcParams'].
 
     Returns
     -------
