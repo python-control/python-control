@@ -25,22 +25,22 @@ function_skiplist = [
 
 # Checksums to use for checking whether a docstring has changed
 function_docstring_hash = {
-    control.append:                     'be014503250ef73253a5372a0d082566',
-    control.describing_function_plot:   '726a10eef8f2b50ef46a203653f398c7',
-    control.dlqe:                       '9f637afdf36c7e17b7524f9a736772b6',
-    control.dlqr:                       'a9265c5ed66388661729edb2379fd9a1',
-    control.lqe:                        'd265b0daf0369569e4b755fa35db7a54',
-    control.lqr:                        '0b76455c2b873abcbcd959e069d9d241',
-    control.frd:                        '7ac3076368f11e407653cd1046bbc98d',
-    control.margin:                     '8ee27989f1ca521ce9affe5900605b75',
-    control.parallel:                   'daa3b8708200a364d9b5536b6cbb5c91',
-    control.series:                     '7241169911b641c43f9456bd12168271',
-    control.ss:                         'aa77e816305850502c21bc40ce796f40',
-    control.ss2tf:                      '8d663d474ade2950dd22ec86fe3a53b7',
-    control.tf:                         '4e8d21e71312d83ba2e15b9c095fd962',
-    control.tf2ss:                      '0e5da4f3ed4aaf000f3b454c466f9013',
-    control.markov:                     '47f3b856ec47df84b2af2c165abaabfc',
-    control.gangof4:                    '5e4b4cf815ef76d6c73939070bcd1489',
+    control.append:                     '48548c4c4e0083312b3ea9e56174b0b5',
+    control.describing_function_plot:   '95f894706b1d3eeb3b854934596af09f',
+    control.dlqe:                       '9db995ed95c2214ce97074b0616a3191',
+    control.dlqr:                       '896cfa651dbbd80e417635904d13c9d6',
+    control.lqe:                        '567bf657538935173f2e50700ba87168',
+    control.lqr:                        'a3e0a85f781fc9c0f69a4b7da4f0bd22',
+    control.frd:                        '099464bf2d14f25a8769ef951adf658b',
+    control.margin:                     'f02b3034f5f1d44ce26f916cc3e51600',
+    control.parallel:                   '025c5195a34c57392223374b6244a8c4',
+    control.series:                     '9aede1459667738f05cf4fc46603a4f6',
+    control.ss:                         '1b9cfad5dbdf2f474cfdeadf5cb1ad80',
+    control.ss2tf:                      '48ff25d22d28e7b396e686dd5eb58831',
+    control.tf:                         '53a13f4a7f75a31c81800e10c88730ef',
+    control.tf2ss:                      '086a3692659b7321c2af126f79f4bc11',
+    control.markov:                     '753309de348132ef238e78ac756412c1',
+    control.gangof4:                    '0e52eb6cf7ce024f9a41f3ae3ebf04f7',
 }
 
 # List of keywords that we can skip testing (special cases)
@@ -138,8 +138,12 @@ def test_parameter_docs(module, prefix):
                     if obj in function_docstring_hash:
                         import hashlib
                         hash = hashlib.md5(
-                            docstring.encode('utf-8')).hexdigest()
-                        assert function_docstring_hash[obj] == hash
+                            (docstring + source).encode('utf-8')).hexdigest()
+                        if function_docstring_hash[obj] != hash:
+                            pytest.fail(
+                                f"source/docstring for {name}() modified; "
+                                f"recheck docstring and update hash to "
+                                f"{hash=}")
                         continue
 
                     # Too complicated to check
