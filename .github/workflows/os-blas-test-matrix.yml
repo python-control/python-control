@@ -78,7 +78,7 @@ jobs:
               echo "bla_vendor option ${{ matrix.bla_vendor }} not supported"
               exit 1 ;;
           esac
-          echo "FC=gfortran-11" >> $GITHUB_ENV
+          echo "FC=gfortran-14" >> $GITHUB_ENV
       - name: Build wheel
         env:
           BLA_VENDOR: ${{ matrix.bla_vendor }}
