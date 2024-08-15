@@ -334,7 +334,7 @@ def reset_rcParams():
 
 def _process_ax_keyword(
         axs, shape=(1, 1), rcParams=None, squeeze=False, clear_text=False,
-        create_axes=True):
+        create_axes=True, sharex=False, sharey=False):
     """Process ax keyword to plotting commands.
 
     This function processes the `ax` keyword to plotting commands.  If no
@@ -364,10 +364,12 @@ def _process_ax_keyword(
             with plt.rc_context(rcParams):
                 if len(axs) != 0 and create_axes:
                     # Create a new figure
-                    fig, axs = plt.subplots(*shape, squeeze=False)
+                    fig, axs = plt.subplots(
+                        *shape, sharex=sharex, sharey=sharey, squeeze=False)
                 elif create_axes:
                     # Create new axes on (empty) figure
-                    axs = fig.subplots(*shape, squeeze=False)
+                    axs = fig.subplots(
+                        *shape, sharex=sharex, sharey=sharey, squeeze=False)
                 else:
                     # Create an empty array and let user create axes
                     axs = np.full(shape, None)

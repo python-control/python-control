@@ -2,6 +2,7 @@
 # RMM, 27 Jun 2024
 
 import inspect
+import itertools
 import warnings
 
 import matplotlib.pyplot as plt
@@ -575,6 +576,45 @@ def test_plot_title_processing(resp_fcn, plot_fcn):
     # Make sure that docstring documents title
     if plot_fcn not in legacy_plot_fcns:
         assert "title : str, optional" in plot_fcn.__doc__
+
+
+@pytest.mark.parametrize("plot_fcn", multiaxes_plot_fcns)
+@pytest.mark.usefixtures('mplcleanup')
+def test_tickmark_label_processing(plot_fcn):
+    # Generate the response that we will use for plotting
+    top_row, bot_row = 0, -1
+    match plot_fcn:
+        case ct.bode_plot:
+            resp = ct.frequency_response(ct.rss(4, 2, 2))
+            top_row = 1
+        case ct.time_response_plot:
+            resp = ct.step_response(ct.rss(4, 2, 2))
+        case ct.gangof4_plot:
+            resp = ct.gangof4_response(ct.rss(4, 1, 1), ct.rss(3, 1, 1))
+        case _:
+            pytest.fail("unknown plot_fcn")
+
+    # Turn off axis sharing => all axes have ticklabels
+    cplt = resp.plot(sharex=False, sharey=False)
+    for i, j in itertools.product(
+            range(cplt.axes.shape[0]), range(cplt.axes.shape[1])):
+        assert len(cplt.axes[i, j].get_xticklabels()) > 0
+        assert len(cplt.axes[i, j].get_yticklabels()) > 0
+    plt.clf()
+
+    # Turn on axis sharing => only outer axes have ticklabels
+    cplt = resp.plot(sharex=True, sharey=True)
+    for i, j in itertools.product(
+            range(cplt.axes.shape[0]), range(cplt.axes.shape[1])):
+        if i < cplt.axes.shape[0] - 1:
+            assert len(cplt.axes[i, j].get_xticklabels()) == 0
+        else:
+            assert len(cplt.axes[i, j].get_xticklabels()) > 0
+
+        if j > 0:
+            assert len(cplt.axes[i, j].get_yticklabels()) == 0
+        else:
+            assert len(cplt.axes[i, j].get_yticklabels()) > 0
 
 
 @pytest.mark.parametrize("resp_fcn, plot_fcn", resp_plot_fcns)

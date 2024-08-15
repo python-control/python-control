@@ -536,6 +536,19 @@ various ways.  The following general rules apply:
   The default values for style parameters for control plots can be restored
   using :func:`~control.reset_rcParams`.
 
+* For multi-input, multi-output time and frequency domain plots, the
+  `sharex` and `sharey` keyword arguments can be used to determine whether
+  and how axis limits are shared between the individual subplots.  Setting
+  the keyword to 'row' will share the axes limits across all subplots in a
+  row, 'col' will share across all subplots in a column, 'all' will share
+  across all subplots in the figure, and `False` will allow independent
+  limits for each subplot.
+
+  For Bode plots, the `share_magnitude` and `share_phase` keyword arguments
+  can be used to independently control axis limit sharing for the magnitude
+  and phase portions of the plot, and `share_frequency` can be used instead
+  of `sharex`.
+
 * The ``title`` keyword can be used to override the automatic creation of
   the plot title.  The default title is a string of the form "<Type> plot
   for <syslist>" where <syslist> is a list of the sys names contained in
