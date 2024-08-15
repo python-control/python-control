@@ -233,7 +233,7 @@ def bode_plot(
 
     Notes
     -----
-    1. Starting with python-control version 0.10, `bode_plot`returns a
+    1. Starting with python-control version 0.10, `bode_plot` returns a
        :class:`ControlPlot` object instead of magnitude, phase, and
        frequency. To recover the old behavior, call `bode_plot` with
        `plot=True`, which will force the legacy values (mag, phase, omega)
