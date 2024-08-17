@@ -215,8 +215,8 @@ plot, use `plot_type='nichols'`::
 
 .. image:: freqplot-siso_nichols-default.png
 
-Another response function that can be used to generate Bode plots is
-the :func:`~control.gangof4` function, which computes the four primary
+Another response function that can be used to generate Bode plots is the
+:func:`~control.gangof4_response` function, which computes the four primary
 sensitivity functions for a feedback control system in standard form::
 
   proc = ct.tf([1], [1, 1, 1], name="process")
