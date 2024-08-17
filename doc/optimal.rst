@@ -221,7 +221,7 @@ state and/or input, either along the trajectory and at the terminal time.
 The optimal control module operates by converting the optimal control
 problem into a standard optimization problem that can be solved by
 :func:`scipy.optimize.minimize`.  The optimal control problem can be solved
-by using the :func:`~control.obc.solve_ocp` function::
+by using the :func:`~control.optimal.solve_ocp` function::
 
   res = obc.solve_ocp(sys, timepts, X0, cost, constraints)
 
@@ -467,6 +467,10 @@ formulations.
 
 Module classes and functions
 ============================
+
+The following classes and functions are defined in the
+``optimal`` module:
+
 .. autosummary::
    :toctree: generated/
    :template: custom-class-template.rst

@@ -25,11 +25,11 @@ a :class:`~control.StateSpace` linear system.  Use the
   ss_sys = ct.linearize(io_sys, xeq, ueq)
 
 Input/output systems are automatically created for state space LTI systems
-when using the :func:`ss` function.  Nonlinear input/output systems can be
-created using the :func:`~control.nlsys` function, which requires
-the definition of an update function (for the right hand side of the
-differential or different equation) and an output function (computes the
-outputs from the state)::
+when using the :func:`~control.ss` function.  Nonlinear input/output
+systems can be created using the :func:`~control.nlsys` function, which
+requires the definition of an update function (for the right hand side of
+the differential or different equation) and an output function (computes
+the outputs from the state)::
 
   io_sys = ct.nlsys(updfcn, outfcn, inputs=M, outputs=P, states=N)
 
@@ -434,8 +434,8 @@ of an individual system are used in a given specification::
     inplist=['sum.r', 'P.v'], outlist=['P', 'C.u']
   )
 
-And finally, since we have named the signals throughout the system in
-a consistent way, we could let :func:`ct.interconnect` do all of the
+And finally, since we have named the signals throughout the system in a
+consistent way, we could let :func:`~control.interconnect` do all of the
 work::
 
   clsys5 = ct.interconnect(
