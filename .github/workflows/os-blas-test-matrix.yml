@@ -91,7 +91,7 @@ jobs:
           mkdir -p ${wheeldir}
           cp ./slycot*.whl ${wheeldir}/
       - name: Save wheel
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: slycot-wheels
           path: slycot-wheels
@@ -142,7 +142,7 @@ jobs:
           done
           python -m conda_index ./slycot-conda-pkgs
       - name: Save to local conda pkg channel
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: slycot-conda-pkgs
           path: slycot-conda-pkgs
@@ -159,7 +159,7 @@ jobs:
       - name: Checkout python-control
         uses: actions/checkout@v3
       - name: Download wheels (if any)
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: slycot-wheels
           path: slycot-wheels
@@ -178,7 +178,7 @@ jobs:
       - name: Checkout python-control
         uses: actions/checkout@v3
       - name: Download conda packages
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: slycot-conda-pkgs
           path: slycot-conda-pkgs
@@ -238,7 +238,7 @@ jobs:
               exit 1 ;;
           esac
       - name: Download wheels
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: slycot-wheels
           path: slycot-wheels
@@ -290,7 +290,7 @@ jobs:
           channel-priority: strict
           auto-activate-base: false
       - name: Download conda packages
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: slycot-conda-pkgs
           path: slycot-conda-pkgs
