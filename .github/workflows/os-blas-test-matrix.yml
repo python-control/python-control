@@ -9,7 +9,7 @@ on:
       - .github/scripts/set-conda-pip-matrix.py
       - .github/conda-env/build-env.yml
       - .github/conda-env/test-env.yml
-      
+
 jobs:
   build-pip:
     name: Build pip Py${{ matrix.python }}, ${{ matrix.os }}, ${{ matrix.bla_vendor}} BLA_VENDOR
@@ -93,8 +93,9 @@ jobs:
       - name: Save wheel
         uses: actions/upload-artifact@v4
         with:
-          name: slycot-wheels
+          name: slycot-wheels-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.bla_vendor }}
           path: slycot-wheels
+          retention-days: 5
 
 
   build-conda:
@@ -144,8 +145,9 @@ jobs:
       - name: Save to local conda pkg channel
         uses: actions/upload-artifact@v4
         with:
-          name: slycot-conda-pkgs
+          name: slycot-conda-pkgs-${{ matrix.os }}-${{ matrix.python }}
           path: slycot-conda-pkgs
+          retention-days: 5
 
 
   create-wheel-test-matrix:
@@ -156,6 +158,11 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
+      - name: Merge artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: slycot-wheels
+          pattern: slycot-wheels-*
       - name: Checkout python-control
         uses: actions/checkout@v3
       - name: Download wheels (if any)
@@ -175,6 +182,11 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
+      - name: Merge artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: slycot-conda-pkgs
+          pattern: slycot-conda-pkgs-*
       - name: Checkout python-control
         uses: actions/checkout@v3
       - name: Download conda packages
