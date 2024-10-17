@@ -667,21 +667,21 @@ def markov(*args, m=None, transpose=False, dt=None, truncate=False):
 
     # Set up the full problem
     # Create matrix of (shifted) inputs
-    UUT = np.zeros((p*m,(l)))
+    UUT = np.zeros((p*m, l))
     for i in range(m):
         # Shift previous column down and keep zeros at the top
-        UUT[i*p:(i+1)*p,i:] = Umat[:,:l-i]
+        UUT[i*p:(i+1)*p, i:] = Umat[:, :l-i]
 
     # Truncate first t=0 or t=m time steps, transpose the problem for lsq
-    YY = Ymat[:,t:].T
-    UU = UUT[:,t:].T
+    YY = Ymat[:, t:].T
+    UU = UUT[:, t:].T
     
     # Solve for the Markov parameters from  YY = UU @ H.T
     HT, _, _, _ = np.linalg.lstsq(UU, YY, rcond=None)
     H = HT.T/dt # scaling
 
-    H = H.reshape(q,m,p) # output, time*input -> output, time, input
-    H = H.transpose(0,2,1) # output, input, time
+    H = H.reshape(q, m, p) # output, time*input -> output, time, input
+    H = H.transpose(0, 2, 1) # output, input, time
 
     # for siso return a 1D array instead of a 3D array
     if q == 1 and p == 1:
