@@ -377,14 +377,14 @@ def minimal_realization(sys, tol=None, verbose=True):
 def _block_hankel(Y, m, n):
     """Create a block Hankel matrix from impulse response."""
     q, p, _ = Y.shape
-    YY = Y.transpose(0,2,1) # transpose for reshape
+    YY = Y.transpose(0, 2, 1) # transpose for reshape
     
-    H = np.zeros((q*m,p*n))
+    H = np.zeros((q*m, p*n))
     
     for r in range(m):
         # shift and add row to Hankel matrix
-        new_row = YY[:,r:r+n,:]
-        H[q*r:q*(r+1),:] = new_row.reshape((q,p*n))
+        new_row = YY[:, r:r+n, :]
+        H[q*r:q*(r+1), :] = new_row.reshape((q, p*n))
             
     return H
 
@@ -480,22 +480,22 @@ def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
     if (l-1) < m+n:
         raise ValueError("not enough data for requested number of parameters")
     
-    H = _block_hankel(YY[:,:,1:], m, n+1) # Hankel matrix (q*m, p*(n+1))
-    Hf = H[:,:-p] # first p*n columns of H
-    Hl = H[:,p:] # last p*n columns of H
+    H = _block_hankel(YY[:, :, 1:], m, n+1) # Hankel matrix (q*m, p*(n+1))
+    Hf = H[:, :-p] # first p*n columns of H
+    Hl = H[:, p:] # last p*n columns of H
     
     U,S,Vh = np.linalg.svd(Hf, True)
-    Ur =U[:,0:r]
-    Vhr =Vh[0:r,:]
+    Ur =U[:, 0:r]
+    Vhr =Vh[0:r, :]
 
     # balanced realizations
     Sigma_inv = np.diag(1./np.sqrt(S[0:r]))
     Ar = Sigma_inv @ Ur.T @ Hl @ Vhr.T @ Sigma_inv
-    Br = Sigma_inv @ Ur.T @ Hf[:,0:p]*dt # dt scaling for unit-area impulse
-    Cr = Hf[0:q,:] @ Vhr.T @ Sigma_inv
-    Dr = YY[:,:,0]
+    Br = Sigma_inv @ Ur.T @ Hf[:, 0:p]*dt # dt scaling for unit-area impulse
+    Cr = Hf[0:q, :] @ Vhr.T @ Sigma_inv
+    Dr = YY[:, :, 0]
 
-    return StateSpace(Ar,Br,Cr,Dr,dt), S
+    return StateSpace(Ar, Br, Cr, Dr, dt), S
 
 
 def markov(*args, m=None, transpose=False, dt=None, truncate=False):
