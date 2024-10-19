@@ -39,7 +39,7 @@ function_docstring_hash = {
     control.ss2tf:                      '48ff25d22d28e7b396e686dd5eb58831',
     control.tf:                         '53a13f4a7f75a31c81800e10c88730ef',
     control.tf2ss:                      '086a3692659b7321c2af126f79f4bc11',
-    control.markov:                     '753309de348132ef238e78ac756412c1',
+    control.markov:                     'eda7c4635bbb863ae6659e574285d356',
     control.gangof4:                    '0e52eb6cf7ce024f9a41f3ae3ebf04f7',
 }
 
