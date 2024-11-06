@@ -13,7 +13,7 @@
 :class:`~control.NonlinearIOSystem` class that represents (possibly nonlinear)
 input/output systems.  The :class:`~control.NonlinearIOSystem` class is a
 general class that defines any continuous or discrete time dynamical system.
-Input/output systems can be simulated and also used to compute equilibrium
+Input/output systems can be simulated and also used to compute operating
 points and linearizations.
 
 """
@@ -1663,69 +1663,98 @@ def input_output_response(
         success=soln.success, message=message)
 
 
-def find_eqpt(sys, x0, u0=None, y0=None, t=0, params=None,
-              iu=None, iy=None, ix=None, idx=None, dx0=None,
-              return_y=False, return_result=False):
-    """Find the equilibrium point for an input/output system.
+def find_operating_point(
+        sys, x0, u0=None, y0=None, t=0, params=None,
+        iu=None, iy=None, ix=None, idx=None, dx0=None, root_method=None,
+        root_kwargs=None, return_y=False, return_result=False):
+    """Find an operating point for an input/output system.
 
-    Returns the value of an equilibrium point given the initial state and
-    either input value or desired output value for the equilibrium point.
+    An operating point for a nonlinear system is a state `xop` and input
+    `uop` around which a nonlinear system operates.  This point is most
+    commonly an equilibrium point for the system, but in some cases a
+    non-equilibrium operating point can be used.
+
+    This function attempts to find an operating point given a specification
+    for the desired inputs, outputs, states, or state updates of the system.
+
+    In its simplest form, `find_operating_point` finds an equilibrium point
+    given either the desired input or desired output:
+
+        xeq, ueq = find_operating_point(sys, x0, u0)
+        xeq, ueq = find_operating_point(sys, x0, u0, y0)
+
+    The first form finds an equilibrium point for a given input u0 based on
+    an initial guess x0.  The second form fixes the desired output values
+    and uses x0 and u0 as an initial guess to find the equilibrium point.
+    If no equilibrium point can be found, the function returns the
+    operating point that minimizes the state update (state derivative for
+    continuous time systems, state difference for discrete time systems).
+
+    More complex operating points can be found by specifying which states,
+    inputs, or outputs should be used in computing the operating point, as
+    well as desired values of the states, inputs, outputs, or state
+    updates.
 
     Parameters
     ----------
     sys : NonlinearIOSystem
-        I/O system for which the equilibrium point is sought.
+        I/O system for which the operating point is sought.
     x0 : list of initial state values
-        Initial guess for the value of the state near the equilibrium point.
+        Initial guess for the value of the state near the operating point.
     u0 : list of input values, optional
-        If `y0` is not specified, sets the equilibrium value of the input.  If
-        `y0` is given, provides an initial guess for the value of the input.
-        Can be omitted if the system does not have any inputs.
+        If `y0` is not specified, sets the value of the input.  If `y0` is
+        given, provides an initial guess for the value of the input.  Can
+        be omitted if the system does not have any inputs.
     y0 : list of output values, optional
         If specified, sets the desired values of the outputs at the
-        equilibrium point.
+        operating point.
     t : float, optional
-        Evaluation time, for time-varying systems
+        Evaluation time, for time-varying systems.
     params : dict, optional
         Parameter values for the system.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
     iu : list of input indices, optional
         If specified, only the inputs with the given indices will be fixed at
-        the specified values in solving for an equilibrium point.  All other
+        the specified values in solving for an operating point.  All other
         inputs will be varied.  Input indices can be listed in any order.
     iy : list of output indices, optional
         If specified, only the outputs with the given indices will be fixed at
-        the specified values in solving for an equilibrium point.  All other
+        the specified values in solving for an operating point.  All other
         outputs will be varied.  Output indices can be listed in any order.
     ix : list of state indices, optional
         If specified, states with the given indices will be fixed at the
-        specified values in solving for an equilibrium point.  All other
+        specified values in solving for an operating point.  All other
         states will be varied.  State indices can be listed in any order.
     dx0 : list of update values, optional
         If specified, the value of update map must match the listed value
-        instead of the default value of 0.
+        instead of the default value for an equilibrium point.
     idx : list of state indices, optional
         If specified, state updates with the given indices will have their
         update maps fixed at the values given in `dx0`.  All other update
-        values will be ignored in solving for an equilibrium point.  State
+        values will be ignored in solving for an operating point.  State
         indices can be listed in any order.  By default, all updates will be
-        fixed at `dx0` in searching for an equilibrium point.
+        fixed at `dx0` in searching for an operating point.
+    root_method : str, optonal
+        Method to find the operating point.  If specified, this parameter
+        is passed to the :func:`scipy.optimize.root` function.
+    root_kwargs : dict, optional
+        Additional keyword arguments to pass :func:`scipy.optimize.root`.
     return_y : bool, optional
-        If True, return the value of output at the equilibrium point.
+        If True, return the value of output at the operating point.
     return_result : bool, optional
         If True, return the `result` option from the
-        :func:`scipy.optimize.root` function used to compute the equilibrium
-        point.
+        :func:`scipy.optimize.root` function used to compute the
+        operating point.
 
     Returns
     -------
-    xeq : array of states
+    xop : array of states
         Value of the states at the equilibrium point, or `None` if no
         equilibrium point was found and `return_result` was False.
-    ueq : array of input values
+    uop : array of input values
         Value of the inputs at the equilibrium point, or `None` if no
         equilibrium point was found and `return_result` was False.
-    yeq : array of output values, optional
+    yop : array of output values, optional
         If `return_y` is True, returns the value of the outputs at the
         equilibrium point, or `None` if no equilibrium point was found and
         `return_result` was False.
@@ -1743,6 +1772,11 @@ def find_eqpt(sys, x0, u0=None, y0=None, t=0, params=None,
 
     """
     from scipy.optimize import root
+
+    # Process arguments for the root function
+    root_kwargs = dict() if root_kwargs is None else root_kwargs
+    if root_method:
+        root_kwargs['method'] = root_method
 
     # Figure out the number of states, inputs, and outputs
     x0, nstates = _process_vector_argument(x0, "x0", sys.nstates)
@@ -1769,7 +1803,7 @@ def find_eqpt(sys, x0, u0=None, y0=None, t=0, params=None,
             else:
                 def state_rhs(z): return sys._rhs(t, z, u0)
 
-            result = root(state_rhs, x0)
+            result = root(state_rhs, x0, **root_kwargs)
             z = (result.x, u0, sys._out(t, result.x, u0))
 
         else:
@@ -1786,9 +1820,10 @@ def find_eqpt(sys, x0, u0=None, y0=None, t=0, params=None,
                     return np.concatenate(
                         (sys._rhs(t, x, u), sys._out(t, x, u) - y0), axis=0)
 
-            z0 = np.concatenate((x0, u0), axis=0)   # Put variables together
-            result = root(rootfun, z0)              # Find the eq point
-            x, u = np.split(result.x, [nstates])    # Split result back in two
+            # Find roots with (x, u) as free variables
+            z0 = np.concatenate((x0, u0), axis=0)
+            result = root(rootfun, z0, **root_kwargs)
+            x, u = np.split(result.x, [nstates])
             z = (x, u, sys._out(t, x, u))
 
     else:
@@ -1903,7 +1938,7 @@ def find_eqpt(sys, x0, u0=None, y0=None, t=0, params=None,
         z0 = np.concatenate((x[state_vars], u[input_vars]), axis=0)
 
         # Finally, call the root finding function
-        result = root(rootfun, z0)
+        result = root(rootfun, z0, **root_kwargs)
 
         # Extract out the results and insert into x and u
         x[state_vars] = result.x[:nstate_vars]
@@ -2509,7 +2544,7 @@ def interconnect(
                             (syslist[isys].name,
                              syslist[isys].input_labels[isig], gain))
                 return signal_list
-                
+
             if isinstance(connection, list):
                 # Passed a list => create input map
                 dprint(f"  detected output list")
@@ -2519,7 +2554,7 @@ def interconnect(
                 new_outlist.append(signal_list)
             else:
                 new_outlist += _find_output_or_input_signal(connection)
-                
+
     outlist, outputs = new_outlist, new_outputs
     dprint(f"  {outlist=}\n  {outputs=}")
 
@@ -2679,3 +2714,7 @@ def connection_table(sys, show_names=False, column_width=32):
         "an InterconnectedSystem."
 
     sys.connection_table(show_names=show_names, column_width=column_width)
+
+
+# Short versions of function call
+find_eqpt = find_operating_point
