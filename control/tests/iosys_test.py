@@ -2087,6 +2087,42 @@ def test_find_eqpt(x0, ix, u0, iu, y0, iy, dx0, idx, dt, x_expect, u_expect):
     np.testing.assert_allclose(np.array(ueq), u_expect, atol=1e-6)
 
 
+# Test out new operating point version of find_eqpt
+def test_find_operating_point():
+    dt = 1
+    sys = ct.NonlinearIOSystem(
+        eqpt_rhs, eqpt_out, dt=dt, states=3, inputs=2, outputs=2)
+
+    # Conditions that lead to no exact solution (from previous unit test)
+    x0 = 0;       ix = None
+    u0 = [-1, 0]; iu = None
+    y0 = None;    iy = None
+    dx0 = None;  idx = None
+
+    # Default version: no equilibrium solution => returns None
+    op_point = ct.find_operating_point(
+        sys, x0, u0, y0, ix=ix, iu=iu, iy=iy, dx0=dx0, idx=idx)
+    assert op_point.xop is None
+    assert op_point.uop is None
+    assert op_point.result.success is False
+
+    # Change the method to Levenberg-Marquardt (gives nearest point)
+    op_point = ct.find_operating_point(
+        sys, x0, u0, y0, ix=ix, iu=iu, iy=iy, dx0=dx0, idx=idx,
+        root_method='lm')
+    assert op_point.xop is not None
+    assert op_point.uop is not None
+    assert op_point.result.success is True
+
+    # Make sure we get a solution if we ask for the result explicitly
+    op_point = ct.find_operating_point(
+        sys, x0, u0, y0, ix=ix, iu=iu, iy=iy, dx0=dx0, idx=idx,
+        return_result=True)
+    assert op_point.xop is not None
+    assert op_point.uop is not None
+    assert op_point.result.success is False
+
+
 def test_iosys_sample():
     csys = ct.rss(2, 1, 1)
     dsys = csys.sample(0.1)

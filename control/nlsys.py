@@ -32,7 +32,7 @@ from .timeresp import _check_convert_array, _process_time_response, \
 
 __all__ = ['NonlinearIOSystem', 'InterconnectedSystem', 'nlsys',
            'input_output_response', 'find_eqpt', 'linearize',
-           'interconnect', 'connection_table']
+           'interconnect', 'connection_table', 'find_operating_point']
 
 
 class NonlinearIOSystem(InputOutputSystem):
@@ -1663,6 +1663,60 @@ def input_output_response(
         success=soln.success, message=message)
 
 
+class OperatingPoint(object):
+    """A class for representing the operating point of a nonlinear I/O system.
+
+    The ``OperatingPoint`` class stores the operating point of a nonlinear
+    system, which consists of the state and input for a nonlinear system.
+    The main use for this class is as the return object for the
+    :func:`find_operating_point` function.
+
+    Attributes
+    ----------
+    xop : array
+        State vector at the operating point.
+    uop : array
+        Input vector at the operating point.
+    result : :class:`scipy.optimize.OptimizeResult`, optional
+        Result from the :func:`scipy.optimize.root` function, if available.
+
+    """
+    def __init__(
+            self, xop, uop=None, yop=None, result=None,
+            return_y=False, return_result=False):
+        self.xop = xop
+        self.uop = uop
+
+        if yop is None and return_y and not return_result:
+            raise SystemError("return_y specified by no y0 value")
+        self.yop = yop
+        self.return_y = return_y
+
+        if result is None and return_result:
+            raise SystemError("return_result specified by no result value")
+        self.result = result
+        self.return_result = return_result
+
+    # Implement iter to allow assigning to a tuple
+    def __iter__(self):
+        if self.return_y and self.return_result:
+            return iter((self.xop, self.uop, self.yop, self.result))
+        elif self.return_y:
+            return iter((self.xop, self.uop, self.yop))
+        elif self.return_result:
+            return iter((self.xop, self.uop, self.result))
+        else:
+            return iter((self.xop, self.uop))
+
+    # Implement (thin) getitem to allow access via legacy indexing
+    def __getitem__(self, index):
+        return list(self.__iter__())[index]
+
+    # Implement (thin) len to emulate legacy return value
+    def __len__(self):
+        return len(list(self.__iter__()))
+
+
 def find_operating_point(
         sys, x0, u0=None, y0=None, t=0, params=None,
         iu=None, iy=None, ix=None, idx=None, dx0=None, root_method=None,
@@ -1946,6 +2000,15 @@ def find_operating_point(
         z = (x, u, sys._out(t, x, u))
 
     # Return the result based on what the user wants and what we found
+    if return_result or result.success:
+        return OperatingPoint(
+            z[0], z[1], z[2], result, return_y, return_result)
+    else:
+        # Something went wrong, don't return anything
+        return OperatingPoint(
+            None, None, None, result, return_y, return_result)
+
+    # TODO: remove code when ready
     if not return_y:
         z = z[0:2]              # Strip y from result if not desired
     if return_result:
