@@ -144,7 +144,7 @@ Nonlinear system support
    :toctree: generated/
 
     describing_function
-    find_eqpt
+    find_operating_point
     linearize
     input_output_response
     summing_junction

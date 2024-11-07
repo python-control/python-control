@@ -16,12 +16,13 @@ function::
   resp = ct.input_output_response(io_sys, T, U, X0, params)
   t, y, x = resp.time, resp.outputs, resp.states
 
-An input/output system can be linearized around an equilibrium point to obtain
-a :class:`~control.StateSpace` linear system.  Use the
-:func:`~control.find_eqpt` function to obtain an equilibrium point and the
-:func:`~control.linearize` function to linearize about that equilibrium point::
+An input/output system can be linearized around an equilibrium point
+to obtain a :class:`~control.StateSpace` linear system.  Use the
+:func:`~control.find_operating_point` function to obtain an
+equilibrium point and the :func:`~control.linearize` function to
+linearize about that equilibrium point::
 
-  xeq, ueq = ct.find_eqpt(io_sys, X0, U0)
+  xeq, ueq = ct.find_operating_point(io_sys, X0, U0)
   ss_sys = ct.linearize(io_sys, xeq, ueq)
 
 Input/output systems are automatically created for state space LTI systems
@@ -123,9 +124,8 @@ system and computing the linearization about that point.
 
 .. code-block:: python
 
-  eqpt = ct.find_eqpt(io_predprey, X0, 0)
-  xeq = eqpt[0]                         # choose the nonzero equilibrium point
-  lin_predprey = ct.linearize(io_predprey, xeq, 0)
+  eqpt = ct.find_operating_point(io_predprey, X0, 0)
+  lin_predprey = ct.linearize(io_predprey, eqpt)
 
 We next compute a controller that stabilizes the equilibrium point using
 eigenvalue placement and computing the feedforward gain using the number of
@@ -548,7 +548,7 @@ Module classes and functions
 .. autosummary::
    :toctree: generated/
 
-   ~control.find_eqpt
+   ~control.find_operating_point
    ~control.interconnect
    ~control.input_output_response
    ~control.linearize

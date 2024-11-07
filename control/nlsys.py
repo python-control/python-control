@@ -515,7 +515,7 @@ class NonlinearIOSystem(InputOutputSystem):
         # Return the newly created system
         return newsys
 
-    def linearize(self, x0, u0, t=0, params=None, eps=1e-6,
+    def linearize(self, x0, u0=None, t=0, params=None, eps=1e-6,
                   copy_names=False, **kwargs):
         """Linearize an input/output system at a given state and input.
 
@@ -525,6 +525,14 @@ class NonlinearIOSystem(InputOutputSystem):
 
         """
         from .statesp import StateSpace
+
+        # Allow first argument to be an operating point
+        if isinstance(x0, OperatingPoint):
+            if u0 is None:
+                u0 = x0.inputs
+            x0 = x0.states
+        elif u0 is None:
+            u0 = 0
 
         #
         # If the linearization is not defined by the subclass, perform a
@@ -1673,19 +1681,19 @@ class OperatingPoint(object):
 
     Attributes
     ----------
-    xop : array
+    states : array
         State vector at the operating point.
-    uop : array
+    inputs : array
         Input vector at the operating point.
     result : :class:`scipy.optimize.OptimizeResult`, optional
         Result from the :func:`scipy.optimize.root` function, if available.
 
     """
     def __init__(
-            self, xop, uop=None, yop=None, result=None,
+            self, states, inputs=None, yop=None, result=None,
             return_y=False, return_result=False):
-        self.xop = xop
-        self.uop = uop
+        self.states = states
+        self.inputs = inputs
 
         if yop is None and return_y and not return_result:
             raise SystemError("return_y specified by no y0 value")
@@ -1700,13 +1708,13 @@ class OperatingPoint(object):
     # Implement iter to allow assigning to a tuple
     def __iter__(self):
         if self.return_y and self.return_result:
-            return iter((self.xop, self.uop, self.yop, self.result))
+            return iter((self.states, self.inputs, self.yop, self.result))
         elif self.return_y:
-            return iter((self.xop, self.uop, self.yop))
+            return iter((self.states, self.inputs, self.yop))
         elif self.return_result:
-            return iter((self.xop, self.uop, self.result))
+            return iter((self.states, self.inputs, self.result))
         else:
-            return iter((self.xop, self.uop))
+            return iter((self.states, self.inputs))
 
     # Implement (thin) getitem to allow access via legacy indexing
     def __getitem__(self, index):
@@ -1723,10 +1731,10 @@ def find_operating_point(
         root_kwargs=None, return_y=False, return_result=False):
     """Find an operating point for an input/output system.
 
-    An operating point for a nonlinear system is a state `xop` and input
-    `uop` around which a nonlinear system operates.  This point is most
-    commonly an equilibrium point for the system, but in some cases a
-    non-equilibrium operating point can be used.
+    An operating point for a nonlinear system is a state and input around
+    which a nonlinear system operates.  This point is most commonly an
+    equilibrium point for the system, but in some cases a non-equilibrium
+    operating point can be used.
 
     This function attempts to find an operating point given a specification
     for the desired inputs, outputs, states, or state updates of the system.
@@ -1802,10 +1810,10 @@ def find_operating_point(
 
     Returns
     -------
-    xop : array of states
+    states : array of states
         Value of the states at the equilibrium point, or `None` if no
         equilibrium point was found and `return_result` was False.
-    uop : array of input values
+    inputs : array of input values
         Value of the inputs at the equilibrium point, or `None` if no
         equilibrium point was found and `return_result` was False.
     yop : array of output values, optional
@@ -2034,12 +2042,13 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
     ----------
     sys : InputOutputSystem
         The system to be linearized.
-    xeq : array
-        The state at which the linearization will be evaluated (does not need
-        to be an equilibrium state).
-    ueq : array
+    xeq : array or :class:`~control.OperatingPoint`
+        The state or operating point at which the linearization will be
+        evaluated (does not need to be an equilibrium state).
+    ueq : array, optional
         The input at which the linearization will be evaluated (does not need
-        to correspond to an equlibrium state).
+        to correspond to an equlibrium state).  Can be omitted if `xeq` is
+        an :class:`~control.OperatingPoint`.  Defaults to 0.
     t : float, optional
         The time at which the linearization will be computed (for time-varying
         systems).
@@ -2074,6 +2083,7 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
         Description of the system outputs.  Same format as `inputs`.
     states : int, list of str, or None, optional
         Description of the system states.  Same format as `inputs`.
+
     """
     if not isinstance(sys, InputOutputSystem):
         raise TypeError("Can only linearize InputOutputSystem types")

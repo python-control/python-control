@@ -2102,25 +2102,45 @@ def test_find_operating_point():
     # Default version: no equilibrium solution => returns None
     op_point = ct.find_operating_point(
         sys, x0, u0, y0, ix=ix, iu=iu, iy=iy, dx0=dx0, idx=idx)
-    assert op_point.xop is None
-    assert op_point.uop is None
+    assert op_point.states is None
+    assert op_point.inputs is None
     assert op_point.result.success is False
 
     # Change the method to Levenberg-Marquardt (gives nearest point)
     op_point = ct.find_operating_point(
         sys, x0, u0, y0, ix=ix, iu=iu, iy=iy, dx0=dx0, idx=idx,
         root_method='lm')
-    assert op_point.xop is not None
-    assert op_point.uop is not None
+    assert op_point.states is not None
+    assert op_point.inputs is not None
     assert op_point.result.success is True
 
     # Make sure we get a solution if we ask for the result explicitly
     op_point = ct.find_operating_point(
         sys, x0, u0, y0, ix=ix, iu=iu, iy=iy, dx0=dx0, idx=idx,
         return_result=True)
-    assert op_point.xop is not None
-    assert op_point.uop is not None
+    assert op_point.states is not None
+    assert op_point.inputs is not None
     assert op_point.result.success is False
+
+
+def test_operating_point():
+    dt = 1
+    sys = ct.NonlinearIOSystem(
+        eqpt_rhs, eqpt_out, dt=dt, states=3, inputs=2, outputs=2)
+
+    # Find the operating point near the origin
+    op_point = ct.find_operating_point(sys, 0, 0)
+
+    # Linearize the old fashioned way
+    linsys_orig = ct.linearize(sys, op_point.states, op_point.inputs)
+
+    # Linearize around the operating point
+    linsys_oppt = ct.linearize(sys, op_point)
+
+    np.testing.assert_allclose(linsys_orig.A, linsys_oppt.A)
+    np.testing.assert_allclose(linsys_orig.B, linsys_oppt.B)
+    np.testing.assert_allclose(linsys_orig.C, linsys_oppt.C)
+    np.testing.assert_allclose(linsys_orig.D, linsys_oppt.D)
 
 
 def test_iosys_sample():
