@@ -519,26 +519,25 @@ class NonlinearIOSystem(InputOutputSystem):
                   copy_names=False, **kwargs):
         """Linearize an input/output system at a given state and input.
 
-        Return the linearization of an input/output system at a given state
-        and input value as a StateSpace system.  See
-        :func:`~control.linearize` for complete documentation.
+        Return the linearization of an input/output system at a given
+        operating point (or state and input value) as a StateSpace system.
+        See :func:`~control.linearize` for complete documentation.
 
         """
+        #
+        # Default method: if the linearization is not defined by the
+        # subclass, perform a numerical linearization use the `_rhs()` and
+        # `_out()` member functions.
+        #
         from .statesp import StateSpace
 
         # Allow first argument to be an operating point
         if isinstance(x0, OperatingPoint):
-            if u0 is None:
-                u0 = x0.inputs
+            u0 = x0.inputs if u0 is None else u0
             x0 = x0.states
         elif u0 is None:
             u0 = 0
 
-        #
-        # If the linearization is not defined by the subclass, perform a
-        # numerical linearization use the `_rhs()` and `_out()` member
-        # functions.
-        #
         # Process nominal states and inputs
         x0, nstates = _process_vector_argument(x0, "x0", self.nstates)
         u0, ninputs = _process_vector_argument(u0, "u0", self.ninputs)
@@ -1675,9 +1674,10 @@ class OperatingPoint(object):
     """A class for representing the operating point of a nonlinear I/O system.
 
     The ``OperatingPoint`` class stores the operating point of a nonlinear
-    system, which consists of the state and input for a nonlinear system.
-    The main use for this class is as the return object for the
-    :func:`find_operating_point` function.
+    system, consisting of the state and input vectors for the system.  The
+    main use for this class is as the return object for the
+    :func:`find_operating_point` function and as an input to the
+    :func:`linearize` function.
 
     Attributes
     ----------
@@ -1690,14 +1690,14 @@ class OperatingPoint(object):
 
     """
     def __init__(
-            self, states, inputs=None, yop=None, result=None,
+            self, states, inputs=None, outputs=None, result=None,
             return_y=False, return_result=False):
         self.states = states
         self.inputs = inputs
 
-        if yop is None and return_y and not return_result:
+        if outputs is None and return_y and not return_result:
             raise SystemError("return_y specified by no y0 value")
-        self.yop = yop
+        self.outputs = outputs
         self.return_y = return_y
 
         if result is None and return_result:
@@ -1708,9 +1708,9 @@ class OperatingPoint(object):
     # Implement iter to allow assigning to a tuple
     def __iter__(self):
         if self.return_y and self.return_result:
-            return iter((self.states, self.inputs, self.yop, self.result))
+            return iter((self.states, self.inputs, self.outputs, self.result))
         elif self.return_y:
-            return iter((self.states, self.inputs, self.yop))
+            return iter((self.states, self.inputs, self.outputs))
         elif self.return_result:
             return iter((self.states, self.inputs, self.result))
         else:
@@ -1816,7 +1816,7 @@ def find_operating_point(
     inputs : array of input values
         Value of the inputs at the equilibrium point, or `None` if no
         equilibrium point was found and `return_result` was False.
-    yop : array of output values, optional
+    outputs : array of output values, optional
         If `return_y` is True, returns the value of the outputs at the
         equilibrium point, or `None` if no equilibrium point was found and
         `return_result` was False.
@@ -1826,11 +1826,21 @@ def find_operating_point(
 
     Notes
     -----
-    For continuous time systems, equilibrium points are defined as points for
-    which the right hand side of the differential equation is zero:
-    :math:`f(t, x_e, u_e) = 0`. For discrete time systems, equilibrium points
-    are defined as points for which the right hand side of the difference
-    equation returns the current state: :math:`f(t, x_e, u_e) = x_e`.
+    For continuous time systems, equilibrium points are defined as points
+    for which the right hand side of the differential equation is zero:
+    :math:`f(t, x_e, u_e) = 0`. For discrete time systems, equilibrium
+    points are defined as points for which the right hand side of the
+    difference equation returns the current state: :math:`f(t, x_e, u_e) =
+    x_e`.
+
+    Operating points are found using the :func:`scipy.optimize.root`
+    function, which will attempt to find states and inputs that satisfy the
+    specified constraints.  If no solution is found and `return_result` is
+    `False`, the returned state and input for the operating point will be
+    `None`.  If `return_result` is `True`, then the return values from
+    :func:`scipy.optimize.root` will be returned (but may not be valid).
+    If `root_method` is set to `lm`, then the least squares solution (in
+    the free variables) will be returned.
 
     """
     from scipy.optimize import root
@@ -2034,9 +2044,9 @@ def find_operating_point(
 def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
     """Linearize an input/output system at a given state and input.
 
-    This function computes the linearization of an input/output system at a
-    given state and input value and returns a :class:`~control.StateSpace`
-    object.  The evaluation point need not be an equilibrium point.
+    Compute the linearization of an I/O system at an operating point (state
+    and input) and returns a :class:`~control.StateSpace` object.  The
+    operating point need not be an equilibrium point.
 
     Parameters
     ----------
