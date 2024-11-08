@@ -2142,6 +2142,10 @@ def test_operating_point():
     np.testing.assert_allclose(linsys_orig.C, linsys_oppt.C)
     np.testing.assert_allclose(linsys_orig.D, linsys_oppt.D)
 
+    # Call find_operating point with method and keyword arguments
+    op_point = ct.find_operating_point(
+        sys, 0, 0, root_method='lm', root_kwargs={'tol': 1e-6})
+
 
 def test_iosys_sample():
     csys = ct.rss(2, 1, 1)

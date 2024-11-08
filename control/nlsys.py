@@ -32,7 +32,8 @@ from .timeresp import _check_convert_array, _process_time_response, \
 
 __all__ = ['NonlinearIOSystem', 'InterconnectedSystem', 'nlsys',
            'input_output_response', 'find_eqpt', 'linearize',
-           'interconnect', 'connection_table', 'find_operating_point']
+           'interconnect', 'connection_table', 'OperatingPoint',
+           'find_operating_point']
 
 
 class NonlinearIOSystem(InputOutputSystem):
@@ -92,7 +93,7 @@ class NonlinearIOSystem(InputOutputSystem):
         generic name <sys[id]> is generated with a unique integer id.
 
     params : dict, optional
-        Parameter values for the system.  Passed to the evaluation functions
+       Parameter values for the system.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
 
     See Also
@@ -1685,6 +1686,8 @@ class OperatingPoint(object):
         State vector at the operating point.
     inputs : array
         Input vector at the operating point.
+    outputs : array, optional
+        Output vector at the operating point.
     result : :class:`scipy.optimize.OptimizeResult`, optional
         Result from the :func:`scipy.optimize.root` function, if available.
 
@@ -1740,7 +1743,7 @@ def find_operating_point(
     for the desired inputs, outputs, states, or state updates of the system.
 
     In its simplest form, `find_operating_point` finds an equilibrium point
-    given either the desired input or desired output:
+    given either the desired input or desired output::
 
         xeq, ueq = find_operating_point(sys, x0, u0)
         xeq, ueq = find_operating_point(sys, x0, u0, y0)
@@ -1810,19 +1813,15 @@ def find_operating_point(
 
     Returns
     -------
-    states : array of states
-        Value of the states at the equilibrium point, or `None` if no
-        equilibrium point was found and `return_result` was False.
-    inputs : array of input values
-        Value of the inputs at the equilibrium point, or `None` if no
-        equilibrium point was found and `return_result` was False.
-    outputs : array of output values, optional
-        If `return_y` is True, returns the value of the outputs at the
-        equilibrium point, or `None` if no equilibrium point was found and
-        `return_result` was False.
-    result : :class:`scipy.optimize.OptimizeResult`, optional
-        If `return_result` is True, returns the `result` from the
-        :func:`scipy.optimize.root` function.
+    op_point : OperatingPoint
+        The solution represented as an `OperatingPoint` object.  The main
+        attributes are `states` and `inputs`, which represent the state
+        and input arrays at the operating point.  See
+        :class:`OperatingPoint` for a description of other attributes.
+
+        If accessed as a tuple, returns `states`, `inputs`, and optionally
+        `outputs` and `result` based on the `return_y` and `return_result`
+        parameters.
 
     Notes
     -----
@@ -1839,7 +1838,7 @@ def find_operating_point(
     `False`, the returned state and input for the operating point will be
     `None`.  If `return_result` is `True`, then the return values from
     :func:`scipy.optimize.root` will be returned (but may not be valid).
-    If `root_method` is set to `lm`, then the least squares solution (in
+    If `root_method` is set to 'lm', then the least squares solution (in
     the free variables) will be returned.
 
     """
@@ -1956,8 +1955,8 @@ def find_operating_point(
         # * output_vars: indices of outputs that must be constrained
         #
         # This index lists can all be precomputed based on the `iu`, `iy`,
-        # `ix`, and `idx` lists that were passed as arguments to `find_eqpt`
-        # and were processed above.
+        # `ix`, and `idx` lists that were passed as arguments to
+        # `find_operating_point` and were processed above.
 
         # Get the states and inputs that were not listed as fixed
         state_vars = (range(nstates) if not len(ix)

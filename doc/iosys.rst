@@ -544,6 +544,7 @@ Module classes and functions
    ~control.InterconnectedSystem
    ~control.LinearICSystem
    ~control.NonlinearIOSystem
+   ~control.OperatingPoint
 
 .. autosummary::
    :toctree: generated/
