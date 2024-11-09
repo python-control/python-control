@@ -1694,14 +1694,14 @@ class OperatingPoint(object):
     """
     def __init__(
             self, states, inputs=None, outputs=None, result=None,
-            return_y=False, return_result=False):
+            return_outputs=False, return_result=False):
         self.states = states
         self.inputs = inputs
 
-        if outputs is None and return_y and not return_result:
-            raise SystemError("return_y specified by no y0 value")
+        if outputs is None and return_outputs and not return_result:
+            raise SystemError("return_outputs specified by no y0 value")
         self.outputs = outputs
-        self.return_y = return_y
+        self.return_outputs = return_outputs
 
         if result is None and return_result:
             raise SystemError("return_result specified by no result value")
@@ -1710,9 +1710,9 @@ class OperatingPoint(object):
 
     # Implement iter to allow assigning to a tuple
     def __iter__(self):
-        if self.return_y and self.return_result:
+        if self.return_outputs and self.return_result:
             return iter((self.states, self.inputs, self.outputs, self.result))
-        elif self.return_y:
+        elif self.return_outputs:
             return iter((self.states, self.inputs, self.outputs))
         elif self.return_result:
             return iter((self.states, self.inputs, self.result))
@@ -1729,9 +1729,9 @@ class OperatingPoint(object):
 
 
 def find_operating_point(
-        sys, x0, u0=None, y0=None, t=0, params=None,
-        iu=None, iy=None, ix=None, idx=None, dx0=None, root_method=None,
-        root_kwargs=None, return_y=False, return_result=False):
+        sys, x0, u0=None, y0=None, t=0, params=None, iu=None, iy=None,
+        ix=None, idx=None, dx0=None, root_method=None, root_kwargs=None,
+        return_outputs=None, return_result=None, **kwargs):
     """Find an operating point for an input/output system.
 
     An operating point for a nonlinear system is a state and input around
@@ -1804,8 +1804,8 @@ def find_operating_point(
         is passed to the :func:`scipy.optimize.root` function.
     root_kwargs : dict, optional
         Additional keyword arguments to pass :func:`scipy.optimize.root`.
-    return_y : bool, optional
-        If True, return the value of output at the operating point.
+    return_outputs : bool, optional
+        If True, return the value of outputs at the operating point.
     return_result : bool, optional
         If True, return the `result` option from the
         :func:`scipy.optimize.root` function used to compute the
@@ -1820,8 +1820,8 @@ def find_operating_point(
         :class:`OperatingPoint` for a description of other attributes.
 
         If accessed as a tuple, returns `states`, `inputs`, and optionally
-        `outputs` and `result` based on the `return_y` and `return_result`
-        parameters.
+        `outputs` and `result` based on the `return_outputs` and
+        `return_result` parameters.
 
     Notes
     -----
@@ -1843,6 +1843,12 @@ def find_operating_point(
 
     """
     from scipy.optimize import root
+
+    # Process keyword arguments
+    return_outputs = config._process_legacy_keyword(
+        kwargs, 'return_y', 'return_outputs', return_outputs)
+    if kwargs:
+        raise TypeError("unrecognized keyword(s): " + str(kwargs))
 
     # Process arguments for the root function
     root_kwargs = dict() if root_kwargs is None else root_kwargs
@@ -2019,14 +2025,14 @@ def find_operating_point(
     # Return the result based on what the user wants and what we found
     if return_result or result.success:
         return OperatingPoint(
-            z[0], z[1], z[2], result, return_y, return_result)
+            z[0], z[1], z[2], result, return_outputs, return_result)
     else:
         # Something went wrong, don't return anything
         return OperatingPoint(
-            None, None, None, result, return_y, return_result)
+            None, None, None, result, return_outputs, return_result)
 
     # TODO: remove code when ready
-    if not return_y:
+    if not return_outputs:
         z = z[0:2]              # Strip y from result if not desired
     if return_result:
         # Return whatever we got, along with the result dictionary
@@ -2036,7 +2042,7 @@ def find_operating_point(
         return z
     else:
         # Something went wrong, don't return anything
-        return (None, None, None) if return_y else (None, None)
+        return (None, None, None) if return_outputs else (None, None)
 
 
 # Linearize an input/output system

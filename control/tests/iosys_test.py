@@ -10,10 +10,11 @@ created for that purpose.
 
 import re
 import warnings
-import pytest
+from math import sqrt
 
 import numpy as np
-from math import sqrt
+import pytest
+import scipy
 
 import control as ct
 
@@ -2088,6 +2089,7 @@ def test_find_eqpt(x0, ix, u0, iu, y0, iy, dx0, idx, dt, x_expect, u_expect):
 
 
 # Test out new operating point version of find_eqpt
+# TODO: add return_)y tests
 def test_find_operating_point():
     dt = 1
     sys = ct.NonlinearIOSystem(
@@ -2122,6 +2124,10 @@ def test_find_operating_point():
     assert op_point.inputs is not None
     assert op_point.result.success is False
 
+    # Check to make sure unknown keywords are caught
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        ct.find_operating_point(sys, x0, u0, unknown=None)
+
 
 def test_operating_point():
     dt = 1
@@ -2145,6 +2151,36 @@ def test_operating_point():
     # Call find_operating point with method and keyword arguments
     op_point = ct.find_operating_point(
         sys, 0, 0, root_method='lm', root_kwargs={'tol': 1e-6})
+
+    # Make sure we can get back the right arguments in a tuple
+    op_point = ct.find_operating_point(sys, 0, 0, return_outputs=True)
+    assert len(op_point) == 3
+    assert isinstance(op_point[0], np.ndarray)
+    assert isinstance(op_point[1], np.ndarray)
+    assert isinstance(op_point[2], np.ndarray)
+
+    with pytest.warns(FutureWarning, match="return_outputs"):
+        op_point = ct.find_operating_point(sys, 0, 0, return_y=True)
+        assert len(op_point) == 3
+        assert isinstance(op_point[0], np.ndarray)
+        assert isinstance(op_point[1], np.ndarray)
+        assert isinstance(op_point[2], np.ndarray)
+
+    # Make sure we can get back the right arguments in a tuple
+    op_point = ct.find_operating_point(sys, 0, 0, return_result=True)
+    assert len(op_point) == 3
+    assert isinstance(op_point[0], np.ndarray)
+    assert isinstance(op_point[1], np.ndarray)
+    assert isinstance(op_point[2], scipy.optimize.OptimizeResult)
+
+    # Make sure we can get back the right arguments in a tuple
+    op_point = ct.find_operating_point(
+        sys, 0, 0, return_result=True, return_outputs=True)
+    assert len(op_point) == 4
+    assert isinstance(op_point[0], np.ndarray)
+    assert isinstance(op_point[1], np.ndarray)
+    assert isinstance(op_point[2], np.ndarray)
+    assert isinstance(op_point[3], scipy.optimize.OptimizeResult)
 
 
 def test_iosys_sample():
