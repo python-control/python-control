@@ -2089,7 +2089,6 @@ def test_find_eqpt(x0, ix, u0, iu, y0, iy, dx0, idx, dt, x_expect, u_expect):
 
 
 # Test out new operating point version of find_eqpt
-# TODO: add return_)y tests
 def test_find_operating_point():
     dt = 1
     sys = ct.NonlinearIOSystem(
@@ -2148,7 +2147,7 @@ def test_operating_point():
     np.testing.assert_allclose(linsys_orig.C, linsys_oppt.C)
     np.testing.assert_allclose(linsys_orig.D, linsys_oppt.D)
 
-    # Call find_operating point with method and keyword arguments
+    # Call find_operating_point with method and keyword arguments
     op_point = ct.find_operating_point(
         sys, 0, 0, root_method='lm', root_kwargs={'tol': 1e-6})
 

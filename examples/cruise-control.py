@@ -349,7 +349,7 @@ theta0 = np.zeros(T.shape)
 # and u given the gear, slope, and desired output velocity)
 X0, U0, Y0 = ct.find_operating_point(
     cruise_pi, [vref[0], 0], [vref[0], gear[0], theta0[0]],
-    y0=[0, vref[0]], iu=[1, 2], iy=[1], return_y=True)
+    y0=[0, vref[0]], iu=[1, 2], iy=[1], return_outputs=True)
 
 # Now simulate the effect of a hill at t = 5 seconds
 plt.figure()

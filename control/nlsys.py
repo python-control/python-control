@@ -93,7 +93,7 @@ class NonlinearIOSystem(InputOutputSystem):
         generic name <sys[id]> is generated with a unique integer id.
 
     params : dict, optional
-       Parameter values for the system.  Passed to the evaluation functions
+        Parameter values for the system.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
 
     See Also
@@ -1671,7 +1671,7 @@ def input_output_response(
         success=soln.success, message=message)
 
 
-class OperatingPoint(object):
+class OperatingPoint():
     """A class for representing the operating point of a nonlinear I/O system.
 
     The ``OperatingPoint`` class stores the operating point of a nonlinear
@@ -1693,18 +1693,18 @@ class OperatingPoint(object):
 
     """
     def __init__(
-            self, states, inputs=None, outputs=None, result=None,
+            self, states, inputs, outputs=None, result=None,
             return_outputs=False, return_result=False):
         self.states = states
         self.inputs = inputs
 
         if outputs is None and return_outputs and not return_result:
-            raise SystemError("return_outputs specified by no y0 value")
+            raise ValueError("return_outputs specified but no outputs value")
         self.outputs = outputs
         self.return_outputs = return_outputs
 
         if result is None and return_result:
-            raise SystemError("return_result specified by no result value")
+            raise ValueError("return_result specified but no result value")
         self.result = result
         self.return_result = return_result
 
@@ -1799,7 +1799,7 @@ def find_operating_point(
         values will be ignored in solving for an operating point.  State
         indices can be listed in any order.  By default, all updates will be
         fixed at `dx0` in searching for an operating point.
-    root_method : str, optonal
+    root_method : str, optional
         Method to find the operating point.  If specified, this parameter
         is passed to the :func:`scipy.optimize.root` function.
     root_kwargs : dict, optional
