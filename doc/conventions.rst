@@ -289,10 +289,10 @@ element of the `control.config.defaults` dictionary::
 
     ct.config.defaults['module.parameter'] = value
 
-The `~control.config.set_defaults` function can also be used to set multiple
-configuration parameters at the same time::
+The :func:`~control.set_defaults` function can also be used to
+set multiple configuration parameters at the same time::
 
-    ct.config.set_defaults('module', param1=val1, param2=val2, ...]
+    ct.set_defaults('module', param1=val1, param2=val2, ...]
 
 Finally, there are also functions available set collections of variables based
 on standard configurations.

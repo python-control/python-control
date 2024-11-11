@@ -56,7 +56,7 @@ they are not already present.
 .. note::
    Mixing packages from conda-forge and the default conda channel
    can sometimes cause problems with dependencies, so it is usually best to
-   instally NumPy, SciPy, and Matplotlib from conda-forge as well.
+   install NumPy, SciPy, and Matplotlib from conda-forge as well.
 
 To install using pip::
 
