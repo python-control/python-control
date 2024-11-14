@@ -10,10 +10,11 @@ created for that purpose.
 
 import re
 import warnings
-import pytest
+from math import sqrt
 
 import numpy as np
-from math import sqrt
+import pytest
+import scipy
 
 import control as ct
 
@@ -2085,6 +2086,100 @@ def test_find_eqpt(x0, ix, u0, iu, y0, iy, dx0, idx, dt, x_expect, u_expect):
     # Check that we got the expected result as well
     np.testing.assert_allclose(np.array(xeq), x_expect, atol=1e-6)
     np.testing.assert_allclose(np.array(ueq), u_expect, atol=1e-6)
+
+
+# Test out new operating point version of find_eqpt
+def test_find_operating_point():
+    dt = 1
+    sys = ct.NonlinearIOSystem(
+        eqpt_rhs, eqpt_out, dt=dt, states=3, inputs=2, outputs=2)
+
+    # Conditions that lead to no exact solution (from previous unit test)
+    x0 = 0;       ix = None
+    u0 = [-1, 0]; iu = None
+    y0 = None;    iy = None
+    dx0 = None;  idx = None
+
+    # Default version: no equilibrium solution => returns None
+    op_point = ct.find_operating_point(
+        sys, x0, u0, y0, ix=ix, iu=iu, iy=iy, dx0=dx0, idx=idx)
+    assert op_point.states is None
+    assert op_point.inputs is None
+    assert op_point.result.success is False
+
+    # Change the method to Levenberg-Marquardt (gives nearest point)
+    op_point = ct.find_operating_point(
+        sys, x0, u0, y0, ix=ix, iu=iu, iy=iy, dx0=dx0, idx=idx,
+        root_method='lm')
+    assert op_point.states is not None
+    assert op_point.inputs is not None
+    assert op_point.result.success is True
+
+    # Make sure we get a solution if we ask for the result explicitly
+    op_point = ct.find_operating_point(
+        sys, x0, u0, y0, ix=ix, iu=iu, iy=iy, dx0=dx0, idx=idx,
+        return_result=True)
+    assert op_point.states is not None
+    assert op_point.inputs is not None
+    assert op_point.result.success is False
+
+    # Check to make sure unknown keywords are caught
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        ct.find_operating_point(sys, x0, u0, unknown=None)
+
+
+def test_operating_point():
+    dt = 1
+    sys = ct.NonlinearIOSystem(
+        eqpt_rhs, eqpt_out, dt=dt, states=3, inputs=2, outputs=2)
+
+    # Find the operating point near the origin
+    op_point = ct.find_operating_point(sys, 0, 0)
+
+    # Linearize the old fashioned way
+    linsys_orig = ct.linearize(sys, op_point.states, op_point.inputs)
+
+    # Linearize around the operating point
+    linsys_oppt = ct.linearize(sys, op_point)
+
+    np.testing.assert_allclose(linsys_orig.A, linsys_oppt.A)
+    np.testing.assert_allclose(linsys_orig.B, linsys_oppt.B)
+    np.testing.assert_allclose(linsys_orig.C, linsys_oppt.C)
+    np.testing.assert_allclose(linsys_orig.D, linsys_oppt.D)
+
+    # Call find_operating_point with method and keyword arguments
+    op_point = ct.find_operating_point(
+        sys, 0, 0, root_method='lm', root_kwargs={'tol': 1e-6})
+
+    # Make sure we can get back the right arguments in a tuple
+    op_point = ct.find_operating_point(sys, 0, 0, return_outputs=True)
+    assert len(op_point) == 3
+    assert isinstance(op_point[0], np.ndarray)
+    assert isinstance(op_point[1], np.ndarray)
+    assert isinstance(op_point[2], np.ndarray)
+
+    with pytest.warns(FutureWarning, match="return_outputs"):
+        op_point = ct.find_operating_point(sys, 0, 0, return_y=True)
+        assert len(op_point) == 3
+        assert isinstance(op_point[0], np.ndarray)
+        assert isinstance(op_point[1], np.ndarray)
+        assert isinstance(op_point[2], np.ndarray)
+
+    # Make sure we can get back the right arguments in a tuple
+    op_point = ct.find_operating_point(sys, 0, 0, return_result=True)
+    assert len(op_point) == 3
+    assert isinstance(op_point[0], np.ndarray)
+    assert isinstance(op_point[1], np.ndarray)
+    assert isinstance(op_point[2], scipy.optimize.OptimizeResult)
+
+    # Make sure we can get back the right arguments in a tuple
+    op_point = ct.find_operating_point(
+        sys, 0, 0, return_result=True, return_outputs=True)
+    assert len(op_point) == 4
+    assert isinstance(op_point[0], np.ndarray)
+    assert isinstance(op_point[1], np.ndarray)
+    assert isinstance(op_point[2], np.ndarray)
+    assert isinstance(op_point[3], scipy.optimize.OptimizeResult)
 
 
 def test_iosys_sample():

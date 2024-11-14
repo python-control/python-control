@@ -39,7 +39,8 @@ from . import config
 from .ctrlplot import ControlPlot, _add_arrows_to_line2D, _get_color, \
     _process_ax_keyword, _update_plot_title
 from .exception import ControlNotImplemented
-from .nlsys import NonlinearIOSystem, find_eqpt, input_output_response
+from .nlsys import NonlinearIOSystem, find_operating_point, \
+    input_output_response
 
 __all__ = ['phase_plane_plot', 'phase_plot', 'box_grid']
 
@@ -853,7 +854,7 @@ def _find_equilpts(sys, points, params=None):
     equilpts = []
     for i, x0 in enumerate(points):
         # Look for an equilibrium point near this point
-        xeq, ueq = find_eqpt(sys, x0, 0, params=params)
+        xeq, ueq = find_operating_point(sys, x0, 0, params=params)
 
         if xeq is None:
             continue            # didn't find anything

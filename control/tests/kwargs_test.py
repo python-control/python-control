@@ -24,6 +24,7 @@ import control.tests.flatsys_test as flatsys_test
 import control.tests.frd_test as frd_test
 import control.tests.freqplot_test as freqplot_test
 import control.tests.interconnect_test as interconnect_test
+import control.tests.iosys_test as iosys_test
 import control.tests.optimal_test as optimal_test
 import control.tests.statefbk_test as statefbk_test
 import control.tests.stochsys_test as stochsys_test
@@ -252,6 +253,8 @@ kwarg_unittest = {
     'dlqr': test_unrecognized_kwargs,
     'drss': test_unrecognized_kwargs,
     'feedback': test_unrecognized_kwargs,
+    'find_eqpt': iosys_test.test_find_operating_point,
+    'find_operating_point': iosys_test.test_find_operating_point,
     'flatsys.flatsys': test_unrecognized_kwargs,
     'frd': frd_test.TestFRD.test_unrecognized_keyword,
     'gangof4': test_matplotlib_kwargs,

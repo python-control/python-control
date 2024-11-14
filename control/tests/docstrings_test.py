@@ -53,6 +53,7 @@ keyword_skiplist = {
     control.create_estimator_iosystem: ['state_labels'],    # deprecated
     control.bode_plot: ['sharex', 'sharey', 'margin_info'], # deprecated
     control.eigensys_realization: ['arg'],                  # quasi-positional
+    control.find_operating_point: ['method'],               # internal use
 }
 
 # Decide on the level of verbosity (use -rP when running pytest)

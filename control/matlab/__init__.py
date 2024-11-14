@@ -84,10 +84,12 @@ from ..rlocus import rlocus
 from ..dtime import c2d
 from ..sisotool import sisotool
 from ..stochsys import lqe, dlqe
+from ..nlsys import find_operating_point
 
 # Functions that are renamed in MATLAB
 pole, zero = poles, zeros
 freqresp = frequency_response
+trim = find_operating_point
 
 # Import functions specific to Matlab compatibility package
 from .timeresp import *
