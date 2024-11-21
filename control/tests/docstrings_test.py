@@ -54,6 +54,7 @@ keyword_skiplist = {
     control.bode_plot: ['sharex', 'sharey', 'margin_info'], # deprecated
     control.eigensys_realization: ['arg'],                  # quasi-positional
     control.find_operating_point: ['method'],               # internal use
+    control.zpk: ['args']                                   # 'dt' (manual)
 }
 
 # Decide on the level of verbosity (use -rP when running pytest)
