@@ -532,8 +532,7 @@ def equilpoints(
     out = []
     for xeq in equilpts:
         with plt.rc_context(rcParams):
-            out.append(
-                ax.plot(xeq[0], xeq[1], marker='o', color=color))
+            out += ax.plot(xeq[0], xeq[1], marker='o', color=color)
     return out
 
 
@@ -649,8 +648,7 @@ def separatrices(
     for i, xeq in enumerate(equilpts):
         # Plot the equilibrium points
         with plt.rc_context(rcParams):
-            out.append(
-                ax.plot(xeq[0], xeq[1], marker='o', color='k'))
+            out += ax.plot(xeq[0], xeq[1], marker='o', color='k')
 
         # Figure out the linearization and eigenvectors
         evals, evecs = np.linalg.eig(sys.linearize(xeq, 0, params=params).A)
@@ -691,13 +689,13 @@ def separatrices(
                 # Plot the trajectory (if there is one)
                 if traj.shape[1] > 1:
                     with plt.rc_context(rcParams):
-                        out.append(ax.plot(
-                            traj[0], traj[1], color=color, linestyle=linestyle))
+                        out += ax.plot(
+                            traj[0], traj[1], color=color, linestyle=linestyle)
 
                     # Add arrows to the lines at specified intervals
                     with plt.rc_context(rcParams):
                         _add_arrows_to_line2D(
-                            ax, out[-1][0], arrow_pos, arrowstyle=arrow_style,
+                            ax, out[-1], arrow_pos, arrowstyle=arrow_style,
                             dir=1)
     return out
 
