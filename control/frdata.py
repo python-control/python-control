@@ -135,10 +135,12 @@ class FrequencyResponseData(LTI):
         #
         if len(args) == 3:
             # Discrete time transfer function
+            dt = args[-1]
             if 'dt' in kwargs:
-                raise TypeError(
-                    "timebase specified as positional argument and keyword")
-            kwargs['dt'] = args.pop()
+                warn("received multiple dt arguments, "
+                     "using positional arg dt = %s" % dt)
+            kwargs['dt'] = dt
+            args = args[:-1]
 
         if len(args) == 2:
             if not isinstance(args[0], FRD) and isinstance(args[0], LTI):

@@ -119,3 +119,12 @@ def test_composition_override(dt):
 def test_default(fcn, args, kwargs, expected):
     sys = fcn(*args, **kwargs)
     assert sys.dt == expected
+
+    # Some commands allow dt via extra argument
+    if fcn in [ct.ss, ct.tf, ct.zpk, ct.frd] and kwargs.get('dt'):
+        sys = fcn(*args, kwargs['dt'])
+        assert sys.dt == expected
+
+        # Make sure an error is generated if dt is redundant
+        with pytest.warns(UserWarning, match="received multiple dt"):
+            sys = fcn(*args, kwargs['dt'], **kwargs)
