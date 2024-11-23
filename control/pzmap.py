@@ -607,14 +607,16 @@ def _compute_root_locus_limits(response):
         # Find the local maxima of root locus curve
         xpeaks = np.where(
             np.diff(np.abs(locus.real)) < 0, locus.real[0:-1], 0)
-        xlim = [
-            min(xlim[0], np.min(xpeaks) * rho),
-            max(xlim[1], np.max(xpeaks) * rho)
-        ]
+        if xpeaks.size > 0:
+            xlim = [
+                min(xlim[0], np.min(xpeaks) * rho),
+                max(xlim[1], np.max(xpeaks) * rho)
+            ]
 
         ypeaks = np.where(
             np.diff(np.abs(locus.imag)) < 0, locus.imag[0:-1], 0)
-        ylim = max(ylim, np.max(ypeaks) * rho)
+        if ypeaks.size > 0:
+            ylim = max(ylim, np.max(ypeaks) * rho)
 
     if isctime(dt=response.dt):
         # Adjust the limits to include some space around features
