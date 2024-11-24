@@ -1677,7 +1677,7 @@ def tf(*args, **kwargs):
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
 
-def zpk(zeros, poles, gain, dt=None, **kwargs):
+def zpk(zeros, poles, gain, *args, **kwargs):
     """zpk(zeros, poles, gain[, dt])
 
     Create a transfer function from zeros, poles, gain.
@@ -1732,7 +1732,7 @@ def zpk(zeros, poles, gain, dt=None, **kwargs):
 
     """
     num, den = zpk2tf(zeros, poles, gain)
-    return TransferFunction(num, den, dt=dt, **kwargs)
+    return TransferFunction(num, den, *args, **kwargs)
 
 
 def ss2tf(*args, **kwargs):

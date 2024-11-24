@@ -97,3 +97,34 @@ def test_composition_override(dt):
         with pytest.raises(ValueError, match="incompatible timebases"):
             sys3 = ct.interconnect(
                 [sys1, sys2], inputs='u1', outputs='y2', dt=dt)
+
+
+# Make sure all system creation functions treat timebases uniformly
+@pytest.mark.parametrize(
+    "fcn, args", [
+        (ct.ss, [-1, 1, 1, 1]),
+        (ct.tf, [[1, 2], [3, 4, 5]]),
+        (ct.zpk, [[-1], [-2, -3], 1]),
+        (ct.frd, [[1, 1, 1], [1, 2, 3]]),
+        (ct.nlsys, [lambda t, x, u, params: -x, None]),
+    ])
+@pytest.mark.parametrize(
+    "kwargs, expected", [
+        ({}, 0),
+        ({'dt': 0}, 0),
+        ({'dt': 0.1}, 0.1),
+        ({'dt': True}, True),
+        ({'dt': None}, None),
+    ])
+def test_default(fcn, args, kwargs, expected):
+    sys = fcn(*args, **kwargs)
+    assert sys.dt == expected
+
+    # Some commands allow dt via extra argument
+    if fcn in [ct.ss, ct.tf, ct.zpk, ct.frd] and kwargs.get('dt'):
+        sys = fcn(*args, kwargs['dt'])
+        assert sys.dt == expected
+
+        # Make sure an error is generated if dt is redundant
+        with pytest.warns(UserWarning, match="received multiple dt"):
+            sys = fcn(*args, kwargs['dt'], **kwargs)

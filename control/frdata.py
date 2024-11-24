@@ -124,13 +124,24 @@ class FrequencyResponseData(LTI):
         To construct frequency response data for an existing LTI
         object, other than an FRD, call FRD(sys, omega).
 
+        The timebase for the frequency response can be provided using an
+        optional third argument or the 'dt' keyword.
+
         """
-        # TODO: discrete-time FRD systems?
         smooth = kwargs.pop('smooth', False)
 
         #
         # Process positional arguments
         #
+        if len(args) == 3:
+            # Discrete time transfer function
+            dt = args[-1]
+            if 'dt' in kwargs:
+                warn("received multiple dt arguments, "
+                     "using positional arg dt = %s" % dt)
+            kwargs['dt'] = dt
+            args = args[:-1]
+
         if len(args) == 2:
             if not isinstance(args[0], FRD) and isinstance(args[0], LTI):
                 # not an FRD, but still a system, second argument should be
@@ -200,11 +211,11 @@ class FrequencyResponseData(LTI):
 
         # Process iosys keywords
         defaults = {
-            'inputs': self.fresp.shape[1], 'outputs': self.fresp.shape[0],
-            'dt': None}
+            'inputs': self.fresp.shape[1], 'outputs': self.fresp.shape[0]}
+        if arg_dt is not None:
+            defaults['dt'] = arg_dt             # choose compatible timebase
         name, inputs, outputs, states, dt = _process_iosys_keywords(
                 kwargs, defaults, end=True)
-        dt = common_timebase(dt, arg_dt)        # choose compatible timebase
 
         # Process signal names
         InputOutputSystem.__init__(
