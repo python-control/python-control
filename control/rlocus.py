@@ -56,10 +56,9 @@ def root_locus_map(sysdata, gains=None):
     Returns
     -------
     rldata : PoleZeroData or list of PoleZeroData
-        Root locus data object(s) corresponding to the .  The loci of
-        the root locus diagram are available in the array
-        `rldata.loci`, indexed by the gain index and the locus index,
-        and the gains are in the array `rldata.gains`.
+        Root locus data object(s).  The loci of the root locus diagram are
+        available in the array `rldata.loci`, indexed by the gain index and
+        the locus index, and the gains are in the array `rldata.gains`.
 
     Notes
     -----

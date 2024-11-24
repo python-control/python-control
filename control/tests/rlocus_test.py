@@ -287,3 +287,18 @@ if __name__ == "__main__":
 
     # Run tests that generate plots for the documentation
     test_root_locus_documentation(savefigs=True)
+
+
+# https://github.com/python-control/python-control/issues/1063
+def test_rlocus_singleton():
+    # Generate a root locus map for a singleton
+    L = ct.tf([1, 1], [1, 2, 3])
+    rldata = ct.root_locus_map(L, 1)
+    np.testing.assert_equal(rldata.gains, np.array([1]))
+    assert rldata.loci.shape == (1, 2)
+
+    # Generate the root locus plot (no loci)
+    cplt = rldata.plot()
+    assert len(cplt.lines[0, 0]) == 1      # poles (one set of markers)
+    assert len(cplt.lines[0, 1]) == 1      # zeros
+    assert len(cplt.lines[0, 2]) == 2      # loci (two 0-length lines)
