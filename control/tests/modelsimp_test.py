@@ -3,11 +3,14 @@
 RMM, 30 Mar 2011 (based on TestModelSimp from v0.4a)
 """
 
+import warnings
+
 import numpy as np
 import pytest
 
+import control as ct
 from control import StateSpace, TimeResponseData, c2d, forced_response, \
-    impulse_response, step_response, rss, tf
+    impulse_response, rss, step_response, tf
 from control.exception import ControlArgument, ControlDimension
 from control.modelsimp import balred, eigensys_realization, hsvd, markov, \
     modred
@@ -343,7 +346,7 @@ class TestModelsimp:
         np.testing.assert_array_almost_equal(rsys.D, Drtrue, decimal=2)
 
     def testModredUnstable(self):
-        """Check if an error is thrown when an unstable system is given"""
+        """Check if warning is issued when an unstable system is given"""
         A = np.array(
             [[4.5418, 3.3999, 5.0342, 4.3808],
              [0.3890, 0.3599, 0.4195, 0.1760],
@@ -353,7 +356,16 @@ class TestModelsimp:
         C = np.array([[1.0, 2.0, 3.0, 4.0], [1.0, 2.0, 3.0, 4.0]])
         D = np.array([[0.0, 0.0], [0.0, 0.0]])
         sys = StateSpace(A, B, C, D)
-        np.testing.assert_raises(ValueError, modred, sys, [2, 3])
+
+        # Make sure we get a warning message
+        with pytest.warns(UserWarning, match="System is unstable"):
+            newsys1 = modred(sys, [2, 3])
+
+        # Make sure we can turn the warning off
+        with warnings.catch_warnings():
+            warnings.simplefilter('error')
+            newsys2 = ct.model_reduction(sys, [2, 3], warn_unstable=False)
+            np.testing.assert_equal(newsys1.A, newsys2.A)
 
     def testModredTruncate(self):
         #balanced realization computed in matlab for the transfer function:
