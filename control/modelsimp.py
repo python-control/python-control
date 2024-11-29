@@ -108,7 +108,7 @@ def hankel_singular_values(sys):
     return hsv[::-1]
 
 
-def model_reduction(sys, ELIM, method='matchdc'):
+def model_reduction(sys, ELIM, method='matchdc', warn_unstable=True):
     """Model reduction by state elimination.
     
     Model reduction of `sys` by eliminating the states in `ELIM` using a given
@@ -122,7 +122,9 @@ def model_reduction(sys, ELIM, method='matchdc'):
         Vector of states to eliminate.
     method : string
         Method of removing states in `ELIM`: either 'truncate' or
-        'matchdc'.
+        'matchdc' (default).
+    warn_unstable: bool, option
+        If `False`, don't warn if system is unstable.
 
     Returns
     -------
@@ -132,12 +134,14 @@ def model_reduction(sys, ELIM, method='matchdc'):
     Raises
     ------
     ValueError
-        Raised under the following conditions:
+        If `method` is not either ``'matchdc'`` or ``'truncate'``.
+    NotImplementedError
+        If `sys` is a discrete time system.
 
-            * if `method` is not either ``'matchdc'`` or ``'truncate'``
-
-            * if eigenvalues of `sys.A` are not all in left half plane
-              (`sys` must be stable)
+    Warns
+    -----
+    UserWarning
+        If eigenvalues of `sys.A` are not all stable.
 
     Examples
     --------
@@ -162,8 +166,8 @@ def model_reduction(sys, ELIM, method='matchdc'):
         raise NotImplementedError("Function not implemented in discrete time")
 
     # Check system is stable
-    if np.any(np.linalg.eigvals(sys.A).real >= 0.0):
-        raise ValueError("Oops, the system is unstable!")
+    if np.any(np.linalg.eigvals(sys.A).real >= 0.0) and warn_unstable:
+        warnings.warn("System is unstable; reduction may be meaningless")
 
     ELIM = np.sort(ELIM)
     # Create list of elements not to eliminate (NELIM)
