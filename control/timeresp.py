@@ -567,8 +567,8 @@ class TimeResponseData:
         :type: 1D, 2D, or 3D array
 
         """
-        t, y = _process_time_response(
-            self.t, self.y, issiso=self.issiso,
+        y = _process_time_response(
+            self.y, issiso=self.issiso,
             transpose=self.transpose, squeeze=self.squeeze)
         return y
 
@@ -631,8 +631,8 @@ class TimeResponseData:
         if self.u is None:
             return None
 
-        t, u = _process_time_response(
-            self.t, self.u, issiso=self.issiso,
+        u = _process_time_response(
+            self.u, issiso=self.issiso,
             transpose=self.transpose, squeeze=self.squeeze)
         return u
 
@@ -1265,7 +1265,7 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
 
 # Process time responses in a uniform way
 def _process_time_response(
-        tout, yout, issiso=False, transpose=None, squeeze=None):
+        signal, issiso=False, transpose=None, squeeze=None):
     """Process time response signals.
 
     This function processes the outputs (or inputs) of time response
@@ -1273,43 +1273,36 @@ def _process_time_response(
 
     Parameters
     ----------
-    T : 1D array
-        Time values of the output.  Ignored if None.
-
-    yout : ndarray
-        Response of the system.  This can either be a 1D array indexed by time
-        (for SISO systems), a 2D array indexed by output and time (for MIMO
-        systems with no input indexing, such as initial_response or forced
-        response) or a 3D array indexed by output, input, and time.
+    signal : ndarray
+        Data to be processed.  This can either be a 1D array indexed by
+        time (for SISO systems), a 2D array indexed by output and time (for
+        MIMO systems with no input indexing, such as initial_response or
+        forced response) or a 3D array indexed by output, input, and time.
 
     issiso : bool, optional
         If ``True``, process data as single-input, single-output data.
         Default is ``False``.
 
     transpose : bool, optional
-        If True, transpose all input and output arrays (for backward
-        compatibility with MATLAB and :func:`scipy.signal.lsim`).  Default
-        value is False.
+        If True, transpose data (for backward compatibility with MATLAB and
+        :func:`scipy.signal.lsim`).  Default value is False.
 
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then the
-        output response is returned as a 1D array (indexed by time).  If
+        signals are returned as a 1D array (indexed by time).  If
         squeeze=True, remove single-dimensional entries from the shape of the
-        output even if the system is not SISO. If squeeze=False, keep the
-        output as a 3D array (indexed by the output, input, and time) even if
+        signal even if the system is not SISO. If squeeze=False, keep the
+        signal as a 3D array (indexed by the output, input, and time) even if
         the system is SISO. The default value can be set using
         config.defaults['control.squeeze_time_response'].
 
     Returns
     -------
-    T : 1D array
-        Time values of the output.
-
-    yout : ndarray
-        Response of the system.  If the system is SISO and squeeze is not
-        True, the array is 1D (indexed by time).  If the system is not SISO or
-        squeeze is False, the array is either 2D (indexed by output and time)
-        or 3D (indexed by input, output, and time).
+    output: ndarray
+        Processd signal.  If the system is SISO and squeeze is not True,
+        the array is 1D (indexed by time).  If the system is not SISO or
+        squeeze is False, the array is either 2D (indexed by output and
+        time) or 3D (indexed by input, output, and time).
 
     """
     # If squeeze was not specified, figure out the default (might remain None)
@@ -1317,29 +1310,26 @@ def _process_time_response(
         squeeze = config.defaults['control.squeeze_time_response']
 
     # Figure out whether and how to squeeze output data
-    if squeeze is True:         # squeeze all dimensions
-        yout = np.squeeze(yout)
-    elif squeeze is False:      # squeeze no dimensions
+    if squeeze is True:                 # squeeze all dimensions
+        signal = np.squeeze(signal)
+    elif squeeze is False:              # squeeze no dimensions
         pass
-    elif squeeze is None:       # squeeze signals if SISO
+    elif squeeze is None:               # squeeze signals if SISO
         if issiso:
-            if yout.ndim == 3:
-                yout = yout[0][0]       # remove input and output
+            if signal.ndim == 3:
+                signal = signal[0][0]   # remove input and output
             else:
-                yout = yout[0]          # remove input
+                signal = signal[0]      # remove input
     else:
         raise ValueError("Unknown squeeze value")
 
     # See if we need to transpose the data back into MATLAB form
     if transpose:
-        # Transpose time vector in case we are using np.matrix
-        tout = np.transpose(tout)
-
         # For signals, put the last index (time) into the first slot
-        yout = np.transpose(yout, np.roll(range(yout.ndim), 1))
+        signal = np.transpose(signal, np.roll(range(signal.ndim), 1))
 
-    # Return time, output, and (optionally) state
-    return tout, yout
+    # Return output
+    return signal
 
 
 def step_response(
