@@ -583,7 +583,7 @@ def dlqr(*args, **kwargs):
 # Function to create an I/O sytems representing a state feedback controller
 def create_statefbk_iosystem(
         sys, gain, feedfwd_gain=None, integral_action=None, estimator=None,
-        controller_type=None, xd_labels=None, ud_labels=None,
+        controller_type=None, xd_labels=None, ud_labels=None, ref_labels=None,
         feedfwd_pattern='trajgen', gainsched_indices=None,
         gainsched_method='linear', control_indices=None, state_indices=None,
         name=None, inputs=None, outputs=None, states=None, **kwargs):
@@ -645,23 +645,14 @@ def create_statefbk_iosystem(
         If an I/O system is given, the error e = x - xd is passed to the
         system and the output is used as the feedback compensation term.
 
-    xd_labels, ud_labels : str or list of str, optional
-        Set the name of the signals to use for the desired state and
-        inputs.  If a single string is specified, it should be a format
-        string using the variable `i` as an index.  Otherwise, a list of
-        strings matching the size of `x_d` and `u_d`, respectively, should
-        be used.  Default is "xd[{i}]" for xd_labels and "ud[{i}]" for
-        ud_labels.  These settings can also be overridden using the
-        `inputs` keyword.
-
-    feedfwd_pattern : str, optional
-        If set to 'refgain', the reference gain design pattern is used to
-        create the controller instead of the trajectory generation pattern.
-
     feedfwd_gain : array_like, optional
         Specify the feedforward gain, `k_f`.  Used only for the reference
         gain design pattern.  If not given and if `sys` is a `StateSpace`
         (linear) system, will be computed as -1/(C (A-BK)^{-1}) B.
+
+    feedfwd_pattern : str, optional
+        If set to 'refgain', the reference gain design pattern is used to
+        create the controller instead of the trajectory generation pattern.
 
     integral_action : ndarray, optional
         If this keyword is specified, the controller can include integral
@@ -703,17 +694,19 @@ def create_statefbk_iosystem(
     Returns
     -------
     ctrl : NonlinearIOSystem
-        Input/output system representing the controller.  This system
-        takes as inputs the desired state `x_d`, the desired input
-        `u_d`, and either the system state `x` or the estimated state
-        `xhat`.  It outputs the controller action `u` according to the
-        formula `u = u_d - K(x - x_d)`.  If the keyword
-        `integral_action` is specified, then an additional set of
-        integrators is included in the control system (with the gain
-        matrix `K` having the integral gains appended after the state
-        gains).  If a gain scheduled controller is specified, the gain
-        (proportional and integral) are evaluated using the scheduling
-        variables specified by `gainsched_indices`.
+        Input/output system representing the controller.  For the 'trajgen'
+        design patter (default), this system takes as inputs the desired
+        state `x_d`, the desired input `u_d`, and either the system state
+        `x` or the estimated state `xhat`.  It outputs the controller
+        action `u` according to the formula `u = u_d - K(x - x_d)`.  For
+        the 'refgain' design patter, the system takes as inputs the
+        reference input `r` and the system or estimated state. If the
+        keyword `integral_action` is specified, then an additional set of
+        integrators is included in the control system (with the gain matrix
+        `K` having the integral gains appended after the state gains).  If
+        a gain scheduled controller is specified, the gain (proportional
+        and integral) are evaluated using the scheduling variables
+        specified by `gainsched_indices`.
 
     clsys : NonlinearIOSystem
         Input/output system representing the closed loop system.  This
@@ -738,6 +731,15 @@ def create_statefbk_iosystem(
         should be a slice or a list of indices.  The list of indices can be
         specified as either integer offsets or as estimator/system output
         signal names.  If not specified, defaults to the system states.
+
+    xd_labels, ud_labels, ref_labels : str or list of str, optional
+        Set the name of the signals to use for the desired state and inputs
+        or the reference inputs (for the 'refgain' design pattern).  If a
+        single string is specified, it should be a format string using the
+        variable `i` as an index.  Otherwise, a list of strings matching
+        the size of `x_d` and `u_d`, respectively, should be used.  Default
+        is "xd[{i}]" for xd_labels and "ud[{i}]" for ud_labels.  These
+        settings can also be overridden using the `inputs` keyword.
 
     inputs, outputs, states : str, or list of str, optional
         List of strings that name the individual signals of the transformed
@@ -835,6 +837,10 @@ def create_statefbk_iosystem(
         # Check for gain scheduled controller
         if len(gain) != 2:
             raise ControlArgument("gain must be a 2-tuple for gain scheduling")
+        elif feedfwd_pattern != 'trajgen':
+            raise NotImplementedError(
+                "Gain scheduling is not implemented for pattern "
+                f"'{feedfwd_pattern}'")
         gains, points = gain[0:2]
 
         # Stack gains and points if past as a list
@@ -842,7 +848,7 @@ def create_statefbk_iosystem(
         points = np.stack(points)
         gainsched = True
 
-    elif isinstance(gain, NonlinearIOSystem):
+    elif isinstance(gain, NonlinearIOSystem) and feedfwd_pattern != 'refgain':
         if controller_type not in ['iosystem', None]:
             raise ControlArgument(
                 f"incompatible controller type '{controller_type}'")
@@ -874,7 +880,10 @@ def create_statefbk_iosystem(
         if inputs is None:
             inputs = xd_labels + ud_labels + estimator.output_labels
     elif feedfwd_pattern == 'refgain':
-        raise NotImplementedError("reference gain pattern not yet implemented")
+        ref_labels = _process_labels(ref_labels, 'r', [
+            f'r[{i}]' for i in range(sys_ninputs)])
+        if inputs is None:
+            inputs = ref_labels + estimator.output_labels
     else:
         raise NotImplementedError(f"unknown pattern '{feedfwd_pattern}'")
 
@@ -1006,7 +1015,32 @@ def create_statefbk_iosystem(
         if controller_type not in ['linear', 'iosystem']:
             raise ControlArgument(
                 "refgain design pattern only supports linear controllers")
-        raise NotImplementedError("reference gain pattern not yet implemented")
+
+        if feedfwd_gain is None:
+            raise ControlArgument(
+                "'feedfwd_gain' required for reference gain pattern")
+
+        # Check to make sure the reference gain is valid
+        Kf = np.atleast_2d(feedfwd_gain)
+        if Kf.ndim != 2 or Kf.shape[0] != sys.ninputs or \
+           Kf.shape[1] != sys.ninputs:
+            raise ControlArgument("feedfwd_gain is not the right shape")
+
+        # Create the matrices implementing the controller
+        # [r, x]->[u]: u = k_f r - K_p x - K_i \int(C x - r)
+        if isctime(sys):
+            # Continuous time: integrator
+            A_lqr = np.zeros((C.shape[0], C.shape[0]))
+        else:
+            # Discrete time: summer
+            A_lqr = np.eye(C.shape[0])
+        B_lqr = np.hstack([-np.eye(C.shape[0], sys_ninputs), C])
+        C_lqr = -K[:, sys_nstates:]                     # integral gain (opt)
+        D_lqr = np.hstack([Kf, -K])
+
+        ctrl = ss(
+            A_lqr, B_lqr, C_lqr, D_lqr, dt=sys.dt, name=name,
+            inputs=inputs, outputs=outputs, states=states)
 
     else:
         raise ControlArgument(f"unknown controller_type '{controller_type}'")
