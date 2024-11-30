@@ -14,8 +14,8 @@ import numpy as np
 
 from . import config
 
-__all__ = ['InputOutputSystem', 'issiso', 'timebase', 'common_timebase',
-           'isdtime', 'isctime']
+__all__ = ['InputOutputSystem', 'NamedSignal', 'issiso', 'timebase',
+           'common_timebase', 'isdtime', 'isctime']
 
 # Define module default parameter values
 _iosys_defaults = {
@@ -31,6 +31,51 @@ _iosys_defaults = {
     'iosys.converted_system_name_prefix': '',
     'iosys.converted_system_name_suffix': '$converted',
 }
+
+
+# Named signal class
+class NamedSignal(np.ndarray):
+    def __new__(cls, input_array, signal_labels=None, trace_labels=None):
+        # See https://numpy.org/doc/stable/user/basics.subclassing.html
+        obj = np.asarray(input_array).view(cls)     # Cast to our class type
+        obj.signal_labels = signal_labels           # Save signal labels
+        obj.trace_labels = trace_labels             # Save trace labels
+        return obj                                  # Return new object
+
+    def __array_finalize__(self, obj):
+        # See https://numpy.org/doc/stable/user/basics.subclassing.html
+        if obj is None: return
+        self.signal_labels = getattr(obj, 'signal_labels', None)
+        self.trace_labels = getattr(obj, 'trace_labels', None)
+
+    def _parse_key(self, key, labels=None):
+        if labels is None:
+            labels = self.signal_labels
+        try:
+            if isinstance(key, str):
+                key = labels.index(item := key)
+            elif isinstance(key, list):
+                keylist = []
+                for item in key:        # use for loop to save item for error
+                    keylist.append(self._parse_key(item, labels=labels))
+                key = keylist
+            elif isinstance(key, tuple):
+                keylist = []
+                keylist.append(
+                    self._parse_key(item := key[0], labels=self.signal_labels))
+                if len(key) > 1:
+                    keylist.append(
+                        self._parse_key(
+                            item := key[1], labels=self.trace_labels))
+                for i in range(2, len(key)):
+                    keylist.append(key[i])      # pass on remaining elements
+                key = tuple(keylist)
+        except ValueError:
+            raise ValueError(f"unknown signal name '{item}'")
+        return key
+
+    def __getitem__(self, key):
+        return super().__getitem__(self._parse_key(key))
 
 
 class InputOutputSystem(object):

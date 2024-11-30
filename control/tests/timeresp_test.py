@@ -537,7 +537,7 @@ class TestTimeresp:
         sysdt = sys.sample(dt, 'impulse')
         np.testing.assert_array_almost_equal(impulse_response(sys, t)[1],
                                              impulse_response(sysdt, t)[1])
-        
+
     def test_discrete_time_impulse_input(self):
         # discrete time impulse input, Only one active input for each trace
         A = [[.5, 0.25],[.0, .5]]
@@ -1318,3 +1318,54 @@ def test_step_info_nonstep():
     assert step_info['Peak'] == 1
     assert step_info['PeakTime'] == 0
     assert isclose(step_info['SteadyStateValue'], 0.96)
+
+
+def test_signal_labels():
+    # Create a system response for a SISO system
+    sys = ct.rss(4, 1, 1)
+    response = ct.step_response(sys)
+
+    # Make sure access via strings works
+    np.testing.assert_equal(response.inputs['u[0]'], response.inputs[0])
+    np.testing.assert_equal(response.states['x[2]'], response.states[2])
+
+    # Make sure access via lists of strings works
+    np.testing.assert_equal(
+        response.states[['x[1]', 'x[2]']], response.states[[1, 2]])
+
+    # Make sure errors are generated if key is unknown
+    with pytest.raises(ValueError, match="unknown signal name 'bad'"):
+        response.inputs['bad']
+
+    with pytest.raises(ValueError, match="unknown signal name 'bad'"):
+        response.states[['x[1]', 'bad']]
+
+    # Create a system response for a MIMO system
+    sys = ct.rss(4, 2, 2)
+    response = ct.step_response(sys)
+
+    # Make sure access via strings works
+    np.testing.assert_equal(
+        response.outputs['y[0]', 'u[1]'],
+        response.outputs[0, 1])
+    np.testing.assert_equal(
+        response.states['x[2]', 'u[0]'], response.states[2, 0])
+
+    # Make sure access via lists of strings works
+    np.testing.assert_equal(
+        response.states[['x[1]', 'x[2]'], 'u[0]'],
+        response.states[[1, 2], 0])
+
+    np.testing.assert_equal(
+        response.outputs[['y[1]'], ['u[1]', 'u[0]']],
+        response.outputs[[1], [1, 0]])
+
+    # Make sure errors are generated if key is unknown
+    with pytest.raises(ValueError, match="unknown signal name 'bad'"):
+        response.inputs['bad']
+
+    with pytest.raises(ValueError, match="unknown signal name 'bad'"):
+        response.states[['x[1]', 'bad']]
+
+    with pytest.raises(ValueError, match=r"unknown signal name 'x\[2\]'"):
+        response.states['x[1]', 'x[2]']         # second index = input name

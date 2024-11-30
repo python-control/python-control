@@ -80,7 +80,7 @@ from scipy.linalg import eig, eigvals, matrix_balance, norm
 
 from . import config
 from .exception import pandas_check
-from .iosys import isctime, isdtime
+from .iosys import NamedSignal, isctime, isdtime
 from .timeplot import time_response_plot
 
 __all__ = ['forced_response', 'step_response', 'step_info',
@@ -567,10 +567,11 @@ class TimeResponseData:
         :type: 1D, 2D, or 3D array
 
         """
+        # TODO: move to __init__ to avoid recomputing each time?
         y = _process_time_response(
             self.y, issiso=self.issiso,
             transpose=self.transpose, squeeze=self.squeeze)
-        return y
+        return NamedSignal(y, self.output_labels, self.input_labels)
 
     # Getter for states (implements squeeze processing)
     @property
@@ -586,6 +587,7 @@ class TimeResponseData:
         :type: 2D or 3D array
 
         """
+        # TODO: move to __init__ to avoid recomputing each time?
         if self.x is None:
             return None
 
@@ -606,7 +608,7 @@ class TimeResponseData:
         if self.transpose:
             x = np.transpose(x, np.roll(range(x.ndim), 1))
 
-        return x
+        return NamedSignal(x, self.state_labels, self.input_labels)
 
     # Getter for inputs (implements squeeze processing)
     @property
@@ -628,15 +630,17 @@ class TimeResponseData:
         :type: 1D or 2D array
 
         """
+        # TODO: move to __init__ to avoid recomputing each time?
         if self.u is None:
             return None
 
         u = _process_time_response(
             self.u, issiso=self.issiso,
             transpose=self.transpose, squeeze=self.squeeze)
-        return u
+        return NamedSignal(u, self.input_labels, self.input_labels)
 
     # Getter for legacy state (implements non-standard squeeze processing)
+    # TODO: remove when no longer needed
     @property
     def _legacy_states(self):
         """Time response state vector (legacy version).
