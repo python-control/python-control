@@ -20,7 +20,8 @@ from scipy.interpolate import splev, splprep
 
 from . import config
 from .exception import pandas_check
-from .iosys import InputOutputSystem, _process_iosys_keywords, common_timebase
+from .iosys import InputOutputSystem, NamedSignal, _process_iosys_keywords, \
+    common_timebase
 from .lti import LTI, _process_frequency_response
 
 __all__ = ['FrequencyResponseData', 'FRD', 'frd']
@@ -243,11 +244,13 @@ class FrequencyResponseData(LTI):
 
     @property
     def magnitude(self):
-        return np.abs(self.fresp)
+        return NamedSignal(
+            np.abs(self.fresp), self.output_labels, self.input_labels)
 
     @property
     def phase(self):
-        return np.angle(self.fresp)
+        return NamedSignal(
+            np.angle(self.fresp), self.output_labels, self.input_labels)
 
     @property
     def frequency(self):
@@ -255,7 +258,8 @@ class FrequencyResponseData(LTI):
 
     @property
     def response(self):
-        return self.fresp
+        return NamedSignal(
+            self.fresp, self.output_labels, self.input_labels)
 
     def __str__(self):
         """String representation of the transfer function."""
