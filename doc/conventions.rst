@@ -157,8 +157,8 @@ names::
 
 Signal names for an indexed subsystem are preserved from the original
 system and the subsystem name is set according to the values of
-`control.config.defaults['iosys.indexed_system_name_prefix'] and
-`control.config.defaults['iosys.indexed_system_name_suffix'].  The default
+`control.config.defaults['iosys.indexed_system_name_prefix']` and
+`control.config.defaults['iosys.indexed_system_name_suffix']`.  The default
 subsystem name is the original system name with '$indexed' appended.
 
 Simulating LTI systems
