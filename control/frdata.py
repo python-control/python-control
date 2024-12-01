@@ -10,6 +10,7 @@ This module contains the FRD class and also functions that operate on
 FRD data.
 """
 
+from collections.abc import Iterable
 from copy import copy
 from warnings import warn
 
@@ -21,7 +22,7 @@ from scipy.interpolate import splev, splprep
 from . import config
 from .exception import pandas_check
 from .iosys import InputOutputSystem, NamedSignal, _process_iosys_keywords, \
-    common_timebase
+    _process_subsys_index, common_timebase
 from .lti import LTI, _process_frequency_response
 
 __all__ = ['FrequencyResponseData', 'FRD', 'frd']
@@ -597,9 +598,25 @@ class FrequencyResponseData(LTI):
             return iter((self.omega, fresp))
         return iter((np.abs(fresp), np.angle(fresp), self.omega))
 
-    # Implement (thin) getitem to allow access via legacy indexing
-    def __getitem__(self, index):
-        return list(self.__iter__())[index]
+    def __getitem__(self, key):
+        if not isinstance(key, Iterable) or len(key) != 2:
+            # Implement (thin) getitem to allow access via legacy indexing
+            return list(self.__iter__())[key]
+
+        # Convert signal names to integer offsets (via NamedSignal object)
+        iomap = NamedSignal(
+            self.fresp[:, :, 0], self.output_labels, self.input_labels)
+        indices = iomap._parse_key(key)
+        outdx, outputs = _process_subsys_index(indices[0], self.output_labels)
+        inpdx, inputs = _process_subsys_index(indices[1], self.input_labels)
+
+        # Create the system name
+        sysname = config.defaults['iosys.indexed_system_name_prefix'] + \
+            self.name + config.defaults['iosys.indexed_system_name_suffix']
+
+        return FrequencyResponseData(
+            self.fresp[outdx, :][:, inpdx], self.omega, self.dt,
+            inputs=inputs, outputs=outputs, name=sysname)
 
     # Implement (thin) len to emulate legacy testing interface
     def __len__(self):

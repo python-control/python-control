@@ -303,3 +303,49 @@ class TestLTI:
             sys([[0.1j, 1j], [1j, 10j]])
         with pytest.raises(ValueError, match="must be 1D"):
             evalfr(sys, [[0.1j, 1j], [1j, 10j]])
+
+
+@pytest.mark.parametrize(
+    "outdx, inpdx, key",
+    [('y[0]', 'u[1]', (0, 1)),
+     (['y[0]'], ['u[1]'], (0, 1)),
+     (slice(0, 1, 1), slice(1, 2, 1), (0, 1)),
+     (['y[0]', 'y[1]'], ['u[1]', 'u[2]'], ([0, 1], [1, 2])),
+     ([0, 'y[1]'], ['u[1]', 2], ([0, 1], [1, 2])),
+     (slice(0, 2, 1), slice(1, 3, 1), ([0, 1], [1, 2])),
+     (['y[2]', 'y[1]'], ['u[2]', 'u[0]'], ([2, 1], [2, 0])),
+    ])
+@pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd])
+def test_subsys_indexing(fcn, outdx, inpdx, key):
+    # Construct the base system and subsystem
+    sys = ct.rss(4, 3, 3)
+    subsys = sys[key]
+
+    # Construct the system to be test
+    match fcn:
+        case ct.frd:
+            omega = np.logspace(-1, 1)
+            sys = fcn(sys, omega)
+            subsys_chk = fcn(subsys, omega)
+        case _:
+            sys = fcn(sys)
+            subsys_chk = fcn(subsys)
+
+    # Construct the subsystem
+    subsys_fcn = sys[outdx, inpdx]
+
+    # Check to make sure everythng matches up
+    match fcn:
+        case ct.frd:
+            np.testing.assert_almost_equal(
+                subsys_fcn.response, subsys_chk.response)
+        case ct.ss:
+            np.testing.assert_almost_equal(subsys_fcn.A, subsys_chk.A)
+            np.testing.assert_almost_equal(subsys_fcn.B, subsys_chk.B)
+            np.testing.assert_almost_equal(subsys_fcn.C, subsys_chk.C)
+            np.testing.assert_almost_equal(subsys_fcn.D, subsys_chk.D)
+        case ct.tf:
+            omega = np.logspace(-1, 1)
+            np.testing.assert_almost_equal(
+                subsys_fcn.frequency_response(omega).response,
+                subsys_chk.frequency_response(omega).response)
