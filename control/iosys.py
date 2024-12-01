@@ -1010,3 +1010,30 @@ def _parse_spec(syslist, spec, signame, dictname=None):
             ValueError(f"signal index '{index}' is out of range")
 
     return system_index, signal_indices, gain
+
+
+#
+# Utility function for processing subsystem indices
+#
+# This function processes an index specification (int, list, or slice) and
+# returns a index specification that can be used to create a subsystem
+#
+def _process_subsys_index(idx, sys_labels, slice_to_list=False):
+    if not isinstance(idx, (slice, list, int)):
+        raise TypeError(f"system indices must be integers, slices, or lists")
+
+    # Convert singleton lists to integers for proper slicing (below)
+    if isinstance(idx, (list, tuple)) and len(idx) == 1:
+        idx = idx[0]
+
+    # Convert int to slice so that numpy doesn't drop dimension
+    if isinstance(idx, int): idx = slice(idx, idx+1, 1)
+
+    # Get label names (taking care of possibility that we were passed a list)
+    labels = [sys_labels[i] for i in idx] if isinstance(idx, list) \
+        else sys_labels[idx]
+
+    if slice_to_list and isinstance(idx, slice):
+        idx = range(len(sys_labels))[idx]
+
+    return idx, labels
