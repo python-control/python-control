@@ -608,25 +608,15 @@ class TimeResponseData:
 
         """
         # TODO: move to __init__ to avoid recomputing each time?
-        if self.x is None:
-            return None
+        x = _process_time_response(
+            self.x, transpose=self.transpose,
+            squeeze=self.squeeze, issiso=False)
 
-        elif self.squeeze is True:
-            x = self.x.squeeze()
-
-        elif self.ninputs == 1 and self.noutputs == 1 and \
-             self.ntraces == 1 and self.x.ndim == 3 and \
+        # Special processing for SISO case: always retain state index
+        if self.issiso and self.ntraces == 1 and x.ndim == 3 and \
              self.squeeze is not False:
             # Single-input, single-output system with single trace
-            x = self.x[:, 0, :]
-
-        else:
-            # Return the full set of data
-            x = self.x
-
-        # Transpose processing
-        if self.transpose:
-            x = np.transpose(x, np.roll(range(x.ndim), 1))
+            x = x[:, 0, :]
 
         return NamedSignal(x, self.state_labels, self.input_labels)
 
