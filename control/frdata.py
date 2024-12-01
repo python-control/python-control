@@ -91,6 +91,20 @@ class FrequencyResponseData(LTI):
     the imaginary access).  See :meth:`~control.FrequencyResponseData.__call__`
     for a more detailed description.
 
+    A state space system is callable and returns the value of the transfer
+    function evaluated at a point in the complex plane.  See
+    :meth:`~control.StateSpace.__call__` for a more detailed description.
+
+    Subsystem response corresponding to selected input/output pairs can be
+    created by indexing the frequency response data object::
+
+        subsys = sys[output_spec, input_spec]
+
+    The input and output specifications can be single integers, lists of
+    integers, or slices.  In addition, the strings representing the names
+    of the signals can be used and will be replaced with the equivalent
+    signal offsets.
+
     """
     #
     # Class attributes
@@ -606,7 +620,7 @@ class FrequencyResponseData(LTI):
         # Convert signal names to integer offsets (via NamedSignal object)
         iomap = NamedSignal(
             self.fresp[:, :, 0], self.output_labels, self.input_labels)
-        indices = iomap._parse_key(key)
+        indices = iomap._parse_key(key, level=1)  # ignore index checks
         outdx, outputs = _process_subsys_index(indices[0], self.output_labels)
         inpdx, inputs = _process_subsys_index(indices[1], self.input_labels)
 

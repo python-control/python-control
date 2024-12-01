@@ -204,34 +204,50 @@ class TimeResponseData:
 
     Notes
     -----
-    1. For backward compatibility with earlier versions of python-control,
-       this class has an ``__iter__`` method that allows it to be assigned
-       to a tuple with a variable number of elements.  This allows the
-       following patterns to work:
+    The responses for individual elements of the time response can be
+    accessed using integers, slices, or lists of signal offsets or the
+    names of the appropriate signals::
 
-         t, y = step_response(sys)
-         t, y, x = step_response(sys, return_x=True)
+      sys = ct.rss(4, 2, 1)
+      resp = ct.initial_response(sys, X0=[1, 1, 1, 1])
+      plt.plot(resp.time, resp.outputs['y[0]'])
 
-       When using this (legacy) interface, the state vector is not affected by
-       the `squeeze` parameter.
+    In the case of multi-trace data, the responses should be indexed using
+    the output signal name (or offset) and the input signal name (or
+    offset)::
 
-    2. For backward compatibility with earlier version of python-control,
-       this class has ``__getitem__`` and ``__len__`` methods that allow the
-       return value to be indexed:
+      sys = ct.rss(4, 2, 2, strictly_proper=True)
+      resp = ct.step_response(sys)
+      plt.plot(resp.time, resp.outputs[['y[0]', 'y[1]'], 'u[0]'].T)
 
-         response[0]: returns the time vector
-         response[1]: returns the output vector
-         response[2]: returns the state vector
+    For backward compatibility with earlier versions of python-control,
+    this class has an ``__iter__`` method that allows it to be assigned to
+    a tuple with a variable number of elements.  This allows the following
+    patterns to work::
 
-       When using this (legacy) interface, the state vector is not affected by
-       the `squeeze` parameter.
+       t, y = step_response(sys)
+       t, y, x = step_response(sys, return_x=True)
 
-    3. The default settings for ``return_x``, ``squeeze`` and ``transpose``
-       can be changed by calling the class instance and passing new values:
+     When using this (legacy) interface, the state vector is not affected
+     by the `squeeze` parameter.
+
+    For backward compatibility with earlier version of python-control, this
+    class has ``__getitem__`` and ``__len__`` methods that allow the return
+    value to be indexed:
+
+       response[0]: returns the time vector
+       response[1]: returns the output vector
+       response[2]: returns the state vector
+
+    When using this (legacy) interface, the state vector is not affected
+    by the `squeeze` parameter.
+
+    The default settings for ``return_x``, ``squeeze`` and ``transpose``
+    can be changed by calling the class instance and passing new values::
 
          response(tranpose=True).input
 
-       See :meth:`TimeResponseData.__call__` for more information.
+     See :meth:`TimeResponseData.__call__` for more information.
 
     """
 
@@ -1302,8 +1318,8 @@ def _process_time_response(
 
     Returns
     -------
-    output: ndarray
-        Processd signal.  If the system is SISO and squeeze is not True,
+    output : ndarray
+        Processed signal.  If the system is SISO and squeeze is not True,
         the array is 1D (indexed by time).  If the system is not SISO or
         squeeze is False, the array is either 2D (indexed by output and
         time) or 3D (indexed by input, output, and time).

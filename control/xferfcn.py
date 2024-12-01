@@ -147,6 +147,16 @@ class TransferFunction(LTI):
     function evaluated at a point in the complex plane.  See
     :meth:`~control.TransferFunction.__call__` for a more detailed description.
 
+    Subsystems corresponding to selected input/output pairs can be
+    created by indexing the transfer function::
+
+        subsys = sys[output_spec, input_spec]
+
+    The input and output specifications can be single integers, lists of
+    integers, or slices.  In addition, the strings representing the names
+    of the signals can be used and will be replaced with the equivalent
+    signal offsets.
+
     The TransferFunction class defines two constants ``s`` and ``z`` that
     represent the differentiation and delay operators in continuous and
     discrete time.  These can be used to create variables that allow algebraic
@@ -769,7 +779,7 @@ class TransferFunction(LTI):
         iomap = NamedSignal(
             np.empty((self.noutputs, self.ninputs)),
             self.output_labels, self.input_labels)
-        indices = iomap._parse_key(key)
+        indices = iomap._parse_key(key, level=1)  # ignore index checks
         outdx, outputs = _process_subsys_index(
             indices[0], self.output_labels, slice_to_list=True)
         inpdx, inputs = _process_subsys_index(

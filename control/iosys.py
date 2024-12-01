@@ -13,6 +13,7 @@ from warnings import warn
 import numpy as np
 
 from . import config
+from .exception import ControlIndexError
 
 __all__ = ['InputOutputSystem', 'NamedSignal', 'issiso', 'timebase',
            'common_timebase', 'isdtime', 'isctime']
@@ -40,6 +41,7 @@ class NamedSignal(np.ndarray):
         obj = np.asarray(input_array).view(cls)     # Cast to our class type
         obj.signal_labels = signal_labels           # Save signal labels
         obj.trace_labels = trace_labels             # Save trace labels
+        obj.data_shape = input_array.shape          # Save data shape
         return obj                                  # Return new object
 
     def __array_finalize__(self, obj):
@@ -47,31 +49,47 @@ class NamedSignal(np.ndarray):
         if obj is None: return
         self.signal_labels = getattr(obj, 'signal_labels', None)
         self.trace_labels = getattr(obj, 'trace_labels', None)
+        self.data_shape = getattr(obj, 'data_shape', None)
 
-    def _parse_key(self, key, labels=None):
+    def _parse_key(self, key, labels=None, level=0):
         if labels is None:
             labels = self.signal_labels
         try:
             if isinstance(key, str):
                 key = labels.index(item := key)
+                if level == 0 and len(self.data_shape) < 2:
+                    raise ControlIndexError
             elif isinstance(key, list):
                 keylist = []
                 for item in key:        # use for loop to save item for error
-                    keylist.append(self._parse_key(item, labels=labels))
+                    keylist.append(
+                        self._parse_key(item, labels=labels, level=level+1))
+                if level == 0 and key != keylist and len(self.data_shape) < 2:
+                    raise ControlIndexError
                 key = keylist
             elif isinstance(key, tuple) and len(key) > 0:
                 keylist = []
                 keylist.append(
-                    self._parse_key(item := key[0], labels=self.signal_labels))
+                    self._parse_key(
+                        item := key[0], labels=self.signal_labels,
+                        level=level+1))
                 if len(key) > 1:
                     keylist.append(
                         self._parse_key(
-                            item := key[1], labels=self.trace_labels))
+                            item := key[1], labels=self.trace_labels,
+                            level=level+1))
+                if level == 0 and key[:len(keylist)] != tuple(keylist) \
+                   and len(keylist) > len(self.data_shape) - 1:
+                    raise ControlIndexError
                 for i in range(2, len(key)):
                     keylist.append(key[i])      # pass on remaining elements
                 key = tuple(keylist)
         except ValueError:
             raise ValueError(f"unknown signal name '{item}'")
+        except ControlIndexError:
+            raise ControlIndexError(
+                "signal name(s) not valid for squeezed data")
+
         return key
 
     def __getitem__(self, key):

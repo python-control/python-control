@@ -1326,7 +1326,6 @@ def test_signal_labels():
     response = ct.step_response(sys)
 
     # Make sure access via strings works
-    np.testing.assert_equal(response.inputs['u[0]'], response.inputs[0])
     np.testing.assert_equal(response.states['x[2]'], response.states[2])
 
     # Make sure access via lists of strings works

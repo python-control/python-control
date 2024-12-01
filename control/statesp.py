@@ -153,6 +153,17 @@ class StateSpace(NonlinearIOSystem, LTI):
     function evaluated at a point in the complex plane.  See
     :meth:`~control.StateSpace.__call__` for a more detailed description.
 
+    Subsystems corresponding to selected input/output pairs can be
+    created by indexing the state space system::
+
+        subsys = sys[output_spec, input_spec]
+
+    The input and output specifications can be single integers, lists of
+    integers, or slices.  In addition, the strings representing the names
+    of the signals can be used and will be replaced with the equivalent
+    signal offsets.  The subsystem is created by truncating the inputs and
+    outputs, but leaving the full set of system states.
+
     StateSpace instances have support for IPython LaTeX output,
     intended for pretty-printing in Jupyter notebooks.  The LaTeX
     output can be configured using
@@ -1221,7 +1232,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         # Convert signal names to integer offsets
         iomap = NamedSignal(self.D, self.output_labels, self.input_labels)
-        indices = iomap._parse_key(key)
+        indices = iomap._parse_key(key, level=1)  # ignore index checks
         outdx, output_labels = _process_subsys_index(
             indices[0], self.output_labels)
         inpdx, input_labels = _process_subsys_index(
