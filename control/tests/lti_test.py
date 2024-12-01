@@ -305,6 +305,7 @@ class TestLTI:
             evalfr(sys, [[0.1j, 1j], [1j, 10j]])
 
 
+@slycotonly
 @pytest.mark.parametrize(
     "outdx, inpdx, key",
     [('y[0]', 'u[1]', (0, 1)),

@@ -59,7 +59,7 @@ class NamedSignal(np.ndarray):
                 for item in key:        # use for loop to save item for error
                     keylist.append(self._parse_key(item, labels=labels))
                 key = keylist
-            elif isinstance(key, tuple):
+            elif isinstance(key, tuple) and len(key) > 0:
                 keylist = []
                 keylist.append(
                     self._parse_key(item := key[0], labels=self.signal_labels))
