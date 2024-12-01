@@ -79,6 +79,11 @@ the data from the simulation::
       for j in range(2):
           axs[i, j].plot(time, outputs[i, j])
 
+In addition to accessing time response data via integer indices, signal
+names can allow be used::
+
+  plt.plot(response.time, response.outputs['y[0]', 'u[1]'])
+
 A number of options are available in the `plot` method to customize
 the appearance of input output data.  For data produced by the
 :func:`~control.impulse_response` and :func:`~control.step_response`
@@ -278,6 +283,19 @@ maximum frequencies in the (log-spaced) frequency range::
 The number of (log-spaced) points in the frequency can be specified using
 the ``omega_num`` keyword parameter.
 
+Frequency response data can also be accessed directly and plotted manually::
+
+  sys = ct.rss(4, 2, 2, strictly_proper=True)  # 2x2 MIMO system
+  fresp = ct.frequency_response(sys)
+  plt.loglog(fresp.omega, fresp.magnitude['y[1]', 'u[0]'])
+
+Access to frequency response data is available via the attributes
+``omega``, ``magnitude``,` `phase``, and ``response``, where ``response``
+represents the complex value of the frequency response at each frequency.
+The ``magnitude``,` `phase``, and ``response`` arrays can be indexed using
+either input/output indices or signal names, with the first index
+corresponding to the output signal and the second input corresponding to
+the input signal.
 
 Pole/zero data
 ==============

@@ -228,16 +228,12 @@ class TimeResponseData:
        t, y = step_response(sys)
        t, y, x = step_response(sys, return_x=True)
 
-     When using this (legacy) interface, the state vector is not affected
-     by the `squeeze` parameter.
+    Similarly, the class has ``__getitem__`` and ``__len__`` methods that
+    allow the return value to be indexed:
 
-    For backward compatibility with earlier version of python-control, this
-    class has ``__getitem__`` and ``__len__`` methods that allow the return
-    value to be indexed:
-
-       response[0]: returns the time vector
-       response[1]: returns the output vector
-       response[2]: returns the state vector
+    * response[0]: returns the time vector
+    * response[1]: returns the output vector
+    * response[2]: returns the state vector
 
     When using this (legacy) interface, the state vector is not affected
     by the `squeeze` parameter.
@@ -580,6 +576,10 @@ class TimeResponseData:
         (for multiple traces).  See :attr:`TimeResponseData.squeeze` for a
         description of how this can be modified using the `squeeze` keyword.
 
+        Input and output signal names can be used to index the data in
+        place of integer offsets, with the input signal names being used to
+        access multi-input data.
+
         :type: 1D, 2D, or 3D array
 
         """
@@ -599,6 +599,10 @@ class TimeResponseData:
         and time (for multiple traces).  See :attr:`TimeResponseData.squeeze`
         for a description of how this can be modified using the `squeeze`
         keyword.
+
+        Input and output signal names can be used to index the data in
+        place of integer offsets, with the input signal names being used to
+        access multi-input data.
 
         :type: 2D or 3D array
 
@@ -638,6 +642,10 @@ class TimeResponseData:
         The optional ``multi_trace`` keyword should be used to disambiguate
         the two.  If a 3D vector is passed, then it represents a multi-trace,
         multi-input signal, indexed by input, trace, and time.
+
+        Input and output signal names can be used to index the data in
+        place of integer offsets, with the input signal names being used to
+        access multi-input data.
 
         See :attr:`TimeResponseData.squeeze` for a description of how the
         dimensions of the input vector can be modified using the `squeeze`

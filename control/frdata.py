@@ -35,8 +35,8 @@ class FrequencyResponseData(LTI):
 
     The FrequencyResponseData (FRD) class is used to represent systems in
     frequency response data form.  It can be created manually using the
-    class constructor, using the :func:~~control.frd` factory function
-    (preferred), or via the :func:`~control.frequency_response` function.
+    class constructor, using the :func:`~control.frd` factory function or
+    via the :func:`~control.frequency_response` function.
 
     Parameters
     ----------
@@ -67,6 +67,28 @@ class FrequencyResponseData(LTI):
         frequency point.
     dt : float, True, or None
         System timebase.
+    squeeze : bool
+        By default, if a system is single-input, single-output (SISO) then
+        the outputs (and inputs) are returned as a 1D array (indexed by
+        frequency) and if a system is multi-input or multi-output, then the
+        outputs are returned as a 2D array (indexed by output and
+        frequency) or a 3D array (indexed by output, trace, and frequency).
+        If ``squeeze=True``, access to the output response will remove
+        single-dimensional entries from the shape of the inputs and outputs
+        even if the system is not SISO. If ``squeeze=False``, the output is
+        returned as a 3D array (indexed by the output, input, and
+        frequency) even if the system is SISO. The default value can be set
+        using config.defaults['control.squeeze_frequency_response'].
+    ninputs, noutputs, nstates : int
+        Number of inputs, outputs, and states of the underlying system.
+    input_labels, output_labels : array of str
+        Names for the input and output variables.
+    sysname : str, optional
+        Name of the system.  For data generated using
+        :func:`~control.frequency_response`, stores the name of the system
+        that created the data.
+    title : str, optional
+        Set the title to use when plotting.
 
     See Also
     --------
@@ -259,24 +281,72 @@ class FrequencyResponseData(LTI):
 
     @property
     def magnitude(self):
+        """Magnitude of the frequency response.
+
+        Magnitude of the frequency response, indexed by either the output
+        and frequency (if only a single input is given) or the output,
+        input, and frequency (for multi-input systems).  See
+        :attr:`FrequencyResponseData.squeeze` for a description of how this
+        can be modified using the `squeeze` keyword.
+
+        Input and output signal names can be used to index the data in
+        place of integer offsets.
+
+        :type: 1D, 2D, or 3D array
+
+        """
         return NamedSignal(
             np.abs(self.fresp), self.output_labels, self.input_labels)
 
     @property
     def phase(self):
+        """Phase of the frequency response.
+
+        Phase of the frequency response in radians/sec, indexed by either
+        the output and frequency (if only a single input is given) or the
+        output, input, and frequency (for multi-input systems).  See
+        :attr:`FrequencyResponseData.squeeze` for a description of how this
+        can be modified using the `squeeze` keyword.
+
+        Input and output signal names can be used to index the data in
+        place of integer offsets.
+
+        :type: 1D, 2D, or 3D array
+
+        """
         return NamedSignal(
             np.angle(self.fresp), self.output_labels, self.input_labels)
 
     @property
     def frequency(self):
+        """Frequencies at which the response is evaluated.
+
+        :type: 1D array
+
+        """
         return self.omega
 
     @property
     def response(self):
+        """Complex value of the frequency response.
+
+        Value of the frequency response as a complex number, indexed by
+        either the output and frequency (if only a single input is given)
+        or the output, input, and frequency (for multi-input systems).  See
+        :attr:`FrequencyResponseData.squeeze` for a description of how this
+        can be modified using the `squeeze` keyword.
+
+        Input and output signal names can be used to index the data in
+        place of integer offsets.
+
+        :type: 1D, 2D, or 3D array
+
+        """
         return NamedSignal(
             self.fresp, self.output_labels, self.input_labels)
 
     def __str__(self):
+
         """String representation of the transfer function."""
 
         mimo = self.ninputs > 1 or self.noutputs > 1
