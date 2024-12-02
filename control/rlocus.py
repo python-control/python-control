@@ -88,7 +88,7 @@ def root_locus_map(sysdata, gains=None):
             root_array = _RLSortRoots(root_array)
 
         responses.append(PoleZeroData(
-            sys.poles(), sys.zeros(), kvect, root_array,
+            sys.poles(), sys.zeros(), kvect, root_array, sort_loci=False,
             dt=sys.dt, sysname=sys.name, sys=sys))
 
     if isinstance(sysdata, (list, tuple)):
