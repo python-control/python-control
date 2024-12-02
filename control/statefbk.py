@@ -610,7 +610,7 @@ def create_statefbk_iosystem(
 
     where :math:`\mu` represents the scheduling variable.
 
-    Alternatively, a control of the form
+    Alternatively, a controller of the form
 
     .. math:: u = k_f r - K_p x - K_i \int(C x - r)
 
@@ -652,7 +652,8 @@ def create_statefbk_iosystem(
 
     feedfwd_pattern : str, optional
         If set to 'refgain', the reference gain design pattern is used to
-        create the controller instead of the trajectory generation pattern.
+        create the controller instead of the trajectory generation
+        ('trajgen') pattern.
 
     integral_action : ndarray, optional
         If this keyword is specified, the controller can include integral

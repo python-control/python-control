@@ -127,7 +127,7 @@ class TestStateSpace:
          ((1, 2), TypeError, "1, 4, or 5 arguments"),
          ((np.ones((3, 2)), np.ones((3, 2)),
            np.ones((2, 2)), np.ones((2, 2))), ValueError,
-          "A is the wrong shape; expected \(3, 3\)"), 
+          "A is the wrong shape; expected \(3, 3\)"),
          ((np.ones((3, 3)), np.ones((2, 2)),
            np.ones((2, 3)), np.ones((2, 2))), ValueError,
           "B is the wrong shape; expected \(3, 2\)"),
