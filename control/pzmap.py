@@ -79,7 +79,7 @@ class PoleZeroData:
         System name.
     sys : StateSpace or TransferFunction
         System corresponding to the data.
-    sort_loci : bool, optional)
+    sort_loci : bool, optional
         Set to False to turn off sorting of loci into unique branches.
 
     """
