@@ -138,20 +138,33 @@ def model_reduction(
     # Check system is stable
     if warn_unstable:
         if isctime(sys) and np.any(np.linalg.eigvals(sys.A).real >= 0.0) or \
-           np.any(np.abs(np.linalg.eigvals(sys.A)) >= 1):
+           isdtime(sys) and np.any(np.abs(np.linalg.eigvals(sys.A)) >= 1):
             warnings.warn("System is unstable; reduction may be meaningless")
 
     # Utility function to process keep/elim keywords
-    def _process_elim_or_keep(elim, keep, labels):
-        elim = np.sort(elim).tolist()
-        return elim, [i for i in range(len(labels)) if i not in elim]
+    def _process_elim_or_keep(elim, keep, labels, allow_both=False):
+        elim = [] if elim is None else np.atleast_1d(elim)
+        keep = [] if keep is None else np.atleast_1d(keep)
+            
+        if len(elim) > 0 and len(keep) > 0:
+            if not allow_both:
+                raise ValueError(
+                    "can't provide both 'keep' and 'elim' for same variables")
+        elif len(keep) > 0:
+            keep = np.sort(keep).tolist()
+            elim = [i for i in range(len(labels)) if i not in keep]
+        else:
+            elim = [] if elim is None else np.sort(elim).tolist()
+            keep = [i for i in range(len(labels)) if i not in elim]
+        return elim, keep
 
     # Determine which states to keep
     elim_states, keep_states = _process_elim_or_keep(
         elim_states, keep_states, sys.state_labels)
-
-    keep_inputs = slice(None, None)
-    keep_outputs = slice(None, None)
+    elim_inputs, keep_inputs = _process_elim_or_keep(
+        elim_inputs, keep_inputs, sys.input_labels)
+    elim_outputs, keep_outputs = _process_elim_or_keep(
+        elim_outputs, keep_outputs, sys.output_labels)
 
     # Create submatrix of states we are keeping
     A11 = sys.A[:, keep_states][keep_states, :]     # states we are keeping
@@ -166,11 +179,11 @@ def model_reduction(
     C2 = sys.C[:, elim_states]
 
     # Figure out the new state space system
-    if method == 'matchdc':
+    if method == 'matchdc' and A22.size > 0:
         if sys.isdtime(strict=True):
             raise NotImplementedError(
                 "'matchdc' not (yet) supported for discrete time systems")
-
+        
         # if matchdc, residualize
         # Check if the matrix A22 is invertible
         if np.linalg.matrix_rank(A22) != len(elim_states):
@@ -190,8 +203,8 @@ def model_reduction(
         Cr = C1 - C2 @ A22I_A21
         Dr = sys.D - C2 @ A22I_B2
 
-    elif method == 'truncate':
-        # if truncate, simply discard state x2
+    elif method == 'truncate' or A22.size == 0:
+        # Get rid of unwanted states
         Ar = A11
         Br = B1
         Cr = C1

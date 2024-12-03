@@ -3,6 +3,7 @@
 RMM, 30 Mar 2011 (based on TestModelSimp from v0.4a)
 """
 
+import math
 import warnings
 
 import numpy as np
@@ -45,7 +46,7 @@ class TestModelsimp:
                                     inputs=U,
                                     input_labels='u',
                                     )
-        
+
         # setup
         m = 3
         Htrue = np.array([1., 0., 0.])
@@ -104,7 +105,6 @@ class TestModelsimp:
         HT = markov(response, m)
         np.testing.assert_array_almost_equal(HT, np.transpose(Htrue))
         response.transpose=False
-        
 
         # Test example from docstring
         # TODO: There is a problem here, last markov parameter does not fit
@@ -215,7 +215,7 @@ class TestModelsimp:
         Mtrue = np.hstack([Hd.D] + [
             Hd.C @ np.linalg.matrix_power(Hd.A, i) @ Hd.B
             for i in range(m-1)])
-        
+
         Mtrue = np.squeeze(Mtrue)
 
         # Generate input/output data
@@ -241,8 +241,8 @@ class TestModelsimp:
         Mcomp_scaled = markov(response, m, dt=Ts)
 
         np.testing.assert_allclose(Mtrue, Mcomp, rtol=1e-6, atol=1e-8)
-        np.testing.assert_allclose(Mtrue_scaled, Mcomp_scaled, rtol=1e-6, atol=1e-8)
-        
+        np.testing.assert_allclose(
+            Mtrue_scaled, Mcomp_scaled, rtol=1e-6, atol=1e-8)
 
     def testERASignature(self):
 
@@ -256,7 +256,7 @@ class TestModelsimp:
         B = np.array([[1.],[1.,]])
         C = np.array([[1., 0.,]])
         D = np.array([[0.,]])
-        
+
         T = np.arange(0,10,1)
         sysd_true = StateSpace(A,B,C,D,True)
         ir_true = impulse_response(sysd_true,T=T)
@@ -265,7 +265,7 @@ class TestModelsimp:
         sysd_est, _  = eigensys_realization(ir_true,r=2)
         ir_est = impulse_response(sysd_est, T=T)
         _, H_est = ir_est
-    
+
         np.testing.assert_allclose(H_true, H_est, rtol=1e-6, atol=1e-8)
 
         # test ndarray
@@ -273,7 +273,7 @@ class TestModelsimp:
         sysd_est, _  = eigensys_realization(YY_true,r=2)
         ir_est = impulse_response(sysd_est, T=T)
         _, H_est = ir_est
-    
+
         np.testing.assert_allclose(H_true, H_est, rtol=1e-6, atol=1e-8)
 
         # test mimo
@@ -307,10 +307,10 @@ class TestModelsimp:
         step_true = step_response(sysd_true)
         step_est = step_response(sysd_est)
 
-        np.testing.assert_allclose(step_true.outputs, 
+        np.testing.assert_allclose(step_true.outputs,
                                    step_est.outputs,
                                    rtol=1e-6, atol=1e-8)
-        
+
         # test ndarray
         _, YY_true = ir_true
         sysd_est, _  = eigensys_realization(YY_true,r=4,dt=dt)
@@ -318,7 +318,7 @@ class TestModelsimp:
         step_true = step_response(sysd_true, T=T)
         step_est = step_response(sysd_est, T=T)
 
-        np.testing.assert_allclose(step_true.outputs, 
+        np.testing.assert_allclose(step_true.outputs,
                                    step_est.outputs,
                                    rtol=1e-6, atol=1e-8)
 
@@ -403,7 +403,7 @@ class TestModelsimp:
         B = np.array([[2.], [0.], [0.], [0.]])
         C = np.array([[0.5, 0.6875, 0.7031, 0.5]])
         D = np.array([[0.]])
-        
+
         sys = StateSpace(A, B, C, D)
         orders = 2
         rsys = balred(sys, orders, method='truncate')
@@ -424,7 +424,7 @@ class TestModelsimp:
                 # Apply a similarity transformation
                 Ar, Br, Cr = T @ Ar @ T, T @ Br, Cr @ T
                 break
-            
+
         # Make sure we got the correct answer
         np.testing.assert_array_almost_equal(Ar, Artrue, decimal=2)
         np.testing.assert_array_almost_equal(Br, Brtrue, decimal=4)
@@ -444,12 +444,12 @@ class TestModelsimp:
         B = np.array([[2.], [0.], [0.], [0.]])
         C = np.array([[0.5, 0.6875, 0.7031, 0.5]])
         D = np.array([[0.]])
-        
+
         sys = StateSpace(A, B, C, D)
         orders = 2
         rsys = balred(sys,orders,method='matchdc')
         Ar, Br, Cr, Dr = rsys.A, rsys.B, rsys.C, rsys.D
-        
+
         # Result from MATLAB
         Artrue = np.array(
             [[-4.43094773, -4.55232904],
@@ -457,7 +457,7 @@ class TestModelsimp:
         Brtrue = np.array([[1.36235673], [1.03114388]])
         Crtrue = np.array([[1.36235673, 1.03114388]])
         Drtrue = np.array([[-0.08383902]])
-        
+
         # Look for possible changes in state in slycot
         T1 = np.array([[1, 0], [0, -1]])
         T2 = np.array([[-1, 0], [0, 1]])
@@ -467,9 +467,44 @@ class TestModelsimp:
                 # Apply a similarity transformation
                 Ar, Br, Cr = T @ Ar @ T, T @ Br, Cr @ T
                 break
-            
+
         # Make sure we got the correct answer
         np.testing.assert_array_almost_equal(Ar, Artrue, decimal=2)
         np.testing.assert_array_almost_equal(Br, Brtrue, decimal=4)
         np.testing.assert_array_almost_equal(Cr, Crtrue, decimal=4)
         np.testing.assert_array_almost_equal(Dr, Drtrue, decimal=4)
+
+
+@pytest.mark.parametrize("kwargs, nstates, noutputs, ninputs", [
+    ({'elim_states': [1, 3]}, 3, 3, 3),
+    ({'elim_inputs': [1, 2], 'keep_states': [1, 3]}, 2, 3, 1),
+    ({'elim_outputs': [1, 2], 'keep_inputs': [0, 1],}, 5, 1, 2),
+    ({'keep_states': [2, 0], 'keep_outputs': [0, 1]}, 2, 2, 3),
+    ({'elim_inputs': [0, 1, 2]}, 5, 3, 0),              # no inputs
+    ({'elim_outputs': [0, 1, 2]}, 5, 0, 3),             # no outputs
+    ({'elim_states': [0, 1, 2, 3, 4]}, 0, 3, 3),        # no states
+    ({'elim_states': [0, 1], 'keep_states': [1, 2]}, None, None, None)
+])
+@pytest.mark.parametrize("method", ['truncate', 'matchdc'])
+def test_model_reduction(method, kwargs, nstates, noutputs, ninputs):
+    sys = ct.rss(5, 3, 3)
+
+    if nstates is None:
+        # Arguments should generate an error
+        with pytest.raises(ValueError, match="can't provide both"):
+            red = ct.model_reduction(sys, **kwargs, method=method)
+        return
+    else:
+        red = ct.model_reduction(sys, **kwargs, method=method)
+
+    assert red.nstates == nstates
+    assert red.ninputs == ninputs
+    assert red.noutputs == noutputs
+
+    if method == 'matchdc':
+        # Define a new system with truncated inputs and outputs
+        # (assumes we always keep the initial inputs and outputs)
+        chk = ct.ss(
+            sys.A, sys.B[:, :ninputs], sys.C[:noutputs, :],
+            sys.D[:noutputs, :][:, :ninputs])
+        np.testing.assert_allclose(red(0), chk(0))
