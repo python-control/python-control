@@ -432,7 +432,6 @@ class TestEnsureTf:
     def test_ensure(self, arraylike_or_tf, dt, tf):
         """Test nominal cases"""
         ensured_tf = _ensure_tf(arraylike_or_tf, dt)
-        pass
         assert _tf_close_coeff(tf, ensured_tf)
 
     @pytest.mark.parametrize(
