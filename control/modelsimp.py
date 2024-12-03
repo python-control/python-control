@@ -83,12 +83,15 @@ def model_reduction(
     """Model reduction by input, output, or state elimination.
 
     This function produces a reduced-order model of a system by eliminating
-    specified inputs,outputs, or states from the original system.  The
+    specified inputs, outputs, and/or states from the original system.  The
     specific states, inputs, or outputs that are eliminated can be
-    specified by listing either the states, inputs, or outputs to be
-    eliminated or those to be kept.  In addition, unused states (those that
-    do not affect the inputs or outputs of the reduced system) can also be
-    eliminated.
+    specified by either listing the states, inputs, or outputs to be
+    eliminated or those to be kept.
+
+    Two methods of state reduction are possible: 'truncate' removes the
+    states marked for elimination, while 'matchdc' replaces the the
+    eliminated states with their equilibrium values (thereby keeping the
+    input/output gain unchanged at zero frequency ["DC"]).
 
     Parameters
     ----------
@@ -100,9 +103,6 @@ def model_reduction(
     keep_inputs, keep_outputs, keep_states : array, optional
         Vector of inputs, outputs, or states to keep.  Can be specified
         either as an offset into the appropriate vector or as a signal name.
-    remove_hidden_states : str, optional
-        If `unobs` (default), then eliminate any states that are unobservable
-        via the reduced-order system outputs.
     method : string
         Method of removing states in `elim`: either 'truncate' or
         'matchdc' (default).
@@ -117,7 +117,9 @@ def model_reduction(
     Raises
     ------
     ValueError
-        If `method` is not either ``'matchdc'`` or ``'truncate'``.
+        If `method` is not either 'matchdc' or 'truncate'.
+    NotImplementedError
+        If the 'matchdc' method is used for a discrete time system.
 
     Warns
     -----
@@ -130,6 +132,19 @@ def model_reduction(
     >>> Gr = ct.model_reduction(G, [0, 2], method='matchdc')
     >>> Gr.nstates
     2
+
+    See Also
+    --------
+    balanced_reduction : Eliminate states using Hankel singular values.
+    minimal_realization : Eliminate unreachable or unobseravble states.
+
+    Notes
+    -----
+    The model_reduction function issues a warning if the system has
+    unstable eigenvalues, since in those situations the stability reduced
+    order model may be different that the stability of the full model.  No
+    other checking is done, so users to be careful not to render a system
+    unobservable or unreachable.
 
     """
     if not isinstance(sys, StateSpace):
