@@ -79,7 +79,7 @@ def hankel_singular_values(sys):
 def model_reduction(
         sys, elim_states=None, method='matchdc', elim_inputs=None,
         elim_outputs=None, keep_states=None, keep_inputs=None,
-        keep_outputs=None, remove_hidden_states='unobs', warn_unstable=True):
+        keep_outputs=None, warn_unstable=True):
     """Model reduction by input, output, or state elimination.
 
     This function produces a reduced-order model of a system by eliminating
@@ -146,8 +146,9 @@ def model_reduction(
     other checking is done, so users to be careful not to render a system
     unobservable or unreachable.
 
-    States, inputs, and outputs can be specified using integer offers.
-    Slices can also be specified, but must use the Python ``slice()`` function.
+    States, inputs, and outputs can be specified using integer offers or
+    using signal names.  Slices can also be specified, but must use the
+    Python ``slice()`` function.
 
     """
     if not isinstance(sys, StateSpace):
@@ -164,13 +165,17 @@ def model_reduction(
         def _expand_key(key):
             if key is None:
                 return []
+            elif isinstance(key, str):
+                return labels.index(key)
+            elif isinstance(key, list):
+                return [_expand_key(k) for k in key]
             elif isinstance(key, slice):
                 return range(len(labels))[key]
             else:
-                return np.atleast_1d(key)
+                return key
 
-        elim = _expand_key(elim)
-        keep = _expand_key(keep)
+        elim = np.atleast_1d(_expand_key(elim))
+        keep = np.atleast_1d(_expand_key(keep))
             
         if len(elim) > 0 and len(keep) > 0:
             if not allow_both:
