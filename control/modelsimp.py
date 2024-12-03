@@ -146,6 +146,9 @@ def model_reduction(
     other checking is done, so users to be careful not to render a system
     unobservable or unreachable.
 
+    States, inputs, and outputs can be specified using integer offers.
+    Slices can also be specified, but must use the Python ``slice()`` function.
+
     """
     if not isinstance(sys, StateSpace):
         raise TypeError("system must be a a StateSpace system")
@@ -158,8 +161,16 @@ def model_reduction(
 
     # Utility function to process keep/elim keywords
     def _process_elim_or_keep(elim, keep, labels, allow_both=False):
-        elim = [] if elim is None else np.atleast_1d(elim)
-        keep = [] if keep is None else np.atleast_1d(keep)
+        def _expand_key(key):
+            if key is None:
+                return []
+            elif isinstance(key, slice):
+                return range(len(labels))[key]
+            else:
+                return np.atleast_1d(key)
+
+        elim = _expand_key(elim)
+        keep = _expand_key(keep)
             
         if len(elim) > 0 and len(keep) > 0:
             if not allow_both:

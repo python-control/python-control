@@ -480,6 +480,7 @@ class TestModelsimp:
     ({'elim_inputs': [1, 2], 'keep_states': [1, 3]}, 2, 3, 1),
     ({'elim_outputs': [1, 2], 'keep_inputs': [0, 1],}, 5, 1, 2),
     ({'keep_states': [2, 0], 'keep_outputs': [0, 1]}, 2, 2, 3),
+    ({'keep_states': slice(0, 4, 2), 'keep_outputs': slice(None, 2)}, 2, 2, 3),
     ({'elim_inputs': [0, 1, 2]}, 5, 3, 0),              # no inputs
     ({'elim_outputs': [0, 1, 2]}, 5, 0, 3),             # no outputs
     ({'elim_states': [0, 1, 2, 3, 4]}, 0, 3, 3),        # no states
