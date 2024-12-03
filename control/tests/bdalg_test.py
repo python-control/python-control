@@ -12,6 +12,7 @@ from control.xferfcn import TransferFunction
 from control.statesp import StateSpace
 from control.bdalg import feedback, append, connect
 from control.lti import zeros, poles
+from control.bdalg import _ensure_tf
 
 
 class TestFeedback:
@@ -362,3 +363,440 @@ def test_bdalg_udpate_names_errors():
 
     with pytest.raises(TypeError, match="unrecognized keywords"):
         sys = ctrl.series(sys1, sys2, dt=1)
+
+
+class TestEnsureTf:
+    """Test :func:`_ensure_tf`."""
+
+    @pytest.mark.parametrize(
+        "arraylike_or_tf, dt, tf",
+        [
+            (
+                ctrl.TransferFunction([1], [1, 2, 3]),
+                None,
+                ctrl.TransferFunction([1], [1, 2, 3]),
+            ),
+            (
+                ctrl.TransferFunction([1], [1, 2, 3]),
+                0,
+                ctrl.TransferFunction([1], [1, 2, 3]),
+            ),
+            (
+                2,
+                None,
+                ctrl.TransferFunction([2], [1]),
+            ),
+            (
+                np.array([2]),
+                None,
+                ctrl.TransferFunction([2], [1]),
+            ),
+            (
+                np.array([[2]]),
+                None,
+                ctrl.TransferFunction([2], [1]),
+            ),
+            (
+                np.array(
+                    [
+                        [2, 0, 3],
+                        [1, 2, 3],
+                    ]
+                ),
+                None,
+                ctrl.TransferFunction(
+                    [
+                        [[2], [0], [3]],
+                        [[1], [2], [3]],
+                    ],
+                    [
+                        [[1], [1], [1]],
+                        [[1], [1], [1]],
+                    ],
+                ),
+            ),
+            (
+                np.array([2, 0, 3]),
+                None,
+                ctrl.TransferFunction(
+                    [
+                        [[2], [0], [3]],
+                    ],
+                    [
+                        [[1], [1], [1]],
+                    ],
+                ),
+            ),
+        ],
+    )
+    def test_ensure(self, arraylike_or_tf, dt, tf):
+        """Test nominal cases"""
+        ensured_tf = _ensure_tf(arraylike_or_tf, dt)
+        pass
+        assert _tf_close_coeff(tf, ensured_tf)
+
+    @pytest.mark.parametrize(
+        "arraylike_or_tf, dt, exception",
+        [
+            (
+                ctrl.TransferFunction([1], [1, 2, 3]),
+                0.1,
+                ValueError,
+            ),
+            (
+                ctrl.TransferFunction([1], [1, 2, 3], 0.1),
+                0,
+                ValueError,
+            ),
+            (
+                np.ones((1, 1, 1)),
+                None,
+                ValueError,
+            ),
+            (
+                np.ones((1, 1, 1, 1)),
+                None,
+                ValueError,
+            ),
+        ],
+    )
+    def test_error_ensure(self, arraylike_or_tf, dt, exception):
+        """Test error cases"""
+        with pytest.raises(exception):
+            _ensure_tf(arraylike_or_tf, dt)
+
+
+class TestTfCombineSplit:
+    """Test :func:`combine` and :func:`split`."""
+
+    @pytest.mark.parametrize(
+        "tf_array, tf",
+        [
+            # Continuous-time
+            (
+                [
+                    [ctrl.TransferFunction([1], [1, 1])],
+                    [ctrl.TransferFunction([2], [1, 0])],
+                ],
+                ctrl.TransferFunction(
+                    [
+                        [[1]],
+                        [[2]],
+                    ],
+                    [
+                        [[1, 1]],
+                        [[1, 0]],
+                    ],
+                ),
+            ),
+            # Discrete-time
+            (
+                [
+                    [ctrl.TransferFunction([1], [1, 1], dt=1)],
+                    [ctrl.TransferFunction([2], [1, 0], dt=1)],
+                ],
+                ctrl.TransferFunction(
+                    [
+                        [[1]],
+                        [[2]],
+                    ],
+                    [
+                        [[1, 1]],
+                        [[1, 0]],
+                    ],
+                    dt=1,
+                ),
+            ),
+            # Scalar
+            (
+                [
+                    [2],
+                    [ctrl.TransferFunction([2], [1, 0])],
+                ],
+                ctrl.TransferFunction(
+                    [
+                        [[2]],
+                        [[2]],
+                    ],
+                    [
+                        [[1]],
+                        [[1, 0]],
+                    ],
+                ),
+            ),
+            # Matrix
+            (
+                [
+                    [np.eye(3)],
+                    [
+                        ctrl.TransferFunction(
+                            [
+                                [[2], [0], [3]],
+                                [[1], [2], [3]],
+                            ],
+                            [
+                                [[1], [1], [1]],
+                                [[1], [1], [1]],
+                            ],
+                        )
+                    ],
+                ],
+                ctrl.TransferFunction(
+                    [
+                        [[1], [0], [0]],
+                        [[0], [1], [0]],
+                        [[0], [0], [1]],
+                        [[2], [0], [3]],
+                        [[1], [2], [3]],
+                    ],
+                    [
+                        [[1], [1], [1]],
+                        [[1], [1], [1]],
+                        [[1], [1], [1]],
+                        [[1], [1], [1]],
+                        [[1], [1], [1]],
+                    ],
+                ),
+            ),
+            # Inhomogeneous
+            (
+                [
+                    [np.eye(3)],
+                    [
+                        ctrl.TransferFunction(
+                            [
+                                [[2], [0]],
+                                [[1], [2]],
+                            ],
+                            [
+                                [[1], [1]],
+                                [[1], [1]],
+                            ],
+                        ),
+                        ctrl.TransferFunction(
+                            [
+                                [[3]],
+                                [[3]],
+                            ],
+                            [
+                                [[1]],
+                                [[1]],
+                            ],
+                        ),
+                    ],
+                ],
+                ctrl.TransferFunction(
+                    [
+                        [[1], [0], [0]],
+                        [[0], [1], [0]],
+                        [[0], [0], [1]],
+                        [[2], [0], [3]],
+                        [[1], [2], [3]],
+                    ],
+                    [
+                        [[1], [1], [1]],
+                        [[1], [1], [1]],
+                        [[1], [1], [1]],
+                        [[1], [1], [1]],
+                        [[1], [1], [1]],
+                    ],
+                ),
+            ),
+            # Discrete-time
+            (
+                [
+                    [2],
+                    [ctrl.TransferFunction([2], [1, 0], dt=0.1)],
+                ],
+                ctrl.TransferFunction(
+                    [
+                        [[2]],
+                        [[2]],
+                    ],
+                    [
+                        [[1]],
+                        [[1, 0]],
+                    ],
+                    dt=0.1,
+                ),
+            ),
+        ],
+    )
+    def test_combine(self, tf_array, tf):
+        """Test combining transfer functions."""
+        tf_combined = ctrl.combine(tf_array)
+        assert _tf_close_coeff(tf_combined, tf)
+
+    @pytest.mark.parametrize(
+        "tf_array, tf",
+        [
+            (
+                np.array(
+                    [
+                        [ctrl.TransferFunction([1], [1, 1])],
+                    ],
+                    dtype=object,
+                ),
+                ctrl.TransferFunction(
+                    [
+                        [[1]],
+                    ],
+                    [
+                        [[1, 1]],
+                    ],
+                ),
+            ),
+            (
+                np.array(
+                    [
+                        [ctrl.TransferFunction([1], [1, 1])],
+                        [ctrl.TransferFunction([2], [1, 0])],
+                    ],
+                    dtype=object,
+                ),
+                ctrl.TransferFunction(
+                    [
+                        [[1]],
+                        [[2]],
+                    ],
+                    [
+                        [[1, 1]],
+                        [[1, 0]],
+                    ],
+                ),
+            ),
+            (
+                np.array(
+                    [
+                        [ctrl.TransferFunction([1], [1, 1], dt=1)],
+                        [ctrl.TransferFunction([2], [1, 0], dt=1)],
+                    ],
+                    dtype=object,
+                ),
+                ctrl.TransferFunction(
+                    [
+                        [[1]],
+                        [[2]],
+                    ],
+                    [
+                        [[1, 1]],
+                        [[1, 0]],
+                    ],
+                    dt=1,
+                ),
+            ),
+            (
+                np.array(
+                    [
+                        [ctrl.TransferFunction([2], [1], dt=0.1)],
+                        [ctrl.TransferFunction([2], [1, 0], dt=0.1)],
+                    ],
+                    dtype=object,
+                ),
+                ctrl.TransferFunction(
+                    [
+                        [[2]],
+                        [[2]],
+                    ],
+                    [
+                        [[1]],
+                        [[1, 0]],
+                    ],
+                    dt=0.1,
+                ),
+            ),
+        ],
+    )
+    def test_split(self, tf_array, tf):
+        """Test splitting transfer functions."""
+        tf_split = ctrl.split(tf)
+        # Test entry-by-entry
+        for i in range(tf_split.shape[0]):
+            for j in range(tf_split.shape[1]):
+                assert _tf_close_coeff(
+                    tf_split[i, j],
+                    tf_array[i, j],
+                )
+        # Test combined
+        assert _tf_close_coeff(
+            ctrl.combine(tf_split),
+            ctrl.combine(tf_array),
+        )
+
+    @pytest.mark.parametrize(
+        "tf_array, exception",
+        [
+            # Wrong timesteps
+            (
+                [
+                    [ctrl.TransferFunction([1], [1, 1], 0.1)],
+                    [ctrl.TransferFunction([2], [1, 0], 0.2)],
+                ],
+                ValueError,
+            ),
+            (
+                [
+                    [ctrl.TransferFunction([1], [1, 1], 0.1)],
+                    [ctrl.TransferFunction([2], [1, 0], 0)],
+                ],
+                ValueError,
+            ),
+            # Too few dimensions
+            (
+                [
+                    ctrl.TransferFunction([1], [1, 1]),
+                    ctrl.TransferFunction([2], [1, 0]),
+                ],
+                ValueError,
+            ),
+            # Too many dimensions
+            (
+                [
+                    [[ctrl.TransferFunction([1], [1, 1], 0.1)]],
+                    [[ctrl.TransferFunction([2], [1, 0], 0)]],
+                ],
+                ValueError,
+            ),
+        ],
+    )
+    def test_error_combine(self, tf_array, exception):
+        """Test error cases."""
+        with pytest.raises(exception):
+            ctrl.combine(tf_array)
+
+
+def _tf_close_coeff(tf_a, tf_b, rtol=1e-5, atol=1e-8):
+    """Check if two transfer functions have close coefficients.
+
+    Parameters
+    ----------
+    tf_a : control.TransferFunction
+        First transfer function.
+    tf_b : control.TransferFunction
+        Second transfer function.
+    rtol : float
+        Relative tolerance for :func:`np.allclose`.
+    atol : float
+        Absolute tolerance for :func:`np.allclose`.
+
+    Returns
+    -------
+    bool
+        True if transfer function cofficients are all close.
+    """
+    # Check number of outputs and inputs
+    if tf_a.noutputs != tf_b.noutputs:
+        return False
+    if tf_a.ninputs != tf_b.ninputs:
+        return False
+    # Check timestep
+    if tf_a.dt != tf_b.dt:
+        return False
+    # Check coefficient arrays
+    for i in range(tf_a.noutputs):
+        for j in range(tf_a.ninputs):
+            if not np.allclose(tf_a.num[i][j], tf_b.num[i][j], rtol=rtol, atol=atol):
+                return False
+            if not np.allclose(tf_a.den[i][j], tf_b.den[i][j], rtol=rtol, atol=atol):
+                return False
+    return True

@@ -10,6 +10,8 @@ parallel
 negate
 feedback
 connect
+combine
+split
 
 """
 
@@ -63,7 +65,16 @@ from . import statesp as ss
 from . import xferfcn as tf
 from .iosys import InputOutputSystem
 
-__all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect']
+__all__ = [
+    'series',
+    'parallel',
+    'negate',
+    'feedback',
+    'append',
+    'connect',
+    'combine',
+    'split',
+]
 
 
 def series(sys1, *sysn, **kwargs):
@@ -507,3 +518,176 @@ def connect(sys, Q, inputv, outputv):
         Ytrim[i,y-1] = 1.
 
     return Ytrim * sys * Utrim
+
+def combine(tf_array):
+    """Combine array-like of transfer functions into MIMO transfer function.
+
+    Parameters
+    ----------
+    tf_array : List[List[Union[ArrayLike, control.TransferFunction]]]
+        Transfer matrix represented as a two-dimensional array or list-of-lists
+        containing :class:`TransferFunction` objects. The
+        :class:`TransferFunction` objects can have multiple outputs and inputs,
+        as long as the dimensions are compatible.
+
+    Returns
+    -------
+    control.TransferFunction
+        Transfer matrix represented as a single MIMO :class:`TransferFunction`
+        object.
+
+    Raises
+    ------
+    ValueError
+        If timesteps of transfer functions do not match.
+    ValueError
+        If ``tf_array`` has incorrect dimensions.
+
+    Examples
+    --------
+    Combine two transfer functions
+
+    >>> s = control.TransferFunction.s
+    >>> control.combine([
+    ...     [1 / (s + 1)],
+    ...     [s / (s + 2)],
+    ... ])
+    TransferFunction([[array([1])], [array([1, 0])]], [[array([1, 1])], [array([1, 2])]])
+    """
+    # Find common timebase or raise error
+    dt_list = []
+    try:
+        for row in tf_array:
+            for tfn in row:
+                dt_list.append(getattr(tfn, "dt", None))
+    except OSError:
+        raise ValueError("`tf_array` has too few dimensions.")
+    dt_set = set(dt_list)
+    dt_set.discard(None)
+    if len(dt_set) > 1:
+        raise ValueError(f"Timesteps of transfer functions are mismatched: {dt_set}")
+    elif len(dt_set) == 0:
+        dt = None
+    else:
+        dt = dt_set.pop()
+    # Convert all entries to transfer function objects
+    ensured_tf_array = []
+    for row in tf_array:
+        ensured_row = []
+        for tfn in row:
+            ensured_row.append(_ensure_tf(tfn, dt))
+        ensured_tf_array.append(ensured_row)
+    # Iterate over
+    num = []
+    den = []
+    for row in ensured_tf_array:
+        for j_out in range(row[0].noutputs):
+            num_row = []
+            den_row = []
+            for col in row:
+                for j_in in range(col.ninputs):
+                    num_row.append(col.num[j_out][j_in])
+                    den_row.append(col.den[j_out][j_in])
+            num.append(num_row)
+            den.append(den_row)
+    G_tf = tf.TransferFunction(num, den, dt=dt)
+    return G_tf
+
+def split(transfer_function):
+    """Split MIMO transfer function into NumPy array of SISO tranfer functions.
+
+    Parameters
+    ----------
+    transfer_function : control.TransferFunction
+        MIMO transfer function to split.
+
+    Returns
+    -------
+    np.ndarray
+        NumPy array of SISO transfer functions.
+
+    Examples
+    --------
+    Split a MIMO transfer function
+
+    >>> G = control.TransferFunction(
+    ...     [
+    ...         [[87.8], [-86.4]],
+    ...         [[108.2], [-109.6]],
+    ...     ],
+    ...     [
+    ...         [[1, 1], [1, 1]],
+    ...         [[1, 1], [1, 1]],
+    ...     ],
+    ... )
+    >>> control.split(G)
+    array([[TransferFunction(array([87.8]), array([1, 1])),
+            TransferFunction(array([-86.4]), array([1, 1]))],
+           [TransferFunction(array([108.2]), array([1, 1])),
+            TransferFunction(array([-109.6]), array([1, 1]))]], dtype=object)
+    """
+    tf_split_lst = []
+    for i_out in range(transfer_function.noutputs):
+        row = []
+        for i_in in range(transfer_function.ninputs):
+            row.append(
+                tf.TransferFunction(
+                    transfer_function.num[i_out][i_in],
+                    transfer_function.den[i_out][i_in],
+                    dt=transfer_function.dt,
+                )
+            )
+        tf_split_lst.append(row)
+    tf_split = np.array(tf_split_lst, dtype=object)
+    return tf_split
+
+def _ensure_tf(arraylike_or_tf, dt=None):
+    """Convert an array-like to a transfer function.
+
+    Parameters
+    ----------
+    arraylike_or_tf : Union[ArrayLike, control.TransferFunction]
+        Array-like or transfer function.
+    dt : Union[None, bool, float]
+        Timestep (s). ``True`` indicates a discrete-time system with
+        unspecified timestep, ``0`` indicates a continuous-time system, and
+        ``None`` indicates a continuous- or discrete-time system with
+        unspecified timestep. If ``None``, timestep is not validated.
+
+    Returns
+    -------
+    control.TransferFunction
+        Transfer function.
+
+    Raises
+    ------
+    ValueError
+        If input cannot be converted to a transfer function.
+    ValueError
+        If the timesteps do not match.
+    """
+    # If the input is already a transfer function, return it right away
+    if isinstance(arraylike_or_tf, tf.TransferFunction):
+        # If timesteps don't match, raise an exception
+        if (dt is not None) and (arraylike_or_tf.dt != dt):
+            raise ValueError(
+                f"`arraylike_or_tf.dt={arraylike_or_tf.dt}` does not match argument `dt={dt}`."
+            )
+        return arraylike_or_tf
+    if np.ndim(arraylike_or_tf) > 2:
+        raise ValueError(
+            "Array-like must have less than two dimensions to be converted into a transfer function."
+        )
+    # If it's not, then convert it to a transfer function
+    arraylike_3d = np.atleast_3d(arraylike_or_tf)
+    try:
+        tfn = tf.TransferFunction(
+            arraylike_3d,
+            np.ones_like(arraylike_3d),
+            dt,
+        )
+    except TypeError:
+        raise ValueError(
+            "`arraylike_or_tf` must only contain array-likes or transfer functions."
+        )
+    return tfn
