@@ -548,6 +548,19 @@ def combine_tf(tf_array):
     ... ])
     TransferFunction([[array([1])], [array([1, 0])]],
                      [[array([1, 1])], [array([1, 2])]])
+
+    Combine NumPy arrays with transfer functions
+
+    >>> control.combine_tf([
+    ...     [np.eye(2), np.zeros((2, 1))],
+    ...     [np.zeros((1, 2)), control.TransferFunction([1], [1, 0])],
+    ... ])
+    TransferFunction([[array([1.]), array([0.]), array([0.])],
+                      [array([0.]), array([1.]), array([0.])],
+                      [array([0.]), array([0.]), array([1])]],
+                     [[array([1.]), array([1.]), array([1.])],
+                      [array([1.]), array([1.]), array([1.])],
+                      [array([1.]), array([1.]), array([1, 0])]])
     """
     # Find common timebase or raise error
     dt_list = []
