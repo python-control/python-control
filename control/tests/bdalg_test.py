@@ -366,7 +366,7 @@ def test_bdalg_udpate_names_errors():
 
 
 class TestEnsureTf:
-    """Test :func:`_ensure_tf`."""
+    """Test ``_ensure_tf``."""
 
     @pytest.mark.parametrize(
         "arraylike_or_tf, dt, tf",
@@ -466,7 +466,7 @@ class TestEnsureTf:
 
 
 class TestTfCombineSplit:
-    """Test :func:`combine_tf` and :func:`split_tf`."""
+    """Test ``combine_tf`` and ``split_tf``."""
 
     @pytest.mark.parametrize(
         "tf_array, tf",
@@ -833,9 +833,9 @@ def _tf_close_coeff(tf_a, tf_b, rtol=1e-5, atol=1e-8):
     tf_b : TransferFunction
         Second transfer function.
     rtol : float
-        Relative tolerance for :func:`np.allclose`.
+        Relative tolerance for ``np.allclose``.
     atol : float
-        Absolute tolerance for :func:`np.allclose`.
+        Absolute tolerance for ``np.allclose``.
 
     Returns
     -------
