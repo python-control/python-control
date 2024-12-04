@@ -543,7 +543,8 @@ def combine(tf_array):
     ValueError
         If ``tf_array`` has incorrect dimensions.
     ValueError
-        If the transfer functions in a row have mismatched output dimensions.
+        If the transfer functions in a row have mismatched output or input
+        dimensions.
 
     Examples
     --------
@@ -554,7 +555,8 @@ def combine(tf_array):
     ...     [1 / (s + 1)],
     ...     [s / (s + 2)],
     ... ])
-    TransferFunction([[array([1])], [array([1, 0])]], [[array([1, 1])], [array([1, 2])]])
+    TransferFunction([[array([1])], [array([1, 0])]],
+                     [[array([1, 1])], [array([1, 2])]])
     """
     # Find common timebase or raise error
     dt_list = []
@@ -596,6 +598,16 @@ def combine(tf_array):
                     den_row.append(col.den[j_out][j_in])
             num.append(num_row)
             den.append(den_row)
+    for row_index, row in enumerate(num):
+        if len(row) != len(num[0]):
+            raise ValueError(
+                f"Mismatched number transfer function inputs in row {row_index} of numerator."
+            )
+    for row_index, row in enumerate(den):
+        if len(row) != len(den[0]):
+            raise ValueError(
+                f"Mismatched number transfer function inputs in row {row_index} of denominator."
+            )
     G_tf = tf.TransferFunction(num, den, dt=dt)
     return G_tf
 
