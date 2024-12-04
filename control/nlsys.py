@@ -193,8 +193,8 @@ class NonlinearIOSystem(InputOutputSystem):
 
         # Evaluate the function on the argument
         out = sys._out(0, np.array((0,)), np.asarray(u))
-        _, out = _process_time_response(
-            None, out, issiso=sys.issiso(), squeeze=squeeze)
+        out = _process_time_response(
+            out, issiso=sys.issiso(), squeeze=squeeze)
         return out
 
     def __mul__(self, other):

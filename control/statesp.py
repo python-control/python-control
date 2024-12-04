@@ -48,15 +48,15 @@ $Id$
 """
 
 import math
+from collections.abc import Iterable
 from copy import deepcopy
 from warnings import warn
-from collections.abc import Iterable
 
 import numpy as np
 import scipy as sp
 import scipy.linalg
-from numpy import (any, asarray, concatenate, cos, delete, empty, exp, eye,
-                   isinf, ones, pad, sin, squeeze, zeros)
+from numpy import any, asarray, concatenate, cos, delete, empty, exp, eye, \
+    isinf, ones, pad, sin, squeeze, zeros
 from numpy.linalg import LinAlgError, eigvals, matrix_rank, solve
 from numpy.random import rand, randn
 from scipy.signal import StateSpace as signalStateSpace
@@ -65,9 +65,9 @@ from scipy.signal import cont2discrete
 from . import config
 from .exception import ControlMIMONotImplemented, ControlSlycot, slycot_check
 from .frdata import FrequencyResponseData
-from .iosys import (InputOutputSystem, _process_dt_keyword,
-                    _process_iosys_keywords, _process_signal_list,
-                    common_timebase, isdtime, issiso)
+from .iosys import InputOutputSystem, NamedSignal, _process_dt_keyword, \
+    _process_iosys_keywords, _process_signal_list, _process_subsys_index, \
+    common_timebase, isdtime, issiso
 from .lti import LTI, _process_frequency_response
 from .nlsys import InterconnectedSystem, NonlinearIOSystem
 
@@ -152,6 +152,17 @@ class StateSpace(NonlinearIOSystem, LTI):
     A state space system is callable and returns the value of the transfer
     function evaluated at a point in the complex plane.  See
     :meth:`~control.StateSpace.__call__` for a more detailed description.
+
+    Subsystems corresponding to selected input/output pairs can be
+    created by indexing the state space system::
+
+        subsys = sys[output_spec, input_spec]
+
+    The input and output specifications can be single integers, lists of
+    integers, or slices.  In addition, the strings representing the names
+    of the signals can be used and will be replaced with the equivalent
+    signal offsets.  The subsystem is created by truncating the inputs and
+    outputs, but leaving the full set of system states.
 
     StateSpace instances have support for IPython LaTeX output,
     intended for pretty-printing in Jupyter notebooks.  The LaTeX
@@ -1214,25 +1225,25 @@ class StateSpace(NonlinearIOSystem, LTI):
         D[self.noutputs:, self.ninputs:] = other.D
         return StateSpace(A, B, C, D, self.dt)
 
-    def __getitem__(self, indices):
+    def __getitem__(self, key):
         """Array style access"""
-        if not isinstance(indices, Iterable) or len(indices) != 2:
-            raise IOError('must provide indices of length 2 for state space')
-        outdx, inpdx = indices
-        
-        # Convert int to slice to ensure that numpy doesn't drop the dimension
-        if isinstance(outdx, int): outdx = slice(outdx, outdx+1, 1)
-        if isinstance(inpdx, int): inpdx = slice(inpdx, inpdx+1, 1)
+        if not isinstance(key, Iterable) or len(key) != 2:
+            raise IOError("must provide indices of length 2 for state space")
 
-        if not isinstance(outdx, slice) or not isinstance(inpdx, slice):
-            raise TypeError(f"system indices must be integers or slices")
+        # Convert signal names to integer offsets
+        iomap = NamedSignal(self.D, self.output_labels, self.input_labels)
+        indices = iomap._parse_key(key, level=1)  # ignore index checks
+        outdx, output_labels = _process_subsys_index(
+            indices[0], self.output_labels)
+        inpdx, input_labels = _process_subsys_index(
+            indices[1], self.input_labels)
 
         sysname = config.defaults['iosys.indexed_system_name_prefix'] + \
             self.name + config.defaults['iosys.indexed_system_name_suffix']
         return StateSpace(
-            self.A, self.B[:, inpdx], self.C[outdx, :], self.D[outdx, inpdx],
-            self.dt, name=sysname, 
-            inputs=self.input_labels[inpdx], outputs=self.output_labels[outdx])
+            self.A, self.B[:, inpdx], self.C[outdx, :],
+            self.D[outdx, :][:, inpdx], self.dt,
+            name=sysname, inputs=input_labels, outputs=output_labels)
 
     def sample(self, Ts, method='zoh', alpha=None, prewarp_frequency=None,
                name=None, copy_names=True, **kwargs):

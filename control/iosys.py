@@ -13,9 +13,10 @@ from warnings import warn
 import numpy as np
 
 from . import config
+from .exception import ControlIndexError
 
-__all__ = ['InputOutputSystem', 'issiso', 'timebase', 'common_timebase',
-           'isdtime', 'isctime']
+__all__ = ['InputOutputSystem', 'NamedSignal', 'issiso', 'timebase',
+           'common_timebase', 'isdtime', 'isctime']
 
 # Define module default parameter values
 _iosys_defaults = {
@@ -31,6 +32,69 @@ _iosys_defaults = {
     'iosys.converted_system_name_prefix': '',
     'iosys.converted_system_name_suffix': '$converted',
 }
+
+
+# Named signal class
+class NamedSignal(np.ndarray):
+    def __new__(cls, input_array, signal_labels=None, trace_labels=None):
+        # See https://numpy.org/doc/stable/user/basics.subclassing.html
+        obj = np.asarray(input_array).view(cls)     # Cast to our class type
+        obj.signal_labels = signal_labels           # Save signal labels
+        obj.trace_labels = trace_labels             # Save trace labels
+        obj.data_shape = input_array.shape          # Save data shape
+        return obj                                  # Return new object
+
+    def __array_finalize__(self, obj):
+        # See https://numpy.org/doc/stable/user/basics.subclassing.html
+        if obj is None:
+            return
+        self.signal_labels = getattr(obj, 'signal_labels', None)
+        self.trace_labels = getattr(obj, 'trace_labels', None)
+        self.data_shape = getattr(obj, 'data_shape', None)
+
+    def _parse_key(self, key, labels=None, level=0):
+        if labels is None:
+            labels = self.signal_labels
+        try:
+            if isinstance(key, str):
+                key = labels.index(item := key)
+                if level == 0 and len(self.data_shape) < 2:
+                    raise ControlIndexError
+            elif isinstance(key, list):
+                keylist = []
+                for item in key:        # use for loop to save item for error
+                    keylist.append(
+                        self._parse_key(item, labels=labels, level=level+1))
+                if level == 0 and key != keylist and len(self.data_shape) < 2:
+                    raise ControlIndexError
+                key = keylist
+            elif isinstance(key, tuple) and len(key) > 0:
+                keylist = []
+                keylist.append(
+                    self._parse_key(
+                        item := key[0], labels=self.signal_labels,
+                        level=level+1))
+                if len(key) > 1:
+                    keylist.append(
+                        self._parse_key(
+                            item := key[1], labels=self.trace_labels,
+                            level=level+1))
+                if level == 0 and key[:len(keylist)] != tuple(keylist) \
+                   and len(keylist) > len(self.data_shape) - 1:
+                    raise ControlIndexError
+                for i in range(2, len(key)):
+                    keylist.append(key[i])      # pass on remaining elements
+                key = tuple(keylist)
+        except ValueError:
+            raise ValueError(f"unknown signal name '{item}'")
+        except ControlIndexError:
+            raise ControlIndexError(
+                "signal name(s) not valid for squeezed data")
+
+        return key
+
+    def __getitem__(self, key):
+        return super().__getitem__(self._parse_key(key))
 
 
 class InputOutputSystem(object):
@@ -965,3 +1029,31 @@ def _parse_spec(syslist, spec, signame, dictname=None):
             ValueError(f"signal index '{index}' is out of range")
 
     return system_index, signal_indices, gain
+
+
+#
+# Utility function for processing subsystem indices
+#
+# This function processes an index specification (int, list, or slice) and
+# returns a index specification that can be used to create a subsystem
+#
+def _process_subsys_index(idx, sys_labels, slice_to_list=False):
+    if not isinstance(idx, (slice, list, int)):
+        raise TypeError("system indices must be integers, slices, or lists")
+
+    # Convert singleton lists to integers for proper slicing (below)
+    if isinstance(idx, (list, tuple)) and len(idx) == 1:
+        idx = idx[0]
+
+    # Convert int to slice so that numpy doesn't drop dimension
+    if isinstance(idx, int):
+        idx = slice(idx, idx+1, 1)
+
+    # Get label names (taking care of possibility that we were passed a list)
+    labels = [sys_labels[i] for i in idx] if isinstance(idx, list) \
+        else sys_labels[idx]
+
+    if slice_to_list and isinstance(idx, slice):
+        idx = range(len(sys_labels))[idx]
+
+    return idx, labels

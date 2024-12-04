@@ -52,6 +52,10 @@ class ControlArgument(TypeError):
     """Raised when arguments to a function are not correct"""
     pass
 
+class ControlIndexError(IndexError):
+    """Raised when arguments to an indexed object are not correct"""
+    pass
+
 class ControlMIMONotImplemented(NotImplementedError):
     """Function is not currently implemented for MIMO systems"""
     pass

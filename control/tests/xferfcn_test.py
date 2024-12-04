@@ -390,19 +390,20 @@ class TestXferFcn:
         with pytest.raises(ValueError):
             TransferFunction.__pow__(sys1, 0.5)
 
-    def test_slice(self):
+    @pytest.mark.parametrize("named", [False, True])
+    def test_slice(self, named):
         sys = TransferFunction(
             [ [   [1],    [2],    [3]], [   [3],    [4],    [5]] ],
             [ [[1, 2], [1, 3], [1, 4]], [[1, 4], [1, 5], [1, 6]] ],
             inputs=['u0', 'u1', 'u2'], outputs=['y0', 'y1'], name='sys')
 
-        sys1 = sys[1:, 1:]
+        sys1 = sys[1:, 1:] if not named else sys['y1', ['u1', 'u2']]
         assert (sys1.ninputs, sys1.noutputs) == (2, 1)
         assert sys1.input_labels == ['u1', 'u2']
         assert sys1.output_labels == ['y1']
         assert sys1.name == 'sys$indexed'
 
-        sys2 = sys[:2, :2]
+        sys2 = sys[:2, :2] if not named else sys[['y0', 'y1'], ['u0', 'u1']]
         assert (sys2.ninputs, sys2.noutputs) == (2, 2)
         assert sys2.input_labels == ['u0', 'u1']
         assert sys2.output_labels == ['y0', 'y1']
@@ -411,7 +412,7 @@ class TestXferFcn:
         sys = TransferFunction(
             [ [   [1],    [2],    [3]], [   [3],    [4],    [5]] ],
             [ [[1, 2], [1, 3], [1, 4]], [[1, 4], [1, 5], [1, 6]] ], 0.5)
-        sys1 = sys[1:, 1:]
+        sys1 = sys[1:, 1:] if not named else sys[['y[1]'], ['u[1]', 'u[2]']]
         assert (sys1.ninputs, sys1.noutputs) == (2, 1)
         assert sys1.dt == 0.5
         assert sys1.input_labels == ['u[1]', 'u[2]']

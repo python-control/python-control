@@ -10,6 +10,7 @@ This module contains the FRD class and also functions that operate on
 FRD data.
 """
 
+from collections.abc import Iterable
 from copy import copy
 from warnings import warn
 
@@ -20,7 +21,8 @@ from scipy.interpolate import splev, splprep
 
 from . import config
 from .exception import pandas_check
-from .iosys import InputOutputSystem, _process_iosys_keywords, common_timebase
+from .iosys import InputOutputSystem, NamedSignal, _process_iosys_keywords, \
+    _process_subsys_index, common_timebase
 from .lti import LTI, _process_frequency_response
 
 __all__ = ['FrequencyResponseData', 'FRD', 'frd']
@@ -33,8 +35,8 @@ class FrequencyResponseData(LTI):
 
     The FrequencyResponseData (FRD) class is used to represent systems in
     frequency response data form.  It can be created manually using the
-    class constructor, using the :func:~~control.frd` factory function
-    (preferred), or via the :func:`~control.frequency_response` function.
+    class constructor, using the :func:`~control.frd` factory function or
+    via the :func:`~control.frequency_response` function.
 
     Parameters
     ----------
@@ -65,6 +67,28 @@ class FrequencyResponseData(LTI):
         frequency point.
     dt : float, True, or None
         System timebase.
+    squeeze : bool
+        By default, if a system is single-input, single-output (SISO) then
+        the outputs (and inputs) are returned as a 1D array (indexed by
+        frequency) and if a system is multi-input or multi-output, then the
+        outputs are returned as a 2D array (indexed by output and
+        frequency) or a 3D array (indexed by output, trace, and frequency).
+        If ``squeeze=True``, access to the output response will remove
+        single-dimensional entries from the shape of the inputs and outputs
+        even if the system is not SISO. If ``squeeze=False``, the output is
+        returned as a 3D array (indexed by the output, input, and
+        frequency) even if the system is SISO. The default value can be set
+        using config.defaults['control.squeeze_frequency_response'].
+    ninputs, noutputs, nstates : int
+        Number of inputs, outputs, and states of the underlying system.
+    input_labels, output_labels : array of str
+        Names for the input and output variables.
+    sysname : str, optional
+        Name of the system.  For data generated using
+        :func:`~control.frequency_response`, stores the name of the system
+        that created the data.
+    title : str, optional
+        Set the title to use when plotting.
 
     See Also
     --------
@@ -88,6 +112,20 @@ class FrequencyResponseData(LTI):
     transfer function evaluated at a point in the complex plane (must be on
     the imaginary access).  See :meth:`~control.FrequencyResponseData.__call__`
     for a more detailed description.
+
+    A state space system is callable and returns the value of the transfer
+    function evaluated at a point in the complex plane.  See
+    :meth:`~control.StateSpace.__call__` for a more detailed description.
+
+    Subsystem response corresponding to selected input/output pairs can be
+    created by indexing the frequency response data object::
+
+        subsys = sys[output_spec, input_spec]
+
+    The input and output specifications can be single integers, lists of
+    integers, or slices.  In addition, the strings representing the names
+    of the signals can be used and will be replaced with the equivalent
+    signal offsets.
 
     """
     #
@@ -243,21 +281,72 @@ class FrequencyResponseData(LTI):
 
     @property
     def magnitude(self):
-        return np.abs(self.fresp)
+        """Magnitude of the frequency response.
+
+        Magnitude of the frequency response, indexed by either the output
+        and frequency (if only a single input is given) or the output,
+        input, and frequency (for multi-input systems).  See
+        :attr:`FrequencyResponseData.squeeze` for a description of how this
+        can be modified using the `squeeze` keyword.
+
+        Input and output signal names can be used to index the data in
+        place of integer offsets.
+
+        :type: 1D, 2D, or 3D array
+
+        """
+        return NamedSignal(
+            np.abs(self.fresp), self.output_labels, self.input_labels)
 
     @property
     def phase(self):
-        return np.angle(self.fresp)
+        """Phase of the frequency response.
+
+        Phase of the frequency response in radians/sec, indexed by either
+        the output and frequency (if only a single input is given) or the
+        output, input, and frequency (for multi-input systems).  See
+        :attr:`FrequencyResponseData.squeeze` for a description of how this
+        can be modified using the `squeeze` keyword.
+
+        Input and output signal names can be used to index the data in
+        place of integer offsets.
+
+        :type: 1D, 2D, or 3D array
+
+        """
+        return NamedSignal(
+            np.angle(self.fresp), self.output_labels, self.input_labels)
 
     @property
     def frequency(self):
+        """Frequencies at which the response is evaluated.
+
+        :type: 1D array
+
+        """
         return self.omega
 
     @property
     def response(self):
-        return self.fresp
+        """Complex value of the frequency response.
+
+        Value of the frequency response as a complex number, indexed by
+        either the output and frequency (if only a single input is given)
+        or the output, input, and frequency (for multi-input systems).  See
+        :attr:`FrequencyResponseData.squeeze` for a description of how this
+        can be modified using the `squeeze` keyword.
+
+        Input and output signal names can be used to index the data in
+        place of integer offsets.
+
+        :type: 1D, 2D, or 3D array
+
+        """
+        return NamedSignal(
+            self.fresp, self.output_labels, self.input_labels)
 
     def __str__(self):
+
         """String representation of the transfer function."""
 
         mimo = self.ninputs > 1 or self.noutputs > 1
@@ -593,9 +682,25 @@ class FrequencyResponseData(LTI):
             return iter((self.omega, fresp))
         return iter((np.abs(fresp), np.angle(fresp), self.omega))
 
-    # Implement (thin) getitem to allow access via legacy indexing
-    def __getitem__(self, index):
-        return list(self.__iter__())[index]
+    def __getitem__(self, key):
+        if not isinstance(key, Iterable) or len(key) != 2:
+            # Implement (thin) getitem to allow access via legacy indexing
+            return list(self.__iter__())[key]
+
+        # Convert signal names to integer offsets (via NamedSignal object)
+        iomap = NamedSignal(
+            self.fresp[:, :, 0], self.output_labels, self.input_labels)
+        indices = iomap._parse_key(key, level=1)  # ignore index checks
+        outdx, outputs = _process_subsys_index(indices[0], self.output_labels)
+        inpdx, inputs = _process_subsys_index(indices[1], self.input_labels)
+
+        # Create the system name
+        sysname = config.defaults['iosys.indexed_system_name_prefix'] + \
+            self.name + config.defaults['iosys.indexed_system_name_suffix']
+
+        return FrequencyResponseData(
+            self.fresp[outdx, :][:, inpdx], self.omega, self.dt,
+            inputs=inputs, outputs=outputs, name=sysname)
 
     # Implement (thin) len to emulate legacy testing interface
     def __len__(self):

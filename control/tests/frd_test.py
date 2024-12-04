@@ -609,3 +609,49 @@ def test_frequency_response():
     assert mag_nosq_sq.shape == mag_default.shape
     assert phase_nosq_sq.shape == phase_default.shape
     assert omega_nosq_sq.shape == omega_default.shape
+
+
+def test_signal_labels():
+    # Create a system response for a SISO system
+    sys = ct.rss(4, 1, 1)
+    fresp = ct.frequency_response(sys)
+
+    # Make sure access via strings works
+    np.testing.assert_equal(
+        fresp.magnitude['y[0]'], fresp.magnitude[0])
+    np.testing.assert_equal(
+        fresp.phase['y[0]'], fresp.phase[0])
+
+    # Make sure errors are generated if key is unknown
+    with pytest.raises(ValueError, match="unknown signal name 'bad'"):
+        fresp.magnitude['bad']
+
+    # Create a system response for a MIMO system
+    sys = ct.rss(4, 2, 2)
+    fresp = ct.frequency_response(sys)
+
+    # Make sure access via strings works
+    np.testing.assert_equal(
+        fresp.magnitude['y[0]', 'u[1]'],
+        fresp.magnitude[0, 1])
+    np.testing.assert_equal(
+        fresp.phase['y[0]', 'u[1]'],
+        fresp.phase[0, 1])
+    np.testing.assert_equal(
+        fresp.response['y[0]', 'u[1]'],
+        fresp.response[0, 1])
+
+    # Make sure access via lists of strings works
+    np.testing.assert_equal(
+        fresp.response[['y[1]', 'y[0]'], 'u[0]'],
+        fresp.response[[1, 0], 0])
+
+    # Make sure errors are generated if key is unknown
+    with pytest.raises(ValueError, match="unknown signal name 'bad'"):
+        fresp.magnitude['bad']
+
+    with pytest.raises(ValueError, match="unknown signal name 'bad'"):
+        fresp.response[['y[1]', 'bad']]
+
+    with pytest.raises(ValueError, match=r"unknown signal name 'y\[0\]'"):
+        fresp.response['y[1]', 'y[0]']         # second index = input name

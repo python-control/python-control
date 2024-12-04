@@ -2263,3 +2263,24 @@ def test_update_names():
 
     with pytest.raises(TypeError, match=".* takes 1 positional argument"):
         sys.update_names(5)
+
+
+def test_signal_indexing():
+    # Response with two outputs, no traces
+    resp = ct.initial_response(ct.rss(4, 2, 1, strictly_proper=True))
+    assert resp.outputs['y[0]'].shape == resp.outputs.shape[1:]
+    assert resp.outputs[0, 0].item() == 0
+
+    # Implicitly squeezed response
+    resp = ct.step_response(ct.rss(4, 1, 1, strictly_proper=True))
+    for key in ['y[0]', ('y[0]', 'u[0]')]:
+        with pytest.raises(IndexError, match=r"signal name\(s\) not valid"):
+            resp.outputs.__getitem__(key)
+
+    # Explicitly squeezed response
+    resp = ct.step_response(
+        ct.rss(4, 2, 1, strictly_proper=True), squeeze=True)
+    assert resp.outputs['y[0]'].shape == resp.outputs.shape[1:]
+    with pytest.raises(IndexError, match=r"signal name\(s\) not valid"):
+        resp.outputs['y[0]', 'u[0]']
+
