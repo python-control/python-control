@@ -516,17 +516,16 @@ def combine_tf(tf_array):
 
     Parameters
     ----------
-    tf_array : List[List[Union[ArrayLike, control.TransferFunction]]]
+    tf_array : list of list of TransferFunction or array_like
         Transfer matrix represented as a two-dimensional array or list-of-lists
-        containing :class:`TransferFunction` objects. The
-        :class:`TransferFunction` objects can have multiple outputs and inputs,
-        as long as the dimensions are compatible.
+        containing TransferFunction objects. The TransferFunction objects can
+        have multiple outputs and inputs, as long as the dimensions are
+        compatible.
 
     Returns
     -------
-    control.TransferFunction
-        Transfer matrix represented as a single MIMO :class:`TransferFunction`
-        object.
+    TransferFunction
+        Transfer matrix represented as a single MIMO TransferFunction object.
 
     Raises
     ------
@@ -600,15 +599,14 @@ def combine_tf(tf_array):
             raise ValueError(
                 f"Mismatched number transfer function inputs in row {row_index} of denominator."
             )
-    G_tf = tf.TransferFunction(num, den, dt=dt)
-    return G_tf
+    return tf.TransferFunction(num, den, dt=dt)
 
 def split_tf(transfer_function):
     """Split MIMO transfer function into NumPy array of SISO tranfer functions.
 
     Parameters
     ----------
-    transfer_function : control.TransferFunction
+    transfer_function : TransferFunction
         MIMO transfer function to split.
 
     Returns
@@ -648,25 +646,25 @@ def split_tf(transfer_function):
                 )
             )
         tf_split_lst.append(row)
-    tf_split = np.array(tf_split_lst, dtype=object)
-    return tf_split
+    return np.array(tf_split_lst, dtype=object)
 
 def _ensure_tf(arraylike_or_tf, dt=None):
     """Convert an array-like to a transfer function.
 
     Parameters
     ----------
-    arraylike_or_tf : Union[ArrayLike, control.TransferFunction]
+    arraylike_or_tf : TransferFunction or array_like
         Array-like or transfer function.
-    dt : Union[None, bool, float]
-        Timestep (s). ``True`` indicates a discrete-time system with
-        unspecified timestep, ``0`` indicates a continuous-time system, and
-        ``None`` indicates a continuous- or discrete-time system with
-        unspecified timestep. If ``None``, timestep is not validated.
+    dt : None, True or float, optional
+        System timebase. 0 (default) indicates continuous
+        time, True indicates discrete time with unspecified sampling
+        time, positive number is discrete time with specified
+        sampling time, None indicates unspecified timebase (either
+        continuous or discrete time). If None, timestep is not validated.
 
     Returns
     -------
-    control.TransferFunction
+    TransferFunction
         Transfer function.
 
     Raises
