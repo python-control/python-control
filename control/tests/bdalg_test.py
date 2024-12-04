@@ -466,7 +466,7 @@ class TestEnsureTf:
 
 
 class TestTfCombineSplit:
-    """Test :func:`combine` and :func:`split`."""
+    """Test :func:`combine_tf` and :func:`split_tf`."""
 
     @pytest.mark.parametrize(
         "tf_array, tf",
@@ -621,9 +621,9 @@ class TestTfCombineSplit:
             ),
         ],
     )
-    def test_combine(self, tf_array, tf):
+    def test_combine_tf(self, tf_array, tf):
         """Test combining transfer functions."""
-        tf_combined = ctrl.combine(tf_array)
+        tf_combined = ctrl.combine_tf(tf_array)
         assert _tf_close_coeff(tf_combined, tf)
 
     @pytest.mark.parametrize(
@@ -706,9 +706,9 @@ class TestTfCombineSplit:
             ),
         ],
     )
-    def test_split(self, tf_array, tf):
+    def test_split_tf(self, tf_array, tf):
         """Test splitting transfer functions."""
-        tf_split = ctrl.split(tf)
+        tf_split = ctrl.split_tf(tf)
         # Test entry-by-entry
         for i in range(tf_split.shape[0]):
             for j in range(tf_split.shape[1]):
@@ -718,8 +718,8 @@ class TestTfCombineSplit:
                 )
         # Test combined
         assert _tf_close_coeff(
-            ctrl.combine(tf_split),
-            ctrl.combine(tf_array),
+            ctrl.combine_tf(tf_split),
+            ctrl.combine_tf(tf_array),
         )
 
     @pytest.mark.parametrize(
@@ -817,10 +817,10 @@ class TestTfCombineSplit:
             ),
         ],
     )
-    def test_error_combine(self, tf_array, exception):
+    def test_error_combine_tf(self, tf_array, exception):
         """Test error cases."""
         with pytest.raises(exception):
-            ctrl.combine(tf_array)
+            ctrl.combine_tf(tf_array)
 
 
 def _tf_close_coeff(tf_a, tf_b, rtol=1e-5, atol=1e-8):

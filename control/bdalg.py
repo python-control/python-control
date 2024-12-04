@@ -10,8 +10,8 @@ parallel
 negate
 feedback
 connect
-combine
-split
+combine_tf
+split_tf
 
 """
 
@@ -65,16 +65,8 @@ from . import statesp as ss
 from . import xferfcn as tf
 from .iosys import InputOutputSystem
 
-__all__ = [
-    'series',
-    'parallel',
-    'negate',
-    'feedback',
-    'append',
-    'connect',
-    'combine',
-    'split',
-]
+__all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect',
+           'combine_tf', 'split_tf']
 
 
 def series(sys1, *sysn, **kwargs):
@@ -519,7 +511,7 @@ def connect(sys, Q, inputv, outputv):
 
     return Ytrim * sys * Utrim
 
-def combine(tf_array):
+def combine_tf(tf_array):
     """Combine array-like of transfer functions into MIMO transfer function.
 
     Parameters
@@ -551,7 +543,7 @@ def combine(tf_array):
     Combine two transfer functions
 
     >>> s = control.TransferFunction.s
-    >>> control.combine([
+    >>> control.combine_tf([
     ...     [1 / (s + 1)],
     ...     [s / (s + 2)],
     ... ])
@@ -611,7 +603,7 @@ def combine(tf_array):
     G_tf = tf.TransferFunction(num, den, dt=dt)
     return G_tf
 
-def split(transfer_function):
+def split_tf(transfer_function):
     """Split MIMO transfer function into NumPy array of SISO tranfer functions.
 
     Parameters
@@ -638,7 +630,7 @@ def split(transfer_function):
     ...         [[1, 1], [1, 1]],
     ...     ],
     ... )
-    >>> control.split(G)
+    >>> control.split_tf(G)
     array([[TransferFunction(array([87.8]), array([1, 1])),
             TransferFunction(array([-86.4]), array([1, 1]))],
            [TransferFunction(array([108.2]), array([1, 1])),
