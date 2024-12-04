@@ -292,7 +292,7 @@ Frequency response data can also be accessed directly and plotted manually::
 Access to frequency response data is available via the attributes
 ``omega``, ``magnitude``,` `phase``, and ``response``, where ``response``
 represents the complex value of the frequency response at each frequency.
-The ``magnitude``,` `phase``, and ``response`` arrays can be indexed using
+The ``magnitude``, ``phase``, and ``response`` arrays can be indexed using
 either input/output indices or signal names, with the first index
 corresponding to the output signal and the second input corresponding to
 the input signal.

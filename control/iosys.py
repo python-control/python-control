@@ -46,7 +46,8 @@ class NamedSignal(np.ndarray):
 
     def __array_finalize__(self, obj):
         # See https://numpy.org/doc/stable/user/basics.subclassing.html
-        if obj is None: return
+        if obj is None:
+            return
         self.signal_labels = getattr(obj, 'signal_labels', None)
         self.trace_labels = getattr(obj, 'trace_labels', None)
         self.data_shape = getattr(obj, 'data_shape', None)
@@ -1038,14 +1039,15 @@ def _parse_spec(syslist, spec, signame, dictname=None):
 #
 def _process_subsys_index(idx, sys_labels, slice_to_list=False):
     if not isinstance(idx, (slice, list, int)):
-        raise TypeError(f"system indices must be integers, slices, or lists")
+        raise TypeError("system indices must be integers, slices, or lists")
 
     # Convert singleton lists to integers for proper slicing (below)
     if isinstance(idx, (list, tuple)) and len(idx) == 1:
         idx = idx[0]
 
     # Convert int to slice so that numpy doesn't drop dimension
-    if isinstance(idx, int): idx = slice(idx, idx+1, 1)
+    if isinstance(idx, int):
+        idx = slice(idx, idx+1, 1)
 
     # Get label names (taking care of possibility that we were passed a list)
     labels = [sys_labels[i] for i in idx] if isinstance(idx, list) \

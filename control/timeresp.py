@@ -243,7 +243,7 @@ class TimeResponseData:
 
          response(tranpose=True).input
 
-     See :meth:`TimeResponseData.__call__` for more information.
+    See :meth:`TimeResponseData.__call__` for more information.
 
     """
 

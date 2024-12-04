@@ -322,7 +322,7 @@ def test_subsys_indexing(fcn, outdx, inpdx, key):
     sys = ct.rss(4, 3, 3)
     subsys = sys[key]
 
-    # Construct the system to be test
+    # Construct the system to be tested
     match fcn:
         case ct.frd:
             omega = np.logspace(-1, 1)

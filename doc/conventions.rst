@@ -99,8 +99,8 @@ argument::
     mag, phase, omega = response(squeeze=False)
 
 Frequency response objects are also available as named properties of the
-`response` object: `response.magnitude`, `response.phase`, and
-`response.response` (for the complex response).  For MIMO systems, these
+``response`` object: ``response.magnitude``, ``response.phase``, and
+``response.response`` (for the complex response).  For MIMO systems, these
 elements of the frequency response can be accessed using the names of the
 inputs and outputs::
 
@@ -109,9 +109,9 @@ inputs and outputs::
 where the signal names are based on the system that generated the frequency
 response.
 
-Note: The `fresp` data member is stored as a NumPy array and cannot be
-accessed with signal names.  Use `response.response` to access the complex
-frequency response using signal names.
+Note: The ``fresp`` data member is stored as a NumPy array and cannot be
+accessed with signal names.  Use ``response.response`` to access the
+complex frequency response using signal names.
 
 Discrete time systems
 ---------------------
@@ -157,8 +157,8 @@ names::
 
 Signal names for an indexed subsystem are preserved from the original
 system and the subsystem name is set according to the values of
-`control.config.defaults['iosys.indexed_system_name_prefix']` and
-`control.config.defaults['iosys.indexed_system_name_suffix']`.  The default
+``control.config.defaults['iosys.indexed_system_name_prefix']`` and
+``control.config.defaults['iosys.indexed_system_name_suffix']``.  The default
 subsystem name is the original system name with '$indexed' appended.
 
 Simulating LTI systems
@@ -271,7 +271,7 @@ such as the :func:`step_response` function applied to a MIMO system,
 which will compute the step response for each input/output pair.  See
 :class:`TimeResponseData` for more details.
 
-The input, output, and state elements of the response can be access using
+The input, output, and state elements of the response can be accessed using
 signal names in place of integer offsets::
 
     plt.plot(response. time, response.states['x[1]']
