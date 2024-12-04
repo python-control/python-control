@@ -580,11 +580,15 @@ def combine(tf_array):
     # Iterate over
     num = []
     den = []
-    for row in ensured_tf_array:
+    for row_index, row in enumerate(ensured_tf_array):
         for j_out in range(row[0].noutputs):
             num_row = []
             den_row = []
             for col in row:
+                if col.noutputs != row[0].noutputs:
+                    raise ValueError(
+                        f"Mismatched number of transfer function outputs in row {row_index}."
+                    )
                 for j_in in range(col.ninputs):
                     num_row.append(col.num[j_out][j_in])
                     den_row.append(col.den[j_out][j_in])

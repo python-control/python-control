@@ -756,6 +756,65 @@ class TestTfCombineSplit:
                 ],
                 ValueError,
             ),
+            # Incompatible dimensions
+            (
+                [
+                    [
+                        ctrl.TransferFunction(
+                            [
+                                [
+                                    [1],
+                                ]
+                            ],
+                            [
+                                [
+                                    [1, 1],
+                                ]
+                            ],
+                        ),
+                        ctrl.TransferFunction(
+                            [
+                                [[2], [1]],
+                                [[1], [3]],
+                            ],
+                            [
+                                [[1, 0], [1, 0]],
+                                [[1, 0], [1, 0]],
+                            ],
+                        ),
+                    ],
+                ],
+                ValueError,
+            ),
+            (
+                [
+                    [
+                        ctrl.TransferFunction(
+                            [
+                                [[2], [1]],
+                                [[1], [3]],
+                            ],
+                            [
+                                [[1, 0], [1, 0]],
+                                [[1, 0], [1, 0]],
+                            ],
+                        ),
+                        ctrl.TransferFunction(
+                            [
+                                [
+                                    [1],
+                                ]
+                            ],
+                            [
+                                [
+                                    [1, 1],
+                                ]
+                            ],
+                        ),
+                    ],
+                ],
+                ValueError,
+            ),
         ],
     )
     def test_error_combine(self, tf_array, exception):
@@ -769,9 +828,9 @@ def _tf_close_coeff(tf_a, tf_b, rtol=1e-5, atol=1e-8):
 
     Parameters
     ----------
-    tf_a : control.TransferFunction
+    tf_a : TransferFunction
         First transfer function.
-    tf_b : control.TransferFunction
+    tf_b : TransferFunction
         Second transfer function.
     rtol : float
         Relative tolerance for :func:`np.allclose`.
