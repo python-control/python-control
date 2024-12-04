@@ -815,6 +815,55 @@ class TestTfCombineSplit:
                 ],
                 ValueError,
             ),
+            (
+                [
+                    [
+                        ctrl.TransferFunction(
+                            [
+                                [[2], [1]],
+                                [[1], [3]],
+                            ],
+                            [
+                                [[1, 0], [1, 0]],
+                                [[1, 0], [1, 0]],
+                            ],
+                        ),
+                        ctrl.TransferFunction(
+                            [
+                                [[2], [1]],
+                                [[1], [3]],
+                            ],
+                            [
+                                [[1, 0], [1, 0]],
+                                [[1, 0], [1, 0]],
+                            ],
+                        ),
+                    ],
+                    [
+                        ctrl.TransferFunction(
+                            [
+                                [[2], [1], [1]],
+                                [[1], [3], [2]],
+                            ],
+                            [
+                                [[1, 0], [1, 0], [1, 0]],
+                                [[1, 0], [1, 0], [1, 0]],
+                            ],
+                        ),
+                        ctrl.TransferFunction(
+                            [
+                                [[2], [1]],
+                                [[1], [3]],
+                            ],
+                            [
+                                [[1, 0], [1, 0]],
+                                [[1, 0], [1, 0]],
+                            ],
+                        ),
+                    ],
+                ],
+                ValueError,
+            ),
         ],
     )
     def test_error_combine_tf(self, tf_array, exception):
