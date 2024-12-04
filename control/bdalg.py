@@ -573,7 +573,8 @@ def combine_tf(tf_array):
     dt_set = set(dt_list)
     dt_set.discard(None)
     if len(dt_set) > 1:
-        raise ValueError(f"Timesteps of transfer functions are mismatched: {dt_set}")
+        raise ValueError("Timesteps of transfer functions are "
+                         f"mismatched: {dt_set}")
     elif len(dt_set) == 0:
         dt = None
     else:
@@ -595,7 +596,8 @@ def combine_tf(tf_array):
             for col in row:
                 if col.noutputs != row[0].noutputs:
                     raise ValueError(
-                        f"Mismatched number of transfer function outputs in row {row_index}."
+                        "Mismatched number of transfer function outputs in "
+                        f"row {row_index}."
                     )
                 for j_in in range(col.ninputs):
                     num_row.append(col.num[j_out][j_in])
@@ -605,12 +607,14 @@ def combine_tf(tf_array):
     for row_index, row in enumerate(num):
         if len(row) != len(num[0]):
             raise ValueError(
-                f"Mismatched number transfer function inputs in row {row_index} of numerator."
+                "Mismatched number transfer function inputs in row "
+                f"{row_index} of numerator."
             )
     for row_index, row in enumerate(den):
         if len(row) != len(den[0]):
             raise ValueError(
-                f"Mismatched number transfer function inputs in row {row_index} of denominator."
+                "Mismatched number transfer function inputs in row "
+                f"{row_index} of denominator."
             )
     return tf.TransferFunction(num, den, dt=dt)
 
@@ -692,12 +696,14 @@ def _ensure_tf(arraylike_or_tf, dt=None):
         # If timesteps don't match, raise an exception
         if (dt is not None) and (arraylike_or_tf.dt != dt):
             raise ValueError(
-                f"`arraylike_or_tf.dt={arraylike_or_tf.dt}` does not match argument `dt={dt}`."
+                f"`arraylike_or_tf.dt={arraylike_or_tf.dt}` does not match "
+                f"argument `dt={dt}`."
             )
         return arraylike_or_tf
     if np.ndim(arraylike_or_tf) > 2:
         raise ValueError(
-            "Array-like must have less than two dimensions to be converted into a transfer function."
+            "Array-like must have less than two dimensions to be converted "
+            "into a transfer function."
         )
     # If it's not, then convert it to a transfer function
     arraylike_3d = np.atleast_3d(arraylike_or_tf)
@@ -709,6 +715,7 @@ def _ensure_tf(arraylike_or_tf, dt=None):
         )
     except TypeError:
         raise ValueError(
-            "`arraylike_or_tf` must only contain array-likes or transfer functions."
+            "`arraylike_or_tf` must only contain array-likes or transfer "
+            "functions."
         )
     return tfn
