@@ -542,6 +542,8 @@ def combine(tf_array):
         If timesteps of transfer functions do not match.
     ValueError
         If ``tf_array`` has incorrect dimensions.
+    ValueError
+        If the transfer functions in a row have mismatched output dimensions.
 
     Examples
     --------
