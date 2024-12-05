@@ -137,6 +137,7 @@ Model simplification tools
     model_reduction
     eigensys_realization
     markov
+    observer_kalman_identification
 
 Nonlinear system support
 ========================

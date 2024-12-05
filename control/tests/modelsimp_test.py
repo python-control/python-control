@@ -9,8 +9,8 @@ import pytest
 from control import StateSpace, TimeResponseData, c2d, forced_response, \
     impulse_response, step_response, rss, tf
 from control.exception import ControlArgument, ControlDimension
-from control.modelsimp import balred, eigensys_realization, hsvd, markov, \
-    modred
+from control.modelsimp import balred, eigensys_realization, hsvd, okid, \
+    markov, modred
 from control.tests.conftest import slycotonly
 
 
@@ -318,6 +318,142 @@ class TestModelsimp:
         np.testing.assert_allclose(step_true.outputs, 
                                    step_est.outputs,
                                    rtol=1e-6, atol=1e-8)
+
+
+    def testOKIDSignature(self):
+
+        # Example 6.1, Applied System Identification
+        m1, k1, c1 = 1., 1., 0.01
+        A = np.array([
+            [0., 1.],
+            [-k1/m1, -c1/m1],
+        ])
+        B = np.array([[0.],[1./m1]])
+        C = np.array([[-k1/m1, -c1/m1]])
+        D = np.array([[1.]])
+        sys = StateSpace(A, B, C, D)
+        dt = 0.1
+        sysd = sys.sample(dt, method='zoh')
+
+        T = np.arange(0,200,dt)
+        U = np.random.randn(sysd.B.shape[-1], len(T))
+        response = forced_response(sysd, U=U)
+        Y = response.outputs
+
+        m = 5
+        ir_true = impulse_response(sysd, T=T)
+        Htrue = ir_true.outputs[:m+1]*dt
+        H = okid(Y, U, m, dt=True)
+
+        np.testing.assert_allclose(Htrue, H, atol=1e-1)
+
+        # Test mimo example
+        # Mechanical Vibrations: Theory and Application, SI Edition, 1st ed.
+        # Figure 6.5 / Example 6.7
+        m1, k1, c1 = 1., 4., 1.
+        m2, k2, c2 = 2., 2., 1.
+        k3, c3 = 6., 2.
+
+        A = np.array([
+            [0., 0., 1., 0.],
+            [0., 0., 0., 1.],
+            [-(k1+k2)/m1, (k2)/m1, -(c1+c2)/m1, c2/m1],
+            [(k2)/m2, -(k2+k3)/m2, c2/m2, -(c2+c3)/m2]
+        ])
+        B = np.array([[0.,0.],[0.,0.],[1/m1,0.],[0.,1/m2]])
+        C = np.array([[1.0, 0.0, 0.0, 0.0],[0.0, 1.0, 0.0, 0.0]])
+        D = np.zeros((2,2))
+
+        sys = StateSpace(A, B, C, D)
+        dt = 0.25
+        sysd = sys.sample(dt, method='zoh')
+
+        T = np.arange(0,100,dt)
+        U = np.random.randn(sysd.B.shape[-1], len(T))
+        response = forced_response(sysd, U=U)
+        Y = response.outputs
+
+        m = 100
+        _, Htrue = impulse_response(sysd, T=dt*(m))
+
+
+        # test array_like
+        atol = 1e-1
+        H = okid(Y, U, m, dt=dt)
+        np.testing.assert_allclose(H, Htrue, atol=atol)
+
+        # test array_like, truncate
+        H = okid(Y, U, m, dt=dt, truncate=True)
+        np.testing.assert_allclose(H, Htrue, atol=atol)
+
+        # test array_like, transpose
+        HT = okid(Y.T, U.T, m, dt=dt, transpose=True)
+        np.testing.assert_allclose(HT, np.transpose(Htrue), atol=atol)
+
+        # test response data
+        H = okid(response, m, dt=dt)
+        np.testing.assert_allclose(H, Htrue, atol=atol)
+
+        # test response data
+        H = okid(response, m, dt=dt, truncate=True)
+        np.testing.assert_allclose(H, Htrue, atol=atol)
+
+        # test response data, transpose
+        response.transpose = True
+        HT = okid(response, m, dt=dt)
+        np.testing.assert_allclose(HT, np.transpose(Htrue), atol=atol)
+
+    # Make sure markov() returns the right answer
+    @pytest.mark.parametrize("k, m, n",
+                             [(2, 2, 2),
+                              (2, 5, 5),
+                              (5, 2, 2),
+                              (5, 5, 5),
+                              (5, 10, 10)])
+    def testOkidResults(self, k, m, n):
+        #
+        # Test over a range of parameters
+        #
+        # k = order of the system
+        # m = number of Markov parameters
+        # n = size of the data vector
+        #
+        # Values *should* match exactly for n = m, otherewise you get a
+        # close match but errors due to the assumption that C A^k B =
+        # 0 for k > m-2 (see modelsimp.py).
+        #
+
+        # Generate stable continuous time system
+        Hc = rss(k, 1, 1)
+
+        # Choose sampling time based on fastest time constant / 10
+        w, _ = np.linalg.eig(Hc.A)
+        Ts = np.min(-np.real(w)) / 10.
+
+        # Convert to a discrete time system via sampling
+        Hd = c2d(Hc, Ts, 'zoh')
+
+        # Compute the Markov parameters from state space
+        Mtrue = np.hstack([Hd.D] + [
+            Hd.C @ np.linalg.matrix_power(Hd.A, i) @ Hd.B
+            for i in range(m-1)])
+        
+        Mtrue = np.squeeze(Mtrue)
+
+        # Generate input/output data
+        T = np.array(range(n)) * Ts
+        U = np.cos(T) + np.sin(T/np.pi)
+        _, Y = forced_response(Hd, T, U, squeeze=True)
+        Mcomp = okid(Y, U, m-1)
+
+
+        # TODO: Check tol
+        # Compare to results from markov()
+        # experimentally determined probability to get non matching results
+        # with rtot=1e-6 and atol=1e-8 due to numerical errors
+        # for k=5, m=n=10: 0.015 %
+        np.testing.assert_allclose(Mtrue, Mcomp, atol=1e-1)
+
 
 
     def testModredMatchDC(self):
