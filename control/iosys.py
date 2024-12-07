@@ -250,6 +250,44 @@ class InputOutputSystem(object):
             str += f"States ({self.nstates}): {self.state_labels}"
         return str
 
+    def _label_repr(self, show_count=True):
+        out, count = "", 0
+
+        # Include the system name if not generic
+        if not self._generic_name_check():
+            name_spec = f"name='{self.name}'"
+            count += len(name_spec)
+            out += name_spec
+
+        # Include the state, output, and input names if not generic
+        for sig_name, sig_default, sig_labels in zip(
+                ['states', 'outputs', 'inputs'],
+                ['x', 'y', 'u'],        # TODO: replace with defaults
+                [self.state_labels, self.output_labels, self.input_labels]):
+            if sig_name == 'states' and self.nstates is None:
+                continue
+
+            # Check if the signal labels are generic
+            if any([re.match(r'^' + sig_default + r'\[\d*\]$', label) is None
+                    for label in sig_labels]):
+                spec = f"{sig_name}={sig_labels}"
+            elif show_count:
+                spec = f"{sig_name}={len(sig_labels)}"
+
+            # Append the specification string to the output, with wrapping
+            if count == 0:
+                count = len(spec)       # no system name => suppress comma
+            elif count + len(spec) > 72:
+                # TODO: check to make sure a single line is enough (minor)
+                out += ",\n"
+                count = len(spec)
+            else:
+                out += ", "
+                count += len(spec) + 2
+            out += spec
+
+        return out
+
     # Find a list of signals by name, index, or pattern
     def _find_signals(self, name_list, sigdict):
         if not isinstance(name_list, (list, tuple)):

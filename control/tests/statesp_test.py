@@ -735,17 +735,23 @@ class TestStateSpace:
 
     def test_repr(self, sys322):
         """Test string representation"""
-        ref322 = "\n".join(["StateSpace(array([[-3.,  4.,  2.],",
-                            "       [-1., -3.,  0.],",
-                            "       [ 2.,  5.,  3.]]), array([[ 1.,  4.],",
-                            "       [-3., -3.],",
-                            "       [-2.,  1.]]), array([[ 4.,  2., -3.],",
-                            "       [ 1.,  4.,  3.]]), array([[-2.,  4.],",
-                            "       [ 0.,  1.]]){dt})"])
+        ref322 = "\n".join(
+            ["StateSpace(",
+             "array([[-3.,  4.,  2.],",
+             "       [-1., -3.,  0.],",
+             "       [ 2.,  5.,  3.]]),",
+             "array([[ 1.,  4.],",
+             "       [-3., -3.],",
+             "       [-2.,  1.]]),",
+             "array([[ 4.,  2., -3.],",
+             "       [ 1.,  4.,  3.]]),",
+             "array([[-2.,  4.],",
+             "       [ 0.,  1.]]){dt},",
+             "name='sys322', states=3, outputs=2, inputs=2)"])
         assert repr(sys322) == ref322.format(dt='')
         sysd = StateSpace(sys322.A, sys322.B,
                           sys322.C, sys322.D, 0.4)
-        assert repr(sysd), ref322.format(dt=" == 0.4")
+        assert repr(sysd), ref322.format(dt="\ndt=0.4")
         array = np.array  # noqa
         sysd2 = eval(repr(sysd))
         np.testing.assert_allclose(sysd.A, sysd2.A)

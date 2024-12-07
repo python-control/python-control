@@ -392,11 +392,19 @@ class StateSpace(NonlinearIOSystem, LTI):
     # represent to implement a re-loadable version
     def __repr__(self):
         """Print state-space system in loadable form."""
-        # TODO: add input/output names (?)
-        return "StateSpace({A}, {B}, {C}, {D}{dt})".format(
+        out = "StateSpace(\n{A},\n{B},\n{C},\n{D}".format(
             A=self.A.__repr__(), B=self.B.__repr__(),
-            C=self.C.__repr__(), D=self.D.__repr__(),
-            dt=(isdtime(self, strict=True) and ", {}".format(self.dt)) or '')
+            C=self.C.__repr__(), D=self.D.__repr__())
+
+        if config.defaults['control.default_dt'] != self.dt:
+            out += ",\ndt={dt}".format(
+                dt='None' if self.dt is None else self.dt)
+
+        if len(labels := self._label_repr()) > 0:
+            out += ",\n" + labels
+
+        out += ")"
+        return out
 
     def _latex_partitioned_stateless(self):
         """`Partitioned` matrix LaTeX representation for stateless systems
