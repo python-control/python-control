@@ -696,11 +696,11 @@ def create_statefbk_iosystem(
     -------
     ctrl : NonlinearIOSystem
         Input/output system representing the controller.  For the 'trajgen'
-        design patter (default), this system takes as inputs the desired
+        design pattern (default), this system takes as inputs the desired
         state `x_d`, the desired input `u_d`, and either the system state
         `x` or the estimated state `xhat`.  It outputs the controller
         action `u` according to the formula `u = u_d - K(x - x_d)`.  For
-        the 'refgain' design patter, the system takes as inputs the
+        the 'refgain' design pattern, the system takes as inputs the
         reference input `r` and the system or estimated state. If the
         keyword `integral_action` is specified, then an additional set of
         integrators is included in the control system (with the gain matrix
@@ -778,6 +778,11 @@ def create_statefbk_iosystem(
         kwargs, 'type', 'controller_type', controller_type)
     if kwargs:
         raise TypeError("unrecognized keywords: ", str(kwargs))
+
+    # Check for consistency of positional parameters
+    if feedfwd_gain is not None and feedfwd_pattern != 'refgain':
+        raise ControlArgument(
+            "feedfwd_gain specified but feedfwd_pattern != 'refgain'")
 
     # Figure out what inputs to the system to use
     control_indices = _process_indices(

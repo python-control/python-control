@@ -1145,8 +1145,10 @@ def test_gainsched_errors(unicycle):
 
 
 @pytest.mark.parametrize("ninputs, Kf", [
-    (1, 1), (1, None),
-    (2, np.diag([1, 1])), (2, None),
+    (1, 1),
+    (1, None),
+    (2, np.diag([1, 1])),
+    (2, None),
 ])
 def test_refgain_pattern(ninputs, Kf):
     sys = ct.rss(2, 2, ninputs, strictly_proper=True)
@@ -1178,3 +1180,17 @@ def test_refgain_pattern(ninputs, Kf):
     np.testing.assert_almost_equal(clsys.B, manual.B)
     np.testing.assert_almost_equal(clsys.C[:sys.nstates, :], manual.C)
     np.testing.assert_almost_equal(clsys.D[:sys.nstates, :], manual.D)
+
+
+def test_create_statefbk_errors():
+    sys = ct.rss(2, 2, 1, strictly_proper=True)
+    sys.C = np.eye(2)
+    K = -np.ones((1, 4))
+    Kf = 1
+
+    K, _, _ = ct.lqr(sys.A, sys.B, np.eye(sys.nstates), np.eye(sys.ninputs))
+    with pytest.raises(NotImplementedError, match="unknown pattern"):
+        ct.create_statefbk_iosystem(sys, K, feedfwd_pattern='mypattern')
+
+    with pytest.raises(ControlArgument, match="feedfwd_pattern != 'refgain'"):
+        ct.create_statefbk_iosystem(sys, K, Kf, feedfwd_pattern='trajgen')

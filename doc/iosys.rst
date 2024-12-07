@@ -57,7 +57,7 @@ Example
 
 To illustrate the use of the input/output systems module, we create a
 model for a predator/prey system, following the notation and parameter
-values in FBS2e.
+values in `Feedback Systems <http://fbsbook.org>`_.
 
 We begin by defining the dynamics of the system
 
@@ -129,7 +129,8 @@ system and computing the linearization about that point.
 
 We next compute a controller that stabilizes the equilibrium point using
 eigenvalue placement and computing the feedforward gain using the number of
-lynxes as the desired output (following FBS2e, Example 7.5):
+lynxes as the desired output (following `Feedback Systems
+<http://fbsbook.org>`_, Example 7.5):
 
 .. code-block:: python
 
@@ -488,10 +489,10 @@ A reference gain controller can be created with the command::
 
   ctrl, clsys = ct.create_statefbk_iosystem(sys, K, kf, feedfwd_pattern='refgain')
 
-This reference gain design pattern is described in more detail in Section
-7.2 of FBS2e (Stabilization by State Feedback) and the trajectory
-generation design pattern is described in Section 8.5 (State Space
-Controller Design).
+This reference gain design pattern is described in more detail in
+Section 7.2 of `Feedback Systems <http://fbsbook.org>`_ (Stabilization
+by State Feedback) and the trajectory generation design pattern is
+described in Section 8.5 (State Space Controller Design).
 
 If the full system state is not available, the output of a state
 estimator can be used to construct the controller using the command::
