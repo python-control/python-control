@@ -485,7 +485,7 @@ class TestModelsimp:
     ({'elim_inputs': [0, 1, 2]}, 5, 3, 0),              # no inputs
     ({'elim_outputs': [0, 1, 2]}, 5, 0, 3),             # no outputs
     ({'elim_states': [0, 1, 2, 3, 4]}, 0, 3, 3),        # no states
-    ({'elim_states': [0, 1], 'keep_states': [1, 2]}, None, None, None)
+    ({'elim_states': [0, 1], 'keep_states': [1, 2]}, None, None, None),
 ])
 @pytest.mark.parametrize("method", ['truncate', 'matchdc'])
 def test_model_reduction(method, kwargs, nstates, noutputs, ninputs):

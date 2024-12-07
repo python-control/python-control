@@ -89,9 +89,9 @@ def model_reduction(
     eliminated or those to be kept.
 
     Two methods of state reduction are possible: 'truncate' removes the
-    states marked for elimination, while 'matchdc' replaces the the
-    eliminated states with their equilibrium values (thereby keeping the
-    input/output gain unchanged at zero frequency ["DC"]).
+    states marked for elimination, while 'matchdc' replaces the eliminated
+    states with their equilibrium values (thereby keeping the input/output
+    gain unchanged at zero frequency ["DC"]).
 
     Parameters
     ----------
@@ -104,9 +104,8 @@ def model_reduction(
         Vector of inputs, outputs, or states to keep.  Can be specified
         either as an offset into the appropriate vector or as a signal name.
     method : string
-        Method of removing states in `elim`: either 'truncate' or
-        'matchdc' (default).
-    warn_unstable: bool, option
+        Method of removing states: either 'truncate' or 'matchdc' (default).
+    warn_unstable : bool, option
         If `False`, don't warn if system is unstable.
 
     Returns
@@ -136,23 +135,23 @@ def model_reduction(
     See Also
     --------
     balanced_reduction : Eliminate states using Hankel singular values.
-    minimal_realization : Eliminate unreachable or unobseravble states.
+    minimal_realization : Eliminate unreachable or unobservable states.
 
     Notes
     -----
     The model_reduction function issues a warning if the system has
-    unstable eigenvalues, since in those situations the stability reduced
-    order model may be different that the stability of the full model.  No
-    other checking is done, so users to be careful not to render a system
-    unobservable or unreachable.
+    unstable eigenvalues, since in those situations the stability of the
+    reduced order model may be different than the stability of the full
+    model.  No other checking is done, so users must to be careful not to
+    render a system unobservable or unreachable.
 
-    States, inputs, and outputs can be specified using integer offers or
+    States, inputs, and outputs can be specified using integer offsets or
     using signal names.  Slices can also be specified, but must use the
     Python ``slice()`` function.
 
     """
     if not isinstance(sys, StateSpace):
-        raise TypeError("system must be a a StateSpace system")
+        raise TypeError("system must be a StateSpace system")
 
     # Check system is stable
     if warn_unstable:
@@ -161,7 +160,7 @@ def model_reduction(
             warnings.warn("System is unstable; reduction may be meaningless")
 
     # Utility function to process keep/elim keywords
-    def _process_elim_or_keep(elim, keep, labels, allow_both=False):
+    def _process_elim_or_keep(elim, keep, labels):
         def _expand_key(key):
             if key is None:
                 return []
@@ -178,9 +177,8 @@ def model_reduction(
         keep = np.atleast_1d(_expand_key(keep))
             
         if len(elim) > 0 and len(keep) > 0:
-            if not allow_both:
-                raise ValueError(
-                    "can't provide both 'keep' and 'elim' for same variables")
+            raise ValueError(
+                "can't provide both 'keep' and 'elim' for same variables")
         elif len(keep) > 0:
             keep = np.sort(keep).tolist()
             elim = [i for i in range(len(labels)) if i not in keep]
