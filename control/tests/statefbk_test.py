@@ -56,7 +56,7 @@ class TestStatefbk:
         Wctrue = np.array([[5., 6.], [7., 8.]])
         Wc = ctrb(A, B, t=t)
         np.testing.assert_array_almost_equal(Wc, Wctrue)
-        
+
     def testObsvSISO(self):
         A = np.array([[1., 2.], [3., 4.]])
         C = np.array([[5., 7.]])
@@ -70,7 +70,7 @@ class TestStatefbk:
         Wotrue = np.array([[5., 6.], [7., 8.], [23., 34.], [31., 46.]])
         Wo = obsv(A, C)
         np.testing.assert_array_almost_equal(Wo, Wotrue)
-        
+
     def testObsvT(self):
         A = np.array([[1., 2.], [3., 4.]])
         C = np.array([[5., 6.], [7., 8.]])
@@ -128,15 +128,14 @@ class TestStatefbk:
         C = np.array([[4., 5.], [6., 7.]])
         D = np.array([[13., 14.], [15., 16.]])
         sys = ss(A, B, C, D)
-        Rctrue = np.array([[4.30116263, 5.6961343], 
-                           [0., 0.23249528]])
+        Rctrue = np.array([[4.30116263, 5.6961343], [0., 0.23249528]])
         Rc = gram(sys, 'cf')
         np.testing.assert_array_almost_equal(Rc, Rctrue)
         sysd = ct.c2d(sys, 0.2)
         Rctrue = np.array([[1.91488054, 2.53468814],
                            [0.        , 0.10290372]])
         Rc = gram(sysd, 'cf')
-        np.testing.assert_array_almost_equal(Rc, Rctrue)        
+        np.testing.assert_array_almost_equal(Rc, Rctrue)
 
     @slycotonly
     def testGramWo(self):
@@ -149,7 +148,7 @@ class TestStatefbk:
         Wo = gram(sys, 'o')
         np.testing.assert_array_almost_equal(Wo, Wotrue)
         sysd = ct.c2d(sys, 0.2)
-        Wotrue = np.array([[ 1305.369179, -440.046414], 
+        Wotrue = np.array([[ 1305.369179, -440.046414],
                            [ -440.046414,  333.034844]])
         Wo = gram(sysd, 'o')
         np.testing.assert_array_almost_equal(Wo, Wotrue)
@@ -184,7 +183,7 @@ class TestStatefbk:
         Rotrue = np.array([[ 36.12989315, -12.17956588],
                            [  0.        ,  13.59018097]])
         Ro = gram(sysd, 'of')
-        np.testing.assert_array_almost_equal(Ro, Rotrue) 
+        np.testing.assert_array_almost_equal(Ro, Rotrue)
 
     def testGramsys(self):
         sys = tf([1.], [1., 1., 1.])
@@ -1143,3 +1142,55 @@ def test_gainsched_errors(unicycle):
         ctrl, clsys = ct.create_statefbk_iosystem(
             unicycle, (gains, points),
             gainsched_indices=[3, 2], gainsched_method='unknown')
+
+
+@pytest.mark.parametrize("ninputs, Kf", [
+    (1, 1),
+    (1, None),
+    (2, np.diag([1, 1])),
+    (2, None),
+])
+def test_refgain_pattern(ninputs, Kf):
+    sys = ct.rss(2, 2, ninputs, strictly_proper=True)
+    sys.C = np.eye(2)
+
+    K, _, _ = ct.lqr(sys.A, sys.B, np.eye(sys.nstates), np.eye(sys.ninputs))
+    if Kf is None:
+        # Make sure we get an error if we don't specify Kf
+        with pytest.raises(ControlArgument, match="'feedfwd_gain' required"):
+            ctrl, clsys = ct.create_statefbk_iosystem(
+                sys, K, Kf, feedfwd_pattern='refgain')
+
+        # Now compute the gain to give unity zero frequency gain
+        C = np.eye(ninputs, sys.nstates)
+        Kf = -np.linalg.inv(
+            C @ np.linalg.inv(sys.A - sys.B @ K) @ sys.B)
+        ctrl, clsys = ct.create_statefbk_iosystem(
+            sys, K, Kf, feedfwd_pattern='refgain')
+
+        np.testing.assert_almost_equal(
+            C @ clsys(0)[0:sys.nstates], np.eye(ninputs))
+
+    else:
+        ctrl, clsys = ct.create_statefbk_iosystem(
+            sys, K, Kf, feedfwd_pattern='refgain')
+
+    manual = ct.feedback(sys, K) * Kf
+    np.testing.assert_almost_equal(clsys.A, manual.A)
+    np.testing.assert_almost_equal(clsys.B, manual.B)
+    np.testing.assert_almost_equal(clsys.C[:sys.nstates, :], manual.C)
+    np.testing.assert_almost_equal(clsys.D[:sys.nstates, :], manual.D)
+
+
+def test_create_statefbk_errors():
+    sys = ct.rss(2, 2, 1, strictly_proper=True)
+    sys.C = np.eye(2)
+    K = -np.ones((1, 4))
+    Kf = 1
+
+    K, _, _ = ct.lqr(sys.A, sys.B, np.eye(sys.nstates), np.eye(sys.ninputs))
+    with pytest.raises(NotImplementedError, match="unknown pattern"):
+        ct.create_statefbk_iosystem(sys, K, feedfwd_pattern='mypattern')
+
+    with pytest.raises(ControlArgument, match="feedfwd_pattern != 'refgain'"):
+        ct.create_statefbk_iosystem(sys, K, Kf, feedfwd_pattern='trajgen')

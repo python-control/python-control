@@ -57,7 +57,7 @@ Example
 
 To illustrate the use of the input/output systems module, we create a
 model for a predator/prey system, following the notation and parameter
-values in FBS2e.
+values in `Feedback Systems <http://fbsbook.org>`_.
 
 We begin by defining the dynamics of the system
 
@@ -129,7 +129,8 @@ system and computing the linearization about that point.
 
 We next compute a controller that stabilizes the equilibrium point using
 eigenvalue placement and computing the feedforward gain using the number of
-lynxes as the desired output (following FBS2e, Example 7.5):
+lynxes as the desired output (following `Feedback Systems
+<http://fbsbook.org>`_, Example 7.5):
 
 .. code-block:: python
 
@@ -470,6 +471,29 @@ closed loop systems `clsys`, both as I/O systems.  The input to the
 controller is the vector of desired states :math:`x_\text{d}`, desired
 inputs :math:`u_\text{d}`, and system states :math:`x`.
 
+The above design pattern is referred to as the "trajectory generation"
+('trajgen') pattern, since it assumes that the input to the controller is a
+feasible trajectory :math:`(x_\text{d}, u_\text{d})`.  Alternatively, a
+controller using the "reference gain" pattern can be created, which
+implements a state feedback controller of the form
+
+.. math::
+
+  u = k_\text{f}\, r - K x,
+
+where :math:`r` is the reference input and :math:`k_\text{f}` is the
+feedforward gain (normally chosen so that the steady state output
+:math:`y_\text{ss}` will be equal to :math:`r`).
+
+A reference gain controller can be created with the command::
+
+  ctrl, clsys = ct.create_statefbk_iosystem(sys, K, kf, feedfwd_pattern='refgain')
+
+This reference gain design pattern is described in more detail in
+Section 7.2 of `Feedback Systems <http://fbsbook.org>`_ (Stabilization
+by State Feedback) and the trajectory generation design pattern is
+described in Section 8.5 (State Space Controller Design).
+
 If the full system state is not available, the output of a state
 estimator can be used to construct the controller using the command::
 
@@ -507,10 +531,11 @@ must match the number of additional columns in the `K` matrix.  If an
 estimator is specified, :math:`\hat x` will be used in place of
 :math:`x`.
 
-Finally, gain scheduling on the desired state, desired input, or
-system state can be implemented by setting the gain to a 2-tuple
-consisting of a list of gains and a list of points at which the gains
-were computed, as well as a description of the scheduling variables::
+Finally, for the trajectory generation design pattern, gain scheduling on
+the desired state, desired input, or system state can be implemented by
+setting the gain to a 2-tuple consisting of a list of gains and a list of
+points at which the gains were computed, as well as a description of the
+scheduling variables::
 
   ctrl, clsys = ct.create_statefbk_iosystem(
       sys, ([g1, ..., gN], [p1, ..., pN]), gainsched_indices=[s1, ..., sq])

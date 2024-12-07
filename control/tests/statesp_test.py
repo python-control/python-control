@@ -121,29 +121,30 @@ class TestStateSpace:
         np.testing.assert_almost_equal(sys.D, sys322ABCD[3])
         assert sys.dt == dtref
 
-    @pytest.mark.parametrize("args, exc, errmsg",
-                             [((True, ), TypeError,
-                               "(can only take in|sys must be) a StateSpace"),
-                              ((1, 2), TypeError, "1, 4, or 5 arguments"),
-                              ((np.ones((3, 2)), np.ones((3, 2)),
-                                np.ones((2, 2)), np.ones((2, 2))),
-                               ValueError, "A must be square"),
-                              ((np.ones((3, 3)), np.ones((2, 2)),
-                                np.ones((2, 3)), np.ones((2, 2))),
-                               ValueError, "A and B"),
-                              ((np.ones((3, 3)), np.ones((3, 2)),
-                                np.ones((2, 2)), np.ones((2, 2))),
-                               ValueError, "A and C"),
-                              ((np.ones((3, 3)), np.ones((3, 2)),
-                                np.ones((2, 3)), np.ones((2, 3))),
-                               ValueError, "B and D"),
-                              ((np.ones((3, 3)), np.ones((3, 2)),
-                                np.ones((2, 3)), np.ones((3, 2))),
-                               ValueError, "C and D"),
-                              ])
+    @pytest.mark.parametrize(
+        "args, exc, errmsg",
+        [((True, ), TypeError, "(can only take in|sys must be) a StateSpace"),
+         ((1, 2), TypeError, "1, 4, or 5 arguments"),
+         ((np.ones((3, 2)), np.ones((3, 2)),
+           np.ones((2, 2)), np.ones((2, 2))), ValueError,
+          "A is the wrong shape; expected \(3, 3\)"),
+         ((np.ones((3, 3)), np.ones((2, 2)),
+           np.ones((2, 3)), np.ones((2, 2))), ValueError,
+          "B is the wrong shape; expected \(3, 2\)"),
+         ((np.ones((3, 3)), np.ones((3, 2)),
+           np.ones((2, 2)), np.ones((2, 2))), ValueError,
+          "C is the wrong shape; expected \(2, 3\)"),
+         ((np.ones((3, 3)), np.ones((3, 2)),
+           np.ones((2, 3)), np.ones((2, 3))), ValueError,
+          "D is the wrong shape; expected \(2, 2\)"),
+         ((np.ones((3, 3)), np.ones((3, 2)),
+           np.ones((2, 3)), np.ones((3, 2))), ValueError,
+          "D is the wrong shape; expected \(2, 2\)"),
+        ])
     def test_constructor_invalid(self, args, exc, errmsg):
         """Test invalid input to StateSpace() constructor"""
-        with pytest.raises(exc, match=errmsg):
+
+        with pytest.raises(exc, match=errmsg) as w:
             StateSpace(*args)
         with pytest.raises(exc, match=errmsg):
             ss(*args)

@@ -252,6 +252,12 @@ class StateSpace(NonlinearIOSystem, LTI):
             D = np.zeros((C.shape[0], B.shape[1]))
         D = _ssmatrix(D)
 
+        # If only direct term is present, adjust sizes of C and D if needed
+        if D.size > 0 and B.size == 0:
+            B = np.zeros((0, D.shape[1]))
+        if D.size > 0 and C.size == 0:
+            C = np.zeros((D.shape[0], 0))
+
         # Matrices defining the linear system
         self.A = A
         self.B = B
@@ -268,7 +274,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         # Process iosys keywords
         defaults = args[0] if len(args) == 1 else \
-            {'inputs': D.shape[1], 'outputs': D.shape[0],
+            {'inputs': B.shape[1], 'outputs': C.shape[0],
              'states': A.shape[0]}
         name, inputs, outputs, states, dt = _process_iosys_keywords(
             kwargs, defaults, static=(A.size == 0))
@@ -295,16 +301,15 @@ class StateSpace(NonlinearIOSystem, LTI):
         # Check to make sure everything is consistent
         #
         # Check that the matrix sizes are consistent
-        if A.shape[0] != A.shape[1] or self.nstates != A.shape[0]:
-            raise ValueError("A must be square.")
-        if self.nstates != B.shape[0]:
-            raise ValueError("A and B must have the same number of rows.")
-        if self.nstates != C.shape[1]:
-            raise ValueError("A and C must have the same number of columns.")
-        if self.ninputs != B.shape[1] or self.ninputs != D.shape[1]:
-            raise ValueError("B and D must have the same number of columns.")
-        if self.noutputs != C.shape[0] or self.noutputs != D.shape[0]:
-            raise ValueError("C and D must have the same number of rows.")
+        def _check_shape(matrix, expected, name):
+            if matrix.shape != expected:
+                raise ValueError(
+                    f"{name} is the wrong shape; "
+                    f"expected {expected} instead of {matrix.shape}")
+        _check_shape(A, (self.nstates, self.nstates), "A")
+        _check_shape(B, (self.nstates, self.ninputs), "B")
+        _check_shape(C, (self.noutputs, self.nstates), "C")
+        _check_shape(D, (self.noutputs, self.ninputs), "D")
 
         #
         # Final processing
