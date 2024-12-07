@@ -285,7 +285,6 @@ class FrequencyResponseData(LTI):
         if self.squeeze not in (None, True, False):
             raise ValueError("unknown squeeze value")
 
-        # Process iosys keywords
         defaults = {
             'inputs': self.fresp.shape[1] if not getattr(
                 self, 'input_index', None) else self.input_labels,
@@ -421,9 +420,19 @@ class FrequencyResponseData(LTI):
 
         limited for number of data points.
         """
-        return "FrequencyResponseData({d}, {w}{smooth})".format(
+        out = "FrequencyResponseData(\n{d},\n{w}{smooth}".format(
             d=repr(self.fresp), w=repr(self.omega),
             smooth=(self._ifunc and ", smooth=True") or "")
+
+        if config.defaults['control.default_dt'] != self.dt:
+            out += ",\ndt={dt}".format(
+                dt='None' if self.dt is None else self.dt)
+
+        if len(labels := self._label_repr()) > 0:
+            out += ",\n" + labels
+
+        out += ")"
+        return out
 
     def __neg__(self):
         """Negate a transfer function."""
