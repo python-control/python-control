@@ -350,3 +350,21 @@ def test_subsys_indexing(fcn, outdx, inpdx, key):
             np.testing.assert_almost_equal(
                 subsys_fcn.frequency_response(omega).response,
                 subsys_chk.frequency_response(omega).response)
+
+
+@slycotonly
+@pytest.mark.parametrize("op", [
+    '__mul__', '__rmul__', '__add__', '__radd__', '__sub__', '__rsub__'])
+@pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd])
+def test_scalar_algebra(op, fcn):
+    sys_ss = ct.rss(4, 2, 2)
+    match fcn:
+        case ct.ss:
+            sys = sys_ss
+        case ct.tf:
+            sys = ct.tf(sys_ss)
+        case ct.frd:
+            sys = ct.frd(sys_ss, [0.1, 1, 10])
+
+    scaled = getattr(sys, op)(2)
+    np.testing.assert_almost_equal(getattr(sys(1j), op)(2), scaled(1j))

@@ -261,6 +261,11 @@ class FrequencyResponseData(LTI):
 
         # create interpolation functions
         if smooth:
+            # Set the order of the fit
+            if self.omega.size < 2:
+                raise ValueError("can't smooth with only 1 frequency")
+            degree = 3 if self.omega.size > 3 else self.omega.size - 1
+
             self.ifunc = empty((self.fresp.shape[0], self.fresp.shape[1]),
                                dtype=tuple)
             for i in range(self.fresp.shape[0]):
@@ -268,7 +273,8 @@ class FrequencyResponseData(LTI):
                     self.ifunc[i, j], u = splprep(
                         u=self.omega, x=[real(self.fresp[i, j, :]),
                                          imag(self.fresp[i, j, :])],
-                        w=1.0/(absolute(self.fresp[i, j, :]) + 0.001), s=0.0)
+                        w=1.0/(absolute(self.fresp[i, j, :]) + 0.001),
+                        s=0.0, k=degree)
         else:
             self.ifunc = None
 
@@ -392,7 +398,12 @@ class FrequencyResponseData(LTI):
 
         # Convert the second argument to a frequency response function.
         # or re-base the frd to the current omega (if needed)
-        other = _convert_to_frd(other, omega=self.omega)
+        if isinstance(other, (int, float, complex, np.number)):
+            other = _convert_to_frd(
+                other, omega=self.omega,
+                inputs=self.ninputs, outputs=self.noutputs)
+        else:
+            other = _convert_to_frd(other, omega=self.omega)
 
         # Check that the input-output sizes are consistent.
         if self.ninputs != other.ninputs:
