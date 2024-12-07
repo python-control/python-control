@@ -194,6 +194,7 @@ class TransferFunction(LTI):
                                 % type(args[0]))
             num = args[0].num
             den = args[0].den
+            # TODO: copy over signal names
 
         else:
             raise TypeError("Needs 1, 2 or 3 arguments; received %i."
@@ -491,28 +492,34 @@ class TransferFunction(LTI):
     def __repr__(self):
         """Print transfer function in loadable form."""
         if self.issiso():
-            return "TransferFunction({num}, {den}{dt})".format(
-                num=self.num_array[0, 0].__repr__(),
-                den=self.den_array[0, 0].__repr__(),
-                dt=', {}'.format(self.dt) if isdtime(self, strict=True)
-                else '')
+            out = "TransferFunction(\n{num},\n{den}".format(
+                num=self.num[0][0].__repr__(), den=self.den[0][0].__repr__())
         else:
-            out = "TransferFunction(["
+            out = "TransferFunction(\n["
             for entry in [self.num_array, self.den_array]:
                 for i in range(self.noutputs):
-                    out += "[" if i == 0 else " ["
+                    out += "[" if i == 0 else "\n ["
+                    linelen = 0
                     for j in range(self.ninputs):
                         out += ", " if j != 0 else ""
                         numstr = np.array_repr(entry[i, j])
+                        if linelen + len(numstr) > 72:
+                            out += "\n  "
+                            linelen = 0
                         out += numstr
+                        linelen += len(numstr)
                     out += "]," if i < self.noutputs - 1 else "]"
-                out += "], [" if entry is self.num_array else "]"
+                out += "],\n[" if entry is self.num_array else "]"
 
-            if config.defaults['control.default_dt'] != self.dt:
-                out += ", {dt}".format(
-                    dt='None' if self.dt is None else self.dt)
-            out += ")"
-            return out
+        if config.defaults['control.default_dt'] != self.dt:
+            out += ",\ndt={dt}".format(
+                dt='None' if self.dt is None else self.dt)
+
+        if len(labels := self._label_repr()) > 0:
+            out += ",\n" + labels
+
+        out += ")"
+        return out
 
     def _repr_latex_(self, var=None):
         """LaTeX representation of transfer function, for Jupyter notebook."""
@@ -777,7 +784,7 @@ class TransferFunction(LTI):
             indices[0], self.output_labels, slice_to_list=True)
         inpdx, inputs = _process_subsys_index(
             indices[1], self.input_labels, slice_to_list=True)
-        
+
         # Construct the transfer function for the subsyste
         num = _create_poly_array((len(outputs), len(inputs)))
         den = _create_poly_array(num.shape)
