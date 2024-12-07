@@ -432,6 +432,11 @@ class InputOutputSystem(object):
         lambda self: list(self.state_index.keys()),     # getter
         set_states)                                     # setter
 
+    @property
+    def shape(self):
+        """2-tuple of I/O system dimension, (noutputs, ninputs)."""
+        return (self.noutputs, self.ninputs)
+
     # TODO: add dict as a means to selective change names?  [GH #1019]
     def update_names(self, **kwargs):
         """update_names([name, inputs, outputs, states])
