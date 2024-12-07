@@ -634,11 +634,11 @@ class TransferFunction(LTI):
         from .statesp import StateSpace
 
         # Convert the second argument to a transfer function.
-        if isinstance(other, StateSpace):
+        if isinstance(other, (StateSpace, np.ndarray)):
             other = _convert_to_transfer_function(other)
-        elif isinstance(other, (int, float, complex, np.number, np.ndarray)):
-            other = _convert_to_transfer_function(other, inputs=self.ninputs,
-                                                  outputs=self.noutputs)
+        elif isinstance(other, (int, float, complex, np.number)):
+            # Multiply by a scaled identify matrix (transfer function)
+            other = _convert_to_transfer_function(np.eye(self.ninputs) * other)
         if not isinstance(other, TransferFunction):
             return NotImplemented
 
@@ -681,8 +681,8 @@ class TransferFunction(LTI):
 
         # Convert the second argument to a transfer function.
         if isinstance(other, (int, float, complex, np.number)):
-            other = _convert_to_transfer_function(other, inputs=self.ninputs,
-                                                  outputs=self.ninputs)
+            # Multiply by a scaled identify matrix (transfer function)
+            other = _convert_to_transfer_function(np.eye(self.noutputs) * other)
         else:
             other = _convert_to_transfer_function(other)
 
@@ -723,9 +723,8 @@ class TransferFunction(LTI):
         """Divide two LTI objects."""
 
         if isinstance(other, (int, float, complex, np.number)):
-            other = _convert_to_transfer_function(
-                other, inputs=self.ninputs,
-                outputs=self.ninputs)
+            # Multiply by a scaled identify matrix (transfer function)
+            other = _convert_to_transfer_function(np.eye(self.ninputs) * other)
         else:
             other = _convert_to_transfer_function(other)
 
