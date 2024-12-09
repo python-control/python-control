@@ -187,6 +187,30 @@ class TestFRD:
                         [[1.0, 0], [0, 1]], [[0.0], [0.0]])
         # h2.feedback([[0.3, 0.2], [0.1, 0.1]])
 
+    def testAppendSiso(self):
+        # Create frequency responses
+        d1 = np.array([1 + 2j, 1 - 2j, 1 + 4j, 1 - 4j, 1 + 6j, 1 - 6j])
+        d2 = d1 + 2
+        d3 = d1 - 1j
+        w = np.arange(d1.shape[-1])
+        frd1 = FrequencyResponseData(d1, w)
+        frd2 = FrequencyResponseData(d2, w)
+        frd3 = FrequencyResponseData(d3, w)
+        # Create appended frequency responses
+        d_app_1 = np.zeros((2, 2, d1.shape[-1]), dtype=complex)
+        d_app_1[0, 0, :] = d1
+        d_app_1[1, 1, :] = d2
+        d_app_2 = np.zeros((3, 3, d1.shape[-1]), dtype=complex)
+        d_app_2[0, 0, :] = d1
+        d_app_2[1, 1, :] = d2
+        d_app_2[2, 2, :] = d3
+        # Test appending two FRDs
+        frd_app_1 = frd1.append(frd2)
+        np.testing.assert_allclose(d_app_1, frd_app_1.fresp)
+        # Test appending three FRDs
+        frd_app_2 = frd1.append(frd2).append(frd3)
+        np.testing.assert_allclose(d_app_2, frd_app_2.fresp)
+
     def testAuto(self):
         omega = np.logspace(-1, 2, 10)
         f1 = _convert_to_frd(1, omega)
