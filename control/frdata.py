@@ -753,6 +753,35 @@ class FrequencyResponseData(LTI):
 
         return FRD(fresp, other.omega, smooth=(self.ifunc is not None))
 
+    def append(self, other):
+        """Append a second model to the present model.
+
+        The second model is converted to FRD if necessary, inputs and
+        outputs are appended and their order is preserved"""
+        other = _convert_to_frd(other, omega=self.omega, inputs=other.ninputs,
+                                outputs=other.noutputs)
+
+        # TODO: handle omega re-mapping
+
+        new_fresp = np.zeros(
+            (
+                self.noutputs + other.noutputs,
+                self.ninputs + other.ninputs,
+                self.omega.shape[-1],
+            ),
+            dtype=complex,
+        )
+        new_fresp[:self.noutputs, :self.ninputs, :] = np.reshape(
+            self.fresp,
+            (self.noutputs, self.ninputs, -1),
+        )
+        new_fresp[self.noutputs:, self.ninputs:, :] = np.reshape(
+            other.fresp,
+            (other.noutputs, other.ninputs, -1),
+        )
+
+        return FRD(new_fresp, self.omega, smooth=(self.ifunc is not None))
+
     # Plotting interface
     def plot(self, plot_type=None, *args, **kwargs):
         """Plot the frequency response using a Bode plot.
