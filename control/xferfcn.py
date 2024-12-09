@@ -68,6 +68,7 @@ from .frdata import FrequencyResponseData
 from .iosys import InputOutputSystem, NamedSignal, _process_iosys_keywords, \
     _process_subsys_index, common_timebase, isdtime
 from .lti import LTI, _process_frequency_response
+from .bdalg import combine_tf
 
 __all__ = ['TransferFunction', 'tf', 'zpk', 'ss2tf', 'tfdata']
 
@@ -860,6 +861,21 @@ class TransferFunction(LTI):
         #     self / (1 - sign * other * self)
         # But this does not work correctly because the state size will be too
         # large.
+
+    def append(self, other):
+        """Append a second model to the present model.
+
+        The second model is converted to a transfer function if necessary,
+        inputs and outputs are appended and their order is preserved"""
+        other = _convert_to_transfer_function(other)
+        common_timebase(self.dt, other.dt)  # Call just to validate ``dt``s
+
+        new_tf = combine_tf([
+            [self, np.zeros((self.noutputs, other.ninputs))],
+            [np.zeros((other.noutputs, self.ninputs)), other],
+        ])
+
+        return new_tf
 
     def minreal(self, tol=None):
         """Remove cancelling pole/zero pairs from a transfer function"""
