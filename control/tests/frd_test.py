@@ -211,6 +211,32 @@ class TestFRD:
         frd_app_2 = frd1.append(frd2).append(frd3)
         np.testing.assert_allclose(d_app_2, frd_app_2.fresp)
 
+    def testAppendMimo(self):
+        # Create frequency responses
+        rng = np.random.default_rng(1234)
+        n = 100
+        w = np.arange(n)
+        d1 = rng.uniform(size=(2, 2, n)) + 1j * rng.uniform(size=(2, 2, n))
+        d2 = rng.uniform(size=(3, 1, n)) + 1j * rng.uniform(size=(3, 1, n))
+        d3 = rng.uniform(size=(1, 2, n)) + 1j * rng.uniform(size=(1, 2, n))
+        frd1 = FrequencyResponseData(d1, w)
+        frd2 = FrequencyResponseData(d2, w)
+        frd3 = FrequencyResponseData(d3, w)
+        # Create appended frequency responses
+        d_app_1 = np.zeros((5, 3, d1.shape[-1]), dtype=complex)
+        d_app_1[:2, :2, :] = d1
+        d_app_1[2:, 2:, :] = d2
+        d_app_2 = np.zeros((6, 5, d1.shape[-1]), dtype=complex)
+        d_app_2[:2, :2, :] = d1
+        d_app_2[2:5, 2:3, :] = d2
+        d_app_2[5:, 3:, :] = d3
+        # Test appending two FRDs
+        frd_app_1 = frd1.append(frd2)
+        np.testing.assert_allclose(d_app_1, frd_app_1.fresp)
+        # Test appending three FRDs
+        frd_app_2 = frd1.append(frd2).append(frd3)
+        np.testing.assert_allclose(d_app_2, frd_app_2.fresp)
+
     def testAuto(self):
         omega = np.logspace(-1, 2, 10)
         f1 = _convert_to_frd(1, omega)
