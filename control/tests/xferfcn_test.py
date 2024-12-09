@@ -15,7 +15,7 @@ from control import (StateSpace, TransferFunction, defaults, evalfr, isctime,
                      ss, ss2tf, tf, tf2ss, zpk)
 from control.statesp import _convert_to_statespace
 from control.tests.conftest import slycotonly
-from control.xferfcn import _convert_to_transfer_function
+from control.xferfcn import _convert_to_transfer_function, _tf_close_coeff
 
 
 class TestXferFcn:
@@ -642,6 +642,52 @@ class TestXferFcn:
         np.testing.assert_allclose(sys3.den, [[[1., 0., -2., 2., 32., 0.]]])
         np.testing.assert_allclose(sys4.num, [[[-1., 7., -16., 16., 0.]]])
         np.testing.assert_allclose(sys4.den, [[[1., 0., 2., -8., 8., 0.]]])
+
+    def test_append(self):
+        """Test ``TransferFunction.append()``."""
+        tf1 = TransferFunction(
+            [
+                [[1], [1]]
+            ],
+            [
+                [[10, 1], [20, 1]]
+            ],
+        )
+        tf2 = TransferFunction(
+            [
+                [[2], [2]]
+            ],
+            [
+                [[10, 1], [1, 1]]
+            ],
+        )
+        tf3 = TransferFunction([100], [100, 1])
+        tf_exp_1 = TransferFunction(
+            [
+                [[1], [1], [0], [0]],
+                [[0], [0], [2], [2]],
+            ],
+            [
+                [[10, 1], [20, 1], [1], [1]],
+                [[1], [1], [10, 1], [1, 1]],
+            ],
+        )
+        tf_exp_2 = TransferFunction(
+            [
+                [[1], [1], [0], [0], [0]],
+                [[0], [0], [2], [2], [0]],
+                [[0], [0], [0], [0], [100]],
+            ],
+            [
+                [[10, 1], [20, 1], [1], [1], [1]],
+                [[1], [1], [10, 1], [1, 1], [1]],
+                [[1], [1], [1], [1], [100, 1]],
+            ],
+        )
+        tf_appended_1 = tf1.append(tf2)
+        assert _tf_close_coeff(tf_exp_1, tf_appended_1)
+        tf_appended_2 = tf1.append(tf2).append(tf3)
+        assert _tf_close_coeff(tf_exp_2, tf_appended_2)
 
     @slycotonly
     def test_convert_to_transfer_function(self):
