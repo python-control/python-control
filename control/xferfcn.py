@@ -48,25 +48,26 @@ $Id$
 """
 
 from collections.abc import Iterable
+from copy import deepcopy
+from itertools import chain
+from re import sub
+from warnings import warn
 
 # External function declarations
 import numpy as np
-from numpy import angle, array, empty, finfo, ndarray, ones, \
-    polyadd, polymul, polyval, roots, sqrt, zeros, squeeze, exp, pi, \
-    where, delete, real, poly, nonzero
 import scipy as sp
-from scipy.signal import tf2zpk, zpk2tf, cont2discrete
+from numpy import angle, array, delete, empty, exp, finfo, ndarray, nonzero, \
+    ones, pi, poly, polyadd, polymul, polyval, real, roots, sqrt, squeeze, \
+    where, zeros
 from scipy.signal import TransferFunction as signalTransferFunction
-from copy import deepcopy
-from warnings import warn
-from itertools import chain
-from re import sub
-from .lti import LTI, _process_frequency_response
-from .iosys import InputOutputSystem, common_timebase, isdtime, \
-    _process_iosys_keywords
+from scipy.signal import cont2discrete, tf2zpk, zpk2tf
+
+from . import config
 from .exception import ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
-from . import config
+from .iosys import InputOutputSystem, NamedSignal, _process_iosys_keywords, \
+    _process_subsys_index, common_timebase, isdtime
+from .lti import LTI, _process_frequency_response
 
 __all__ = ['TransferFunction', 'tf', 'zpk', 'ss2tf', 'tfdata']
 
@@ -145,6 +146,16 @@ class TransferFunction(LTI):
     A transfer function is callable and returns the value of the transfer
     function evaluated at a point in the complex plane.  See
     :meth:`~control.TransferFunction.__call__` for a more detailed description.
+
+    Subsystems corresponding to selected input/output pairs can be
+    created by indexing the transfer function::
+
+        subsys = sys[output_spec, input_spec]
+
+    The input and output specifications can be single integers, lists of
+    integers, or slices.  In addition, the strings representing the names
+    of the signals can be used and will be replaced with the equivalent
+    signal offsets.
 
     The TransferFunction class defines two constants ``s`` and ``z`` that
     represent the differentiation and delay operators in continuous and
@@ -623,11 +634,11 @@ class TransferFunction(LTI):
         from .statesp import StateSpace
 
         # Convert the second argument to a transfer function.
-        if isinstance(other, StateSpace):
+        if isinstance(other, (StateSpace, np.ndarray)):
             other = _convert_to_transfer_function(other)
-        elif isinstance(other, (int, float, complex, np.number, np.ndarray)):
-            other = _convert_to_transfer_function(other, inputs=self.ninputs,
-                                                  outputs=self.noutputs)
+        elif isinstance(other, (int, float, complex, np.number)):
+            # Multiply by a scaled identify matrix (transfer function)
+            other = _convert_to_transfer_function(np.eye(self.ninputs) * other)
         if not isinstance(other, TransferFunction):
             return NotImplemented
 
@@ -670,8 +681,8 @@ class TransferFunction(LTI):
 
         # Convert the second argument to a transfer function.
         if isinstance(other, (int, float, complex, np.number)):
-            other = _convert_to_transfer_function(other, inputs=self.ninputs,
-                                                  outputs=self.ninputs)
+            # Multiply by a scaled identify matrix (transfer function)
+            other = _convert_to_transfer_function(np.eye(self.noutputs) * other)
         else:
             other = _convert_to_transfer_function(other)
 
@@ -712,9 +723,8 @@ class TransferFunction(LTI):
         """Divide two LTI objects."""
 
         if isinstance(other, (int, float, complex, np.number)):
-            other = _convert_to_transfer_function(
-                other, inputs=self.ninputs,
-                outputs=self.ninputs)
+            # Multiply by a scaled identify matrix (transfer function)
+            other = _convert_to_transfer_function(np.eye(self.ninputs) * other)
         else:
             other = _convert_to_transfer_function(other)
 
@@ -761,47 +771,29 @@ class TransferFunction(LTI):
 
     def __getitem__(self, key):
         if not isinstance(key, Iterable) or len(key) != 2:
-            raise IOError('must provide indices of length 2 for transfer functions')
+            raise IOError(
+                "must provide indices of length 2 for transfer functions")
+
+        # Convert signal names to integer offsets (via NamedSignal object)
+        iomap = NamedSignal(
+            np.empty((self.noutputs, self.ninputs)),
+            self.output_labels, self.input_labels)
+        indices = iomap._parse_key(key, level=1)  # ignore index checks
+        outdx, outputs = _process_subsys_index(
+            indices[0], self.output_labels, slice_to_list=True)
+        inpdx, inputs = _process_subsys_index(
+            indices[1], self.input_labels, slice_to_list=True)
         
-        key1, key2 = key
-        if not isinstance(key1, (int, slice)) or not isinstance(key2, (int, slice)):
-            raise TypeError(f"system indices must be integers or slices")
-
-        # pre-process
-        if isinstance(key1, int):
-            key1 = slice(key1, key1 + 1, 1)
-        if isinstance(key2, int):
-            key2 = slice(key2, key2 + 1, 1)
-        # dim1
-        start1, stop1, step1 = key1.start, key1.stop, key1.step
-        if step1 is None:
-            step1 = 1
-        if start1 is None:
-            start1 = 0
-        if stop1 is None:
-            stop1 = len(self.num)
-        # dim1
-        start2, stop2, step2 = key2.start, key2.stop, key2.step
-        if step2 is None:
-            step2 = 1
-        if start2 is None:
-            start2 = 0
-        if stop2 is None:
-            stop2 = len(self.num[0])
-
+        # Construct the transfer function for the subsyste
         num, den = [], []
-        for i in range(start1, stop1, step1):
+        for i in outdx:
             num_i = []
             den_i = []
-            for j in range(start2, stop2, step2):
+            for j in inpdx:
                 num_i.append(self.num[i][j])
                 den_i.append(self.den[i][j])
             num.append(num_i)
             den.append(den_i)
-
-        # Save the label names
-        outputs = [self.output_labels[i] for i in range(start1, stop1, step1)]
-        inputs = [self.input_labels[j] for j in range(start2, stop2, step2)]
 
         # Create the system name
         sysname = config.defaults['iosys.indexed_system_name_prefix'] + \

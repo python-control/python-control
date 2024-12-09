@@ -80,7 +80,7 @@ from scipy.linalg import eig, eigvals, matrix_balance, norm
 
 from . import config
 from .exception import pandas_check
-from .iosys import isctime, isdtime
+from .iosys import NamedSignal, isctime, isdtime
 from .timeplot import time_response_plot
 
 __all__ = ['forced_response', 'step_response', 'step_info',
@@ -204,34 +204,46 @@ class TimeResponseData:
 
     Notes
     -----
-    1. For backward compatibility with earlier versions of python-control,
-       this class has an ``__iter__`` method that allows it to be assigned
-       to a tuple with a variable number of elements.  This allows the
-       following patterns to work:
+    The responses for individual elements of the time response can be
+    accessed using integers, slices, or lists of signal offsets or the
+    names of the appropriate signals::
 
-         t, y = step_response(sys)
-         t, y, x = step_response(sys, return_x=True)
+      sys = ct.rss(4, 2, 1)
+      resp = ct.initial_response(sys, X0=[1, 1, 1, 1])
+      plt.plot(resp.time, resp.outputs['y[0]'])
 
-       When using this (legacy) interface, the state vector is not affected by
-       the `squeeze` parameter.
+    In the case of multi-trace data, the responses should be indexed using
+    the output signal name (or offset) and the input signal name (or
+    offset)::
 
-    2. For backward compatibility with earlier version of python-control,
-       this class has ``__getitem__`` and ``__len__`` methods that allow the
-       return value to be indexed:
+      sys = ct.rss(4, 2, 2, strictly_proper=True)
+      resp = ct.step_response(sys)
+      plt.plot(resp.time, resp.outputs[['y[0]', 'y[1]'], 'u[0]'].T)
 
-         response[0]: returns the time vector
-         response[1]: returns the output vector
-         response[2]: returns the state vector
+    For backward compatibility with earlier versions of python-control,
+    this class has an ``__iter__`` method that allows it to be assigned to
+    a tuple with a variable number of elements.  This allows the following
+    patterns to work::
 
-       When using this (legacy) interface, the state vector is not affected by
-       the `squeeze` parameter.
+       t, y = step_response(sys)
+       t, y, x = step_response(sys, return_x=True)
 
-    3. The default settings for ``return_x``, ``squeeze`` and ``transpose``
-       can be changed by calling the class instance and passing new values:
+    Similarly, the class has ``__getitem__`` and ``__len__`` methods that
+    allow the return value to be indexed:
+
+    * response[0]: returns the time vector
+    * response[1]: returns the output vector
+    * response[2]: returns the state vector
+
+    When using this (legacy) interface, the state vector is not affected
+    by the `squeeze` parameter.
+
+    The default settings for ``return_x``, ``squeeze`` and ``transpose``
+    can be changed by calling the class instance and passing new values::
 
          response(tranpose=True).input
 
-       See :meth:`TimeResponseData.__call__` for more information.
+    See :meth:`TimeResponseData.__call__` for more information.
 
     """
 
@@ -564,13 +576,18 @@ class TimeResponseData:
         (for multiple traces).  See :attr:`TimeResponseData.squeeze` for a
         description of how this can be modified using the `squeeze` keyword.
 
+        Input and output signal names can be used to index the data in
+        place of integer offsets, with the input signal names being used to
+        access multi-input data.
+
         :type: 1D, 2D, or 3D array
 
         """
-        t, y = _process_time_response(
-            self.t, self.y, issiso=self.issiso,
+        # TODO: move to __init__ to avoid recomputing each time?
+        y = _process_time_response(
+            self.y, issiso=self.issiso,
             transpose=self.transpose, squeeze=self.squeeze)
-        return y
+        return NamedSignal(y, self.output_labels, self.input_labels)
 
     # Getter for states (implements squeeze processing)
     @property
@@ -583,30 +600,25 @@ class TimeResponseData:
         for a description of how this can be modified using the `squeeze`
         keyword.
 
+        Input and output signal names can be used to index the data in
+        place of integer offsets, with the input signal names being used to
+        access multi-input data.
+
         :type: 2D or 3D array
 
         """
-        if self.x is None:
-            return None
+        # TODO: move to __init__ to avoid recomputing each time?
+        x = _process_time_response(
+            self.x, transpose=self.transpose,
+            squeeze=self.squeeze, issiso=False)
 
-        elif self.squeeze is True:
-            x = self.x.squeeze()
-
-        elif self.ninputs == 1 and self.noutputs == 1 and \
-             self.ntraces == 1 and self.x.ndim == 3 and \
+        # Special processing for SISO case: always retain state index
+        if self.issiso and self.ntraces == 1 and x.ndim == 3 and \
              self.squeeze is not False:
             # Single-input, single-output system with single trace
-            x = self.x[:, 0, :]
+            x = x[:, 0, :]
 
-        else:
-            # Return the full set of data
-            x = self.x
-
-        # Transpose processing
-        if self.transpose:
-            x = np.transpose(x, np.roll(range(x.ndim), 1))
-
-        return x
+        return NamedSignal(x, self.state_labels, self.input_labels)
 
     # Getter for inputs (implements squeeze processing)
     @property
@@ -621,6 +633,10 @@ class TimeResponseData:
         the two.  If a 3D vector is passed, then it represents a multi-trace,
         multi-input signal, indexed by input, trace, and time.
 
+        Input and output signal names can be used to index the data in
+        place of integer offsets, with the input signal names being used to
+        access multi-input data.
+
         See :attr:`TimeResponseData.squeeze` for a description of how the
         dimensions of the input vector can be modified using the `squeeze`
         keyword.
@@ -628,15 +644,17 @@ class TimeResponseData:
         :type: 1D or 2D array
 
         """
+        # TODO: move to __init__ to avoid recomputing each time?
         if self.u is None:
             return None
 
-        t, u = _process_time_response(
-            self.t, self.u, issiso=self.issiso,
+        u = _process_time_response(
+            self.u, issiso=self.issiso,
             transpose=self.transpose, squeeze=self.squeeze)
-        return u
+        return NamedSignal(u, self.input_labels, self.input_labels)
 
     # Getter for legacy state (implements non-standard squeeze processing)
+    # TODO: remove when no longer needed
     @property
     def _legacy_states(self):
         """Time response state vector (legacy version).
@@ -1265,7 +1283,7 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
 
 # Process time responses in a uniform way
 def _process_time_response(
-        tout, yout, issiso=False, transpose=None, squeeze=None):
+        signal, issiso=False, transpose=None, squeeze=None):
     """Process time response signals.
 
     This function processes the outputs (or inputs) of time response
@@ -1273,43 +1291,36 @@ def _process_time_response(
 
     Parameters
     ----------
-    T : 1D array
-        Time values of the output.  Ignored if None.
-
-    yout : ndarray
-        Response of the system.  This can either be a 1D array indexed by time
-        (for SISO systems), a 2D array indexed by output and time (for MIMO
-        systems with no input indexing, such as initial_response or forced
-        response) or a 3D array indexed by output, input, and time.
+    signal : ndarray
+        Data to be processed.  This can either be a 1D array indexed by
+        time (for SISO systems), a 2D array indexed by output and time (for
+        MIMO systems with no input indexing, such as initial_response or
+        forced response) or a 3D array indexed by output, input, and time.
 
     issiso : bool, optional
         If ``True``, process data as single-input, single-output data.
         Default is ``False``.
 
     transpose : bool, optional
-        If True, transpose all input and output arrays (for backward
-        compatibility with MATLAB and :func:`scipy.signal.lsim`).  Default
-        value is False.
+        If True, transpose data (for backward compatibility with MATLAB and
+        :func:`scipy.signal.lsim`).  Default value is False.
 
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then the
-        output response is returned as a 1D array (indexed by time).  If
+        signals are returned as a 1D array (indexed by time).  If
         squeeze=True, remove single-dimensional entries from the shape of the
-        output even if the system is not SISO. If squeeze=False, keep the
-        output as a 3D array (indexed by the output, input, and time) even if
+        signal even if the system is not SISO. If squeeze=False, keep the
+        signal as a 3D array (indexed by the output, input, and time) even if
         the system is SISO. The default value can be set using
         config.defaults['control.squeeze_time_response'].
 
     Returns
     -------
-    T : 1D array
-        Time values of the output.
-
-    yout : ndarray
-        Response of the system.  If the system is SISO and squeeze is not
-        True, the array is 1D (indexed by time).  If the system is not SISO or
-        squeeze is False, the array is either 2D (indexed by output and time)
-        or 3D (indexed by input, output, and time).
+    output : ndarray
+        Processed signal.  If the system is SISO and squeeze is not True,
+        the array is 1D (indexed by time).  If the system is not SISO or
+        squeeze is False, the array is either 2D (indexed by output and
+        time) or 3D (indexed by input, output, and time).
 
     """
     # If squeeze was not specified, figure out the default (might remain None)
@@ -1317,29 +1328,26 @@ def _process_time_response(
         squeeze = config.defaults['control.squeeze_time_response']
 
     # Figure out whether and how to squeeze output data
-    if squeeze is True:         # squeeze all dimensions
-        yout = np.squeeze(yout)
-    elif squeeze is False:      # squeeze no dimensions
+    if squeeze is True:                 # squeeze all dimensions
+        signal = np.squeeze(signal)
+    elif squeeze is False:              # squeeze no dimensions
         pass
-    elif squeeze is None:       # squeeze signals if SISO
+    elif squeeze is None:               # squeeze signals if SISO
         if issiso:
-            if yout.ndim == 3:
-                yout = yout[0][0]       # remove input and output
+            if signal.ndim == 3:
+                signal = signal[0][0]   # remove input and output
             else:
-                yout = yout[0]          # remove input
+                signal = signal[0]      # remove input
     else:
         raise ValueError("Unknown squeeze value")
 
     # See if we need to transpose the data back into MATLAB form
     if transpose:
-        # Transpose time vector in case we are using np.matrix
-        tout = np.transpose(tout)
-
         # For signals, put the last index (time) into the first slot
-        yout = np.transpose(yout, np.roll(range(yout.ndim), 1))
+        signal = np.transpose(signal, np.roll(range(signal.ndim), 1))
 
-    # Return time, output, and (optionally) state
-    return tout, yout
+    # Return output
+    return signal
 
 
 def step_response(
