@@ -723,7 +723,7 @@ class TransferFunction(LTI):
         """Divide two LTI objects."""
 
         if isinstance(other, (int, float, complex, np.number)):
-            # Multiply by a scaled identify matrix (transfer function)
+            # Multiply by a scaled identity matrix (transfer function)
             other = _convert_to_transfer_function(np.eye(self.ninputs) * other)
         else:
             other = _convert_to_transfer_function(other)
