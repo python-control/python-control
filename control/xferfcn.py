@@ -681,7 +681,7 @@ class TransferFunction(LTI):
 
         # Convert the second argument to a transfer function.
         if isinstance(other, (int, float, complex, np.number)):
-            # Multiply by a scaled identify matrix (transfer function)
+            # Multiply by a scaled identity matrix (transfer function)
             other = _convert_to_transfer_function(np.eye(self.noutputs) * other)
         else:
             other = _convert_to_transfer_function(other)
