@@ -637,7 +637,7 @@ class TransferFunction(LTI):
         if isinstance(other, (StateSpace, np.ndarray)):
             other = _convert_to_transfer_function(other)
         elif isinstance(other, (int, float, complex, np.number)):
-            # Multiply by a scaled identify matrix (transfer function)
+            # Multiply by a scaled identity matrix (transfer function)
             other = _convert_to_transfer_function(np.eye(self.ninputs) * other)
         if not isinstance(other, TransferFunction):
             return NotImplemented
