@@ -64,8 +64,8 @@ def test_clean_part(num, fun, dtype):
     num_ = _clean_part(numa)
     ref_ = np.array(num, dtype=float, ndmin=3)
 
-    assert isinstance(num_, list)
-    assert np.all([isinstance(part, list) for part in num_])
+    assert isinstance(num_, np.ndarray)
+    assert num_.ndim == 2
     for i, numi in enumerate(num_):
         assert len(numi) == ref_.shape[1]
         for j, numj in enumerate(numi):

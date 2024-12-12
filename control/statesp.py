@@ -2291,7 +2291,7 @@ def _convert_to_statespace(sys, use_prefix_suffix=False, method=None):
                 D = empty((sys.noutputs, sys.ninputs), dtype=float)
                 for i, j in itertools.product(range(sys.noutputs),
                                               range(sys.ninputs)):
-                    D[i, j] = sys.num[i][j][0] / sys.den[i][j][0]
+                    D[i, j] = sys._num[i, j][0] / sys._den[i, j][0]
                 newsys = StateSpace([], [], [], D, sys.dt)
             else:
                 if not issiso(sys):
