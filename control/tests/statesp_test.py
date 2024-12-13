@@ -319,6 +319,12 @@ class TestStateSpace:
         np.testing.assert_array_almost_equal(sys.C, C)
         np.testing.assert_array_almost_equal(sys.D, D)
 
+    def test_multiply_mimo_siso(self):
+        assert False
+
+    def test_divide_mimo_siso(self):
+        assert False
+
     @pytest.mark.parametrize("k", [2, -3.141, np.float32(2.718), np.array([[4.321], [5.678]])])
     def test_truediv_ss_scalar(self, sys322, k):
         """Divide SS by scalar."""
