@@ -68,7 +68,7 @@ from .frdata import FrequencyResponseData
 from .iosys import InputOutputSystem, NamedSignal, _process_iosys_keywords, \
     _process_subsys_index, common_timebase, isdtime
 from .lti import LTI, _process_frequency_response
-from .bdalg import combine_tf
+from .bdalg import combine_tf, append
 
 __all__ = ['TransferFunction', 'tf', 'zpk', 'ss2tf', 'tfdata']
 
@@ -643,16 +643,25 @@ class TransferFunction(LTI):
         if not isinstance(other, TransferFunction):
             return NotImplemented
 
+        # Promote SISO object to compatible dimension
+        if self.issiso() and not other.issiso():
+            promoted_self = append(*([self] * other.noutputs))
+        elif not self.issiso() and other.issiso():
+            other = append(*([other] * self.ninputs))
+            promoted_self = self
+        else:
+            promoted_self = self
+
         # Check that the input-output sizes are consistent.
-        if self.ninputs != other.noutputs:
+        if promoted_self.ninputs != other.noutputs:
             raise ValueError(
                 "C = A * B: A has %i column(s) (input(s)), but B has %i "
-                "row(s)\n(output(s))." % (self.ninputs, other.noutputs))
+                "row(s)\n(output(s))." % (promoted_self.ninputs, other.noutputs))
 
         inputs = other.ninputs
-        outputs = self.noutputs
+        outputs = promoted_self.noutputs
 
-        dt = common_timebase(self.dt, other.dt)
+        dt = common_timebase(promoted_self.dt, other.dt)
 
         # Preallocate the numerator and denominator of the sum.
         num = [[[0] for j in range(inputs)] for i in range(outputs)]
@@ -660,17 +669,17 @@ class TransferFunction(LTI):
 
         # Temporary storage for the summands needed to find the (i, j)th
         # element of the product.
-        num_summand = [[] for k in range(self.ninputs)]
-        den_summand = [[] for k in range(self.ninputs)]
+        num_summand = [[] for k in range(promoted_self.ninputs)]
+        den_summand = [[] for k in range(promoted_self.ninputs)]
 
         # Multiply & add.
         for row in range(outputs):
             for col in range(inputs):
-                for k in range(self.ninputs):
+                for k in range(promoted_self.ninputs):
                     num_summand[k] = polymul(
-                        self.num[row][k], other.num[k][col])
+                        promoted_self.num[row][k], other.num[k][col])
                     den_summand[k] = polymul(
-                        self.den[row][k], other.den[k][col])
+                        promoted_self.den[row][k], other.den[k][col])
                     num[row][col], den[row][col] = _add_siso(
                         num[row][col], den[row][col],
                         num_summand[k], den_summand[k])
