@@ -356,14 +356,14 @@ def feedback(sys1, sys2=1, sign=-1, **kwargs):
 def append(*sys, **kwargs):
     """append(sys1, sys2, [..., sysn])
 
-    Group LTI state space models by appending their inputs and outputs.
+    Group LTI models by appending their inputs and outputs.
 
     Forms an augmented system model, and appends the inputs and
     outputs together.
 
     Parameters
     ----------
-    sys1, sys2, ..., sysn: scalar, array, or :class:`StateSpace`
+    sys1, sys2, ..., sysn: scalar, array, or :class:`LTI`
         I/O systems to combine.
 
     Other Parameters
@@ -382,9 +382,10 @@ def append(*sys, **kwargs):
 
     Returns
     -------
-    out: :class:`StateSpace`
+    out: :class:`LTI`
         Combined system, with input/output vectors consisting of all
-        input/output vectors appended.
+        input/output vectors appended. Specific type returned is the type of
+        the first argument.
 
     See Also
     --------
@@ -405,7 +406,7 @@ def append(*sys, **kwargs):
     (3, 8, 7)
 
     """
-    s1 = ss._convert_to_statespace(sys[0])
+    s1 = sys[0]
     for s in sys[1:]:
         s1 = s1.append(s)
     s1.update_names(**kwargs)
