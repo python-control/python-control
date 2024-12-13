@@ -747,6 +747,11 @@ class TransferFunction(LTI):
         else:
             other = _convert_to_transfer_function(other)
 
+        # Special case for SISO ``other``
+        if not self.issiso() and other.issiso():
+            other = append(*([other**-1] * self.noutputs))
+            return self * other
+
         if (self.ninputs > 1 or self.noutputs > 1 or
                 other.ninputs > 1 or other.noutputs > 1):
             raise NotImplementedError(
@@ -769,6 +774,11 @@ class TransferFunction(LTI):
                 outputs=self.ninputs)
         else:
             other = _convert_to_transfer_function(other)
+
+        # Special case for SISO ``self``
+        if self.issiso() and not other.issiso():
+            promoted_self = append(*([self**-1] * other.ninputs))
+            return other * promoted_self
 
         if (self.ninputs > 1 or self.noutputs > 1 or
                 other.ninputs > 1 or other.noutputs > 1):
