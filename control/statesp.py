@@ -63,6 +63,7 @@ from scipy.signal import StateSpace as signalStateSpace
 from scipy.signal import cont2discrete
 
 from . import config
+from . import bdalg
 from .exception import ControlMIMONotImplemented, ControlSlycot, slycot_check
 from .frdata import FrequencyResponseData
 from .iosys import InputOutputSystem, NamedSignal, _process_dt_keyword, \
@@ -681,6 +682,12 @@ class StateSpace(NonlinearIOSystem, LTI):
             return NotImplemented       # let other.__rmul__ handle it
 
         else:
+            # Promote SISO object to compatible dimension
+            if self.issiso() and not other.issiso():
+                self = bdalg.append(*([self] * other.noutputs))
+            elif not self.issiso() and other.issiso():
+                other = bdalg.append(*([other] * self.ninputs))
+
             # Check to make sure the dimensions are OK
             if self.ninputs != other.noutputs:
                 raise ValueError(
@@ -726,6 +733,12 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         if not isinstance(other, StateSpace):
             return NotImplemented
+
+        # Promote SISO object to compatible dimension
+        if self.issiso() and not other.issiso():
+            self = bdalg.append(*([self] * other.ninputs))
+        elif not self.issiso() and other.issiso():
+            other = bdalg.append(*([other] * self.noutputs))
 
         return other * self
 

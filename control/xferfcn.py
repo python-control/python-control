@@ -63,12 +63,12 @@ from scipy.signal import TransferFunction as signalTransferFunction
 from scipy.signal import cont2discrete, tf2zpk, zpk2tf
 
 from . import config
+from . import bdalg
 from .exception import ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
 from .iosys import InputOutputSystem, NamedSignal, _process_iosys_keywords, \
     _process_subsys_index, common_timebase, isdtime
 from .lti import LTI, _process_frequency_response
-from .bdalg import combine_tf, append
 
 __all__ = ['TransferFunction', 'tf', 'zpk', 'ss2tf', 'tfdata']
 
@@ -645,9 +645,9 @@ class TransferFunction(LTI):
 
         # Promote SISO object to compatible dimension
         if self.issiso() and not other.issiso():
-            self = append(*([self] * other.noutputs))
+            self = bdalg.append(*([self] * other.noutputs))
         elif not self.issiso() and other.issiso():
-            other = append(*([other] * self.ninputs))
+            other = bdalg.append(*([other] * self.ninputs))
 
         # Check that the input-output sizes are consistent.
         if self.ninputs != other.noutputs:
@@ -695,9 +695,9 @@ class TransferFunction(LTI):
 
         # Promote SISO object to compatible dimension
         if self.issiso() and not other.issiso():
-            self = append(*([self] * other.ninputs))
+            self = bdalg.append(*([self] * other.ninputs))
         elif not self.issiso() and other.issiso():
-            other = append(*([other] * self.noutputs))
+            other = bdalg.append(*([other] * self.noutputs))
 
         # Check that the input-output sizes are consistent.
         if other.ninputs != self.noutputs:
@@ -743,7 +743,7 @@ class TransferFunction(LTI):
 
         # Special case for SISO ``other``
         if not self.issiso() and other.issiso():
-            other = append(*([other**-1] * self.noutputs))
+            other = bdalg.append(*([other**-1] * self.noutputs))
             return self * other
 
         if (self.ninputs > 1 or self.noutputs > 1 or
@@ -771,7 +771,7 @@ class TransferFunction(LTI):
 
         # Special case for SISO ``self``
         if self.issiso() and not other.issiso():
-            self = append(*([self**-1] * other.ninputs))
+            self = bdalg.append(*([self**-1] * other.ninputs))
             return other * self
 
         if (self.ninputs > 1 or self.noutputs > 1 or
@@ -892,7 +892,7 @@ class TransferFunction(LTI):
         other = _convert_to_transfer_function(other)
         common_timebase(self.dt, other.dt)  # Call just to validate ``dt``s
 
-        new_tf = combine_tf([
+        new_tf = bdalg.combine_tf([
             [self, np.zeros((self.noutputs, other.ninputs))],
             [np.zeros((other.noutputs, self.ninputs)), other],
         ])
