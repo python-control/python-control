@@ -696,16 +696,25 @@ class TransferFunction(LTI):
         else:
             other = _convert_to_transfer_function(other)
 
+        # Promote SISO object to compatible dimension
+        if self.issiso() and not other.issiso():
+            promoted_self = append(*([self] * other.ninputs))
+        elif not self.issiso() and other.issiso():
+            other = append(*([other] * self.noutputs))
+            promoted_self = self
+        else:
+            promoted_self = self
+
         # Check that the input-output sizes are consistent.
-        if other.ninputs != self.noutputs:
+        if other.ninputs != promoted_self.noutputs:
             raise ValueError(
                 "C = A * B: A has %i column(s) (input(s)), but B has %i "
-                "row(s)\n(output(s))." % (other.ninputs, self.noutputs))
+                "row(s)\n(output(s))." % (other.ninputs, promoted_self.noutputs))
 
-        inputs = self.ninputs
+        inputs = promoted_self.ninputs
         outputs = other.noutputs
 
-        dt = common_timebase(self.dt, other.dt)
+        dt = common_timebase(promoted_self.dt, other.dt)
 
         # Preallocate the numerator and denominator of the sum.
         num = [[[0] for j in range(inputs)] for i in range(outputs)]
@@ -720,8 +729,8 @@ class TransferFunction(LTI):
         for i in range(outputs):  # Iterate through rows of product.
             for j in range(inputs):  # Iterate through columns of product.
                 for k in range(other.ninputs):  # Multiply & add.
-                    num_summand[k] = polymul(other.num[i][k], self.num[k][j])
-                    den_summand[k] = polymul(other.den[i][k], self.den[k][j])
+                    num_summand[k] = polymul(other.num[i][k], promoted_self.num[k][j])
+                    den_summand[k] = polymul(other.den[i][k], promoted_self.den[k][j])
                     num[i][j], den[i][j] = _add_siso(
                         num[i][j], den[i][j],
                         num_summand[k], den_summand[k])
