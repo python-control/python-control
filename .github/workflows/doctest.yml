@@ -13,13 +13,12 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Setup Conda
-      uses: conda-incubator/setup-miniconda@v2
+      uses: conda-incubator/setup-miniconda@v3
       with:
         python-version: 3.12
         activate-environment: doctest-env
         environment-file: .github/conda-env/doctest-env.yml
         miniforge-version: latest
-        miniforge-variant: Mambaforge
         channels: conda-forge
         channel-priority: strict
         auto-update-conda: false
