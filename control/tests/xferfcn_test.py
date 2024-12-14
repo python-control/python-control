@@ -31,8 +31,9 @@ class TestXferFcn:
     def test_constructor_bad_input_type(self):
         """Give the constructor invalid input types."""
         # MIMO requires lists of lists of vectors (not lists of vectors)
-        with pytest.raises(TypeError):
-            TransferFunction([[0., 1.], [2., 3.]], [[5., 2.], [3., 0.]])
+        # 13 Dec 2024: This now works correctly: creates static array (as tf)
+        # with pytest.raises(TypeError):
+        #     TransferFunction([[0., 1.], [2., 3.]], [[5., 2.], [3., 0.]])
         # good input
         TransferFunction([[[0., 1.], [2., 3.]]],
                          [[[5., 2.], [3., 0.]]])
@@ -1288,3 +1289,35 @@ def test_copy_names(create, args, kwargs, convert):
     cpy = convert(sys, inputs='myin', outputs='myout')
     assert cpy.input_labels == ['myin']
     assert cpy.output_labels == ['myout']
+
+s = ct.TransferFunction.s
+@pytest.mark.parametrize("args, num, den", [
+    (('s', ), [[[1, 0]]], [[[1]]]),                     # ctime
+    (('z', ), [[[1, 0]]], [[[1]]]),                     # dtime
+    ((1, 1), [[[1]]], [[[1]]]),                         # scalars as scalars
+    (([[1]], [[1]]), [[[1]]], [[[1]]]),                 # scalars as lists
+    (([[[1, 2]]], [[[3, 4]]]), [[[1, 2]]], [[[3, 4]]]), # SISO as lists
+    (([[np.array([1, 2])]], [[np.array([3, 4])]]),      # SISO as arrays
+     [[[1, 2]]], [[[3, 4]]]),
+    (([[    [1],    [2] ], [[1, 1],      [1, 0] ]],     # MIMO
+      [[ [1, 0], [1, 0] ], [[1, 2],         [1] ]]),
+     [[    [1],    [2] ], [[1, 1],      [1, 0] ]],
+     [[ [1, 0], [1, 0] ], [[1, 2],         [1] ]]),
+    (([[[1, 2], [3, 4]]], [[[5, 6]]]),                  # common denominator
+     [[[1, 2], [3, 4]]], [[[5, 6], [5, 6]]]),
+    (([   [1/s,   2/s],   [(s+1)/(s+2),     s]], ),     # 2x2 from SISO
+     [[    [1],    [2] ], [[1, 1],      [1, 0] ]],      # num
+     [[ [1, 0], [1, 0] ], [[1, 2],         [1] ]]),     # den
+    (([[1, 2], [3, 4]], [[[1, 0], [1, 0]]]), ValueError,
+     r"numerator has 2 output\(s\), but the denominator has 1 output"),
+])
+def test_tf_args(args, num, den):
+    if isinstance(num, type):
+        exception, match = num, den
+        with pytest.raises(exception, match=match):
+            sys = ct.tf(*args)
+    else:
+        sys = ct.tf(*args)
+        chk = ct.tf(num, den)
+        np.testing.assert_equal(sys.num, chk.num)
+        np.testing.assert_equal(sys.den, chk.den)

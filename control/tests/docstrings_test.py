@@ -37,7 +37,7 @@ function_docstring_hash = {
     control.series:                     '9aede1459667738f05cf4fc46603a4f6',
     control.ss:                         '1b9cfad5dbdf2f474cfdeadf5cb1ad80',
     control.ss2tf:                      '48ff25d22d28e7b396e686dd5eb58831',
-    control.tf:                         '53a13f4a7f75a31c81800e10c88730ef',
+    control.tf:                         '155a19afb95452ed19966c8d8ae23a84',
     control.tf2ss:                      '086a3692659b7321c2af126f79f4bc11',
     control.markov:                     'a4199c54cb50f07c0163d3790739eafe',
     control.gangof4:                    '0e52eb6cf7ce024f9a41f3ae3ebf04f7',

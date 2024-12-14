@@ -72,7 +72,10 @@ def test_clean_part(num, fun, dtype):
             np.testing.assert_allclose(numj, ref_[i, j, ...])
 
 
-@pytest.mark.parametrize("badinput", [[[0., 1.], [2., 3.]], "a"])
+@pytest.mark.parametrize("badinput", [
+    # [[0., 1.], [2., 3.]],             # OK: treated as static array
+    np.ones((2, 2, 2, 2)),
+    "a"])
 def test_clean_part_bad_input(badinput):
     """Give the part cleaner invalid input type."""
     with pytest.raises(TypeError):
