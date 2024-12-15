@@ -120,13 +120,12 @@ jobs:
           fetch-depth: 0
           submodules: 'recursive'
       - name: Setup Conda
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           python-version: ${{ matrix.python }}
           activate-environment: build-env
           environment-file: .github/conda-env/build-env.yml
           miniforge-version: latest
-          miniforge-variant: Mambaforge
           channel-priority: strict
           auto-update-conda: false
           auto-activate-base: false
@@ -292,11 +291,10 @@ jobs:
         if: matrix.os == 'macos'
         run: brew install coreutils
       - name: Setup Conda
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           python-version: ${{ matrix.python }}
           miniforge-version: latest
-          miniforge-variant: Mambaforge
           activate-environment: test-env
           environment-file: .github/conda-env/test-env.yml
           channel-priority: strict
