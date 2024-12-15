@@ -31,6 +31,7 @@ _iosys_defaults = {
     'iosys.indexed_system_name_suffix': '$indexed',
     'iosys.converted_system_name_prefix': '',
     'iosys.converted_system_name_suffix': '$converted',
+    'iosys.repr_format': 'iosys',
 }
 
 
@@ -183,6 +184,8 @@ class InputOutputSystem(object):
         # Process timebase: if not given use default, but allow None as value
         self.dt = _process_dt_keyword(kwargs)
 
+        self._repr_format = kwargs.pop('repr_format', None)
+
         # Make sure there were no other keywords
         if kwargs:
             raise TypeError("unrecognized keywords: ", str(kwargs))
@@ -240,6 +243,20 @@ class InputOutputSystem(object):
     def __repr__(self):
         return f'<{self.__class__.__name__}:{self.name}:' + \
             f'{list(self.input_labels)}->{list(self.output_labels)}>'
+
+    def iosys_repr(self, format=None):
+        raise NotImplementedError(
+            f"`iosys_repr` is not implemented for {self.__class__}")
+
+    @property
+    def repr_format(self):
+        """Set the string representation format ('iosys' or 'loadable')."""
+        return self._repr_format if self._repr_format is not None \
+            else config.defaults['iosys.repr_format']
+
+    @repr_format.setter
+    def repr_format(self, value):
+        self._repr_format = value
 
     def __str__(self):
         """String representation of an input/output object"""

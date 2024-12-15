@@ -2369,7 +2369,8 @@ def test_signal_prefixing(fcn):
         'long_state_1', 'long_state_2', 'long_state_3']},
      r"[\n]name='.*', states=\[.*\],[\n]outputs=3, inputs=2\)", r"dt"),
 ])
-def test_system_repr(fcn, spec, expected, missing):
+@pytest.mark.parametrize("format", ['iosys', 'loadable'])
+def test_loadable_system_repr(fcn, spec, expected, missing, format):
     spec['outputs'] = spec.get('outputs', 3)
     spec['inputs'] = spec.get('inputs', 2)
     if fcn is ct.ss:
@@ -2382,11 +2383,31 @@ def test_system_repr(fcn, spec, expected, missing):
             sys = fcn(sys, omega, name=spec.get('name'))
         case ct.tf:
             sys = fcn(sys, name=spec.get('name'))
-
     assert sys.shape == (sys.noutputs, sys.ninputs)
 
-    out = repr(sys)
-    assert re.search(expected, out) != None
+    # Construct the 'iosys' format
+    iosys_expected = f"<{sys.__class__.__name__}:{sys.name}:" \
+        f"{sys.input_labels}->{sys.output_labels}>"
 
-    if missing is not None:
-        assert re.search(missing, out) is None
+    # Make sure the default format is OK
+    out = repr(sys)
+    if ct.config.defaults['iosys.repr_format'] == 'iosys':
+        assert out == iosys_expected
+    else:
+        assert re.search(expected, out) != None
+        
+    # Now set the format to the given type and make sure things look right
+    sys.repr_format = format
+    out = repr(sys)
+    if format == 'loadable':
+        assert re.search(expected, out) != None
+
+        if missing is not None:
+            assert re.search(missing, out) is None
+
+        # Make sure we can change the default format back to 'iosys'
+        sys.repr_format = None
+
+    # Test 'iosys', either set explicitly or via config.defaults
+    out = repr(sys)
+    assert out == iosys_expected

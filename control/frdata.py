@@ -416,10 +416,37 @@ class FrequencyResponseData(LTI):
         return '\n'.join(outstr)
 
     def __repr__(self):
-        """Loadable string representation,
+        return self.iosys_repr(format=self.repr_format)
 
-        limited for number of data points.
+    def iosys_repr(self, format='loadable'):
+        """Return representation of a transfer function.
+
+        Parameters
+        ----------
+        format : str
+            Format to use in creating the representation:
+
+              * 'iosys' : <FrequencyResponseData:sysname:[inputs]->[outputs]
+              * 'loadable' : FrequencyResponseData(response, omega[, dt[, ...]])
+
+        Returns
+        -------
+        str
+            String representing the transfer function.
+
+        Notes
+        -----
+        By default, the representation for a frequency response is set to
+        'iosys'.  Set config.defaults['iosys.repr_format'] to change for all
+        I/O systems or set the `repr_format` attribute for a single system.
+
         """
+        if format == 'iosys':
+            return super().__repr__()
+        elif format != 'loadable':
+            raise ValueError(f"unknown format '{format}'")
+
+        # Loadable format
         out = "FrequencyResponseData(\n{d},\n{w}{smooth}".format(
             d=repr(self.fresp), w=repr(self.omega),
             smooth=(self._ifunc and ", smooth=True") or "")

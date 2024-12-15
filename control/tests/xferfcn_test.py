@@ -1115,15 +1115,16 @@ class TestXferFcn:
           "dt=0.5,\n"
           "outputs=2, inputs=2)"),
          ])
-    def test_repr(self, Hargs, ref):
+    def test_loadable_repr(self, Hargs, ref):
         """Test __repr__ printout."""
         H = TransferFunction(*Hargs)
 
-        assert repr(H) == ref
+        rep = H.iosys_repr(format='loadable')
+        assert rep == ref
 
         # and reading back
         array = np.array  # noqa
-        H2 = eval(H.__repr__())
+        H2 = eval(rep)
         for p in range(len(H.num)):
             for m in range(len(H.num[0])):
                 np.testing.assert_array_almost_equal(

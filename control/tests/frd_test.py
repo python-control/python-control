@@ -474,14 +474,14 @@ class TestFRD:
         sysm = ct.frd(
             np.matmul(array([[1], [2]]), sys0.fresp), sys0.omega, name='sysm')
 
-        assert repr(sys0) == ref0
-        assert repr(sys1) == ref1
+        assert sys0.iosys_repr(format='loadable') == ref0
+        assert sys1.iosys_repr(format='loadable') == ref1
 
-        sys0r = eval(repr(sys0))
+        sys0r = eval(sys0.iosys_repr(format='loadable'))
         np.testing.assert_array_almost_equal(sys0r.fresp, sys0.fresp)
         np.testing.assert_array_almost_equal(sys0r.omega, sys0.omega)
 
-        sys1r = eval(repr(sys1))
+        sys1r = eval(sys1.iosys_repr(format='loadable'))
         np.testing.assert_array_almost_equal(sys1r.fresp, sys1.fresp)
         np.testing.assert_array_almost_equal(sys1r.omega, sys1.omega)
         assert(sys1._ifunc is not None)

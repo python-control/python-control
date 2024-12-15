@@ -488,9 +488,38 @@ class TransferFunction(LTI):
 
         return outstr
 
-    # represent to implement a re-loadable version
     def __repr__(self):
-        """Print transfer function in loadable form."""
+        return self.iosys_repr(format=self.repr_format)
+
+    def iosys_repr(self, format='loadable'):
+        """Return representation of a transfer function.
+
+        Parameters
+        ----------
+        format : str
+            Format to use in creating the representation:
+
+              * 'iosys' : <TransferFunction:sysname:[inputs]->[outputs]
+              * 'loadable' : TransferFunction(num, den[, dt[, ...]])
+
+        Returns
+        -------
+        str
+            String representing the transfer function.
+
+        Notes
+        -----
+        By default, the representation for a transfer function is set to
+        'iosys'.  Set config.defaults['iosys.repr_format'] to change for all
+        I/O systems or set the `repr_format` attribute for a single system.
+
+        """
+        if format == 'iosys':
+            return super().__repr__()
+        elif format != 'loadable':
+            raise ValueError(f"unknown format '{format}'")
+
+        # Loadable format
         if self.issiso():
             out = "TransferFunction(\n{num},\n{den}".format(
                 num=self.num[0][0].__repr__(), den=self.den[0][0].__repr__())

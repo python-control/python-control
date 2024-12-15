@@ -748,12 +748,12 @@ class TestStateSpace:
              "array([[-2.,  4.],",
              "       [ 0.,  1.]]){dt},",
              "name='sys322', states=3, outputs=2, inputs=2)"])
-        assert repr(sys322) == ref322.format(dt='')
+        assert sys322.iosys_repr(format='loadable') == ref322.format(dt='')
         sysd = StateSpace(sys322.A, sys322.B,
                           sys322.C, sys322.D, 0.4)
-        assert repr(sysd), ref322.format(dt="\ndt=0.4")
+        assert sysd.iosys_repr(format='loadable'), ref322.format(dt="\ndt=0.4")
         array = np.array  # noqa
-        sysd2 = eval(repr(sysd))
+        sysd2 = eval(sysd.iosys_repr(format='loadable'))
         np.testing.assert_allclose(sysd.A, sysd2.A)
         np.testing.assert_allclose(sysd.B, sysd2.B)
         np.testing.assert_allclose(sysd.C, sysd2.C)
