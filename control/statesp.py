@@ -1575,6 +1575,19 @@ def ss(*args, **kwargs):
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
+    remove_useless_states : bool, optional
+        If `True`, remove states that have no effect on the input/output
+        dynamics.  If not specified, the value is read from
+        `config.defaults['statesp.remove_useless_states']` (default = False).
+    method : str, optional
+        Set the method used for converting a transfer function to a state
+        space system.  Current methods are 'slycot' and 'scipy'.  If set to
+        None (default), try 'slycot' first and then 'scipy' (SISO only).
+
+    Returns
+    -------
+    out: StateSpace
+        Linear input/output system.
 
     Raises
     ------
