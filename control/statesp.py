@@ -671,6 +671,10 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         elif isinstance(other, np.ndarray):
             other = np.atleast_2d(other)
+            # Special case for SISO transfer function
+            if self.issiso():
+                self = bdalg.append(*([self] * other.shape[0]))
+            # Dimension check after broadcasting
             if self.ninputs != other.shape[0]:
                 raise ValueError("array has incompatible shape")
             A, C = self.A, self.C
@@ -727,8 +731,15 @@ class StateSpace(NonlinearIOSystem, LTI):
             return StateSpace(self.A, B, self.C, D, self.dt)
 
         elif isinstance(other, np.ndarray):
-            C = np.atleast_2d(other) @ self.C
-            D = np.atleast_2d(other) @ self.D
+            other = np.atleast_2d(other)
+            # Special case for SISO transfer function
+            if self.issiso():
+                self = bdalg.append(*([self] * other.shape[1]))
+            # Dimension check after broadcasting
+            if self.noutputs != other.shape[1]:
+                raise ValueError("array has incompatible shape")
+            C = other @ self.C
+            D = other @ self.D
             return StateSpace(self.A, self.B, C, D, self.dt)
 
         if not isinstance(other, StateSpace):

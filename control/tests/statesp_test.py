@@ -20,7 +20,7 @@ from control.dtime import sample_system
 from control.lti import evalfr
 from control.statesp import StateSpace, _convert_to_statespace, tf2ss, \
     _statesp_defaults, _rss_generate, linfnorm, ss, rss, drss
-from control.xferfcn import TransferFunction, ss2tf
+from control.xferfcn import TransferFunction, ss2tf, _tf_close_coeff
 
 from .conftest import editsdefaults, slycotonly
 
@@ -319,11 +319,159 @@ class TestStateSpace:
         np.testing.assert_array_almost_equal(sys.C, C)
         np.testing.assert_array_almost_equal(sys.D, D)
 
-    def test_multiply_mimo_siso(self):
-        assert False
+    @pytest.mark.parametrize(
+        "left, right, expected",
+        [
+            (
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[2], [1]],
+                        [[-1], [4]],
+                    ],
+                    [
+                        [[10, 1], [20, 1]],
+                        [[20, 1], [30, 1]],
+                    ],
+                ),
+                TransferFunction(
+                    [
+                        [[4], [2]],
+                        [[-2], [8]],
+                    ],
+                    [
+                        [[10, 1, 0], [20, 1, 0]],
+                        [[20, 1, 0], [30, 1, 0]],
+                    ],
+                ),
+            ),
+            (
+                TransferFunction(
+                    [
+                        [[2], [1]],
+                        [[-1], [4]],
+                    ],
+                    [
+                        [[10, 1], [20, 1]],
+                        [[20, 1], [30, 1]],
+                    ],
+                ),
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[4], [2]],
+                        [[-2], [8]],
+                    ],
+                    [
+                        [[10, 1, 0], [20, 1, 0]],
+                        [[20, 1, 0], [30, 1, 0]],
+                    ],
+                ),
+            ),
+            (
+                TransferFunction([2], [1, 0]),
+                np.eye(3),
+                TransferFunction(
+                    [
+                        [[2], [0], [0]],
+                        [[0], [2], [0]],
+                        [[0], [0], [2]],
+                    ],
+                    [
+                        [[1, 0], [1], [1]],
+                        [[1], [1, 0], [1]],
+                        [[1], [1], [1, 0]],
+                    ],
+                ),
+            ),
+        ]
+    )
+    def test_mul_mimo_siso(self, left, right, expected):
+        result = tf2ss(left).__mul__(right)
+        assert _tf_close_coeff(
+            expected.minreal(),
+            ss2tf(result).minreal(),
+        )
 
-    def test_divide_mimo_siso(self):
-        assert False
+    @pytest.mark.parametrize(
+        "left, right, expected",
+        [
+            (
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[2], [1]],
+                        [[-1], [4]],
+                    ],
+                    [
+                        [[10, 1], [20, 1]],
+                        [[20, 1], [30, 1]],
+                    ],
+                ),
+                TransferFunction(
+                    [
+                        [[4], [2]],
+                        [[-2], [8]],
+                    ],
+                    [
+                        [[10, 1, 0], [20, 1, 0]],
+                        [[20, 1, 0], [30, 1, 0]],
+                    ],
+                ),
+            ),
+            (
+                TransferFunction(
+                    [
+                        [[2], [1]],
+                        [[-1], [4]],
+                    ],
+                    [
+                        [[10, 1], [20, 1]],
+                        [[20, 1], [30, 1]],
+                    ],
+                ),
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[4], [2]],
+                        [[-2], [8]],
+                    ],
+                    [
+                        [[10, 1, 0], [20, 1, 0]],
+                        [[20, 1, 0], [30, 1, 0]],
+                    ],
+                ),
+            ),
+            (
+                np.eye(3),
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[2], [0], [0]],
+                        [[0], [2], [0]],
+                        [[0], [0], [2]],
+                    ],
+                    [
+                        [[1, 0], [1], [1]],
+                        [[1], [1, 0], [1]],
+                        [[1], [1], [1, 0]],
+                    ],
+                ),
+            ),
+        ]
+    )
+    def test_rmul_mimo_siso(self, left, right, expected):
+        result = tf2ss(right).__rmul__(left)
+        assert _tf_close_coeff(
+            expected.minreal(),
+            ss2tf(result).minreal(),
+        )
+
+    # def test_truediv_mimo_siso(self, left, right, expected):
+    #     assert False
+    #
+    # def test_rtruediv_mimo_siso(self, left, right, expected):
+    #     assert False
 
     @pytest.mark.parametrize("k", [2, -3.141, np.float32(2.718), np.array([[4.321], [5.678]])])
     def test_truediv_ss_scalar(self, sys322, k):
