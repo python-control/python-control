@@ -191,8 +191,10 @@ class TestXferFcn:
 
         for i in range(sys3.noutputs):
             for j in range(sys3.ninputs):
-                np.testing.assert_allclose(sys2._num[i, j], sys3._num[i, j])
-                np.testing.assert_allclose(sys2._den[i, j], sys3._den[i, j])
+                np.testing.assert_allclose(
+                    sys2.num_array[i, j], sys3.num_array[i, j])
+                np.testing.assert_allclose(
+                    sys2.den_array[i, j], sys3.den_array[i, j])
 
     # Tests for TransferFunction.__add__
 
@@ -237,8 +239,8 @@ class TestXferFcn:
 
         for i in range(sys3.noutputs):
             for j in range(sys3.ninputs):
-                np.testing.assert_allclose(sys3._num[i, j], num3[i][j])
-                np.testing.assert_allclose(sys3._den[i, j], den3[i][j])
+                np.testing.assert_allclose(sys3.num_array[i, j], num3[i][j])
+                np.testing.assert_allclose(sys3.den_array[i, j], den3[i][j])
 
     # Tests for TransferFunction.__sub__
 
@@ -285,8 +287,8 @@ class TestXferFcn:
 
         for i in range(sys3.noutputs):
             for j in range(sys3.ninputs):
-                np.testing.assert_allclose(sys3._num[i, j], num3[i][j])
-                np.testing.assert_allclose(sys3._den[i, j], den3[i][j])
+                np.testing.assert_allclose(sys3.num_array[i, j], num3[i][j])
+                np.testing.assert_allclose(sys3.den_array[i, j], den3[i][j])
 
     # Tests for TransferFunction.__mul__
 
@@ -341,8 +343,8 @@ class TestXferFcn:
 
         for i in range(sys3.noutputs):
             for j in range(sys3.ninputs):
-                np.testing.assert_allclose(sys3._num[i, j], num3[i][j])
-                np.testing.assert_allclose(sys3._den[i, j], den3[i][j])
+                np.testing.assert_allclose(sys3.num_array[i, j], num3[i][j])
+                np.testing.assert_allclose(sys3.den_array[i, j], den3[i][j])
 
     # Tests for TransferFunction.__div__
 
@@ -664,9 +666,9 @@ class TestXferFcn:
         for i in range(sys.noutputs):
             for j in range(sys.ninputs):
                 np.testing.assert_array_almost_equal(
-                    tfsys._num[i, j], num[i][j])
+                    tfsys.num_array[i, j], num[i][j])
                 np.testing.assert_array_almost_equal(
-                    tfsys._den[i, j], den[i][j])
+                    tfsys.den_array[i, j], den[i][j])
 
     def test_minreal(self):
         """Try the minreal function, and also test easy entry by creation
@@ -1123,9 +1125,9 @@ class TestXferFcn:
         for p in range(len(H.num)):
             for m in range(len(H.num[0])):
                 np.testing.assert_array_almost_equal(
-                    H._num[p, m], H2._num[p, m])
+                    H.num_array[p, m], H2.num_array[p, m])
                 np.testing.assert_array_almost_equal(
-                    H._den[p, m], H2._den[p, m])
+                    H.den_array[p, m], H2.den_array[p, m])
             assert H.dt == H2.dt
 
     def test_sample_named_signals(self):
@@ -1183,8 +1185,10 @@ class TestLTIConverter:
         sslti = mimotf.returnScipySignalLTI(strict=False)
         for i in range(2):
             for j in range(3):
-                np.testing.assert_allclose(sslti[i][j].num, mimotf._num[i, j])
-                np.testing.assert_allclose(sslti[i][j].den, mimotf._den[i, j])
+                np.testing.assert_allclose(
+                    sslti[i][j].num, mimotf.num_array[i, j])
+                np.testing.assert_allclose(
+                    sslti[i][j].den, mimotf.den_array[i, j])
                 if mimotf.dt == 0:
                     assert sslti[i][j].dt is None
                 else:

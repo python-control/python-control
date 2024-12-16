@@ -70,6 +70,12 @@ class TransferFunction(LTI):
 
     Attributes
     ----------
+    num_list, den_list : 2D list of 1D array
+        Numerator and denominator polynomial coefficients as 2D lists
+        of 1D array objects (of varying length)
+    num_array, den_array : 2D array of lists of float
+        Numerator and denominator polynomial coefficients as 2D array
+        of 1D array objects (of varying length).
     ninputs, noutputs, nstates : int
         Number of input, output and state variables.
     input_labels, output_labels, state_labels : list of str
@@ -79,19 +85,26 @@ class TransferFunction(LTI):
 
     Notes
     -----
-    The attributes 'num' and 'den' are properties that return 3D nested lists
-    containing MIMO numerator and denominator coefficients.  For example,
+    The numerator and denominator polynomials are stored as 2D ndarray's
+    with each element containing a 1D ndarray of coefficients.  These data
+    structures can be retrieved using ``num_array`` and ``den_array``.  For
+    example,
 
-    >>> sys.num[2][5]          # doctest: +SKIP
+    >>> sys.num_array[2, 5]         # doctest: +SKIP
 
     gives the numerator of the transfer function from the 6th input to the
-    3rd output.
+    3rd output. (Note: a single 3D ndarray structure cannot be used because
+    the numerators and denominators can have different numbers of
+    coefficients in each entry.)
 
-    Internally, the numerator and denominator polynomials are stored as 2D
-    ndarrays with each element containing a 1D ndarray of coefficients.
-    These data structures can be retrieved using ``_num`` and ``_den``.  (A
-    single 3D ndarray structure cannot be used because the numerators and
-    denominators can have different numbers of coefficients in each entry.)
+    The attributes ``num_list`` and ``den_list`` are properties that return
+    2D nested lists containing MIMO numerator and denominator coefficients.
+    For example,
+
+    >>> sys.num_list[2][5]          # doctest: +SKIP
+
+    For legacy purposes, this list-based representation can also be
+    obtained using ``num`` and ``den``.
 
     A discrete time transfer function is created by specifying a nonzero
     'timebase' dt when the system is constructed:
@@ -256,8 +269,8 @@ class TransferFunction(LTI):
                     den[i][j] = ones(1)
 
         # Store the numerator and denominator
-        self._num = num
-        self._den = den
+        self.num_array = num
+        self.den_array = den
 
         #
         # Final processing
@@ -284,14 +297,17 @@ class TransferFunction(LTI):
 
     # Numerator and denominator as lists of lists of lists
     @property
-    def num(self):
-        """Numerator polynomial (as 3D nested lists)."""
-        return self._num.tolist()
+    def num_list(self):
+        """Numerator polynomial (as 2D nested list of 1D arrays)."""
+        return self.num_array.tolist()
 
     @property
-    def den(self):
-        """Denominator polynomial (as 3D nested lists)."""
-        return self._den.tolist()
+    def den_list(self):
+        """Denominator polynomial (as 2D nested lists of 1D arrays)."""
+        return self.den_array.tolist()
+
+    # Legacy versions (TODO: add DeprecationWarning in a later release?)
+    num, den = num_list, den_list
 
     def __call__(self, x, squeeze=None, warn_infinite=True):
 
@@ -374,8 +390,8 @@ class TransferFunction(LTI):
         with np.errstate(all='warn' if warn_infinite else 'ignore'):
             for i in range(self.noutputs):
                 for j in range(self.ninputs):
-                    out[i][j] = (polyval(self._num[i, j], x_arr) /
-                                 polyval(self._den[i, j], x_arr))
+                    out[i][j] = (polyval(self.num_array[i, j], x_arr) /
+                                 polyval(self.den_array[i, j], x_arr))
         return out
 
     def _truncatecoeff(self):
@@ -388,7 +404,7 @@ class TransferFunction(LTI):
         """
 
         # Beware: this is a shallow copy.  This should be okay.
-        data = [self._num, self._den]
+        data = [self.num_array, self.den_array]
         for p in range(len(data)):
             for i in range(self.noutputs):
                 for j in range(self.ninputs):
@@ -405,7 +421,7 @@ class TransferFunction(LTI):
                     else:
                         # Truncate the trivial coefficients.
                         data[p][i][j] = data[p][i][j][nonzero:]
-        [self._num, self._den] = data
+        [self.num_array, self.den_array] = data
 
     def __str__(self, var=None):
         """String representation of the transfer function.
@@ -426,17 +442,17 @@ class TransferFunction(LTI):
                 # Convert the numerator and denominator polynomials to strings.
                 if self.display_format == 'poly':
                     numstr = _tf_polynomial_to_string(
-                        self._num[no, ni], var=var)
+                        self.num_array[no, ni], var=var)
                     denstr = _tf_polynomial_to_string(
-                        self._den[no, ni], var=var)
+                        self.den_array[no, ni], var=var)
                 elif self.display_format == 'zpk':
-                    num = self._num[no, ni]
+                    num = self.num_array[no, ni]
                     if num.size == 1 and num.item() == 0:
                         # Catch a special case that SciPy doesn't handle
-                        z, p, k = tf2zpk([1.], self._den[no, ni])
+                        z, p, k = tf2zpk([1.], self.den_array[no, ni])
                         k = 0
                     else:
-                        z, p, k = tf2zpk(self.num[no][ni], self._den[no, ni])
+                        z, p, k = tf2zpk(self.num[no][ni], self.den_array[no, ni])
                     numstr = _tf_factorized_polynomial_to_string(
                         z, gain=k, var=var)
                     denstr = _tf_factorized_polynomial_to_string(p, var=var)
@@ -464,14 +480,27 @@ class TransferFunction(LTI):
         """Print transfer function in loadable form."""
         if self.issiso():
             return "TransferFunction({num}, {den}{dt})".format(
-                num=self.num[0][0].__repr__(), den=self.den[0][0].__repr__(),
+                num=self.num_array[0, 0].__repr__(),
+                den=self.den_array[0, 0].__repr__(),
                 dt=', {}'.format(self.dt) if isdtime(self, strict=True)
                 else '')
         else:
-            return "TransferFunction({num}, {den}{dt})".format(
-                num=self.num.__repr__(), den=self.den.__repr__(),
-                dt=', {}'.format(self.dt) if isdtime(self, strict=True)
-                else '')
+            out = "TransferFunction(["
+            for entry in [self.num_array, self.den_array]:
+                for i in range(self.noutputs):
+                    out += "[" if i == 0 else " ["
+                    for j in range(self.ninputs):
+                        out += ", " if j != 0 else ""
+                        numstr = np.array_repr(entry[i, j])
+                        out += numstr
+                    out += "]," if i < self.noutputs - 1 else "]"
+                out += "], [" if entry is self.num_array else "]"
+
+            if config.defaults['control.default_dt'] != self.dt:
+                out += ", {dt}".format(
+                    dt='None' if self.dt is None else self.dt)
+            out += ")"
+            return out
 
     def _repr_latex_(self, var=None):
         """LaTeX representation of transfer function, for Jupyter notebook."""
@@ -491,11 +520,12 @@ class TransferFunction(LTI):
                 # Convert the numerator and denominator polynomials to strings.
                 if self.display_format == 'poly':
                     numstr = _tf_polynomial_to_string(
-                        self._num[no, ni], var=var)
+                        self.num_array[no, ni], var=var)
                     denstr = _tf_polynomial_to_string(
-                        self._den[no, ni], var=var)
+                        self.den_array[no, ni], var=var)
                 elif self.display_format == 'zpk':
-                    z, p, k = tf2zpk(self._num[no, ni], self._den[no, ni])
+                    z, p, k = tf2zpk(
+                        self.num_array[no, ni], self.den_array[no, ni])
                     numstr = _tf_factorized_polynomial_to_string(
                         z, gain=k, var=var)
                     denstr = _tf_factorized_polynomial_to_string(p, var=var)
@@ -524,7 +554,7 @@ class TransferFunction(LTI):
 
     def __neg__(self):
         """Negate a transfer function."""
-        num = deepcopy(self._num)
+        num = deepcopy(self.num_array)
         for i in range(self.noutputs):
             for j in range(self.ninputs):
                 num[i, j] *= -1
@@ -563,8 +593,8 @@ class TransferFunction(LTI):
         for i in range(self.noutputs):
             for j in range(self.ninputs):
                 num[i, j], den[i, j] = _add_siso(
-                    self._num[i, j], self._den[i, j],
-                    other._num[i, j], other._den[i, j])
+                    self.num_array[i, j], self.den_array[i, j],
+                    other.num_array[i, j], other.den_array[i, j])
 
         return TransferFunction(num, den, dt)
 
@@ -618,9 +648,9 @@ class TransferFunction(LTI):
             for col in range(ninputs):
                 for k in range(self.ninputs):
                     num_summand[k] = polymul(
-                        self._num[row, k], other._num[k, col])
+                        self.num_array[row, k], other.num_array[k, col])
                     den_summand[k] = polymul(
-                        self._den[row, k], other._den[k, col])
+                        self.den_array[row, k], other.den_array[k, col])
                     num[row, col], den[row, col] = _add_siso(
                         num[row, col], den[row, col],
                         num_summand[k], den_summand[k])
@@ -660,8 +690,10 @@ class TransferFunction(LTI):
         for i in range(noutputs):  # Iterate through rows of product.
             for j in range(ninputs):  # Iterate through columns of product.
                 for k in range(other.ninputs):  # Multiply & add.
-                    num_summand[k] = polymul(other._num[i, k], self._num[k, j])
-                    den_summand[k] = polymul(other._den[i, k], self._den[k, j])
+                    num_summand[k] = polymul(
+                        other.num_array[i, k], self.num_array[k, j])
+                    den_summand[k] = polymul(
+                        other.den_array[i, k], self.den_array[k, j])
                     num[i][j], den[i][j] = _add_siso(
                         num[i, j], den[i, j],
                         num_summand[k], den_summand[k])
@@ -686,8 +718,8 @@ class TransferFunction(LTI):
 
         dt = common_timebase(self.dt, other.dt)
 
-        num = polymul(self._num[0, 0], other._den[0, 0])
-        den = polymul(self._den[0, 0], other._num[0, 0])
+        num = polymul(self.num_array[0, 0], other.den_array[0, 0])
+        den = polymul(self.den_array[0, 0], other.num_array[0, 0])
 
         return TransferFunction(num, den, dt)
 
@@ -739,8 +771,8 @@ class TransferFunction(LTI):
         den = _create_poly_array(num.shape)
         for row, i in enumerate(outdx):
             for col, j in enumerate(inpdx):
-                num[row, col] = self._num[i, j]
-                den[row, col] = self._den[i, j]
+                num[row, col] = self.num_array[i, j]
+                den[row, col] = self.den_array[i, j]
                 col += 1
             row += 1
 
@@ -781,7 +813,7 @@ class TransferFunction(LTI):
                 "for SISO systems.")
         else:
             # for now, just give zeros of a SISO tf
-            return roots(self._num[0, 0]).astype(complex)
+            return roots(self.num_array[0, 0]).astype(complex)
 
     def feedback(self, other=1, sign=-1):
         """Feedback interconnection between two LTI objects."""
@@ -795,10 +827,10 @@ class TransferFunction(LTI):
                 "MIMO systems.")
         dt = common_timebase(self.dt, other.dt)
 
-        num1 = self._num[0, 0]
-        den1 = self._den[0, 0]
-        num2 = other._num[0, 0]
-        den2 = other._den[0, 0]
+        num1 = self.num_array[0, 0]
+        den1 = self.den_array[0, 0]
+        num2 = other.num_array[0, 0]
+        den2 = other.den_array[0, 0]
 
         num = polymul(num1, den2)
         den = polyadd(polymul(den2, den1), -sign * polymul(num2, num1))
@@ -827,9 +859,9 @@ class TransferFunction(LTI):
 
                 # split up in zeros, poles and gain
                 newzeros = []
-                zeros = roots(self._num[i, j])
-                poles = roots(self._den[i, j])
-                gain = self._num[i, j][0] / self._den[i, j][0]
+                zeros = roots(self.num_array[i, j])
+                poles = roots(self.den_array[i, j])
+                gain = self.num_array[i, j][0] / self.den_array[i, j][0]
 
                 # check all zeros
                 for z in zeros:

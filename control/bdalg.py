@@ -600,8 +600,8 @@ def combine_tf(tf_array):
                         f"row {row_index}."
                     )
                 for j_in in range(col.ninputs):
-                    num_row.append(col._num[j_out, j_in])
-                    den_row.append(col._den[j_out, j_in])
+                    num_row.append(col.num_array[j_out, j_in])
+                    den_row.append(col.den_array[j_out, j_in])
             num.append(num_row)
             den.append(den_row)
     for row_index, row in enumerate(num):
@@ -657,8 +657,8 @@ def split_tf(transfer_function):
         for i_in in range(transfer_function.ninputs):
             row.append(
                 tf.TransferFunction(
-                    transfer_function._num[i_out, i_in],
-                    transfer_function._den[i_out, i_in],
+                    transfer_function.num_array[i_out, i_in],
+                    transfer_function.den_array[i_out, i_in],
                     dt=transfer_function.dt,
                 )
             )
