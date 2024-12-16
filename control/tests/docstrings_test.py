@@ -276,7 +276,7 @@ class_factory_function = {
     ct.FrequencyResponseData: ct.frd,
     ct.InterconnectedSystem: ct.interconnect,
     ct.LinearICSystem: ct.interconnect,
-    # (ct.NonlinearIOSystem: ct.nlsys,
+    ct.NonlinearIOSystem: ct.nlsys,
     ct.StateSpace: ct.ss,
     ct.TransferFunction: ct.tf,
 }
@@ -285,20 +285,21 @@ class_factory_function = {
 class_args = {
     # fs.FlatSystem: ['forward', 'reverse', 'updfcn', 'outfcn'],
     ct.FrequencyResponseData: ['response', 'omega', 'dt'],
-    # (ct.NonlinearIOSystem: ['updfcn', 'outfcn', 'dt'],
+    ct.NonlinearIOSystem: [
+        'updfcn', 'outfcn', 'inputs', 'outputs', 'states', 'params', 'dt'],
     ct.StateSpace: ['A', 'B', 'C', 'D', 'dt'],
     ct.TransferFunction: ['num', 'den', 'dt'],
 }
 
 # List of attributes defined for all I/O systems
 std_class_attributes = [
-    'ninputs', 'noutputs', 'input_labels', 'output_labels', 'name']
+    'ninputs', 'noutputs', 'input_labels', 'output_labels', 'name', 'shape']
 
 # List of attributes defined for specific I/O systems
 class_attributes = {
     # fs.FlatSystem: [],
     ct.FrequencyResponseData: [],
-    # (ct.NonlinearIOSystem: [],
+    ct.NonlinearIOSystem: [],
     ct.StateSpace: ['nstates', 'state_labels'],
     ct.TransferFunction: [],
 }
@@ -316,7 +317,7 @@ std_factory_args = ['inputs', 'outputs', 'name']
 factory_args = {
     # fs.flatsys: [],
     ct.frd: ['sys'],
-    # fs.nlsys: [],
+    ct.nlsys: [],
     ct.ss: ['sys', 'states'],
     ct.tf: ['sys'],
 }
@@ -363,6 +364,9 @@ def test_iosys_attribute_lists(cls, ignore_future_warning):
         case ct.frd:
             sys = ct.frd(sys, [0.1, 1, 10])
             ignore_args = ['state_labels']
+        case ct.nlsys:
+            sys = ct.nlsys(sys)
+            ignore_args = []
         case _:
             ignore_args = []
 

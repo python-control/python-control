@@ -7,10 +7,14 @@ The main test functions are contained in iosys_test.py.
 
 """
 
-import pytest
-import numpy as np
 import math
+import re
+
+import numpy as np
+import pytest
+
 import control as ct
+
 
 # Basic test of nlsys()
 def test_nlsys_basic():
@@ -154,3 +158,41 @@ def test_nlsys_empty_io():
 
     resp = ct.forced_response(P, np.linspace(0, 1), 1)
     np.testing.assert_allclose(resp.states[:, -1], 1 - math.exp(-1))
+
+
+def test_ss2io():
+    sys = ct.rss(
+        states=4, inputs=['u1', 'u2'], outputs=['y1', 'y2'], name='sys')
+
+    # Standard conversion
+    nlsys = ct.nlsys(sys)
+    for attr in ['nstates', 'ninputs', 'noutputs']:
+        assert getattr(nlsys, attr) == getattr(sys, attr)
+    assert nlsys.name == 'sys$converted'
+
+    # Put names back to defaults
+    nlsys = ct.nlsys(
+        sys, inputs=sys.ninputs, outputs=sys.noutputs, states=sys.nstates)
+    for attr, prefix in zip(
+            ['state_labels', 'input_labels', 'output_labels'],
+            ['x', 'u', 'y']):
+        for i in range(len(getattr(nlsys, attr))):
+            assert getattr(nlsys, attr)[i] == f"{prefix}[{i}]"
+    assert re.match(r"sys\$converted", nlsys.name)
+
+    # Override the names with something new
+    nlsys = ct.nlsys(
+        sys, inputs=['U1', 'U2'], outputs=['Y1', 'Y2'],
+        states=['X1', 'X2', 'X3', 'X4'], name='nlsys')
+    for attr, prefix in zip(
+            ['state_labels', 'input_labels', 'output_labels'],
+            ['X', 'U', 'Y']):
+        for i in range(len(getattr(nlsys, attr))):
+            assert getattr(nlsys, attr)[i] == f"{prefix}{i+1}"
+    assert nlsys.name == 'nlsys'
+
+    # Make sure dimension checking works
+    for attr in ['states', 'inputs', 'outputs']:
+        with pytest.raises(ValueError, match=r"new .* doesn't match"):
+            kwargs = {attr: getattr(sys, 'n' + attr) - 1}
+            nlsys = ct.nlsys(sys, **kwargs)

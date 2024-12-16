@@ -289,13 +289,8 @@ class InputOutputSystem(object):
         """copy the signal and system name of sys. Name is given as a keyword
         in case a specific name (e.g. append 'linearized') is desired. """
         # Figure out the system name and assign it
-        if prefix == "" and prefix_suffix_name is not None:
-            prefix = config.defaults[
-                'iosys.' + prefix_suffix_name + '_system_name_prefix']
-        if suffix == "" and prefix_suffix_name is not None:
-            suffix = config.defaults[
-                'iosys.' + prefix_suffix_name + '_system_name_suffix']
-        self.name = prefix + sys.name + suffix
+        self.name = _extended_system_name(
+            sys.name, prefix, suffix, prefix_suffix_name)
 
         # Name the inputs, outputs, and states
         self.input_index = sys.input_index.copy()
@@ -1058,3 +1053,14 @@ def _process_subsys_index(idx, sys_labels, slice_to_list=False):
         idx = range(len(sys_labels))[idx]
 
     return idx, labels
+
+
+# Create an extended system name
+def _extended_system_name(name, prefix="", suffix="", prefix_suffix_name=None):
+    if prefix == "" and prefix_suffix_name is not None:
+        prefix = config.defaults[
+            'iosys.' + prefix_suffix_name + '_system_name_prefix']
+    if suffix == "" and prefix_suffix_name is not None:
+        suffix = config.defaults[
+            'iosys.' + prefix_suffix_name + '_system_name_suffix']
+    return prefix + name + suffix
