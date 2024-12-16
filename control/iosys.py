@@ -145,20 +145,16 @@ class InputOutputSystem(object):
     Attributes
     ----------
     ninputs, noutputs, nstates : int
-        Number of input, output and state variables
+        Number of input, output, and state variables.
     input_index, output_index, state_index : dict
-        Dictionary of signal names for the inputs, outputs and states and the
-        index of the corresponding array
-    dt : None, True or float
-        System timebase. 0 (default) indicates continuous time, True indicates
-        discrete time with unspecified sampling time, positive number is
-        discrete time with specified sampling time, None indicates unspecified
-        timebase (either continuous or discrete time).
-    params : dict, optional
-        Parameter values for the systems.  Passed to the evaluation functions
-        for the system as default values, overriding internal defaults.
-    name : string, optional
-        System name (used for specifying signals)
+        Dictionary of signal names for the inputs, outputs, and states and
+        the index of the corresponding array.
+    input_labels, output_labels, state_labels : list of str
+        List of signal names for inputs, outputs, and states.
+    repr_format : str
+        String representation format ('iosys' or 'loadable').
+    shape : tuple
+        2-tuple of I/O system dimension, (noutputs, ninputs).
 
     Other Parameters
     ----------------
@@ -194,7 +190,7 @@ class InputOutputSystem(object):
             raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # Keep track of the keywords that we recognize
-    kwargs_list = [
+    _kwargs_list = [
         'name', 'inputs', 'outputs', 'states', 'input_prefix',
         'output_prefix', 'state_prefix', 'dt']
 

@@ -482,7 +482,7 @@ class TestFRD:
         sys1r = eval(repr(sys1))
         np.testing.assert_array_almost_equal(sys1r.fresp, sys1.fresp)
         np.testing.assert_array_almost_equal(sys1r.omega, sys1.omega)
-        assert(sys1.ifunc is not None)
+        assert(sys1._ifunc is not None)
 
         refs = """<FrequencyResponseData>: {sysname}
 Inputs (1): ['u[0]']

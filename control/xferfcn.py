@@ -1,15 +1,16 @@
-"""xferfcn.py
-
-Transfer function representation and functions.
-
-This file contains the TransferFunction class and also functions
-that operate on transfer functions.  This is the primary representation
-for the python-control library.
-"""
-
+# xferfcn.py - transfer function class and related functions
+#
 # Author: Richard M. Murray
 # Date: 24 May 09
 # Revised: Kevin K. Chen, Dec 2010
+
+"""Transfer function representation and functions.
+
+This module contains the TransferFunction class and also functions that
+operate on transfer functions.  This is the primary representation for the
+python-control library.
+
+"""
 
 from collections.abc import Iterable
 from copy import deepcopy
@@ -17,7 +18,6 @@ from itertools import chain, product
 from re import sub
 from warnings import warn
 
-# External function declarations
 import numpy as np
 import scipy as sp
 from numpy import angle, array, delete, empty, exp, finfo, ndarray, nonzero, \
@@ -63,25 +63,31 @@ class TransferFunction(LTI):
         indicates discrete time with unspecified sampling time, positive
         number is discrete time with specified sampling time, None indicates
         unspecified timebase (either continuous or discrete time).
-    display_format : None, 'poly' or 'zpk', optional
-        Set the display format used in printing the TransferFunction object.
-        Default behavior is polynomial display and can be changed by
-        changing config.defaults['xferfcn.display_format'].
 
     Attributes
     ----------
-    num_list, den_list : 2D list of 1D array
-        Numerator and denominator polynomial coefficients as 2D lists
-        of 1D array objects (of varying length)
+    ninputs, noutputs : int
+        Number of input and output signals.
+    shape : tuple
+        2-tuple of I/O system dimension, (noutputs, ninputs).
+    input_labels, output_labels : list of str
+        Names for the input and output signals.
+    name : string, optional
+        System name.
     num_array, den_array : 2D array of lists of float
         Numerator and denominator polynomial coefficients as 2D array
         of 1D array objects (of varying length).
-    ninputs, noutputs, nstates : int
-        Number of input, output and state variables.
-    input_labels, output_labels, state_labels : list of str
-        Signal labels for the system.
-    name : string, optional
-        System name (used for specifying signals).
+    num_list, den_list : 2D list of 1D array
+        Numerator and denominator polynomial coefficients as 2D lists
+        of 1D array objects (of varying length)
+    display_format : None, 'poly' or 'zpk'
+        Display format used in printing the TransferFunction object.
+        Default behavior is polynomial display and can be changed by
+        changing config.defaults['xferfcn.display_format'].
+    s : TransferFunction
+        Represents the continuous time differential operator.
+    z : TransferFunction
+        Represents the discrete time delay operator.
 
     Notes
     -----
@@ -158,6 +164,8 @@ class TransferFunction(LTI):
         sampling time).  To call the copy constructor, call
         TransferFunction(sys), where sys is a TransferFunction object
         (continuous or discrete).
+
+        See :class:`TransferFunction` and :func:`tf` for more information.
 
         """
         #
@@ -1578,7 +1586,7 @@ def tf(*args, **kwargs):
 
     Returns
     -------
-    out: :class:`TransferFunction`
+    sys : TransferFunction
         The new linear system.
 
     Other Parameters
@@ -1714,7 +1722,7 @@ def zpk(zeros, poles, gain, *args, **kwargs):
     poles : array_like
         Array containing the location of poles.
     gain : float
-        System gain
+        System gain.
     dt : None, True or float, optional
         System timebase. 0 (default) indicates continuous
         time, True indicates discrete time with unspecified sampling
@@ -1736,7 +1744,7 @@ def zpk(zeros, poles, gain, *args, **kwargs):
 
     Returns
     -------
-    out: :class:`TransferFunction`
+    out: `TransferFunction`
         Transfer function with given zeros, poles, and gain.
 
     Examples
