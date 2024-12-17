@@ -17,7 +17,8 @@ import pytest
 import scipy
 
 import control as ct
-
+import control.flatsys as fs
+from control.tests.conftest import slycotonly
 
 class TestIOSys:
 
@@ -2284,3 +2285,21 @@ def test_signal_indexing():
     with pytest.raises(IndexError, match=r"signal name\(s\) not valid"):
         resp.outputs['y[0]', 'u[0]']
 
+@pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd, ct.nlsys, fs.flatsys])
+def test_relabeling(fcn):
+    sys = ct.rss(1, 1, 1, name="sys")
+
+    # Rename the inputs, outputs, (states,) system
+    match fcn:
+        case ct.tf:
+            sys = fcn(sys, inputs='u', outputs='y', name='new')
+        case ct.frd:
+            sys = fcn(sys, [0.1, 1, 10], inputs='u', outputs='y', name='new')
+        case _:
+            sys = fcn(sys, inputs='u', outputs='y', states='x', name='new')
+
+    assert sys.input_labels == ['u']
+    assert sys.output_labels == ['y']
+    if sys.nstates:
+        assert sys.state_labels == ['x']
+    assert sys.name == 'new'
