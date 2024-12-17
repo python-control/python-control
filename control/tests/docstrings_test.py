@@ -272,7 +272,7 @@ fs = control.flatsys
 
 # Dictionary of factory functions associated with primary classes
 class_factory_function = {
-    # fs.FlatSystem: fs.flatsys,
+    fs.FlatSystem: fs.flatsys,
     ct.FrequencyResponseData: ct.frd,
     ct.InterconnectedSystem: ct.interconnect,
     ct.LinearICSystem: ct.interconnect,
@@ -283,7 +283,7 @@ class_factory_function = {
 
 # List of arguments described in class docstrings
 class_args = {
-    # fs.FlatSystem: ['forward', 'reverse', 'updfcn', 'outfcn'],
+    fs.FlatSystem: ['forward', 'reverse'],
     ct.FrequencyResponseData: ['response', 'omega', 'dt'],
     ct.NonlinearIOSystem: [
         'updfcn', 'outfcn', 'inputs', 'outputs', 'states', 'params', 'dt'],
@@ -297,7 +297,7 @@ std_class_attributes = [
 
 # List of attributes defined for specific I/O systems
 class_attributes = {
-    # fs.FlatSystem: [],
+    fs.FlatSystem: [],
     ct.FrequencyResponseData: [],
     ct.NonlinearIOSystem: [],
     ct.StateSpace: ['nstates', 'state_labels'],
@@ -315,7 +315,7 @@ iosys_parent_attributes = [
 # List of arguments described (only) in factory function docstrings
 std_factory_args = ['inputs', 'outputs', 'name']
 factory_args = {
-    # fs.flatsys: [],
+    fs.flatsys: [],
     ct.frd: ['sys'],
     ct.nlsys: [],
     ct.ss: ['sys', 'states'],
@@ -337,7 +337,7 @@ def test_iosys_primary_classes(cls, fcn, args):
     # Make sure we reference the factory function
     if re.search(
             r"created.*(with|by|using).*the[\s]*"
-            f":func:`~control.{fcn.__name__}`"
+            f":func:`~control\\..*{fcn.__name__}`"
             r"[\s]factory[\s]function", docstring, re.DOTALL) is None:
         pytest.fail(
             f"{cls.__name__} does not reference factory function "
@@ -357,6 +357,7 @@ def test_iosys_attribute_lists(cls, ignore_future_warning):
 
     # Create a system that we can scan for attributes
     sys = ct.rss(2, 1, 1)
+    ignore_args = []
     match fcn:
         case ct.tf:
             sys = ct.tf(sys)
@@ -366,9 +367,9 @@ def test_iosys_attribute_lists(cls, ignore_future_warning):
             ignore_args = ['state_labels']
         case ct.nlsys:
             sys = ct.nlsys(sys)
-            ignore_args = []
-        case _:
-            ignore_args = []
+        case fs.flatsys:
+            sys = fs.flatsys(sys)
+            sys = fs.flatsys(sys.forward, sys.reverse)
 
     docstring = inspect.getdoc(cls)
     for name, obj in inspect.getmembers(sys):

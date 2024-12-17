@@ -17,8 +17,30 @@ class FlatSystem(NonlinearIOSystem):
     """Base class for representing a differentially flat system.
 
     The FlatSystem class is used as a base class to describe differentially
-    flat systems for trajectory generation.  The output of the system does not
-    need to be the differentially flat output.
+    flat systems for trajectory generation.  The output of the system does
+    not need to be the differentially flat output.  Flat systems are
+    usually created with the :func:`~control.flatsys.flatsys` factory
+    function.
+
+    Parameters
+    ----------
+    forward : callable
+        A function to compute the flat flag given the states and input.
+    reverse : callable
+        A function to compute the states and input given the flat flag.
+    dt : None, True or float, optional
+        System timebase.
+
+    Attributes
+    ----------
+    ninputs, noutputs, nstates : int
+        Number of input, output and state variables.
+    shape : tuple
+        2-tuple of I/O system dimension, (noutputs, ninputs).
+    input_labels, output_labels, state_labels : list of str
+        Names for the input, output, and state variables.
+    name : string, optional
+        System name.
 
     Notes
     -----
@@ -197,10 +219,9 @@ def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
         Description of the system states.  Same format as `inputs`.
 
     dt : None, True or float, optional
-        System timebase.  None (default) indicates continuous
-        time, True indicates discrete time with undefined sampling
-        time, positive number is discrete time with specified
-        sampling time.
+        System timebase.  None (default) indicates continuous time, True
+        indicates discrete time with undefined sampling time, positive
+        number is discrete time with specified sampling time.
 
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation
