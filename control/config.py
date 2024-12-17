@@ -266,7 +266,7 @@ def use_legacy_defaults(version):
     Parameters
     ----------
     version : string
-        Version number of the defaults desired. Ranges from '0.1' to '0.8.4'.
+        Version number of the defaults desired. Ranges from '0.1' to '0.10.1'.
 
     Examples
     --------
@@ -279,26 +279,26 @@ def use_legacy_defaults(version):
     (major, minor, patch) = (None, None, None)  # default values
 
     # Early release tag format: REL-0.N
-    match = re.match("REL-0.([12])", version)
+    match = re.match(r"^REL-0.([12])$", version)
     if match: (major, minor, patch) = (0, int(match.group(1)), 0)
 
     # Early release tag format: control-0.Np
-    match = re.match("control-0.([3-6])([a-d])", version)
+    match = re.match(r"^control-0.([3-6])([a-d])$", version)
     if match: (major, minor, patch) = \
        (0, int(match.group(1)), ord(match.group(2)) - ord('a') + 1)
 
     # Early release tag format: v0.Np
-    match = re.match("[vV]?0.([3-6])([a-d])", version)
+    match = re.match(r"^[vV]?0\.([3-6])([a-d])$", version)
     if match: (major, minor, patch) = \
        (0, int(match.group(1)), ord(match.group(2)) - ord('a') + 1)
 
     # Abbreviated version format: vM.N or M.N
-    match = re.match("([vV]?[0-9]).([0-9])", version)
+    match = re.match(r"^[vV]?([0-9]*)\.([0-9]*)$", version)
     if match: (major, minor, patch) = \
        (int(match.group(1)), int(match.group(2)), 0)
 
     # Standard version format: vM.N.P or M.N.P
-    match = re.match("[vV]?([0-9]).([0-9]).([0-9])", version)
+    match = re.match(r"^[vV]?([0-9]*)\.([0-9]*)\.([0-9]*)$", version)
     if match: (major, minor, patch) = \
         (int(match.group(1)), int(match.group(2)), int(match.group(3)))
 
@@ -310,6 +310,10 @@ def use_legacy_defaults(version):
     # Go backwards through releases and reset defaults
     #
     reset_defaults()            # start from a clean slate
+
+    # Verions 0.10.2
+    if major == 0 and minor <= 10 and patch < 2:
+        set_defaults('iosys', repr_format='loadable')
 
     # Version 0.9.2:
     if major == 0 and minor < 9 or (minor == 9 and patch < 2):

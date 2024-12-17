@@ -13,6 +13,7 @@ python-control library.
 
 """
 
+import sys
 from collections.abc import Iterable
 from copy import deepcopy
 from itertools import chain, product
@@ -1349,8 +1350,11 @@ def _c2d_matched(sysC, Ts, **kwargs):
 # Borrowed from poly1d library
 def _tf_polynomial_to_string(coeffs, var='s'):
     """Convert a transfer function polynomial to a string."""
-
     thestr = "0"
+
+    # Apply NumPy formatting
+    with np.printoptions(threshold=sys.maxsize):
+        coeffs = eval(repr(coeffs))
 
     # Compute the number of coefficients
     N = len(coeffs) - 1
@@ -1396,6 +1400,9 @@ def _tf_polynomial_to_string(coeffs, var='s'):
 
 def _tf_factorized_polynomial_to_string(roots, gain=1, var='s'):
     """Convert a factorized polynomial to a string."""
+    # Apply NumPy formatting
+    with np.printoptions(threshold=sys.maxsize):
+        roots = eval(repr(roots))
 
     if roots.size == 0:
         return _float2str(gain)

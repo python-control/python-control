@@ -14,6 +14,7 @@ python-control library.
 """
 
 import math
+import sys
 from collections.abc import Iterable
 from copy import deepcopy
 from warnings import warn
@@ -21,8 +22,8 @@ from warnings import warn
 import numpy as np
 import scipy as sp
 import scipy.linalg
-from numpy import any, asarray, concatenate, cos, delete, empty, exp, eye, \
-    isinf, ones, pad, sin, squeeze, zeros
+from numpy import any, array, asarray, concatenate, cos, delete, empty, \
+    exp, eye, isinf, ones, pad, sin, squeeze, zeros
 from numpy.linalg import LinAlgError, eigvals, matrix_rank, solve
 from numpy.random import rand, randn
 from scipy.signal import StateSpace as signalStateSpace
@@ -444,6 +445,10 @@ class StateSpace(NonlinearIOSystem, LTI):
         -------
         s : string with LaTeX representation of model
         """
+        # Apply NumPy formatting
+        with np.printoptions(threshold=sys.maxsize):
+            D = eval(repr(self.D))
+
         lines = [
             r'$$',
             (r'\left('
@@ -451,7 +456,7 @@ class StateSpace(NonlinearIOSystem, LTI):
              + r'{' + 'rll' * self.ninputs + '}')
             ]
 
-        for Di in asarray(self.D):
+        for Di in asarray(D):
             lines.append('&'.join(_f2s(Dij) for Dij in Di)
                          + '\\\\')
 
@@ -476,6 +481,11 @@ class StateSpace(NonlinearIOSystem, LTI):
         if self.nstates == 0:
             return self._latex_partitioned_stateless()
 
+        # Apply NumPy formatting
+        with np.printoptions(threshold=sys.maxsize):
+            A, B, C, D = (
+                eval(repr(getattr(self, M))) for M in ['A', 'B', 'C', 'D'])
+
         lines = [
             r'$$',
             (r'\left('
@@ -483,12 +493,12 @@ class StateSpace(NonlinearIOSystem, LTI):
              + r'{' + 'rll' * self.nstates + '|' + 'rll' * self.ninputs + '}')
             ]
 
-        for Ai, Bi in zip(asarray(self.A), asarray(self.B)):
+        for Ai, Bi in zip(asarray(A), asarray(B)):
             lines.append('&'.join([_f2s(Aij) for Aij in Ai]
                                   + [_f2s(Bij) for Bij in Bi])
                          + '\\\\')
         lines.append(r'\hline')
-        for Ci, Di in zip(asarray(self.C), asarray(self.D)):
+        for Ci, Di in zip(asarray(C), asarray(D)):
             lines.append('&'.join([_f2s(Cij) for Cij in Ci]
                                   + [_f2s(Dij) for Dij in Di])
                          + '\\\\')

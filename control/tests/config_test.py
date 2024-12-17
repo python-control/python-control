@@ -319,3 +319,16 @@ class TestConfig:
             indexed_system_name_suffix='POST')
         sys2 = sys[1:, 1:]
         assert sys2.name == 'PRE' + sys.name + 'POST'
+
+    def test_legacy_repr_format(self):
+        from ..statesp import StateSpace
+        from numpy import array
+
+        sys = ct.ss([[1]], [[1]], [[1]], [[0]])
+        with pytest.raises(SyntaxError, match="invalid syntax"):
+            new = eval(repr(sys))               # iosys is default
+
+        ct.use_legacy_defaults('0.10.1')        # loadable is default
+        new = eval(repr(sys))
+        for attr in ['A', 'B', 'C', 'D']:
+            assert getattr(sys, attr) == getattr(sys, attr)
