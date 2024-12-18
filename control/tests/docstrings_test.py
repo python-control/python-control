@@ -281,7 +281,13 @@ class_factory_function = {
     ct.TransferFunction: ct.tf,
 }
 
+#
 # List of arguments described in class docstrings
+#
+# These are the minimal arguments needed to initialized the class.  Optional
+# arguments should be documented in the factory functions and do not need
+# to be duplicated in the class documentation.
+#
 class_args = {
     fs.FlatSystem: ['forward', 'reverse'],
     ct.FrequencyResponseData: ['response', 'omega', 'dt'],
@@ -291,7 +297,19 @@ class_args = {
     ct.TransferFunction: ['num', 'den', 'dt'],
 }
 
-# List of attributes defined for all I/O systems
+#
+# List of attributes described in class docstrings
+#
+# This is the list of attributes for the class that are not already listed
+# as parameters used to inialize the class.  These should all be defined
+# in the class docstring.
+#
+# Attributes that are part of all I/O system classes should be listed in
+# `std_class_attributes`.  Attributes that are not commonly needed are
+# defined as part of a parent class can just be documented there, and
+# should be listed in `iosys_parent_attributes` (these will be searched
+# using the MRO).
+
 std_class_attributes = [
     'ninputs', 'noutputs', 'input_labels', 'output_labels', 'name', 'shape']
 
@@ -299,7 +317,7 @@ std_class_attributes = [
 class_attributes = {
     fs.FlatSystem: [],
     ct.FrequencyResponseData: [],
-    ct.NonlinearIOSystem: [],
+    ct.NonlinearIOSystem: ['nstates', 'state_labels'],
     ct.StateSpace: ['nstates', 'state_labels'],
     ct.TransferFunction: [],
 }
@@ -312,13 +330,22 @@ iosys_parent_attributes = [
     'params', 'outfcn', 'updfcn'                        # NL I/O, SS overlap
 ]
 
+#
 # List of arguments described (only) in factory function docstrings
-std_factory_args = ['inputs', 'outputs', 'name']
+#
+# These lists consist of the arguments that should be documented in the
+# factory functions and should not be duplicated in the class
+# documentation, even though in some cases they are actually processed in
+# the class __init__ function.
+#
+std_factory_args = [
+    'inputs', 'outputs', 'name', 'input_prefix', 'output_prefix']
+
 factory_args = {
-    fs.flatsys: [],
+    fs.flatsys: ['states', 'state_prefix'],
     ct.frd: ['sys'],
-    ct.nlsys: [],
-    ct.ss: ['sys', 'states'],
+    ct.nlsys: ['state_prefix'],
+    ct.ss: ['sys', 'states', 'state_prefix'],
     ct.tf: ['sys'],
 }
 
@@ -343,7 +370,7 @@ def test_iosys_primary_classes(cls, fcn, args):
             f"{cls.__name__} does not reference factory function "
             f"{fcn.__name__}")
 
-    # Make sure we don't reference parameters in the factory function
+    # Make sure we don't reference parameters from the factory function
     for argname in factory_args[fcn]:
         if re.search(f"[\\s]+{argname}(, .*)*[\\s]*:", docstring) is not None:
             pytest.fail(
@@ -448,7 +475,7 @@ def test_iosys_factory_functions(fcn):
         list(class_factory_function.values()).index(fcn)]
 
     # Make sure we reference parameters in class and factory function docstring
-    for argname in class_args[cls] + factory_args[fcn]:
+    for argname in class_args[cls] + std_factory_args + factory_args[fcn]:
         _check_parameter_docs(fcn.__name__, argname, docstring)
 
     # Make sure we don't reference any class attributes
@@ -516,4 +543,3 @@ def _check_parameter_docs(
         pytest.fail(f"{funcname} '{argname}' documented twice")
 
     return True
-

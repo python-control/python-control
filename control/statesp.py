@@ -1577,7 +1577,6 @@ def ss(*args, **kwargs):
     out: StateSpace
         Linear input/output system.
 
->>>>>>> 1f609a56 (updated iosys class/factory function documentation + docstring unit testing)
     Raises
     ------
     ValueError

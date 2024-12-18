@@ -236,6 +236,12 @@ def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
     sys: :class:`FlatSystem`
         Flat system.
 
+    Other Parameters
+    ----------------
+    input_prefix, output_prefix, state_prefix : string, optional
+        Set the prefix for input, output, and state signals.  Defaults =
+        'u', 'y', 'x'.
+
     """
     from .linflat import LinearFlatSystem
     from ..statesp import StateSpace

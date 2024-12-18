@@ -1285,6 +1285,12 @@ def nlsys(updfcn, outfcn=None, **kwargs):
     sys : :class:`NonlinearIOSystem`
         Nonlinear input/output system.
 
+    Other Parameters
+    ----------------
+    input_prefix, output_prefix, state_prefix : string, optional
+        Set the prefix for input, output, and state signals.  Defaults =
+        'u', 'y', 'x'.
+
     See Also
     --------
     ss, tf

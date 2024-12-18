@@ -299,9 +299,9 @@ class FrequencyResponseData(LTI):
 
         # Process signal names
         name, inputs, outputs, states, dt = _process_iosys_keywords(
-                kwargs, defaults, end=True)
+                kwargs, defaults)
         InputOutputSystem.__init__(
-            self, name=name, inputs=inputs, outputs=outputs, dt=dt)
+            self, name=name, inputs=inputs, outputs=outputs, dt=dt, **kwargs)
 
         # create interpolation functions
         if smooth:
@@ -972,6 +972,8 @@ def frd(*args, **kwargs):
         List of strings that name the individual signals of the transformed
         system.  If not given, the inputs and outputs are the same as the
         original system.
+    input_prefix, output_prefix : string, optional
+        Set the prefix for input and output signals.  Defaults = 'u', 'y'.
     name : string, optional
         System name. If unspecified, a generic name <sys[id]> is generated
         with a unique integer id.

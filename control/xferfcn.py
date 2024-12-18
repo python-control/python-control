@@ -20,9 +20,9 @@ from warnings import warn
 
 import numpy as np
 import scipy as sp
-from numpy import angle, array, delete, empty, exp, finfo, ndarray, nonzero, \
-    ones, pi, poly, polyadd, polymul, polyval, real, roots, sqrt, squeeze, \
-    where, zeros
+from numpy import angle, array, delete, empty, exp, finfo, float64, ndarray, \
+    nonzero, ones, pi, poly, polyadd, polymul, polyval, real, roots, sqrt, \
+    squeeze, where, zeros
 from scipy.signal import TransferFunction as signalTransferFunction
 from scipy.signal import cont2discrete, tf2zpk, zpk2tf
 
@@ -1595,6 +1595,8 @@ def tf(*args, **kwargs):
         List of strings that name the individual signals of the transformed
         system.  If not given, the inputs and outputs are the same as the
         original system.
+    input_prefix, output_prefix : string, optional
+        Set the prefix for input and output signals.  Defaults = 'u', 'y'.
     name : string, optional
         System name. If unspecified, a generic name <sys[id]> is generated
         with a unique integer id.

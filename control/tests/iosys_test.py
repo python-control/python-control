@@ -2303,3 +2303,37 @@ def test_relabeling(fcn):
     if sys.nstates:
         assert sys.state_labels == ['x']
     assert sys.name == 'new'
+
+
+@pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd, ct.nlsys, fs.flatsys])
+def test_signal_prefixing(fcn):
+    sys = ct.rss(2, 1, 1)
+
+    # Recreate the system in different forms, with non-standard prefixes
+    match fcn:
+        case ct.ss:
+            sys = ct.ss(
+                sys.A, sys.B, sys.C, sys.D, state_prefix='xx',
+                input_prefix='uu', output_prefix='yy')
+        case ct.tf:
+            sys = ct.tf(sys)
+            sys = fcn(sys.num, sys.den, input_prefix='uu', output_prefix='yy')
+        case ct.frd:
+            freq = [0.1, 1, 10]
+            data = [sys(w * 1j) for w in freq]
+            sys = fcn(data, freq, input_prefix='uu', output_prefix='yy')
+        case ct.nlsys:
+            sys = ct.nlsys(sys)
+            sys = fcn(
+                sys.updfcn, sys.outfcn, inputs=1, outputs=1, states=2,
+                state_prefix='xx', input_prefix='uu', output_prefix='yy')
+        case fs.flatsys:
+            sys = fs.flatsys(sys)
+            sys = fcn(
+                sys.forward, sys.reverse, inputs=1, outputs=1, states=2,
+                state_prefix='xx', input_prefix='uu', output_prefix='yy')
+
+    assert sys.input_labels == ['uu[0]']
+    assert sys.output_labels == ['yy[0]']
+    if sys.nstates:
+        assert sys.state_labels == ['xx[0]', 'xx[1]']
