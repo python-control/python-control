@@ -756,10 +756,10 @@ class StateSpace(NonlinearIOSystem, LTI):
     # TODO: general __truediv__ requires descriptor system support
     def __truediv__(self, other):
         """Division of state space systems by TFs, FRDs, scalars, and arrays"""
-        if not isinstance(other, InputOutputSystem):
-            # Let ``other.__rtruediv__`` handle it
+        # Let ``other.__rtruediv__`` handle it
+        try:
             return self * (1 / other)
-        else:
+        except ValueError:
             return NotImplemented
 
     def __rtruediv__(self, other):
