@@ -467,10 +467,62 @@ class TestStateSpace:
             ss2tf(result).minreal(),
         )
 
-    # def test_truediv_mimo_siso(self, left, right, expected):
-    #     assert False
-    #
-    # def test_rtruediv_mimo_siso(self, left, right, expected):
+    def test_pow(self, sys222, sys322):
+        """Test state space powers."""
+        for sys in [sys222, sys322]:
+            # Power of 0
+            result = sys**0
+            expected = StateSpace([], [], [], np.eye(2), dt=0)
+            assert _tf_close_coeff(
+                ss2tf(expected).minreal(),
+                ss2tf(result).minreal(),
+            )
+            # Power of 1
+            result = sys**1
+            expected = sys
+            assert _tf_close_coeff(
+                ss2tf(expected).minreal(),
+                ss2tf(result).minreal(),
+            )
+            # Power of -1 (inverse of biproper system)
+            result = (sys * sys**-1).minreal()
+            expected = StateSpace([], [], [], np.eye(2), dt=0)
+            assert _tf_close_coeff(
+                ss2tf(expected).minreal(),
+                ss2tf(result).minreal(),
+            )
+            result = (sys**-1 * sys).minreal()
+            expected = StateSpace([], [], [], np.eye(2), dt=0)
+            assert _tf_close_coeff(
+                ss2tf(expected).minreal(),
+                ss2tf(result).minreal(),
+            )
+            # Power of 3
+            result = sys**3
+            expected = sys * sys * sys
+            assert _tf_close_coeff(
+                ss2tf(expected).minreal(),
+                ss2tf(result).minreal(),
+            )
+            # Power of -3
+            result = sys**-3
+            expected = sys**-1 * sys**-1 * sys**-1
+            assert _tf_close_coeff(
+                ss2tf(expected).minreal(),
+                ss2tf(result).minreal(),
+            )
+
+    def test_truediv(self, sys222, sys322):
+        """Test state space truediv"""
+        for sys in [sys222, sys322]:
+            result = (sys.__truediv__(sys)).minreal()
+            expected = StateSpace([], [], [], np.eye(2), dt=0)
+            assert _tf_close_coeff(
+                ss2tf(expected).minreal(),
+                ss2tf(result).minreal(),
+            )
+
+    # def test_rtruediv(self):
     #     assert False
 
     @pytest.mark.parametrize("k", [2, -3.141, np.float32(2.718), np.array([[4.321], [5.678]])])

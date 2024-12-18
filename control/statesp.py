@@ -756,10 +756,41 @@ class StateSpace(NonlinearIOSystem, LTI):
     # TODO: general __truediv__ requires descriptor system support
     def __truediv__(self, other):
         """Division of state space systems by TFs, FRDs, scalars, and arrays"""
-        if not isinstance(other, (LTI, InputOutputSystem)):
-            return self * (1/other)
+        if not isinstance(other, InputOutputSystem):
+            # Let ``other.__rtruediv__`` handle it
+            return self * (1 / other)
         else:
             return NotImplemented
+
+    def __rtruediv__(self, other):
+        """Division by state space system"""
+        return other * self**-1
+
+    def __pow__(self, other):
+        """Power of a state space system"""
+        if not type(other) == int:
+            raise ValueError("Exponent must be an integer")
+        if self.ninputs != self.noutputs:
+            # System must have same number of inputs and outputs
+            return NotImplemented
+        if other < -1:
+            return (self**-1)**(-other)
+        elif other == -1:
+            try:
+                Di = scipy.linalg.inv(self.D)
+            except scipy.linalg.LinAlgError:
+                # D matrix must be nonsingular
+                return NotImplemented
+            Ai = self.A - self.B @ Di @ self.C
+            Bi = self.B @ Di
+            Ci = -Di @ self.C
+            return StateSpace(Ai, Bi, Ci, Di, self.dt)
+        elif other == 0:
+            return StateSpace([], [], [], np.eye(self.ninputs), self.dt)
+        elif other == 1:
+            return self
+        elif other > 1:
+            return self * (self**(other - 1))
 
     def __call__(self, x, squeeze=None, warn_infinite=True):
         """Evaluate system's frequency response at complex frequencies.
@@ -1165,7 +1196,7 @@ class StateSpace(NonlinearIOSystem, LTI):
                 A, B, C, nr = tb01pd(self.nstates, self.ninputs, self.noutputs,
                                      self.A, B, C, tol=tol)
                 return StateSpace(A[:nr, :nr], B[:nr, :self.ninputs],
-                                  C[:self.noutputs, :nr], self.D)
+                                  C[:self.noutputs, :nr], self.D, self.dt)
             except ImportError:
                 raise TypeError("minreal requires slycot tb01pd")
         else:
