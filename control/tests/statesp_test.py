@@ -515,15 +515,45 @@ class TestStateSpace:
     def test_truediv(self, sys222, sys322):
         """Test state space truediv"""
         for sys in [sys222, sys322]:
+            # Divide by self
             result = (sys.__truediv__(sys)).minreal()
             expected = StateSpace([], [], [], np.eye(2), dt=0)
             assert _tf_close_coeff(
                 ss2tf(expected).minreal(),
                 ss2tf(result).minreal(),
             )
+            # Divide by TF
+            result = sys.__truediv__(TransferFunction.s)
+            expected = ss2tf(sys) / TransferFunction.s
+            assert _tf_close_coeff(
+                expected.minreal(),
+                ss2tf(result).minreal(),
+            )
 
-    # def test_rtruediv(self):
-    #     assert False
+    def test_rtruediv(self, sys222, sys322):
+        """Test state space rtruediv"""
+        for sys in [sys222, sys322]:
+            result = (sys.__rtruediv__(sys)).minreal()
+            expected = StateSpace([], [], [], np.eye(2), dt=0)
+            assert _tf_close_coeff(
+                ss2tf(expected).minreal(),
+                ss2tf(result).minreal(),
+            )
+            # Divide TF by SS
+            result = sys.__rtruediv__(TransferFunction.s)
+            expected = TransferFunction.s / sys
+            assert _tf_close_coeff(
+                expected.minreal(),
+                result.minreal(),
+            )
+        # Divide array by SS
+        sys = tf2ss(TransferFunction([1, 2], [2, 1]))
+        result = sys.__rtruediv__(np.eye(2))
+        expected = TransferFunction([2, 1], [1, 2]) * np.eye(2)
+        assert _tf_close_coeff(
+            expected.minreal(),
+            ss2tf(result).minreal(),
+        )
 
     @pytest.mark.parametrize("k", [2, -3.141, np.float32(2.718), np.array([[4.321], [5.678]])])
     def test_truediv_ss_scalar(self, sys322, k):

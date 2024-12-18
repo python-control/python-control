@@ -748,10 +748,9 @@ class TransferFunction(LTI):
 
         if (self.ninputs > 1 or self.noutputs > 1 or
                 other.ninputs > 1 or other.noutputs > 1):
-            raise NotImplementedError(
-                "TransferFunction.__truediv__ is currently \
-                implemented only for SISO systems.")
-
+            # TransferFunction.__truediv__ is currently implemented only for
+            # SISO systems.
+            return NotImplemented
         dt = common_timebase(self.dt, other.dt)
 
         num = polymul(self.num[0][0], other.den[0][0])
@@ -776,9 +775,9 @@ class TransferFunction(LTI):
 
         if (self.ninputs > 1 or self.noutputs > 1 or
                 other.ninputs > 1 or other.noutputs > 1):
-            raise NotImplementedError(
-                "TransferFunction.__rtruediv__ is currently implemented only "
-                "for SISO systems.")
+            # TransferFunction.__rtruediv__ is currently implemented only for
+            # SISO systems
+            return NotImplemented
 
         return other / self
 
