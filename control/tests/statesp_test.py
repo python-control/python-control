@@ -319,6 +319,52 @@ class TestStateSpace:
         np.testing.assert_array_almost_equal(sys.C, C)
         np.testing.assert_array_almost_equal(sys.D, D)
 
+    def test_add_sub_mimo_siso(self):
+        # Test SS with SS
+        ss_siso = rss(2, 1, 1)
+        ss_siso_1 = rss(2, 1, 1)
+        ss_siso_2 = rss(2, 1, 1)
+        ss_mimo = ss_siso_1.append(ss_siso_2)
+        expected_add = ct.combine_tf([
+            [ss2tf(ss_siso_1 + ss_siso), ss2tf(ss_siso)],
+            [ss2tf(ss_siso), ss2tf(ss_siso_2 + ss_siso)],
+        ])
+        expected_sub = ct.combine_tf([
+            [ss2tf(ss_siso_1 - ss_siso), -ss2tf(ss_siso)],
+            [-ss2tf(ss_siso), ss2tf(ss_siso_2 - ss_siso)],
+        ])
+        for op, expected in [
+            (StateSpace.__add__, expected_add),
+            (StateSpace.__radd__, expected_add),
+            (StateSpace.__sub__, expected_sub),
+            (StateSpace.__rsub__, -expected_sub),
+        ]:
+            result = op(ss_mimo, ss_siso)
+            assert _tf_close_coeff(
+                expected.minreal(),
+                ss2tf(result).minreal(),
+            )
+        # Test SS with array
+        expected_add = ct.combine_tf([
+            [ss2tf(1 + ss_siso), ss2tf(ss_siso)],
+            [ss2tf(ss_siso), ss2tf(1 + ss_siso)],
+        ])
+        expected_sub = ct.combine_tf([
+            [ss2tf(-1 + ss_siso), ss2tf(ss_siso)],
+            [ss2tf(ss_siso), ss2tf(-1 + ss_siso)],
+        ])
+        for op, expected in [
+            (StateSpace.__add__, expected_add),
+            (StateSpace.__radd__, expected_add),
+            (StateSpace.__sub__, expected_sub),
+            (StateSpace.__rsub__, -expected_sub),
+        ]:
+            result = op(ss_siso, np.eye(2))
+            assert _tf_close_coeff(
+                expected.minreal(),
+                ss2tf(result).minreal(),
+            )
+
     @pytest.mark.parametrize(
         "left, right, expected",
         [

@@ -607,6 +607,9 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         elif isinstance(other, np.ndarray):
             other = np.atleast_2d(other)
+            # Special case for SISO
+            if self.issiso():
+                self = np.ones_like(other) * self
             if self.ninputs != other.shape[0]:
                 raise ValueError("array has incompatible shape")
             A, B, C = self.A, self.B, self.C
@@ -617,6 +620,12 @@ class StateSpace(NonlinearIOSystem, LTI):
             return NotImplemented       # let other.__rmul__ handle it
 
         else:
+            # Promote SISO object to compatible dimension
+            if self.issiso() and not other.issiso():
+                self = np.ones((other.noutputs, other.ninputs)) * self
+            elif not self.issiso() and other.issiso():
+                other = np.ones((self.noutputs, self.ninputs)) * other
+
             # Check to make sure the dimensions are OK
             if ((self.ninputs != other.ninputs) or
                     (self.noutputs != other.noutputs)):
@@ -671,7 +680,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         elif isinstance(other, np.ndarray):
             other = np.atleast_2d(other)
-            # Special case for SISO transfer function
+            # Special case for SISO
             if self.issiso():
                 self = bdalg.append(*([self] * other.shape[0]))
             # Dimension check after broadcasting
