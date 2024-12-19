@@ -492,6 +492,21 @@ class TestFRD:
         with pytest.raises(TypeError):
             FrequencyResponseData.__add__(frd_tf, 'string')
 
+    def test_add_sub_mimo_siso(self):
+        omega = np.logspace(-1, 1, 10)
+        sys_mimo = frd(ct.rss(2, 2, 2), omega)
+        sys_siso = frd(ct.rss(2, 1, 1), omega)
+
+        for op, expected_fresp in [
+            (FrequencyResponseData.__add__, sys_mimo.fresp + sys_siso.fresp),
+            (FrequencyResponseData.__radd__, sys_mimo.fresp + sys_siso.fresp),
+            (FrequencyResponseData.__sub__, sys_mimo.fresp - sys_siso.fresp),
+            (FrequencyResponseData.__rsub__, -sys_mimo.fresp + sys_siso.fresp),
+        ]:
+            result = op(sys_mimo, sys_siso)
+            np.testing.assert_array_almost_equal(omega, result.omega)
+            np.testing.assert_array_almost_equal(expected_fresp, result.fresp)
+
     @pytest.mark.parametrize(
         "left, right, expected",
         [
