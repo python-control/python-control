@@ -205,7 +205,7 @@ def similarity_transform(xsys, T, timescale=1, inverse=False):
     timescale : float, optional
         If present, also rescale the time unit to tau = timescale * t
     inverse : bool, optional
-        If True (default), transform so z = T x.  If False, transform
+        If False (default), transform so z = T x.  If True, transform
         so x = T z.
 
     Returns
