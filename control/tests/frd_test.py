@@ -565,6 +565,57 @@ class TestFRD:
         np.testing.assert_array_almost_equal(expected_frd.omega, result.omega)
         np.testing.assert_array_almost_equal(expected_frd.fresp, result.fresp)
 
+    def test_truediv_mimo_siso(self):
+        omega = np.logspace(-1, 1, 10)
+        tf_mimo = TransferFunction([1], [1, 0]) * np.eye(2)
+        frd_mimo = frd(tf_mimo, omega)
+        ss_mimo = ct.tf2ss(tf_mimo)
+        tf_siso = TransferFunction([1], [1, 1])
+        frd_siso = frd(tf_siso, omega)
+        expected = frd(tf_mimo.__truediv__(tf_siso), omega)
+        ss_siso = ct.tf2ss(tf_siso)
+
+        # Test division of MIMO FRD by SISO FRD
+        result = frd_mimo.__truediv__(frd_siso)
+        np.testing.assert_array_almost_equal(expected.omega, result.omega)
+        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+
+        # Test division of MIMO FRD by SISO TF
+        result = frd_mimo.__truediv__(tf_siso)
+        np.testing.assert_array_almost_equal(expected.omega, result.omega)
+        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+
+        # Test division of MIMO FRD by SISO TF
+        result = frd_mimo.__truediv__(ss_siso)
+        np.testing.assert_array_almost_equal(expected.omega, result.omega)
+        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+
+    def test_rtruediv_mimo_siso(self):
+        omega = np.logspace(-1, 1, 10)
+        tf_mimo = TransferFunction([1], [1, 0]) * np.eye(2)
+        frd_mimo = frd(tf_mimo, omega)
+        ss_mimo = ct.tf2ss(tf_mimo)
+        tf_siso = TransferFunction([1], [1, 1])
+        frd_siso = frd(tf_siso, omega)
+        ss_siso = ct.tf2ss(tf_siso)
+        expected = frd(tf_siso.__rtruediv__(tf_mimo), omega)
+
+        # Test division of MIMO FRD by SISO FRD
+        result = frd_siso.__rtruediv__(frd_mimo)
+        np.testing.assert_array_almost_equal(expected.omega, result.omega)
+        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+
+        # Test division of MIMO TF by SISO FRD
+        result = frd_siso.__rtruediv__(tf_mimo)
+        np.testing.assert_array_almost_equal(expected.omega, result.omega)
+        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+
+        # Test division of MIMO SS by SISO FRD
+        result = frd_siso.__rtruediv__(ss_mimo)
+        np.testing.assert_array_almost_equal(expected.omega, result.omega)
+        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+
+
     @pytest.mark.parametrize(
         "left, right, expected",
         [

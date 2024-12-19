@@ -510,11 +510,9 @@ class FrequencyResponseData(LTI):
         else:
             other = _convert_to_frd(other, omega=self.omega)
 
-        if (self.ninputs > 1 or self.noutputs > 1 or
-            other.ninputs > 1 or other.noutputs > 1):
-            raise NotImplementedError(
-                "FRD.__truediv__ is currently only implemented for SISO "
-                "systems.")
+        if (other.ninputs > 1 or other.noutputs > 1):
+            # FRD.__truediv__ is currently only implemented for SISO systems
+            return NotImplemented
 
         return FRD(self.fresp/other.fresp, self.omega,
                    smooth=(self.ifunc is not None) and
@@ -529,11 +527,9 @@ class FrequencyResponseData(LTI):
         else:
             other = _convert_to_frd(other, omega=self.omega)
 
-        if (self.ninputs > 1 or self.noutputs > 1 or
-            other.ninputs > 1 or other.noutputs > 1):
-            raise NotImplementedError(
-                "FRD.__rtruediv__ is currently only implemented for "
-                "SISO systems.")
+        if (self.ninputs > 1 or self.noutputs > 1):
+            # FRD.__rtruediv__ is currently only implemented for SISO systems
+            return NotImplemented
 
         return other / self
 
