@@ -406,6 +406,12 @@ class FrequencyResponseData(LTI):
         else:
             other = _convert_to_frd(other, omega=self.omega)
 
+        # Promote SISO object to compatible dimension
+        if self.issiso() and not other.issiso():
+            self = np.ones((other.noutputs, other.ninputs)) * self
+        elif not self.issiso() and other.issiso():
+            other = np.ones((self.noutputs, self.ninputs)) * other
+
         # Check that the input-output sizes are consistent.
         if self.ninputs != other.ninputs:
             raise ValueError(
