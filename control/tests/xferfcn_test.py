@@ -409,6 +409,32 @@ class TestXferFcn:
         with pytest.raises(ValueError):
             TransferFunction.__pow__(sys1, 0.5)
 
+    def test_add_sub_mimo_siso(self):
+        for op in [
+            TransferFunction.__add__,
+            TransferFunction.__radd__,
+            TransferFunction.__sub__,
+            TransferFunction.__rsub__,
+        ]:
+            tf_mimo = TransferFunction(
+                [
+                    [[1], [1]],
+                    [[1], [1]],
+                ],
+                [
+                    [[10, 1], [20, 1]],
+                    [[20, 1], [30, 1]],
+                ],
+            )
+            tf_siso = TransferFunction([1], [5, 0])
+            tf_arr = ct.split_tf(tf_mimo)
+            expected = ct.combine_tf([
+                [op(tf_arr[0, 0], tf_siso), op(tf_arr[0, 1], tf_siso)],
+                [op(tf_arr[1, 0], tf_siso), op(tf_arr[1, 1], tf_siso)],
+            ])
+            result = op(tf_mimo, tf_siso)
+            assert _tf_close_coeff(expected.minreal(), result.minreal())
+
     @pytest.mark.parametrize(
         "left, right, expected",
         [
