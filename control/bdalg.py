@@ -543,12 +543,11 @@ def combine_tf(tf_array):
     Combine two transfer functions
 
     >>> s = ct.TransferFunction.s
-    >>> ct.combine_tf([
+    >>> ct.ombine_tf([
     ...     [1 / (s + 1)],
     ...     [s / (s + 2)],
     ... ])
-    TransferFunction([[array([1])], [array([1, 0])]],
-                     [[array([1, 1])], [array([1, 2])]])
+    TransferFunction([[array([1])], [array([1, 0])]], [[array([1, 1])], [array([1, 2])]])
 
     Combine NumPy arrays with transfer functions
 
@@ -556,12 +555,7 @@ def combine_tf(tf_array):
     ...     [np.eye(2), np.zeros((2, 1))],
     ...     [np.zeros((1, 2)), ct.TransferFunction([1], [1, 0])],
     ... ])
-    TransferFunction([[array([1.]), array([0.]), array([0.])],
-                      [array([0.]), array([1.]), array([0.])],
-                      [array([0.]), array([0.]), array([1])]],
-                     [[array([1.]), array([1.]), array([1.])],
-                      [array([1.]), array([1.]), array([1.])],
-                      [array([1.]), array([1.]), array([1, 0])]])
+    TransferFunction([[array([1.]), array([0.]), array([0.])], [array([0.]), array([1.]), array([0.])], [array([0.]), array([0.]), array([1])]], [[array([1.]), array([1.]), array([1.])], [array([1.]), array([1.]), array([1.])], [array([1.]), array([1.]), array([1, 0])]])
     """
     # Find common timebase or raise error
     dt_list = []
