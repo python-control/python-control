@@ -322,9 +322,54 @@ class TestStateSpace:
 
     def test_add_sub_mimo_siso(self):
         # Test SS with SS
-        ss_siso = rss(2, 1, 1)
-        ss_siso_1 = rss(2, 1, 1)
-        ss_siso_2 = rss(2, 1, 1)
+        ss_siso = StateSpace(
+            np.array([
+                [1, 2],
+                [3, 4],
+            ]),
+            np.array([
+                [1],
+                [4],
+            ]),
+            np.array([
+                [1, 1],
+            ]),
+            np.array([
+                [0],
+            ]),
+        )
+        ss_siso_1 = StateSpace(
+            np.array([
+                [1, 1],
+                [3, 1],
+            ]),
+            np.array([
+                [3],
+                [-4],
+            ]),
+            np.array([
+                [-1, 1],
+            ]),
+            np.array([
+                [0.1],
+            ]),
+        )
+        ss_siso_2 = StateSpace(
+            np.array([
+                [1, 0],
+                [0, 1],
+            ]),
+            np.array([
+                [0],
+                [2],
+            ]),
+            np.array([
+                [0, 1],
+            ]),
+            np.array([
+                [0],
+            ]),
+        )
         ss_mimo = ss_siso_1.append(ss_siso_2)
         expected_add = ct.combine_tf([
             [ss2tf(ss_siso_1 + ss_siso), ss2tf(ss_siso)],
