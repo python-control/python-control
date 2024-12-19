@@ -542,8 +542,8 @@ def combine_tf(tf_array):
     --------
     Combine two transfer functions
 
-    >>> s = control.TransferFunction.s
-    >>> control.combine_tf([
+    >>> s = ct.TransferFunction.s
+    >>> ct.combine_tf([
     ...     [1 / (s + 1)],
     ...     [s / (s + 2)],
     ... ])
@@ -552,9 +552,9 @@ def combine_tf(tf_array):
 
     Combine NumPy arrays with transfer functions
 
-    >>> control.combine_tf([
+    >>> ct.combine_tf([
     ...     [np.eye(2), np.zeros((2, 1))],
-    ...     [np.zeros((1, 2)), control.TransferFunction([1], [1, 0])],
+    ...     [np.zeros((1, 2)), ct.TransferFunction([1], [1, 0])],
     ... ])
     TransferFunction([[array([1.]), array([0.]), array([0.])],
                       [array([0.]), array([1.]), array([0.])],
@@ -636,7 +636,7 @@ def split_tf(transfer_function):
     --------
     Split a MIMO transfer function
 
-    >>> G = control.TransferFunction(
+    >>> G = ct.TransferFunction(
     ...     [
     ...         [[87.8], [-86.4]],
     ...         [[108.2], [-109.6]],
@@ -646,7 +646,7 @@ def split_tf(transfer_function):
     ...         [[1, 1], [1, 1]],
     ...     ],
     ... )
-    >>> control.split_tf(G)
+    >>> ct.split_tf(G)
     array([[TransferFunction(array([87.8]), array([1, 1])),
             TransferFunction(array([-86.4]), array([1, 1]))],
            [TransferFunction(array([108.2]), array([1, 1])),
