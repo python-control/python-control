@@ -320,6 +320,7 @@ class TestStateSpace:
         np.testing.assert_array_almost_equal(sys.C, C)
         np.testing.assert_array_almost_equal(sys.D, D)
 
+    @slycotonly
     def test_add_sub_mimo_siso(self):
         # Test SS with SS
         ss_siso = StateSpace(
@@ -411,6 +412,7 @@ class TestStateSpace:
                 ss2tf(result).minreal(),
             )
 
+    @slycotonly
     @pytest.mark.parametrize(
         "left, right, expected",
         [
@@ -485,6 +487,7 @@ class TestStateSpace:
             ss2tf(result).minreal(),
         )
 
+    @slycotonly
     @pytest.mark.parametrize(
         "left, right, expected",
         [
@@ -559,6 +562,7 @@ class TestStateSpace:
             ss2tf(result).minreal(),
         )
 
+    @slycotonly
     def test_pow(self, sys222, sys322):
         """Test state space powers."""
         for sys in [sys222, sys322]:
@@ -604,6 +608,7 @@ class TestStateSpace:
                 ss2tf(result).minreal(),
             )
 
+    @slycotonly
     def test_truediv(self, sys222, sys322):
         """Test state space truediv"""
         for sys in [sys222, sys322]:
@@ -622,6 +627,7 @@ class TestStateSpace:
                 ss2tf(result).minreal(),
             )
 
+    @slycotonly
     def test_rtruediv(self, sys222, sys322):
         """Test state space rtruediv"""
         for sys in [sys222, sys322]:

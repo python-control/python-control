@@ -580,6 +580,7 @@ class TestFRD:
         np.testing.assert_array_almost_equal(expected_frd.omega, result.omega)
         np.testing.assert_array_almost_equal(expected_frd.fresp, result.fresp)
 
+    @slycotonly
     def test_truediv_mimo_siso(self):
         omega = np.logspace(-1, 1, 10)
         tf_mimo = TransferFunction([1], [1, 0]) * np.eye(2)
@@ -605,6 +606,7 @@ class TestFRD:
         np.testing.assert_array_almost_equal(expected.omega, result.omega)
         np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
 
+    @slycotonly
     def test_rtruediv_mimo_siso(self):
         omega = np.logspace(-1, 1, 10)
         tf_mimo = TransferFunction([1], [1, 0]) * np.eye(2)
