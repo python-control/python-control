@@ -20,6 +20,7 @@ from numpy import absolute, angle, array, empty, eye, imag, linalg, ones, \
 from scipy.interpolate import splev, splprep
 
 from . import config
+from . import bdalg
 from .exception import pandas_check
 from .iosys import InputOutputSystem, NamedSignal, _process_iosys_keywords, \
     _process_subsys_index, common_timebase
@@ -442,6 +443,12 @@ class FrequencyResponseData(LTI):
         else:
             other = _convert_to_frd(other, omega=self.omega)
 
+        # Promote SISO object to compatible dimension
+        if self.issiso() and not other.issiso():
+            self = bdalg.append(*([self] * other.noutputs))
+        elif not self.issiso() and other.issiso():
+            other = bdalg.append(*([other] * self.ninputs))
+
         # Check that the input-output sizes are consistent.
         if self.ninputs != other.noutputs:
             raise ValueError(
@@ -468,6 +475,12 @@ class FrequencyResponseData(LTI):
                        smooth=(self.ifunc is not None))
         else:
             other = _convert_to_frd(other, omega=self.omega)
+
+        # Promote SISO object to compatible dimension
+        if self.issiso() and not other.issiso():
+            self = bdalg.append(*([self] * other.ninputs))
+        elif not self.issiso() and other.issiso():
+            other = bdalg.append(*([other] * self.noutputs))
 
         # Check that the input-output sizes are consistent.
         if self.noutputs != other.ninputs:

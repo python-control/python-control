@@ -474,10 +474,19 @@ class TestFRD:
         np.testing.assert_array_almost_equal(sys_add.omega, chk_add.omega)
         np.testing.assert_array_almost_equal(sys_add.fresp, chk_add.fresp)
 
+        # Test broadcasting with SISO system
+        sys_tf_mimo = TransferFunction([1], [1, 0]) * np.eye(2)
+        frd_tf_mimo = frd(sys_tf_mimo, np.logspace(-1, 1, 10))
+        result = FrequencyResponseData.__rmul__(frd_tf, frd_tf_mimo)
+        expected = frd(sys_tf_mimo * sys_tf, np.logspace(-1, 1, 10))
+        np.testing.assert_array_almost_equal(expected.omega, result.omega)
+        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+
         # Input/output mismatch size mismatch in rmul
         sys1 = frd(ct.rss(2, 2, 2), np.logspace(-1, 1, 10))
+        sys2 = frd(ct.rss(3, 3, 3), np.logspace(-1, 1, 10))
         with pytest.raises(ValueError):
-            FrequencyResponseData.__rmul__(frd_2, sys1)
+            FrequencyResponseData.__rmul__(sys2, sys1)
 
         # Make sure conversion of something random generates exception
         with pytest.raises(TypeError):
