@@ -594,6 +594,12 @@ class TransferFunction(LTI):
         if not isinstance(other, TransferFunction):
             return NotImplemented
 
+        # Promote SISO object to compatible dimension
+        if self.issiso() and not other.issiso():
+            self = np.ones((other.noutputs, other.ninputs)) * self
+        elif not self.issiso() and other.issiso():
+            other = np.ones((self.noutputs, self.ninputs)) * other
+
         # Check that the input-output sizes are consistent.
         if self.ninputs != other.ninputs:
             raise ValueError(

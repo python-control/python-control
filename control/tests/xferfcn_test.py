@@ -113,9 +113,28 @@ class TestXferFcn:
 
     def test_add_inconsistent_dimension(self):
         """Add two transfer function matrices of different sizes."""
-        sys1 = TransferFunction([[[1., 2.]]], [[[4., 5.]]])
-        sys2 = TransferFunction([[[4., 3.]], [[1., 2.]]],
-                                [[[1., 6.]], [[2., 4.]]])
+        sys1 = TransferFunction(
+            [
+                [[1., 2.]],
+                [[2., -2.]],
+                [[2., 1.]],
+            ],
+            [
+                [[4., 5.]],
+                [[5., 2.]],
+                [[3., 2.]],
+            ],
+        )
+        sys2 = TransferFunction(
+            [
+                [[4., 3.]],
+                [[1., 2.]],
+            ],
+            [
+                [[1., 6.]],
+                [[2., 4.]],
+            ]
+        )
         with pytest.raises(ValueError):
             sys1.__add__(sys2)
         with pytest.raises(ValueError):
