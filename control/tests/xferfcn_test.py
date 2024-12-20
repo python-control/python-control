@@ -1064,16 +1064,17 @@ class TestXferFcn:
     def test_latex_repr(self):
         """Test latex printout for TransferFunction"""
         Hc = TransferFunction([1e-5, 2e5, 3e-4],
-                              [1.2e34, 2.3e-4, 2.3e-45])
+                              [1.2e34, 2.3e-4, 2.3e-45], name='sys')
         Hd = TransferFunction([1e-5, 2e5, 3e-4],
                               [1.2e34, 2.3e-4, 2.3e-45],
-                              .1)
+                              .1, name='sys')
         # TODO: make the multiplication sign configurable
         expmul = r'\times'
         for var, H, suffix in zip(['s', 'z'],
                                   [Hc, Hd],
-                                  ['', r'\quad dt = 0.1']):
-            ref = (r'$$\frac{'
+                                  ['', r'~,~dt = 0.1']):
+            ref = (r"<TransferFunction sys: ['u[0]'] -> ['y[0]']>"
+                   r'$$\frac{'
                    r'1 ' + expmul + ' 10^{-5} ' + var + '^2 '
                    r'+ 2 ' + expmul + ' 10^{5} ' + var + ' + 0.0003'
                    r'}{'
@@ -1119,7 +1120,7 @@ class TestXferFcn:
         """Test __repr__ printout."""
         H = TransferFunction(*Hargs)
 
-        rep = H.iosys_repr(format='loadable')
+        rep = ct.iosys_repr(H, format='eval')
         assert rep == ref
 
         # and reading back

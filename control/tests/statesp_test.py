@@ -748,12 +748,12 @@ class TestStateSpace:
              "array([[-2.,  4.],",
              "       [ 0.,  1.]]){dt},",
              "name='sys322', states=3, outputs=2, inputs=2)"])
-        assert sys322.iosys_repr(format='loadable') == ref322.format(dt='')
+        assert ct.iosys_repr(sys322, format='eval') == ref322.format(dt='')
         sysd = StateSpace(sys322.A, sys322.B,
                           sys322.C, sys322.D, 0.4)
-        assert sysd.iosys_repr(format='loadable'), ref322.format(dt="\ndt=0.4")
+        assert ct.iosys_repr(sysd, format='eval'), ref322.format(dt="\ndt=0.4")
         array = np.array  # noqa
-        sysd2 = eval(sysd.iosys_repr(format='loadable'))
+        sysd2 = eval(ct.iosys_repr(sysd, format='eval'))
         np.testing.assert_allclose(sysd.A, sysd2.A)
         np.testing.assert_allclose(sysd.B, sysd2.B)
         np.testing.assert_allclose(sysd.C, sysd2.C)
@@ -1067,23 +1067,23 @@ LTX_G2 = ([],
           [[1.2345, -2e-200], [-1, 0]])
 
 LTX_G1_REF = {
-    'p3_p' : '$$\n\\left(\\begin{array}{rllrll|rll}\n3.&\\hspace{-1em}14&\\hspace{-1em}\\phantom{\\cdot}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{100}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n-1.&\\hspace{-1em}23&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-23}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\hline\n9.&\\hspace{-1em}88&\\hspace{-1em}\\cdot10^{8}&0.&\\hspace{-1em}00123&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n$$',
+    'p3_p' : "<StateSpace sys: ['u[0]'] -> ['y[0]']>\n$$\n\\left(\\begin{array}{rllrll|rll}\n3.&\\hspace{-1em}14&\\hspace{-1em}\\phantom{\\cdot}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{100}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n-1.&\\hspace{-1em}23&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-23}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\hline\n9.&\\hspace{-1em}88&\\hspace{-1em}\\cdot10^{8}&0.&\\hspace{-1em}00123&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n$$",
 
-    'p5_p' : '$$\n\\left(\\begin{array}{rllrll|rll}\n3.&\\hspace{-1em}1416&\\hspace{-1em}\\phantom{\\cdot}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{100}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n-1.&\\hspace{-1em}2346&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-23}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\hline\n9.&\\hspace{-1em}8765&\\hspace{-1em}\\cdot10^{8}&0.&\\hspace{-1em}001234&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n$$',
+    'p5_p' : "<StateSpace sys: ['u[0]'] -> ['y[0]']>\n$$\n\\left(\\begin{array}{rllrll|rll}\n3.&\\hspace{-1em}1416&\\hspace{-1em}\\phantom{\\cdot}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{100}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n-1.&\\hspace{-1em}2346&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-23}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\hline\n9.&\\hspace{-1em}8765&\\hspace{-1em}\\cdot10^{8}&0.&\\hspace{-1em}001234&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n$$",
 
-    'p3_s' : '$$\n\\begin{array}{ll}\nA = \\left(\\begin{array}{rllrll}\n3.&\\hspace{-1em}14&\\hspace{-1em}\\phantom{\\cdot}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{100}\\\\\n-1.&\\hspace{-1em}23&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-23}\\\\\n\\end{array}\\right)\n&\nB = \\left(\\begin{array}{rll}\n0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\\\\nC = \\left(\\begin{array}{rllrll}\n9.&\\hspace{-1em}88&\\hspace{-1em}\\cdot10^{8}&0.&\\hspace{-1em}00123&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n&\nD = \\left(\\begin{array}{rll}\n5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\end{array}\n$$',
+    'p3_s' : "<StateSpace sys: ['u[0]'] -> ['y[0]']>\n$$\n\\begin{array}{ll}\nA = \\left(\\begin{array}{rllrll}\n3.&\\hspace{-1em}14&\\hspace{-1em}\\phantom{\\cdot}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{100}\\\\\n-1.&\\hspace{-1em}23&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-23}\\\\\n\\end{array}\\right)\n&\nB = \\left(\\begin{array}{rll}\n0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\\\\nC = \\left(\\begin{array}{rllrll}\n9.&\\hspace{-1em}88&\\hspace{-1em}\\cdot10^{8}&0.&\\hspace{-1em}00123&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n&\nD = \\left(\\begin{array}{rll}\n5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\end{array}\n$$",
 
-    'p5_s' : '$$\n\\begin{array}{ll}\nA = \\left(\\begin{array}{rllrll}\n3.&\\hspace{-1em}1416&\\hspace{-1em}\\phantom{\\cdot}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{100}\\\\\n-1.&\\hspace{-1em}2346&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-23}\\\\\n\\end{array}\\right)\n&\nB = \\left(\\begin{array}{rll}\n0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\\\\nC = \\left(\\begin{array}{rllrll}\n9.&\\hspace{-1em}8765&\\hspace{-1em}\\cdot10^{8}&0.&\\hspace{-1em}001234&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n&\nD = \\left(\\begin{array}{rll}\n5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\end{array}\n$$',
+    'p5_s' : "<StateSpace sys: ['u[0]'] -> ['y[0]']>\n$$\n\\begin{array}{ll}\nA = \\left(\\begin{array}{rllrll}\n3.&\\hspace{-1em}1416&\\hspace{-1em}\\phantom{\\cdot}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{100}\\\\\n-1.&\\hspace{-1em}2346&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-23}\\\\\n\\end{array}\\right)\n&\nB = \\left(\\begin{array}{rll}\n0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\\\\nC = \\left(\\begin{array}{rllrll}\n9.&\\hspace{-1em}8765&\\hspace{-1em}\\cdot10^{8}&0.&\\hspace{-1em}001234&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n&\nD = \\left(\\begin{array}{rll}\n5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\end{array}\n$$",
 }
 
 LTX_G2_REF = {
-    'p3_p' : '$$\n\\left(\\begin{array}{rllrll}\n1.&\\hspace{-1em}23&\\hspace{-1em}\\phantom{\\cdot}&-2\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-200}\\\\\n-1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n$$',
+    'p3_p' : "<StateSpace sys: ['u[0]', 'u[1]'] -> ['y[0]', 'y[1]']>\n$$\n\\left(\\begin{array}{rllrll}\n1.&\\hspace{-1em}23&\\hspace{-1em}\\phantom{\\cdot}&-2\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-200}\\\\\n-1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n$$",
 
-    'p5_p' : '$$\n\\left(\\begin{array}{rllrll}\n1.&\\hspace{-1em}2345&\\hspace{-1em}\\phantom{\\cdot}&-2\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-200}\\\\\n-1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n$$',
+    'p5_p' : "<StateSpace sys: ['u[0]', 'u[1]'] -> ['y[0]', 'y[1]']>\n$$\n\\left(\\begin{array}{rllrll}\n1.&\\hspace{-1em}2345&\\hspace{-1em}\\phantom{\\cdot}&-2\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-200}\\\\\n-1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n$$",
 
-    'p3_s' : '$$\n\\begin{array}{ll}\nD = \\left(\\begin{array}{rllrll}\n1.&\\hspace{-1em}23&\\hspace{-1em}\\phantom{\\cdot}&-2\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-200}\\\\\n-1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\end{array}\n$$',
+    'p3_s' : "<StateSpace sys: ['u[0]', 'u[1]'] -> ['y[0]', 'y[1]']>\n$$\n\\begin{array}{ll}\nD = \\left(\\begin{array}{rllrll}\n1.&\\hspace{-1em}23&\\hspace{-1em}\\phantom{\\cdot}&-2\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-200}\\\\\n-1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\end{array}\n$$",
 
-    'p5_s' : '$$\n\\begin{array}{ll}\nD = \\left(\\begin{array}{rllrll}\n1.&\\hspace{-1em}2345&\\hspace{-1em}\\phantom{\\cdot}&-2\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-200}\\\\\n-1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\end{array}\n$$',
+    'p5_s' : "<StateSpace sys: ['u[0]', 'u[1]'] -> ['y[0]', 'y[1]']>\n$$\n\\begin{array}{ll}\nD = \\left(\\begin{array}{rllrll}\n1.&\\hspace{-1em}2345&\\hspace{-1em}\\phantom{\\cdot}&-2\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-200}\\\\\n-1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\end{array}\n$$",
 }
 
 refkey_n = {None: 'p3', '.3g': 'p3', '.5g': 'p5'}
@@ -1115,7 +1115,7 @@ def test_latex_repr(gmats, ref, dt, dtref, repr_type, num_format, editsdefaults)
     if repr_type is not None:
         set_defaults('statesp', latex_repr_type=repr_type)
 
-    g = StateSpace(*(gmats+(dt,)))
+    g = StateSpace(*(gmats+(dt,)), name='sys')
     refkey = "{}_{}".format(refkey_n[num_format], refkey_r[repr_type])
     dt_latex = dtref.format(dt=dt, fmt=defaults['statesp.latex_num_format'])
     ref_latex = ref[refkey][:-3] + dt_latex + ref[refkey][-3:]

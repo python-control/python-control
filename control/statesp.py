@@ -34,7 +34,7 @@ from .exception import ControlMIMONotImplemented, ControlSlycot, slycot_check
 from .frdata import FrequencyResponseData
 from .iosys import InputOutputSystem, NamedSignal, _process_dt_keyword, \
     _process_iosys_keywords, _process_signal_list, _process_subsys_index, \
-    common_timebase, isdtime, issiso
+    common_timebase, iosys_repr, isdtime, issiso
 from .lti import LTI, _process_frequency_response
 from .nlsys import InterconnectedSystem, NonlinearIOSystem
 import control
@@ -390,37 +390,7 @@ class StateSpace(NonlinearIOSystem, LTI):
             string += f"\ndt = {self.dt}\n"
         return string
 
-    def __repr__(self):
-        return self.iosys_repr(format=self.repr_format)
-
-    def iosys_repr(self, format='loadable'):
-        """Return representation of a state sapce system.
-
-        Parameters
-        ----------
-        format : str
-            Format to use in creating the representation:
-
-              * 'iosys' : <TransferFunction:sysname:[inputs]->[outputs]
-              * 'loadable' : StateSpace(A, B, C, D[, dt[, ...]])
-
-        Returns
-        -------
-        str
-            String representing the transfer function.
-
-        Notes
-        -----
-        By default, the representation for a state space system is set to
-        'iosys'.  Set config.defaults['iosys.repr_format'] to change for all
-        I/O systems or set the `repr_format` attribute for a single system.
-
-        """
-        if format == 'iosys':
-            return super().__repr__()
-        elif format != 'loadable':
-            raise ValueError(f"unknown format '{format}'")
-
+    def _repr_eval_(self):
         # Loadable format
         out = "StateSpace(\n{A},\n{B},\n{C},\n{D}".format(
             A=self.A.__repr__(), B=self.B.__repr__(),
@@ -450,6 +420,7 @@ class StateSpace(NonlinearIOSystem, LTI):
             D = eval(repr(self.D))
 
         lines = [
+            self._repr_info_(),
             r'$$',
             (r'\left('
              + r'\begin{array}'
@@ -487,6 +458,7 @@ class StateSpace(NonlinearIOSystem, LTI):
                 eval(repr(getattr(self, M))) for M in ['A', 'B', 'C', 'D'])
 
         lines = [
+            self._repr_info_(),
             r'$$',
             (r'\left('
              + r'\begin{array}'
@@ -521,6 +493,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         s : string with LaTeX representation of model
         """
         lines = [
+            self._repr_info_(),
             r'$$',
             r'\begin{array}{ll}',
             ]

@@ -16,7 +16,7 @@ from . import config
 from .exception import ControlIndexError
 
 __all__ = ['InputOutputSystem', 'NamedSignal', 'issiso', 'timebase',
-           'common_timebase', 'isdtime', 'isctime']
+           'common_timebase', 'isdtime', 'isctime', 'iosys_repr']
 
 # Define module default parameter values
 _iosys_defaults = {
@@ -31,7 +31,7 @@ _iosys_defaults = {
     'iosys.indexed_system_name_suffix': '$indexed',
     'iosys.converted_system_name_prefix': '',
     'iosys.converted_system_name_suffix': '$converted',
-    'iosys.repr_format': 'iosys',
+    'iosys.repr_format': 'info',
 }
 
 
@@ -163,6 +163,8 @@ class InputOutputSystem(object):
         Set the prefix for output signals.  Default = 'y'.
     state_prefix : string, optional
         Set the prefix for state signals.  Default = 'x'.
+    repr_format : str
+        String representation format.  See :func:`control.iosys_repr`.
 
     """
     # Allow NDarray * IOSystem to give IOSystem._rmul_() priority
@@ -241,16 +243,30 @@ class InputOutputSystem(object):
     nstates = None
 
     def __repr__(self):
-        return f'<{self.__class__.__name__}:{self.name}:' + \
-            f'{list(self.input_labels)}->{list(self.output_labels)}>'
+        return iosys_repr(self, format=self.repr_format)
 
-    def iosys_repr(self, format=None):
-        raise NotImplementedError(
-            f"`iosys_repr` is not implemented for {self.__class__}")
+    def _repr_info_(self):
+        return f'<{self.__class__.__name__} {self.name}: ' + \
+            f'{list(self.input_labels)} -> {list(self.output_labels)}>'
 
     @property
     def repr_format(self):
-        """Set the string representation format ('iosys' or 'loadable')."""
+        """String representation format.
+
+        Format used in creating the representation for the system:
+
+          * 'info' : <IOSystemType:sysname:[inputs]->[outputs]
+          * 'eval' : system specific, loadable representation
+          * 'latex' : latex representation of the object
+
+        The default representation for an input/output is set to 'info'.
+        This value can be changed for an individual system by setting the
+        `repr_format` parameter when the system is created or by setting
+        the `repr_format` property after system creation.  Set
+        config.defaults['iosys.repr_format'] to change for all I/O systems
+        or use the `repr_format` parameter/attribute for a single system.
+
+        """
         return self._repr_format if self._repr_format is not None \
             else config.defaults['iosys.repr_format']
 
@@ -738,6 +754,47 @@ def isctime(sys=None, dt=None, strict=False):
         return True if not strict else False
     else:
         return sys.isctime(strict)
+
+
+def iosys_repr(sys, format=None):
+    """Return representation of an I/O system.
+
+    Parameters
+    ----------
+    sys : InputOutputSystem
+        System for which the representation is generated.
+    format : str
+        Format to use in creating the representation:
+
+          * 'info' : <IOSystemType:sysname:[inputs]->[outputs]
+          * 'eval' : system specific, loadable representation
+          * 'latex' : latex representation of the object
+
+    Returns
+    -------
+    str
+        String representing the input/output system.
+
+    Notes
+    -----
+    By default, the representation for an input/output is set to 'info'.
+    Set config.defaults['iosys.repr_format'] to change for all I/O systems
+    or use the `repr_format` parameter for a single system.
+
+    Jupyter will automatically use the 'latex' representation for I/O
+    systems, when available.
+
+    """
+    format = config.defaults['iosys.repr_format'] if format is None else format
+    match format:
+        case 'info':
+            return sys._repr_info_()
+        case 'eval':
+            return sys._repr_eval_()
+        case 'latex':
+            return sys._repr_latex_()
+        case _:
+            raise ValueError(f"format '{format}' unknown")
 
 
 # Utility function to parse iosys keywords

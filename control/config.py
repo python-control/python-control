@@ -313,7 +313,7 @@ def use_legacy_defaults(version):
 
     # Verions 0.10.2
     if major == 0 and minor <= 10 and patch < 2:
-        set_defaults('iosys', repr_format='loadable')
+        set_defaults('iosys', repr_format='eval')
 
     # Version 0.9.2:
     if major == 0 and minor < 9 or (minor == 9 and patch < 2):

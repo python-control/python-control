@@ -2287,6 +2287,80 @@ def test_signal_indexing():
     with pytest.raises(IndexError, match=r"signal name\(s\) not valid"):
         resp.outputs['y[0]', 'u[0]']
 
+
+@slycotonly
+@pytest.mark.parametrize("fcn, spec, expected, missing", [
+    (ct.ss, {}, "\nstates=4, outputs=3, inputs=2", r"dt|name"),
+    (ct.tf, {}, "\noutputs=3, inputs=2", r"dt|name|states"),
+    (ct.frd, {}, "\noutputs=3, inputs=2", r"dt|states|name"),
+    (ct.ss, {'dt': 0.1}, ".*\ndt=0.1,\nstates=4, outputs=3, inputs=2", r"name"),
+    (ct.tf, {'dt': 0.1}, ".*\ndt=0.1,\noutputs=3, inputs=2", r"name|states"),
+    (ct.frd, {'dt': 0.1},
+     ".*\ndt=0.1,\noutputs=3, inputs=2", r"name|states"),
+    (ct.ss, {'dt': True}, "\ndt=True,\nstates=4, outputs=3, inputs=2", r"name"),
+    (ct.ss, {'dt': None}, "\ndt=None,\nstates=4, outputs=3, inputs=2", r"name"),
+    (ct.ss, {'dt': 0}, "\nstates=4, outputs=3, inputs=2", r"dt|name"),
+    (ct.ss, {'name': 'mysys'}, "\nname='mysys',", r"dt"),
+    (ct.tf, {'name': 'mysys'}, "\nname='mysys',", r"dt|states"),
+    (ct.frd, {'name': 'mysys'}, "\nname='mysys',", r"dt|states"),
+    (ct.ss, {'inputs': ['u1']},
+     r"[\n]states=4, outputs=3, inputs=\['u1'\]", r"dt|name"),
+    (ct.tf, {'inputs': ['u1']},
+     r"[\n]outputs=3, inputs=\['u1'\]", r"dt|name"),
+    (ct.frd, {'inputs': ['u1'], 'name': 'sampled'},
+     r"[\n]name='sampled', outputs=3, inputs=\['u1'\]", r"dt"),
+    (ct.ss, {'outputs': ['y1']},
+     r"[\n]states=4, outputs=\['y1'\], inputs=2", r"dt|name"),
+    (ct.ss, {'name': 'mysys', 'inputs': ['u1']},
+     r"[\n]name='mysys', states=4, outputs=3, inputs=\['u1'\]", r"dt"),
+    (ct.ss, {'name': 'mysys', 'states': [
+        'long_state_1', 'long_state_2', 'long_state_3']},
+     r"[\n]name='.*', states=\[.*\],[\n]outputs=3, inputs=2\)", r"dt"),
+])
+@pytest.mark.parametrize("format", ['info', 'eval'])
+def test_iosys_repr(fcn, spec, expected, missing, format):
+    spec['outputs'] = spec.get('outputs', 3)
+    spec['inputs'] = spec.get('inputs', 2)
+    if fcn is ct.ss:
+        spec['states'] = spec.get('states', 4)
+
+    sys = ct.rss(**spec)
+    match fcn:
+        case ct.frd:
+            omega = np.logspace(-1, 1)
+            sys = fcn(sys, omega, name=spec.get('name'))
+        case ct.tf:
+            sys = fcn(sys, name=spec.get('name'))
+    assert sys.shape == (sys.noutputs, sys.ninputs)
+
+    # Construct the 'info' format
+    info_expected = f"<{sys.__class__.__name__} {sys.name}: " \
+        f"{sys.input_labels} -> {sys.output_labels}>"
+
+    # Make sure the default format is OK
+    out = repr(sys)
+    if ct.config.defaults['iosys.repr_format'] == 'info':
+        assert out == info_expected
+    else:
+        assert re.search(expected, out) != None
+
+    # Now set the format to the given type and make sure things look right
+    sys.repr_format = format
+    out = repr(sys)
+    if format == 'eval':
+        assert re.search(expected, out) != None
+
+        if missing is not None:
+            assert re.search(missing, out) is None
+
+        # Make sure we can change the default format back to 'info'
+        sys.repr_format = None
+
+    # Test 'info', either set explicitly or via config.defaults
+    out = repr(sys)
+    assert out == info_expected
+
+
 @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd, ct.nlsys, fs.flatsys])
 def test_relabeling(fcn):
     sys = ct.rss(1, 1, 1, name="sys")
@@ -2339,75 +2413,3 @@ def test_signal_prefixing(fcn):
     assert sys.output_labels == ['yy[0]']
     if sys.nstates:
         assert sys.state_labels == ['xx[0]', 'xx[1]']
-
-@slycotonly
-@pytest.mark.parametrize("fcn, spec, expected, missing", [
-    (ct.ss, {}, "\nstates=4, outputs=3, inputs=2", r"dt|name"),
-    (ct.tf, {}, "\noutputs=3, inputs=2", r"dt|name|states"),
-    (ct.frd, {}, "\noutputs=3, inputs=2", r"dt|states|name"),
-    (ct.ss, {'dt': 0.1}, ".*\ndt=0.1,\nstates=4, outputs=3, inputs=2", r"name"),
-    (ct.tf, {'dt': 0.1}, ".*\ndt=0.1,\noutputs=3, inputs=2", r"name|states"),
-    (ct.frd, {'dt': 0.1},
-     ".*\ndt=0.1,\noutputs=3, inputs=2", r"name|states"),
-    (ct.ss, {'dt': True}, "\ndt=True,\nstates=4, outputs=3, inputs=2", r"name"),
-    (ct.ss, {'dt': None}, "\ndt=None,\nstates=4, outputs=3, inputs=2", r"name"),
-    (ct.ss, {'dt': 0}, "\nstates=4, outputs=3, inputs=2", r"dt|name"),
-    (ct.ss, {'name': 'mysys'}, "\nname='mysys',", r"dt"),
-    (ct.tf, {'name': 'mysys'}, "\nname='mysys',", r"dt|states"),
-    (ct.frd, {'name': 'mysys'}, "\nname='mysys',", r"dt|states"),
-    (ct.ss, {'inputs': ['u1']},
-     r"[\n]states=4, outputs=3, inputs=\['u1'\]", r"dt|name"),
-    (ct.tf, {'inputs': ['u1']},
-     r"[\n]outputs=3, inputs=\['u1'\]", r"dt|name"),
-    (ct.frd, {'inputs': ['u1'], 'name': 'sampled'},
-     r"[\n]name='sampled', outputs=3, inputs=\['u1'\]", r"dt"),
-    (ct.ss, {'outputs': ['y1']},
-     r"[\n]states=4, outputs=\['y1'\], inputs=2", r"dt|name"),
-    (ct.ss, {'name': 'mysys', 'inputs': ['u1']},
-     r"[\n]name='mysys', states=4, outputs=3, inputs=\['u1'\]", r"dt"),
-    (ct.ss, {'name': 'mysys', 'states': [
-        'long_state_1', 'long_state_2', 'long_state_3']},
-     r"[\n]name='.*', states=\[.*\],[\n]outputs=3, inputs=2\)", r"dt"),
-])
-@pytest.mark.parametrize("format", ['iosys', 'loadable'])
-def test_loadable_system_repr(fcn, spec, expected, missing, format):
-    spec['outputs'] = spec.get('outputs', 3)
-    spec['inputs'] = spec.get('inputs', 2)
-    if fcn is ct.ss:
-        spec['states'] = spec.get('states', 4)
-
-    sys = ct.rss(**spec)
-    match fcn:
-        case ct.frd:
-            omega = np.logspace(-1, 1)
-            sys = fcn(sys, omega, name=spec.get('name'))
-        case ct.tf:
-            sys = fcn(sys, name=spec.get('name'))
-    assert sys.shape == (sys.noutputs, sys.ninputs)
-
-    # Construct the 'iosys' format
-    iosys_expected = f"<{sys.__class__.__name__}:{sys.name}:" \
-        f"{sys.input_labels}->{sys.output_labels}>"
-
-    # Make sure the default format is OK
-    out = repr(sys)
-    if ct.config.defaults['iosys.repr_format'] == 'iosys':
-        assert out == iosys_expected
-    else:
-        assert re.search(expected, out) != None
-        
-    # Now set the format to the given type and make sure things look right
-    sys.repr_format = format
-    out = repr(sys)
-    if format == 'loadable':
-        assert re.search(expected, out) != None
-
-        if missing is not None:
-            assert re.search(missing, out) is None
-
-        # Make sure we can change the default format back to 'iosys'
-        sys.repr_format = None
-
-    # Test 'iosys', either set explicitly or via config.defaults
-    out = repr(sys)
-    assert out == iosys_expected

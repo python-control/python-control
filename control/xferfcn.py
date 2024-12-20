@@ -489,41 +489,12 @@ class TransferFunction(LTI):
 
         return outstr
 
-    def __repr__(self):
-        return self.iosys_repr(format=self.repr_format)
-
-    def iosys_repr(self, format='loadable'):
-        """Return representation of a transfer function.
-
-        Parameters
-        ----------
-        format : str
-            Format to use in creating the representation:
-
-              * 'iosys' : <TransferFunction:sysname:[inputs]->[outputs]
-              * 'loadable' : TransferFunction(num, den[, dt[, ...]])
-
-        Returns
-        -------
-        str
-            String representing the transfer function.
-
-        Notes
-        -----
-        By default, the representation for a transfer function is set to
-        'iosys'.  Set config.defaults['iosys.repr_format'] to change for all
-        I/O systems or set the `repr_format` attribute for a single system.
-
-        """
-        if format == 'iosys':
-            return super().__repr__()
-        elif format != 'loadable':
-            raise ValueError(f"unknown format '{format}'")
-
+    def _repr_eval_(self):
         # Loadable format
         if self.issiso():
             out = "TransferFunction(\n{num},\n{den}".format(
-                num=self.num[0][0].__repr__(), den=self.den[0][0].__repr__())
+                num=self.num_array[0, 0].__repr__(),
+                den=self.den_array[0, 0].__repr__())
         else:
             out = "TransferFunction(\n["
             for entry in [self.num_array, self.den_array]:
@@ -553,13 +524,10 @@ class TransferFunction(LTI):
 
     def _repr_latex_(self, var=None):
         """LaTeX representation of transfer function, for Jupyter notebook."""
-
         mimo = not self.issiso()
-
         if var is None:
             var = 's' if self.isctime() else 'z'
-
-        out = ['$$']
+        out = [self._repr_info_(), '$$']
 
         if mimo:
             out.append(r"\begin{bmatrix}")
@@ -595,7 +563,7 @@ class TransferFunction(LTI):
 
         # See if this is a discrete time system with specific sampling time
         if not (self.dt is None) and type(self.dt) != bool and self.dt > 0:
-            out += [r"\quad dt = ", str(self.dt)]
+            out += [r"~,~dt = ", str(self.dt)]
 
         out.append("$$")
 

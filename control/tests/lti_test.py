@@ -402,7 +402,7 @@ def test_printoptions(
 
     with np.printoptions(suppress=suppress):
         # Test loadable representation
-        assert re.search(repr_expected, sys.iosys_repr('loadable')) is not None
+        assert re.search(repr_expected, ct.iosys_repr(sys, 'eval')) is not None
 
         # Test string representation
         if str_expected is not None:
