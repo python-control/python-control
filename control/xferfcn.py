@@ -195,7 +195,6 @@ class TransferFunction(LTI):
                                 % type(args[0]))
             num = args[0].num
             den = args[0].den
-            # TODO: copy over signal names
 
         else:
             raise TypeError("Needs 1, 2 or 3 arguments; received %i."
