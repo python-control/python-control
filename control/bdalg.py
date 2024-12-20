@@ -543,7 +543,7 @@ def combine_tf(tf_array):
     Combine two transfer functions
 
     >>> s = ct.TransferFunction.s
-    >>> ct.ombine_tf([
+    >>> ct.combine_tf([
     ...     [1 / (s + 1)],
     ...     [s / (s + 2)],
     ... ])
