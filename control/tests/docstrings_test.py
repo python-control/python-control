@@ -25,7 +25,7 @@ function_skiplist = [
 
 # Checksums to use for checking whether a docstring has changed
 function_docstring_hash = {
-    control.append:                     '48548c4c4e0083312b3ea9e56174b0b5',
+    control.append:                     '25e3a7e5f1c21eb7ec6562f199e2d7fd',
     control.describing_function_plot:   '95f894706b1d3eeb3b854934596af09f',
     control.dlqe:                       '9db995ed95c2214ce97074b0616a3191',
     control.dlqr:                       '896cfa651dbbd80e417635904d13c9d6',
