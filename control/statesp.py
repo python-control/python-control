@@ -1555,7 +1555,7 @@ def ss(*args, **kwargs):
 
     Returns
     -------
-    out: StateSpace
+    out : StateSpace
         Linear input/output system.
 
     Other Parameters
@@ -1571,11 +1571,6 @@ def ss(*args, **kwargs):
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
-
-    Returns
-    -------
-    out: StateSpace
-        Linear input/output system.
 
     Raises
     ------
