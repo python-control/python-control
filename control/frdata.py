@@ -21,8 +21,8 @@ from scipy.interpolate import splev, splprep
 
 from . import config
 from .exception import pandas_check
-from .iosys import InputOutputSystem, NamedSignal, _process_iosys_keywords, \
-    _process_subsys_index, common_timebase
+from .iosys import InputOutputSystem, NamedSignal, _extended_system_name, \
+    _process_iosys_keywords, _process_subsys_index, common_timebase
 from .lti import LTI, _process_frequency_response
 
 __all__ = ['FrequencyResponseData', 'FRD', 'frd']
@@ -195,6 +195,14 @@ class FrequencyResponseData(LTI):
                     self.fresp = otherlti(z, squeeze=False)
                 arg_dt = otherlti.dt
 
+                # Copy over signal and system names, if not specified
+                kwargs['inputs'] = kwargs.get('inputs', otherlti.input_labels)
+                kwargs['outputs'] = kwargs.get(
+                    'outputs', otherlti.output_labels)
+                if not otherlti._generic_name_check():
+                    kwargs['name'] = kwargs.get('name', _extended_system_name(
+                        otherlti.name, prefix_suffix_name='sampled'))
+
             else:
                 # The user provided a response and a freq vector
                 self.fresp = array(args[0], dtype=complex, ndmin=1)
@@ -218,6 +226,10 @@ class FrequencyResponseData(LTI):
             self.omega = args[0].omega
             self.fresp = args[0].fresp
             arg_dt = args[0].dt
+
+            # Copy over signal and system names, if not specified
+            kwargs['inputs'] = kwargs.get('inputs', args[0].input_labels)
+            kwargs['outputs'] = kwargs.get('outputs', args[0].output_labels)
 
         else:
             raise ValueError(
@@ -249,7 +261,11 @@ class FrequencyResponseData(LTI):
 
         # Process iosys keywords
         defaults = {
-            'inputs': self.fresp.shape[1], 'outputs': self.fresp.shape[0]}
+            'inputs': self.fresp.shape[1] if not getattr(
+                self, 'input_index', None) else self.input_labels,
+            'outputs': self.fresp.shape[0] if not getattr(
+                self, 'output_index', None) else self.output_labels,
+            'name': getattr(self, 'name', None)}
         if arg_dt is not None:
             defaults['dt'] = arg_dt             # choose compatible timebase
         name, inputs, outputs, states, dt = _process_iosys_keywords(
