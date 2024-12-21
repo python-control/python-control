@@ -16,6 +16,7 @@
 
 import inspect
 import re
+
 import sys
 import warnings
 
@@ -74,6 +75,7 @@ module_list = [
     (control, ""), (control.flatsys, "flatsys."),
     (control.optimal, "optimal."), (control.phaseplot, "phaseplot."),
     (control.matlab, "matlab.")]
+
 @pytest.mark.parametrize("module, prefix", module_list)
 def test_parameter_docs(module, prefix):
     checked = set()             # Keep track of functions we have checked
@@ -93,13 +95,15 @@ def test_parameter_docs(module, prefix):
             doc = None if obj is None else npd.FunctionDoc(obj)
 
         # Parse the docstring using numpydoc
-        doc = None if obj is None else npd.FunctionDoc(obj)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')     # debug via sphinx, not here
+            doc = None if obj is None else npd.FunctionDoc(obj)
 
         # Skip anything that is outside of this module
         if inspect.getmodule(obj) is not None and \
            not inspect.getmodule(obj).__name__.startswith('control'):
             # Skip anything that isn't part of the control package
-            _info(f"member '{objname}' is outside `control` module", 5)
+            _info(f"member '{name}' is outside `control` module", 5)
             continue
 
         # Skip non-top-level functions without parameter lists
@@ -236,12 +240,14 @@ def test_parameter_docs(module, prefix):
                     f"{obj} return value '{retname}' "
                     "docstring missing space")
 
-            # Look at the return values
-            for val in doc["Returns"]:
-                if val.name == '' and \
-                   (match := re.search("([\w]+):", val.type)) is not None:
-                    retname = match.group(1)
-                    _warn(f"{obj.__name__} '{retname}' docstring missing space")
+        # Look at the return values
+        for val in doc["Returns"]:
+            if val.name == '' and \
+               (match := re.search(r"([\w]+):", val.type)) is not None:
+                retname = match.group(1)
+                _warn(
+                    f"{obj} return value '{retname}' "
+                    "docstring missing space")
 
 
 @pytest.mark.parametrize("module, prefix", [
