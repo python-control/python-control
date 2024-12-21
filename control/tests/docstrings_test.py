@@ -587,6 +587,63 @@ def _fail(str, level=-1):
     if not standalone:
         pytest.fail(str)
 
+#
+# Test function for the unit test
+#
+class simple_class:
+    def simple_function(arg1, arg2, opt1=None, **kwargs):
+        """Simple function for testing."""
+        kwargs['test'] = None
+
+Failed = pytest.fail.Exception
+
+doc_header = simple_class.simple_function.__doc__
+doc_parameters = "\nParameters\n----------\n"
+doc_arg1 = "\narg1 : int\nArgument 1.\n"
+doc_arg2 = "\narg2 : int\nArgument 2.\n"
+doc_arg2_nospace = "\narg2: int\nArgument 2.\n"
+doc_arg3 = "\narg3 : int\nNon-existent argument 1.\n"
+doc_opt1 = "\nopt1 : int\nKeyword argument 1.\n"
+doc_test = "\ntest : int\nInternal keyword argument 1.\n"
+doc_returns = "\nReturns\n-------\n"
+doc_ret = "\nout : int\n"
+doc_ret_nospace = "\nout: int\n"
+
+@pytest.mark.parametrize("docstring, exception, match", [
+    (None, UserWarning, "missing docstring"),
+    (doc_header + doc_parameters + doc_arg1 + doc_arg2 + doc_opt1 +
+     doc_test + doc_returns + doc_ret, None, ""),
+    (doc_header + doc_parameters + doc_arg1 + doc_arg2 + doc_opt1 + doc_test,
+     None, ""),                 # no return section (OK)
+    (doc_header + doc_parameters + doc_arg1 + doc_arg2_nospace + doc_opt1 +
+     doc_test + doc_returns + doc_ret, UserWarning, "missing space"),
+    (doc_header + doc_parameters + doc_arg1 + doc_opt1 +
+     doc_test + doc_returns + doc_ret, Failed, "'arg2' not documented"),
+    (doc_header + doc_parameters + doc_arg1 + doc_arg2 + doc_arg2 + doc_opt1 +
+     doc_test + doc_returns + doc_ret, Failed, "'arg2' documented twice"),
+    (doc_header + doc_parameters + doc_arg1 + doc_arg2 + doc_opt1 +
+     doc_returns + doc_ret, Failed, "'test' not documented"),
+    (doc_header + doc_parameters + doc_arg1 + doc_arg2_nospace + doc_opt1 +
+     doc_test + doc_returns + doc_ret_nospace, UserWarning, "missing space"),
+    (doc_header + doc_arg1 + doc_arg2_nospace + doc_opt1 + doc_test +
+     doc_returns + doc_ret_nospace, Failed, "missing Parameters section"),
+    (doc_header, None, ""),
+    (doc_header + "\n.. deprecated::", None, ""),
+    (doc_header + "\n simple_function() is deprecated",
+     UserWarning, "deprecated, but not numpydoc compliant"),
+])
+def test_check_parameter_docs(docstring, exception, match):
+    simple_class.simple_function.__doc__ = docstring
+    if exception is None:
+        # Pass prefix to allow empty parameters to work
+        assert test_parameter_docs(simple_class, "test") is None
+    elif exception in [UserWarning]:
+        with pytest.warns(exception, match=match):
+            test_parameter_docs(simple_class, "") is None
+    elif exception in [Failed]:
+        with pytest.raises(exception, match=match):
+            test_parameter_docs(simple_class, "") is None
+
 
 if __name__ == "__main__":
     verbose = 0 if len(sys.argv) == 1 else int(sys.argv[1])
