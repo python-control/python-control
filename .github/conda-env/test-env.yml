@@ -9,3 +9,4 @@ dependencies:
   - numpy
   - matplotlib
   - scipy
+  - numpydoc
