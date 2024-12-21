@@ -785,7 +785,7 @@ class OptimalControlProblem():
         -------
         res : OptimalControlResult
             Bundle object with the results of the optimal control problem.
-        res.success: bool
+        res.success : bool
             Boolean flag indicating whether the optimization was successful.
         res.time : array
             Time values of the input.
@@ -830,7 +830,7 @@ class OptimalControlProblem():
 
         Parameters
         ----------
-        x: array-like or number, optional
+        x : array-like or number, optional
             Initial state for the system.
         squeeze : bool, optional
             If True and if the system has a single output, return the system
@@ -1706,7 +1706,7 @@ class OptimalEstimationProblem():
             Estimated disturbance inputs for the system trajectory.
         res.states : array
             Time evolution of the estimated state vector.
-        res.outputs: array
+        res.outputs : array
             Estimated measurement noise for the system trajectory.
 
         """

@@ -396,7 +396,7 @@ def mixsyn(g, w1=None, w2=None, w3=None):
 
         then cl is the system from w->z with `u = -k*y`.
 
-    info: tuple
+    info : tuple
         gamma: scalar
             H-infinity norm of cl.
         rcond: array

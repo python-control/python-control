@@ -225,7 +225,7 @@ def pole_zero_plot(
 
         See :class:`ControlPlot` for more detailed information.
 
-    poles, zeros: list of arrays
+    poles, zeros : list of arrays
         (legacy) If the `plot` keyword is given, the system poles and zeros
         are returned.
 

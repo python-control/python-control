@@ -6,8 +6,16 @@
 # is an explicitly listed argument, as well as attempt to find keyword
 # arguments that are extracted using kwargs.pop(), config._get_param(), or
 # config.use_legacy_defaults.
+#
+# This module can also be run in standalone mode:
+#
+#     python docstrings_test.py [verbose]
+#
+# where 'verbose' is an integer indicating what level of verbosity is
+# desired (0 = only warnings/errors, 10 = everything).
 
 import inspect
+import sys
 import warnings
 
 import pytest
@@ -29,7 +37,7 @@ function_skiplist = [
 
 # Checksums to use for checking whether a docstring has changed
 function_docstring_hash = {
-    control.append:                     '1bddbac0fe932755c85e9fb0bfb97d88',
+    control.append:                     'fad0bd0766754c3524e0ea27b06bf74a',
     control.describing_function_plot:   '95f894706b1d3eeb3b854934596af09f',
     control.dlqe:                       'e1e9479310e4e5a6f50f5459fb3d2dfb',
     control.dlqr:                       '56d7f3a452bc8d7a7256a52d9d1dcb37',
@@ -72,13 +80,14 @@ keyword_skiplist = {
     ],
 }
 
-# Decide on the level of verbosity (use -rP when running pytest)
-verbose = 1
+# Set global variables
+verbose = 0             # Level of verbosity (use -rP when running pytest)
+standalone = False      # Controls how failures are treated
 
-@pytest.mark.parametrize("module, prefix", [
+module_list = [
     (control, ""), (control.flatsys, "flatsys."),
-    (control.optimal, "optimal."), (control.phaseplot, "phaseplot.")
-])
+    (control.optimal, "optimal."), (control.phaseplot, "phaseplot.")]
+@pytest.mark.parametrize("module, prefix", module_list)
 def test_parameter_docs(module, prefix):
     checked = set()             # Keep track of functions we have checked
 
@@ -88,137 +97,145 @@ def test_parameter_docs(module, prefix):
         _info(f"Checking object {name}", 4)
 
         # Parse the docstring using numpydoc
-        doc = None if obj is None else npd.FunctionDoc(obj)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')     # debug via sphinx, not here
+            doc = None if obj is None else npd.FunctionDoc(obj)
 
         # Skip anything that is outside of this module
         if inspect.getmodule(obj) is not None and \
            not inspect.getmodule(obj).__name__.startswith('control'):
             # Skip anything that isn't part of the control package
+            _info(f"member '{name}' is outside `control` module", 5)
             continue
 
-        # Skip non-top-level functions without parameter lists
-        if prefix != "" and inspect.getmodule(obj) != module and \
-           doc is not None and doc["Parameters"] == []:
-            _info(f"skipping {prefix}.{name}", 2)
-            continue
-
+        # If this is a class, recurse through methods
+        # TODO: check top level documenation here (__init__, attributes?)
         if inspect.isclass(obj):
             _info(f"Checking class {name}", 1)
             # Check member functions within the class
             test_parameter_docs(obj, prefix + name + '.')
 
-        if inspect.isfunction(obj):
-            # Skip anything that is inherited, hidden, deprecated, or checked
-            if inspect.isclass(module) and name not in module.__dict__ \
-               or name.startswith('_') or obj in function_skiplist or \
-               obj in checked:
-                continue
-            else:
-                checked.add(obj)
-
-            # Get the docstring (skip w/ warning if there isn't one)
-            _info(f"Checking function {name}", 2)
-            if obj.__doc__ is None:
-                _warn(f"{module.__name__}.{name} is missing docstring", 2)
-                continue
-            else:
-                docstring = inspect.getdoc(obj)
-                source = inspect.getsource(obj)
-
-            # Skip deprecated functions
-            if ".. deprecated::" in docstring:
-                _info("  [deprecated]", 2)
-                continue
-            elif re.search(name + r"(\(\))? is deprecated", docstring) or \
-                 "function is deprecated" in docstring:
-                _info("  [deprecated, but not numpydoc compliant]", 2)
-                _warn(f"{name} deprecated, but not numpydoc compliant", 0)
+        # Skip anything that is inherited, hidden, deprecated, or checked
+        if not inspect.isfunction(obj) or \
+           inspect.isclass(module) and name not in module.__dict__ \
+           or name.startswith('_') or obj in function_skiplist \
+           or obj in checked:
+                _info(f"skipping {prefix}.{name}", 6)
                 continue
 
-            elif re.search(name + r"(\(\))? is deprecated", source):
-                _warn(f"{name} is deprecated, but not documented", 1)
+        # Skip non-top-level functions without parameter lists
+        if prefix != "" and inspect.getmodule(obj) != module and \
+           doc is not None and doc["Parameters"] == []:
+            _info(f"skipping {prefix}{name} (not top-level, no params)", 2)
+            continue
+
+        # Add this to the list of functions we have checked
+        checked.add(obj)
+
+        # Get the docstring (skip w/ warning if there isn't one)
+        _info(f"Checking function {name}", 2)
+        if obj.__doc__ is None:
+            _warn(f"{module.__name__}.{name} is missing docstring", 2)
+            continue
+        else:
+            # TODO: use doc from above
+            docstring = inspect.getdoc(obj)
+            source = inspect.getsource(obj)
+
+        # Skip deprecated functions
+        if ".. deprecated::" in docstring:
+            _info("  [deprecated]", 2)
+            continue
+        elif re.search(name + r"(\(\))? is deprecated", docstring) or \
+             "function is deprecated" in docstring:
+            _info("  [deprecated, but not numpydoc compliant]", 2)
+            _warn(f"{name} deprecated, but not numpydoc compliant", 0)
+            continue
+
+        elif re.search(name + r"(\(\))? is deprecated", source):
+            _warn(f"{name} is deprecated, but not documented", 1)
+            continue
+
+        # Get the signature for the function
+        sig = inspect.signature(obj)
+
+        # Go through each parameter and make sure it is in the docstring
+        for argname, par in sig.parameters.items():
+            # Look for arguments that we can skip
+            if argname == 'self' or argname[0] == '_' or \
+               obj in keyword_skiplist and argname in keyword_skiplist[obj]:
                 continue
 
-            # Get the signature for the function
-            sig = inspect.signature(obj)
-
-            # Go through each parameter and make sure it is in the docstring
-            for argname, par in sig.parameters.items():
-
-                # Look for arguments that we can skip
-                if argname == 'self' or argname[0] == '_' or \
-                   obj in keyword_skiplist and argname in keyword_skiplist[obj]:
+            # Check for positional arguments (*arg)
+            if par.kind == inspect.Parameter.VAR_POSITIONAL:
+                if obj in function_docstring_hash:
+                    import hashlib
+                    hash = hashlib.md5(
+                        (docstring + source).encode('utf-8')).hexdigest()
+                    if function_docstring_hash[obj] != hash:
+                        _fail(
+                            f"source/docstring for {name}() modified; "
+                            f"recheck docstring and update hash to "
+                            f"{hash=}")
                     continue
 
-                # Check for positional arguments
-                if par.kind == inspect.Parameter.VAR_POSITIONAL:
-                    if obj in function_docstring_hash:
-                        import hashlib
-                        hash = hashlib.md5(
-                            (docstring + source).encode('utf-8')).hexdigest()
-                        if function_docstring_hash[obj] != hash:
-                            _fail(
-                                f"source/docstring for {name}() modified; "
-                                f"recheck docstring and update hash to "
-                                f"{hash=}")
+                # Too complicated to check
+                if f"*{argname}" not in docstring:
+                    _warn(
+                        f"{name} {argname} has positional arguments; "
+                        "docstring not checked")
+                    continue
+
+            # Check for keyword arguments (then look at code for parsing)
+            elif par.kind == inspect.Parameter.VAR_KEYWORD:
+                # See if we documented the keyward argument directly
+                # if f"**{argname} :" in docstring:
+                #     continue
+
+                # Look for direct kwargs argument access
+                kwargnames = set()
+                for _, kwargname in re.findall(
+                        argname + r"(\[|\.pop\(|\.get\()'([\w]+)'", source):
+                    _info(f"Found direct keyword argument {kwargname}", 2)
+                    kwargnames.add(kwargname)
+
+                # Look for kwargs accessed via _get_param
+                for kwargname in re.findall(
+                        r"_get_param\(\s*'\w*',\s*'([\w]+)',\s*" + argname,
+                        source):
+                    _info(f"Found config keyword argument {kwargname}", 2)
+                    kwargnames.add(kwargname)
+
+                # Look for kwargs accessed via _process_legacy_keyword
+                for kwargname in re.findall(
+                        r"_process_legacy_keyword\([\s]*" + argname +
+                        r",[\s]*'[\w]+',[\s]*'([\w]+)'", source):
+                    _info(f"Found legacy keyword argument {kwargname}", 2)
+                    kwargnames.add(kwargname)
+
+                for kwargname in kwargnames:
+                    if obj in keyword_skiplist and \
+                       kwargname in keyword_skiplist[obj]:
                         continue
-
-                    # Too complicated to check
-                    if f"*{argname}" not in docstring:
-                        _warn(
-                            f"{name} {argname} has positional arguments; "
-                            "docstring not checked")
-                    continue
-
-                # Check for keyword arguments (then look at code for parsing)
-                elif par.kind == inspect.Parameter.VAR_KEYWORD:
-                    # See if we documented the keyward argument directly
-                    # if f"**{argname} :" in docstring:
-                    #     continue
-
-                    # Look for direct kwargs argument access
-                    kwargnames = set()
-                    for _, kwargname in re.findall(
-                            argname + r"(\[|\.pop\(|\.get\()'([\w]+)'",
-                            source):
-                        _info(f"Found direct keyword argument {kwargname}", 2)
-                        kwargnames.add(kwargname)
-
-                    # Look for kwargs accessed via _get_param
-                    for kwargname in re.findall(
-                            r"_get_param\(\s*'\w*',\s*'([\w]+)',\s*" + argname,
-                            source):
-                        _info(f"Found config keyword argument {kwargname}", 2)
-                        kwargnames.add(kwargname)
-
-                    # Look for kwargs accessed via _process_legacy_keyword
-                    for kwargname in re.findall(
-                            r"_process_legacy_keyword\([\s]*" + argname +
-                            r",[\s]*'[\w]+',[\s]*'([\w]+)'", source):
-                        _info(f"Found legacy keyword argument {kwargname}", 2)
-                        kwargnames.add(kwargname)
-
-                    for kwargname in kwargnames:
-                        if obj in keyword_skiplist and \
-                           kwargname in keyword_skiplist[obj]:
-                            continue
-                        _info(f"Checking keyword argument {kwargname}", 3)
-                        _check_parameter_docs(
-                            name, kwargname, inspect.getdoc(obj),
-                            prefix=prefix)
-
-                # Make sure this argument is documented properly in docstring
-                else:
-                    _info(f"    Checking argument {argname}", 3)
+                    _info(f"Checking keyword argument {kwargname}", 3)
                     _check_parameter_docs(
+                        name, kwargname, inspect.getdoc(obj),
+                        prefix=prefix)
+
+            # Make sure this argument is documented properly in docstring
+            else:
+                _info(f"Checking argument {argname}", 3)
+                _check_parameter_docs(
                         name, argname, docstring, prefix=prefix)
 
-            # Look at the return values
-            for val in doc["Returns"]:
-                if val.name == '' and \
-                   (match := re.search("([\w]+):", val.type)) is not None:
-                    retname = match.group(1)
-                    _warn(f"{obj.__name__} '{retname}' docstring missing space")
+        # Look at the return values
+        for val in doc["Returns"]:
+            if val.name == '' and \
+               (match := re.search(r"([\w]+):", val.type)) is not None:
+                retname = match.group(1)
+                _warn(
+                    f"{obj} return value '{retname}' "
+                    "docstring missing space")
 
 
 @pytest.mark.parametrize("module, prefix", [
@@ -267,7 +284,6 @@ def test_deprecated_functions(module, prefix):
                    re.search(name + r"(\(\))? is deprecated", source):
                     _fail(
                         f"{name} deprecated but w/ non-standard docs/warnings")
-                assert name != 'ss2io'
 
 #
 # Tests for I/O system classes
@@ -374,14 +390,14 @@ def test_iosys_primary_classes(cls, fcn, args):
             r"created.*(with|by|using).*the[\s]*"
             f":func:`~control\\..*{fcn.__name__}`"
             r"[\s]factory[\s]function", docstring, re.DOTALL) is None:
-        pytest.fail(
+        _fail(
             f"{cls.__name__} does not reference factory function "
             f"{fcn.__name__}")
 
     # Make sure we don't reference parameters from the factory function
     for argname in factory_args[fcn]:
         if re.search(f"[\\s]+{argname}(, .*)*[\\s]*:", docstring) is not None:
-            pytest.fail(
+            _fail(
                 f"{cls.__name__} references factory function parameter "
                 f"'{argname}'")
 
@@ -420,14 +436,15 @@ def test_iosys_attribute_lists(cls, ignore_future_warning):
         # Couldn't find in main documentation; look in parent classes
         for parent in cls.__mro__:
             if parent == object:
-                pytest.fail(
+                _fail(
                     f"{cls.__name__} attribute '{name}' not documented")
+                break
 
             if _check_parameter_docs(
                     parent.__name__, name, inspect.getdoc(parent),
                     fail_if_missing=False):
                 if name not in iosys_parent_attributes + factory_args[fcn]:
-                    warnings.warn(
+                    _warn(
                         f"{cls.__name__} attribute '{name}' only documented "
                         f"in parent class {parent.__name__}")
                 break
@@ -445,15 +462,14 @@ def test_iosys_container_classes(cls):
             continue
 
         # Look through all classes in hierarchy
-        if verbose:
-            print(f"{name=}")
+        _info(f"{name=}", 1)
         for parent in cls.__mro__:
             if parent == object:
-                pytest.fail(
+                _fail(
                     f"{cls.__name__} attribute '{name}' not documented")
+                break
 
-            if verbose:
-                print(f"  {parent=}")
+            _info(f"  {parent=}", 2)
             if _check_parameter_docs(
                     parent.__name__, name, inspect.getdoc(parent),
                     fail_if_missing=False):
@@ -466,12 +482,13 @@ def test_iosys_intermediate_classes(cls):
 
     # Make sure there is not a parameters section
     if re.search(r"\nParameters\n----", docstring) is not None:
-        pytest.fail(f"intermediate {cls} docstring contains Parameters section")
+        _fail(f"intermediate {cls} docstring contains Parameters section")
+        return
 
     # Make sure we reference the factory function
     fcn = class_factory_function[cls]
     if re.search(f":func:`~control.{fcn.__name__}`", docstring) is None:
-        pytest.fail(
+        _fail(
             f"{cls.__name__} does not reference factory function "
             f"{fcn.__name__}")
 
@@ -491,7 +508,7 @@ def test_iosys_factory_functions(fcn):
         if argname in std_factory_args:
             continue
         if re.search(f"[\\s]+{argname}(, .*)*[\\s]*:", docstring) is not None:
-            pytest.fail(
+            _fail(
                 f"{fcn.__name__} references class attribute '{argname}'")
 
 
@@ -505,6 +522,7 @@ def _check_parameter_docs(
     if not (match := re.search(r"\nParameters\n----", docstring)):
         if fail_if_missing:
             _fail(f"{funcname} docstring missing Parameters section")
+            return False        # for standalone mode
         else:
             return False
     else:
@@ -536,9 +554,9 @@ def _check_parameter_docs(
             docstring)):
         if fail_if_missing:
             _fail(f"{funcname} '{argname}' not documented")
-            pytest.fail(f"{funcname} '{argname}' not documented")
+            return False        # for standalone mode
         else:
-            _info(f"{funcname} '{argname}' not documented")
+            _info(f"{funcname} '{argname}' not documented (OK)", 6)
             return False
 
     # Make sure there isn't another instance
@@ -547,21 +565,61 @@ def _check_parameter_docs(
             docstring[match.end():])
     if second_match:
         _fail(f"{funcname} '{argname}' documented twice")
+        return False            # for standalone mode
 
     return True
 
 
 # Utility function to warn with verbose output
-def _info(str, level=0):
+def _info(str, level):
     if verbose > level:
         print("  " * level + str)
 
-def _warn(str, level=0):
+def _warn(str, level=-1):
     if verbose > level:
-        print("  " * level + str)
-    warnings.warn(str)
+        print("WARN: " + "  " * level + str)
+    if not standalone:
+        warnings.warn(str, stacklevel=2)
 
-def _fail(str, level=0):
+def _fail(str, level=-1):
     if verbose > level:
-        print("  " * level + str)
-    pytest.fail(str)
+        print("FAIL: " + "  " * level + str)
+    if not standalone:
+        pytest.fail(str)
+
+
+if __name__ == "__main__":
+    verbose = 0 if len(sys.argv) == 1 else int(sys.argv[1])
+    standalone = True
+    
+    for module, prefix in module_list:
+        print(f"--- test_parameter_docs(): {module.__name__} ----")
+        test_parameter_docs(module, prefix)
+
+    for module, prefix in module_list:
+        print(f"--- test_deprecated_functions(): {module.__name__} ----")
+        test_deprecated_functions
+
+    for cls, fcn, args in [
+            (cls, class_factory_function[cls], class_args[cls])
+            for cls in class_args.keys()]:
+        print(f"--- test_iosys_primary_classes(): {cls.__name__} ----")
+        test_iosys_primary_classes(cls, fcn, args)
+
+    for cls in class_args.keys():
+        print(f"--- test_iosys_attribute_lists(): {cls.__name__} ----")
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', FutureWarning)
+            test_iosys_attribute_lists(cls, None)
+
+    for cls in [ct.InputOutputSystem, ct.LTI]:
+        print(f"--- test_iosys_container_classes(): {cls.__name__} ----")
+        test_iosys_container_classes(cls)
+
+    for cls in [ct.InterconnectedSystem, ct.LinearICSystem]:
+        print(f"--- test_iosys_intermediate_classes(): {cls.__name__} ----")
+        test_iosys_intermediate_classes(cls)
+
+    for fcn in factory_args.keys():
+        print(f"--- test_iosys_factory_functions(): {fcn.__name__} ----")
+        test_iosys_factory_functions(fcn)

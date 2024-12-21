@@ -1191,11 +1191,11 @@ class InterconnectedSystem(NonlinearIOSystem):
 
         Returns
         -------
-        dropped_inputs: list of tuples
+        dropped_inputs : list of tuples
             A list of the dropped input signals, with each element of the
             list in the form of (isys, isig).
 
-        dropped_outputs: list of tuples
+        dropped_outputs : list of tuples
             A list of the dropped output signals, with each element of the
             list in the form of (osys, osig).
 

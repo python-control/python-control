@@ -235,7 +235,7 @@ def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
 
     Returns
     -------
-    sys: :class:`FlatSystem`
+    sys : :class:`FlatSystem`
         Flat system.
 
     Other Parameters

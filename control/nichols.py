@@ -208,14 +208,14 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
 
     Returns
     -------
-    cl_mag_lines: list of `matplotlib.line.Line2D`
+    cl_mag_lines : list of `matplotlib.line.Line2D`
       The constant closed-loop gain contours
-    cl_phase_lines: list of `matplotlib.line.Line2D`
+    cl_phase_lines : list of `matplotlib.line.Line2D`
       The constant closed-loop phase contours
-    cl_mag_labels: list of `matplotlib.text.Text`
+    cl_mag_labels : list of `matplotlib.text.Text`
       mcontour labels; each entry corresponds to the respective entry
       in ``cl_mag_lines``
-    cl_phase_labels: list of `matplotlib.text.Text`
+    cl_phase_labels : list of `matplotlib.text.Text`
       ncontour labels; each entry corresponds to the respective entry
       in ``cl_phase_lines``
     """
