@@ -1059,7 +1059,6 @@ class InterconnectedSystem(NonlinearIOSystem):
         return ({inputs[i][:2]: inputs[i][2] for i in unused_sysinp},
                 {outputs[i][:2]: outputs[i][2] for i in unused_sysout})
 
-
     def connection_table(self, show_names=False, column_width=32):
         """Table of connections inside an interconnected system.
 

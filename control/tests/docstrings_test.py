@@ -92,11 +92,20 @@ def test_parameter_docs(module, prefix):
             warnings.simplefilter('ignore')     # debug via sphinx, not here
             doc = None if obj is None else npd.FunctionDoc(obj)
 
+        # Parse the docstring using numpydoc
+        doc = None if obj is None else npd.FunctionDoc(obj)
+
         # Skip anything that is outside of this module
         if inspect.getmodule(obj) is not None and \
            not inspect.getmodule(obj).__name__.startswith('control'):
             # Skip anything that isn't part of the control package
             _info(f"member '{objname}' is outside `control` module", 5)
+            continue
+
+        # Skip non-top-level functions without parameter lists
+        if prefix != "" and inspect.getmodule(obj) != module and \
+           doc is not None and doc["Parameters"] == []:
+            _info(f"skipping {prefix}.{name}", 2)
             continue
 
         # If this is a class, recurse through methods
@@ -106,14 +115,15 @@ def test_parameter_docs(module, prefix):
             _check_numpydoc_style(obj, doc)
             # Check member functions within the class
             test_parameter_docs(obj, prefix + name + '.')
+            continue
 
         # Skip anything that is inherited, hidden, deprecated, or checked
         if not inspect.isfunction(obj) or \
            inspect.isclass(module) and name not in module.__dict__ \
            or name.startswith('_') or obj in function_skiplist \
            or obj in checked:
-                _info(f"skipping {prefix}.{name}", 6)
-                continue
+            _info(f"skipping {prefix}.{name}", 6)
+            continue
 
         # Skip non-top-level functions without parameter lists
         if prefix != "" and inspect.getmodule(obj) != module and \
@@ -226,6 +236,13 @@ def test_parameter_docs(module, prefix):
                     f"{obj} return value '{retname}' "
                     "docstring missing space")
 
+            # Look at the return values
+            for val in doc["Returns"]:
+                if val.name == '' and \
+                   (match := re.search("([\w]+):", val.type)) is not None:
+                    retname = match.group(1)
+                    _warn(f"{obj.__name__} '{retname}' docstring missing space")
+
 
 @pytest.mark.parametrize("module, prefix", [
     (control, ""), (control.flatsys, "flatsys."),
@@ -262,7 +279,7 @@ def test_deprecated_functions(module, prefix):
 
             # Get the docstring (skip w/ warning if there isn't one)
             if obj.__doc__ is None:
-                _warn(f"{objname} is missing docstring")
+                _warn(f"{module.__name__}.{name} is missing docstring")
                 continue
             else:
                 docstring = inspect.getdoc(obj)
@@ -273,14 +290,12 @@ def test_deprecated_functions(module, prefix):
             if ".. deprecated::" in doc_extended:
                 # Make sure a FutureWarning is issued
                 if not re.search("FutureWarning", source):
-                    _fail(f"{objname} deprecated but does not issue "
-                          "FutureWarning")
+                    _fail(f"{name} deprecated but does not issue FutureWarning")
             else:
                 if re.search(name + r"(\(\))? is deprecated", docstring) or \
                    re.search(name + r"(\(\))? is deprecated", source):
                     _fail(
-                        f"{objname} deprecated but with non-standard "
-                        "docs/warnings")
+                        f"{name} deprecated but w/ non-standard docs/warnings")
 
 #
 # Tests for I/O system classes
