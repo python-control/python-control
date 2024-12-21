@@ -380,11 +380,12 @@ def use_legacy_defaults(version):
 # warning.  If both the old and new keyword are present, a ControlArgument
 # exception is raised.
 #
-def _process_legacy_keyword(kwargs, oldkey, newkey, newval):
+def _process_legacy_keyword(kwargs, oldkey, newkey, newval, warn_oldkey=True):
     if oldkey in kwargs:
-        warnings.warn(
-            f"keyword '{oldkey}' is deprecated; use '{newkey}'",
-            FutureWarning)
+        if warn_oldkey:
+            warnings.warn(
+                f"keyword '{oldkey}' is deprecated; use '{newkey}'",
+                FutureWarning, stacklevel=3)
         if newval is not None:
             raise ControlArgument(
                 f"duplicate keywords '{oldkey}' and '{newkey}'")

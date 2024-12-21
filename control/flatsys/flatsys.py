@@ -415,7 +415,10 @@ def point_to_point(
 
     # Process keyword arguments
     trajectory_constraints = _process_legacy_keyword(
-        kwargs, 'constraints', 'trajectory_constraints', trajectory_constraints)
+        kwargs, 'constraints', 'trajectory_constraints',
+        trajectory_constraints, warn_oldkey=False)
+    cost = _process_legacy_keyword(
+        kwargs, 'trajectory_cost', 'cost', cost, warn_oldkey=False)
 
     minimize_kwargs = {}
     minimize_kwargs['method'] = kwargs.pop('minimize_method', None)

@@ -200,7 +200,8 @@ class TestFlatSys:
                 'ignore', message="unable to solve", category=UserWarning)
             traj_ocp = fs.solve_flat_ocp(
                 vehicle_flat, timepts, x0, u0,
-                cost=traj_cost, constraints=input_constraints,
+                trajectory_cost=traj_cost,
+                trajectory_constraints=input_constraints,
                 terminal_cost=terminal_cost, basis=basis,
                 initial_guess=initial_guess,
                 minimize_kwargs={'method': method},
@@ -445,8 +446,8 @@ class TestFlatSys:
             (sp.optimize.NonlinearConstraint, lambda x, u: x, lb, ub)]
         traj_nlconst = fs.solve_flat_ocp(
             flat_sys, timepts, x0, u0,
-            cost=trajectory_cost, terminal_cost=terminal_cost,
-            constraints=nl_constraints, basis=basis,
+            trajectory_cost=trajectory_cost, terminal_cost=terminal_cost,
+            trajectory_constraints=nl_constraints, basis=basis,
         )
         x_nlconst, u_nlconst = traj_nlconst.eval(timepts)
         np.testing.assert_almost_equal(x_const, x_nlconst)
@@ -685,7 +686,7 @@ class TestFlatSys:
         # Try to optimize with insufficient degrees of freedom
         with pytest.raises(ValueError, match="basis set is too small"):
             traj = fs.solve_flat_ocp(
-                flat_sys, timepts, x0, u0, cost=cost_fcn,
+                flat_sys, timepts, x0, u0, trajectory_cost=cost_fcn,
                 basis=fs.PolyFamily(2))
 
         # Solve with the errors in the various input arguments
@@ -700,20 +701,21 @@ class TestFlatSys:
         with pytest.raises(TypeError, match="must be a list"):
             traj = fs.solve_flat_ocp(
                 flat_sys, timepts, x0, u0, cost_fcn,
-                constraints=np.eye(2), basis=fs.PolyFamily(8))
+                trajectory_constraints=np.eye(2), basis=fs.PolyFamily(8))
 
         # Unknown constraint type
         with pytest.raises(TypeError, match="unknown constraint type"):
             traj = fs.solve_flat_ocp(
                 flat_sys, timepts, x0, u0, cost_fcn,
-                constraints=[(None, 0, 0, 0)], basis=fs.PolyFamily(8))
+                trajectory_constraints=[(None, 0, 0, 0)],
+                basis=fs.PolyFamily(8))
 
         # Method arguments, parameters
         traj_method = fs.solve_flat_ocp(
-            flat_sys, timepts, x0, u0, cost=cost_fcn,
+            flat_sys, timepts, x0, u0, trajectory_cost=cost_fcn,
             basis=fs.PolyFamily(6), minimize_method='slsqp')
         traj_kwarg = fs.solve_flat_ocp(
-            flat_sys, timepts, x0, u0, cost=cost_fcn,
+            flat_sys, timepts, x0, u0, trajectory_cost=cost_fcn,
             basis=fs.PolyFamily(6), minimize_kwargs={'method': 'slsqp'})
         np.testing.assert_allclose(
             traj_method.eval(timepts)[0], traj_kwarg.eval(timepts)[0],
