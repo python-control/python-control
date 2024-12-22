@@ -399,7 +399,7 @@ class FrequencyResponseData(LTI):
         """String representation of the transfer function."""
 
         mimo = self.ninputs > 1 or self.noutputs > 1
-        outstr = [f"{InputOutputSystem.__str__(self)}"]
+        outstr = [f"{InputOutputSystem.__str__(self)}", ""]
 
         for i in range(self.ninputs):
             for j in range(self.noutputs):

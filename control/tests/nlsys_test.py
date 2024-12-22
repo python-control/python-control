@@ -19,7 +19,7 @@ import control as ct
 # Basic test of nlsys()
 def test_nlsys_basic():
     def kincar_update(t, x, u, params):
-        l = params.get('l', 1)  # wheelbase
+        l = params['l']             # wheelbase
         return np.array([
             np.cos(x[2]) * u[0],     # x velocity
             np.sin(x[2]) * u[0],     # y velocity
@@ -33,10 +33,11 @@ def test_nlsys_basic():
         kincar_update, kincar_output,
         states=['x', 'y', 'theta'],
         inputs=2, input_prefix='U',
-        outputs=2)
+        outputs=2, params={'l': 1})
     assert kincar.input_labels == ['U[0]', 'U[1]']
     assert kincar.output_labels == ['y[0]', 'y[1]']
     assert kincar.state_labels == ['x', 'y', 'theta']
+    assert kincar.params == {'l': 1}
 
 
 # Test nonlinear initial, step, and forced response

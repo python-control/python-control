@@ -1596,11 +1596,6 @@ def ss(*args, **kwargs):
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
 
-    Returns
-    -------
-    out: StateSpace
-        Linear input/output system.
-
     Raises
     ------
     ValueError

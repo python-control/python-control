@@ -154,9 +154,13 @@ class NonlinearIOSystem(InputOutputSystem):
         self._current_params = {} if params is None else params.copy()
 
     def __str__(self):
-        return f"{InputOutputSystem.__str__(self)}\n\n" + \
+        out = f"{InputOutputSystem.__str__(self)}"
+        if len(self.params) > 1:
+            out += f"\nParameters: {[p for p in self.params.keys()]}"
+        out += "\n\n" + \
             f"Update: {self.updfcn}\n" + \
             f"Output: {self.outfcn}"
+        return out
 
     # Return the value of a static nonlinear system
     def __call__(sys, u, params=None, squeeze=None):
@@ -1368,7 +1372,7 @@ def nlsys(updfcn, outfcn=None, **kwargs):
     Examples
     --------
     >>> def kincar_update(t, x, u, params):
-    ...     l = params.get('l', 1)  # wheelbase
+    ...     l = params['l']              # wheelbase
     ...     return np.array([
     ...         np.cos(x[2]) * u[0],     # x velocity
     ...         np.sin(x[2]) * u[0],     # y velocity
@@ -1379,7 +1383,8 @@ def nlsys(updfcn, outfcn=None, **kwargs):
     ...     return x[0:2]  # x, y position
     >>>
     >>> kincar = ct.nlsys(
-    ...     kincar_update, kincar_output, states=3, inputs=2, outputs=2)
+    ...     kincar_update, kincar_output, states=3, inputs=2, outputs=2,
+    ...     params={'l': 1})
     >>>
     >>> timepts = np.linspace(0, 10)
     >>> response = ct.input_output_response(

@@ -276,12 +276,12 @@ class InputOutputSystem(object):
 
     def __str__(self):
         """String representation of an input/output object"""
-        str = f"<{self.__class__.__name__}>: {self.name}\n"
-        str += f"Inputs ({self.ninputs}): {self.input_labels}\n"
-        str += f"Outputs ({self.noutputs}): {self.output_labels}\n"
+        out = f"<{self.__class__.__name__}>: {self.name}"
+        out += f"\nInputs ({self.ninputs}): {self.input_labels}"
+        out += f"\nOutputs ({self.noutputs}): {self.output_labels}"
         if self.nstates is not None:
-            str += f"States ({self.nstates}): {self.state_labels}"
-        return str
+            out += f"\nStates ({self.nstates}): {self.state_labels}"
+        return out
 
     def _label_repr(self, show_count=True):
         out, count = "", 0
