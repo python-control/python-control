@@ -137,17 +137,19 @@ def test_parameter_docs(module, prefix):
         if obj.__doc__ is None:
             _warn(f"{module.__name__}.{name} is missing docstring", 2)
             continue
+        elif doc is None:
+            _fail(f"{module.__name__}.{name} docstring not parseable", 2)
         else:
-            # TODO: use doc from above
             docstring = inspect.getdoc(obj)
             source = inspect.getsource(obj)
 
         # Skip deprecated functions
-        if ".. deprecated::" in docstring:
+        doc_extended = "\n".join(doc["Extended Summary"])
+        if ".. deprecated::" in doc_extended:
             _info("  [deprecated]", 2)
             continue
-        elif re.search(name + r"(\(\))? is deprecated", docstring) or \
-             "function is deprecated" in docstring:
+        elif re.search(name + r"(\(\))? is deprecated", doc_extended) or \
+             "function is deprecated" in doc_extended:
             _info("  [deprecated, but not numpydoc compliant]", 2)
             _warn(f"{name} deprecated, but not numpydoc compliant", 0)
             continue
@@ -258,6 +260,11 @@ def test_deprecated_functions(module, prefix):
             # Check member functions within the class
             test_deprecated_functions(obj, prefix + name + '.')
 
+        # Parse the docstring using numpydoc
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')     # debug via sphinx, not here
+            doc = None if obj is None else npd.FunctionDoc(obj)
+
         if inspect.isfunction(obj):
             # Skip anything that is inherited, hidden, or checked
             if inspect.isclass(module) and name not in module.__dict__ \
@@ -275,7 +282,8 @@ def test_deprecated_functions(module, prefix):
                 source = inspect.getsource(obj)
 
             # Look for functions marked as deprecated in doc string
-            if ".. deprecated::" in docstring:
+            doc_extended = "\n".join(doc["Extended Summary"])
+            if ".. deprecated::" in doc_extended:
                 # Make sure a FutureWarning is issued
                 if not re.search("FutureWarning", source):
                     _fail(f"{name} deprecated but does not issue FutureWarning")
@@ -380,6 +388,9 @@ factory_args = {
      for cls in class_args.keys()])
 def test_iosys_primary_classes(cls, fcn, args):
     docstring = inspect.getdoc(cls)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')     # debug via sphinx, not here
+        doc = npd.FunctionDoc(cls)
 
     # Make sure the typical arguments are there
     for argname in args + std_class_attributes + class_attributes[cls]:
@@ -389,7 +400,8 @@ def test_iosys_primary_classes(cls, fcn, args):
     if re.search(
             r"created.*(with|by|using).*the[\s]*"
             f":func:`~control\\..*{fcn.__name__}`"
-            r"[\s]factory[\s]function", docstring, re.DOTALL) is None:
+            r"[\s]factory[\s]function", "\n".join(doc["Extended Summary"]),
+            re.DOTALL) is None:
         _fail(
             f"{cls.__name__} does not reference factory function "
             f"{fcn.__name__}")
@@ -629,7 +641,7 @@ doc_ret_nospace = "\nout: int\n"
      doc_returns + doc_ret_nospace, Failed, "missing Parameters section"),
     (doc_header, None, ""),
     (doc_header + "\n.. deprecated::", None, ""),
-    (doc_header + "\n simple_function() is deprecated",
+    (doc_header + "\n\n simple_function() is deprecated",
      UserWarning, "deprecated, but not numpydoc compliant"),
 ])
 def test_check_parameter_docs(docstring, exception, match):
