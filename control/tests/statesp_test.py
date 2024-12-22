@@ -779,7 +779,7 @@ class TestStateSpace:
                 "     [ 1.  4.  3.]]\n"
                 "\n"
                 "D = [[-2.  4.]\n"
-                "     [ 0.  1.]]\n")
+                "     [ 0.  1.]]")
         assert str(tsys) == tref
         tsysdtunspec = StateSpace(
             tsys.A, tsys.B, tsys.C, tsys.D, True, name=tsys.name)

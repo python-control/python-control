@@ -381,8 +381,8 @@ class StateSpace(NonlinearIOSystem, LTI):
     def __str__(self):
         """Return string representation of the state space system."""
         string = f"{InputOutputSystem.__str__(self)}\n\n"
-        string += "\n".join([
-            "{} = {}\n".format(Mvar,
+        string += "\n\n".join([
+            "{} = {}".format(Mvar,
                                "\n    ".join(str(M).splitlines()))
             for Mvar, M in zip(["A", "B", "C", "D"],
                                [self.A, self.B, self.C, self.D])])

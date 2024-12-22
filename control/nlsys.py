@@ -26,7 +26,7 @@ import scipy as sp
 
 from . import config
 from .iosys import InputOutputSystem, _parse_spec, _process_iosys_keywords, \
-    _process_signal_list, common_timebase, isctime, isdtime
+    _process_signal_list, common_timebase, iosys_repr, isctime, isdtime
 from .timeresp import _check_convert_array, _process_time_response, \
     TimeResponseData, TimeResponseList
 
@@ -777,6 +777,71 @@ class InterconnectedSystem(NonlinearIOSystem):
                         warn("multiple connections given for output %d" %
                              index + "; combining with previous entries")
                     self.output_map[index + j, ylist_index] += gain
+
+    def __str__(self):
+        import textwrap
+        out = super().__str__()
+
+        out += f"\n\nSubsystems ({len(self.syslist)}):\n"
+        for sys in self.syslist:
+            out += "\n".join(textwrap.wrap(
+                iosys_repr(sys, format='info'), width=78,
+                initial_indent=" * ", subsequent_indent="    ")) + "\n"
+
+        # Build a list of input, output, and inpout signals
+        input_list, output_list, inpout_list = [], [], []
+        for sys in self.syslist:
+            input_list += [sys.name + "." + lbl for lbl in sys.input_labels]
+            output_list += [sys.name + "." + lbl for lbl in sys.output_labels]
+        inpout_list = input_list + output_list
+
+        # Define a utility function to generate the signal
+        def cxn_string(signal, gain, first):
+            if gain == 1:
+                return (" + " if not first else "") + f"{signal}"
+            elif gain == -1:
+                return (" - " if not first else "-") + f"{signal}"
+            elif gain > 0:
+                return (" + " if not first else "") + f"{gain} * {signal}"
+            elif gain < 0:
+                return (" - " if not first else "-") + \
+                    f"{abs(gain)} * {signal}"
+
+        out += f"\nConnections:\n"
+        for i in range(len(input_list)):
+            first = True
+            cxn = f"{input_list[i]} <- "
+            if np.any(self.connect_map[i]):
+                for j in range(len(output_list)):
+                    if self.connect_map[i, j]:
+                        cxn += cxn_string(
+                            output_list[j], self.connect_map[i,j], first)
+                        first = False
+            if np.any(self.input_map[i]):
+                for j in range(len(self.input_labels)):
+                    if self.input_map[i, j]:
+                        cxn += cxn_string(
+                            self.input_labels[j], self.input_map[i, j], first)
+                        first = False
+            out += "\n".join(textwrap.wrap(
+                cxn, width=78, initial_indent=" * ",
+                subsequent_indent="     ")) + "\n"
+
+        out += f"\nOutputs:\n"
+        for i in range(len(self.output_labels)):
+            first = True
+            cxn = f"{self.output_labels[i]} <- "
+            if np.any(self.output_map[i]):
+                for j in range(len(inpout_list)):
+                    if self.output_map[i, j]:
+                        cxn += cxn_string(
+                            output_list[j], self.output_map[i, j], first)
+                        first = False
+                out += "\n".join(textwrap.wrap(
+                    cxn, width=78, initial_indent=" * ",
+                    subsequent_indent="     ")) + "\n"
+
+        return out[:-1]
 
     def _update_params(self, params, warning=False):
         for sys in self.syslist:

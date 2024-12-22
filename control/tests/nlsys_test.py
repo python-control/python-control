@@ -199,3 +199,51 @@ def test_ss2io():
         with pytest.raises(ValueError, match=r"new .* doesn't match"):
             kwargs = {attr: getattr(sys, 'n' + attr) - 1}
             nlsys = ct.nlsys(sys, **kwargs)
+
+
+def test_ICsystem_str():
+    sys1 = ct.rss(2, 2, 3, name='sys1', strictly_proper=True)
+    sys2 = ct.rss(2, 3, 2, name='sys2', strictly_proper=True)
+
+    with pytest.warns(UserWarning, match="Unused") as record:
+        sys = ct.interconnect(
+            [sys1, sys2], inputs=['r1', 'r2'], outputs=['y1', 'y2'],
+            connections=[
+                ['sys1.u[0]', '-sys2.y[0]', 'sys2.y[1]'],
+                ['sys1.u[1]', 'sys2.y[0]', '-sys2.y[1]'],
+                ['sys2.u[0]', 'sys2.y[0]', (0, 0, -1)],
+                ['sys2.u[1]', (1, 1, -2), (0, 1, -2)],
+            ],
+            inplist=['sys1.u[0]', 'sys1.u[1]'],
+            outlist=['sys2.y[0]', 'sys2.y[1]'])
+    assert len(record) == 2
+    assert str(record[0].message).startswith("Unused input")
+    assert str(record[1].message).startswith("Unused output")
+
+    ref = \
+        r"<LinearICSystem>: sys\[[\d]+\]" + "\n" + \
+        r"Inputs \(2\): \['r1', 'r2'\]" + "\n" + \
+        r"Outputs \(2\): \['y1', 'y2'\]" + "\n" + \
+        r"States \(4\): \['sys1_x\[0\].*'sys2_x\[1\]'\]" + "\n" + \
+        "\n" + \
+        r"A = \[\[.*\]\]" + "\n\n" + \
+        r"B = \[\[.*\]\]" + "\n\n" + \
+        r"C = \[\[.*\]\]" + "\n\n" + \
+        r"D = \[\[.*\]\]" + "\n" + \
+        "\n" + \
+        r"Subsystems \(2\):" + "\n" + \
+        r" \* <StateSpace sys1: \[.*\] -> \['y\[0\]', 'y\[1\]']>" + "\n" + \
+        r" \* <StateSpace sys2: \['u\[0\]', 'u\[1\]'] -> \[.*\]>" + "\n" + \
+        "\n" + \
+        r"Connections:" + "\n" + \
+        r" \* sys1.u\[0\] <- -sys2.y\[0\] \+ sys2.y\[1\] \+ r1" + "\n" + \
+        r" \* sys1.u\[1\] <- sys2.y\[0\] - sys2.y\[1\] \+ r2" + "\n" + \
+        r" \* sys1.u\[2\] <-" + "\n" + \
+        r" \* sys2.u\[0\] <- -sys1.y\[0\] \+ sys2.y\[0\]" + "\n" + \
+        r" \* sys2.u\[1\] <- -2.0 \* sys1.y\[1\] - 2.0 \* sys2.y\[1\]" + \
+        "\n\n" + \
+        r"Outputs:" + "\n" + \
+        r" \* y1 <- sys2.y\[0\]" + "\n" + \
+        r" \* y2 <- sys2.y\[1\]"
+
+    assert re.match(ref, str(sys), re.DOTALL)
