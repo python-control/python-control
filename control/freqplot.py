@@ -2172,7 +2172,8 @@ def gangof4_response(
 def gangof4_plot(
         *args, omega=None, omega_limits=None, omega_num=None,
         Hz=False, **kwargs):
-    """gangof4_plot(response) | gangof4_plot(P, C, omega)
+    """gangof4_plot(response) \
+    gangof4_plot(P, C, omega)
 
     Plot response of "Gang of 4" transfer functions.
 

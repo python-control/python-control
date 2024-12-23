@@ -400,7 +400,7 @@ def mixsyn(g, w1=None, w2=None, w3=None):
 
     info : tuple
         Two-tuple `(gamma, rcond)` containing additional information:
-    
+
         * gamma (scalar): H-infinity norm of cl.
         * rcond (array): Estimates of reciprocal condition numbers computed
           during synthesis.  See hinfsyn for details.

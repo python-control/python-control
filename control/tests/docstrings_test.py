@@ -103,7 +103,7 @@ def test_parameter_docs(module, prefix):
         if inspect.getmodule(obj) is not None and \
            not inspect.getmodule(obj).__name__.startswith('control'):
             # Skip anything that isn't part of the control package
-            _info(f"member '{name}' is outside `control` module", 5)
+            _info(f"member '{objname}' is outside `control` module", 5)
             continue
 
         # Skip non-top-level functions without parameter lists
@@ -285,7 +285,7 @@ def test_deprecated_functions(module, prefix):
 
             # Get the docstring (skip w/ warning if there isn't one)
             if obj.__doc__ is None:
-                _warn(f"{module.__name__}.{name} is missing docstring")
+                _warn(f"{objname} is missing docstring")
                 continue
             else:
                 docstring = inspect.getdoc(obj)
@@ -296,12 +296,14 @@ def test_deprecated_functions(module, prefix):
             if ".. deprecated::" in doc_extended:
                 # Make sure a FutureWarning is issued
                 if not re.search("FutureWarning", source):
-                    _fail(f"{name} deprecated but does not issue FutureWarning")
+                    _fail(f"{objname} deprecated but does not issue "
+                          "FutureWarning")
             else:
                 if re.search(name + r"(\(\))? is deprecated", docstring) or \
                    re.search(name + r"(\(\))? is deprecated", source):
                     _fail(
-                        f"{name} deprecated but w/ non-standard docs/warnings")
+                        f"{objname} deprecated but with non-standard "
+                        "docs/warnings")
 
 #
 # Tests for I/O system classes
@@ -720,6 +722,7 @@ def _replace_var_positional_with_docstring(sig, doc):
 
     # Return the new signature
     return sig.replace(parameters=parameter_list)
+
 
 # Utility function to warn with verbose output
 def _info(str, level):
