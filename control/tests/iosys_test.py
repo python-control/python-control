@@ -931,6 +931,8 @@ class TestIOSys:
         ios_secord_update = ct.NonlinearIOSystem(
             secord_update, secord_output, inputs=1, outputs=1, states=2,
             params={'omega0':2, 'zeta':0})
+        lin_secord_update = ct.linearize(ios_secord_update, [0, 0], [0])
+        w_update, v_update = np.linalg.eig(lin_secord_update.A)
 
         # Make sure the default parameters haven't changed
         lin_secord_check = ct.linearize(ios_secord_default, [0, 0], [0])
@@ -960,7 +962,7 @@ class TestIOSys:
             ios_series_default_local, [0, 0, 0, 0], [0])
         w, v = np.linalg.eig(lin_series_default_local.A)
         np.testing.assert_array_almost_equal(
-            np.sort(w), np.sort(np.concatenate((w_default, [2j, -2j]))))
+             w, np.concatenate([w_update, w_update]))
 
         # Show that we can change the parameters at linearization
         lin_series_override = ct.linearize(

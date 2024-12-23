@@ -710,6 +710,11 @@ class InterconnectedSystem(NonlinearIOSystem):
         if outputs is None and outlist is not None:
             outputs = len(outlist)
 
+        if params is None:
+            params = {}
+            for sys in self.syslist:
+                params = params | sys.params
+
         # Create updfcn and outfcn
         def updfcn(t, x, u, params):
             self._update_params(params)
@@ -2268,7 +2273,8 @@ def interconnect(
 
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions
-        for the system as default values, overriding internal defaults.
+        for the system as default values, overriding internal defaults.  If
+        not specified, defaults to parameters from subsystems.
 
     dt : timebase, optional
         The timebase for the system, used to specify whether the system is
