@@ -33,12 +33,12 @@ def hankel_singular_values(sys):
     Parameters
     ----------
     sys : StateSpace
-        A state space system
+        State space system.
 
     Returns
     -------
     H : array
-        A list of Hankel singular values
+        List of Hankel singular values.
 
     See Also
     --------
@@ -175,7 +175,7 @@ def model_reduction(
 
         elim = np.atleast_1d(_expand_key(elim))
         keep = np.atleast_1d(_expand_key(keep))
-            
+
         if len(elim) > 0 and len(keep) > 0:
             raise ValueError(
                 "can't provide both 'keep' and 'elim' for same variables")
@@ -212,7 +212,7 @@ def model_reduction(
         if sys.isdtime(strict=True):
             raise NotImplementedError(
                 "'matchdc' not (yet) supported for discrete time systems")
-        
+
         # if matchdc, residualize
         # Check if the matrix A22 is invertible
         if np.linalg.matrix_rank(A22) != len(elim_states):
@@ -424,7 +424,7 @@ def _block_hankel(Y, m, n):
 def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
     r"""eigensys_realization(YY, r)
 
-    Calculate ERA model of order `r` based on impulse-response data `YY`.
+    Calculate ERA model based on impulse-response data.
 
     This function computes a discrete time system
 
@@ -433,7 +433,7 @@ def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
         x[k+1] &= A x[k] + B u[k] \\\\
         y[k] &= C x[k] + D u[k]
 
-    for a given impulse-response data (see [1]_).
+    of order `r` for a given impulse-response data (see [1]_).
 
     The function can be called with 2 arguments:
 
@@ -533,10 +533,10 @@ def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
 def markov(*args, m=None, transpose=False, dt=None, truncate=False):
     """markov(Y, U, [, m])
 
-    Calculate the first `m` Markov parameters [D CB CAB ...] from data.
+    Calculate Markov parameters [D CB CAB ...] from data.
 
-    This function computes the Markov parameters for a discrete time
-    system
+    This function computes the the first `m` Markov parameters [D CB CAB
+    ...] for a discrete time system.
 
     .. math::
 

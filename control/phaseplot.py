@@ -748,7 +748,7 @@ def meshgrid(xvals, yvals):
     Returns
     -------
     grid : 2D array
-        Array of points with shape (n * m, 2) defining the mesh
+        Array of points with shape (n * m, 2) defining the mesh.
 
     """
     xvals, yvals = np.meshgrid(xvals, yvals)
@@ -1273,7 +1273,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
 
 # Utility function for generating initial conditions around a box
 def box_grid(xlimp, ylimp):
-    """box_grid   generate list of points on edge of box
+    """Generate list of points on edge of box.
 
     .. deprecated:: 0.10.0
         Use :func:`phaseplot.boxgrid` instead.

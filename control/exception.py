@@ -40,28 +40,27 @@
 # $Id$
 
 class ControlSlycot(ImportError):
-    """Exception for Slycot import.  Used when we can't import a function
-    from the slycot package"""
+    """Slycot import failed."""
     pass
 
 class ControlDimension(ValueError):
-    """Raised when dimensions of system objects are not correct"""
+    """Raised when dimensions of system objects are not correct."""
     pass
 
 class ControlArgument(TypeError):
-    """Raised when arguments to a function are not correct"""
+    """Raised when arguments to a function are not correct."""
     pass
 
 class ControlIndexError(IndexError):
-    """Raised when arguments to an indexed object are not correct"""
+    """Raised when arguments to an indexed object are not correct."""
     pass
 
 class ControlMIMONotImplemented(NotImplementedError):
-    """Function is not currently implemented for MIMO systems"""
+    """Function is not currently implemented for MIMO systems."""
     pass
 
 class ControlNotImplemented(NotImplementedError):
-    """Functionality is not yet implemented"""
+    """Functionality is not yet implemented."""
     pass
 
 # Utility function to see if slycot is installed

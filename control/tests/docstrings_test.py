@@ -30,6 +30,7 @@ function_skiplist = [
     control.ControlPlot.reshape,                # needed for legacy interface
     control.phase_plot,                         # legacy function
     control.drss,                               # documention in rss
+    control.flatsys.flatsys,                    # tested separately below
     control.frd,                                # tested separately below
     control.ss,                                 # tested separately below
     control.tf,                                 # tested separately below
@@ -83,6 +84,7 @@ keyword_skiplist = {
 # Set global variables
 verbose = 0             # Level of verbosity (use -rP when running pytest)
 standalone = False      # Controls how failures are treated
+max_summary_len = 64    # Maximum length of a summary line
 
 module_list = [
     (control, ""), (control.flatsys, "flatsys."),
@@ -94,7 +96,11 @@ def test_parameter_docs(module, prefix):
     # Look through every object in the package
     _info(f"Checking module {module}", 0)
     for name, obj in inspect.getmembers(module):
-        _info(f"Checking object {name}", 4)
+        if getattr(obj, '__module__', None):
+            objname = ".".join([obj.__module__.removeprefix("control."), name])
+        else:
+            objname = name
+        _info(f"Checking object {objname}", 4)
 
         # Parse the docstring using numpydoc
         with warnings.catch_warnings():
@@ -105,13 +111,14 @@ def test_parameter_docs(module, prefix):
         if inspect.getmodule(obj) is not None and \
            not inspect.getmodule(obj).__name__.startswith('control'):
             # Skip anything that isn't part of the control package
-            _info(f"member '{name}' is outside `control` module", 5)
+            _info(f"member '{objname}' is outside `control` module", 5)
             continue
 
         # If this is a class, recurse through methods
         # TODO: check top level documenation here (__init__, attributes?)
         if inspect.isclass(obj):
             _info(f"Checking class {name}", 1)
+            _check_numpydoc_style(obj, doc)
             # Check member functions within the class
             test_parameter_docs(obj, prefix + name + '.')
 
@@ -125,9 +132,12 @@ def test_parameter_docs(module, prefix):
 
         # Skip non-top-level functions without parameter lists
         if prefix != "" and inspect.getmodule(obj) != module and \
-           doc is not None and doc["Parameters"] == []:
+           doc is not None and doc["Parameters"] == [] and \
+           doc["Returns"] == [] and doc["Yields"] == []:
             _info(f"skipping {prefix}{name} (not top-level, no params)", 2)
             continue
+
+        _check_numpydoc_style(obj, doc)
 
         # Add this to the list of functions we have checked
         checked.add(obj)
@@ -135,10 +145,10 @@ def test_parameter_docs(module, prefix):
         # Get the docstring (skip w/ warning if there isn't one)
         _info(f"Checking function {name}", 2)
         if obj.__doc__ is None:
-            _warn(f"{module.__name__}.{name} is missing docstring", 2)
+            _warn(f"{objname} is missing docstring", 2)
             continue
         elif doc is None:
-            _fail(f"{module.__name__}.{name} docstring not parseable", 2)
+            _fail(f"{objname} docstring not parseable", 2)
         else:
             docstring = inspect.getdoc(obj)
             source = inspect.getsource(obj)
@@ -151,11 +161,11 @@ def test_parameter_docs(module, prefix):
         elif re.search(name + r"(\(\))? is deprecated", doc_extended) or \
              "function is deprecated" in doc_extended:
             _info("  [deprecated, but not numpydoc compliant]", 2)
-            _warn(f"{name} deprecated, but not numpydoc compliant", 0)
+            _warn(f"{objname} deprecated, but not numpydoc compliant", 0)
             continue
 
         elif re.search(name + r"(\(\))? is deprecated", source):
-            _warn(f"{name} is deprecated, but not documented", 1)
+            _warn(f"{objname} is deprecated, but not documented", 1)
             continue
 
         # Get the signature for the function
@@ -176,7 +186,7 @@ def test_parameter_docs(module, prefix):
                         (docstring + source).encode('utf-8')).hexdigest()
                     if function_docstring_hash[obj] != hash:
                         _fail(
-                            f"source/docstring for {name}() modified; "
+                            f"source/docstring for {objname}() modified; "
                             f"recheck docstring and update hash to "
                             f"{hash=}")
                     continue
@@ -184,7 +194,7 @@ def test_parameter_docs(module, prefix):
                 # Too complicated to check
                 if f"*{argname}" not in docstring:
                     _warn(
-                        f"{name} {argname} has positional arguments; "
+                        f"{objname} {argname} has positional arguments; "
                         "docstring not checked")
                     continue
 
@@ -228,7 +238,7 @@ def test_parameter_docs(module, prefix):
             else:
                 _info(f"Checking argument {argname}", 3)
                 _check_parameter_docs(
-                        name, argname, docstring, prefix=prefix)
+                        objname, argname, docstring, prefix=prefix)
 
         # Look at the return values
         for val in doc["Returns"]:
@@ -275,7 +285,7 @@ def test_deprecated_functions(module, prefix):
 
             # Get the docstring (skip w/ warning if there isn't one)
             if obj.__doc__ is None:
-                _warn(f"{module.__name__}.{name} is missing docstring")
+                _warn(f"{objname} is missing docstring")
                 continue
             else:
                 docstring = inspect.getdoc(obj)
@@ -286,12 +296,14 @@ def test_deprecated_functions(module, prefix):
             if ".. deprecated::" in doc_extended:
                 # Make sure a FutureWarning is issued
                 if not re.search("FutureWarning", source):
-                    _fail(f"{name} deprecated but does not issue FutureWarning")
+                    _fail(f"{objname} deprecated but does not issue "
+                          "FutureWarning")
             else:
                 if re.search(name + r"(\(\))? is deprecated", docstring) or \
                    re.search(name + r"(\(\))? is deprecated", source):
                     _fail(
-                        f"{name} deprecated but w/ non-standard docs/warnings")
+                        f"{objname} deprecated but with non-standard "
+                        "docs/warnings")
 
 #
 # Tests for I/O system classes
@@ -391,6 +403,7 @@ def test_iosys_primary_classes(cls, fcn, args):
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')     # debug via sphinx, not here
         doc = npd.FunctionDoc(cls)
+    _check_numpydoc_style(cls, doc)
 
     # Make sure the typical arguments are there
     for argname in args + std_class_attributes + class_attributes[cls]:
@@ -436,6 +449,11 @@ def test_iosys_attribute_lists(cls, ignore_future_warning):
 
     docstring = inspect.getdoc(cls)
     for name, obj in inspect.getmembers(sys):
+        if getattr(obj, '__module__', None):
+            objname = ".".join([obj.__module__.removeprefix("control."), name])
+        else:
+            objname = name
+
         if name.startswith('_') or inspect.ismethod(obj) or name in ignore_args:
             # Skip hidden variables; class methods are checked elsewhere
             continue
@@ -468,6 +486,11 @@ def test_iosys_container_classes(cls):
     sys = cls(states=2, outputs=1, inputs=1)
 
     docstring = inspect.getdoc(cls)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')     # debug via sphinx, not here
+        doc = npd.FunctionDoc(cls)
+    _check_numpydoc_style(cls, doc)
+
     for name, obj in inspect.getmembers(sys):
         if name.startswith('_') or inspect.ismethod(obj):
             # Skip hidden variables; class methods are checked elsewhere
@@ -491,13 +514,19 @@ def test_iosys_container_classes(cls):
 @pytest.mark.parametrize("cls", [ct.InterconnectedSystem, ct.LinearICSystem])
 def test_iosys_intermediate_classes(cls):
     docstring = inspect.getdoc(cls)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')     # debug via sphinx, not here
+        doc = npd.FunctionDoc(cls)
+    _check_numpydoc_style(cls, doc)
 
     # Make sure there is not a parameters section
+    # TODO: replace with numpdoc check
     if re.search(r"\nParameters\n----", docstring) is not None:
         _fail(f"intermediate {cls} docstring contains Parameters section")
         return
 
     # Make sure we reference the factory function
+    # TODO: check extended summary
     fcn = class_factory_function[cls]
     if re.search(f":func:`~control.{fcn.__name__}`", docstring) is None:
         _fail(
@@ -508,6 +537,11 @@ def test_iosys_intermediate_classes(cls):
 @pytest.mark.parametrize("fcn", factory_args.keys())
 def test_iosys_factory_functions(fcn):
     docstring = inspect.getdoc(fcn)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')     # debug via sphinx, not here
+        doc = npd.FunctionDoc(fcn)
+    _check_numpydoc_style(fcn, doc)
+
     cls = list(class_factory_function.keys())[
         list(class_factory_function.values()).index(fcn)]
 
@@ -580,6 +614,56 @@ def _check_parameter_docs(
         return False            # for standalone mode
 
     return True
+
+
+# Utility function to check numpydoc style consistency
+def _check_numpydoc_style(obj, doc):
+    name = ".".join([obj.__module__.removeprefix("control."), obj.__name__])
+
+    # Standard checks for all objects
+    summary = "".join(doc["Summary"])
+    if len(doc["Summary"]) > 1:
+        _warn(f"{name} summary is more than one line")
+    if summary and summary[-1] != '.' and re.match(":$", summary) is None:
+        _warn(f"{name} summary doesn't end in period")
+    if summary[0:1].islower():
+        _warn(f"{name} summary starts with lower case letter")
+    if len(summary) > max_summary_len:
+        _warn(f"{name} summary is longer than {max_summary_len} characters")
+
+    if inspect.isclass(obj):
+        # Specialized checks for classes
+        pass
+    elif inspect.isfunction(obj):
+        # Specialized checks for functions
+        def _check_param(param, empty_ok=False, noname_ok=False):
+            param_desc = "\n".join(param.desc)
+            param_name = f"{name} '{param.name}'"
+
+            # Make sure we have a name and description
+            if param.name == "" and not noname_ok:
+                _fail(f"{param_name} has improperly formatted parameter")
+                return
+            elif param_desc == "":
+                if not empty_ok:
+                    _warn(f"{param_name} isn't documented")
+                return
+
+            # Description should end in a period (colon also allowed)
+            if re.search(r"\.$|\.[\s]|:$", param_desc, re.MULTILINE) is None:
+                _warn(f"{param_name} description doesn't contain period")
+
+            if param_desc[0:1].islower():
+                _warn(f"{param_name} description starts with lower case letter")
+
+        for param in doc["Parameters"] + doc["Other Parameters"]:
+            _check_param(param)
+        for param in doc["Returns"]:
+            _check_param(param, empty_ok=True, noname_ok=True)
+        for param in doc["Yields"]:
+            _check_param(param, empty_ok=True, noname_ok=True)
+    else:
+        raise TypeError("unknown object type for {obj}")
 
 
 # Utility function to warn with verbose output
@@ -660,35 +744,35 @@ def test_check_parameter_docs(docstring, exception, match):
 if __name__ == "__main__":
     verbose = 0 if len(sys.argv) == 1 else int(sys.argv[1])
     standalone = True
-    
+
     for module, prefix in module_list:
-        print(f"--- test_parameter_docs(): {module.__name__} ----")
+        _info(f"--- test_parameter_docs(): {module.__name__} ----", 0)
         test_parameter_docs(module, prefix)
 
     for module, prefix in module_list:
-        print(f"--- test_deprecated_functions(): {module.__name__} ----")
+        _info(f"--- test_deprecated_functions(): {module.__name__} ----", 0)
         test_deprecated_functions
 
     for cls, fcn, args in [
             (cls, class_factory_function[cls], class_args[cls])
             for cls in class_args.keys()]:
-        print(f"--- test_iosys_primary_classes(): {cls.__name__} ----")
+        _info(f"--- test_iosys_primary_classes(): {cls.__name__} ----", 0)
         test_iosys_primary_classes(cls, fcn, args)
 
     for cls in class_args.keys():
-        print(f"--- test_iosys_attribute_lists(): {cls.__name__} ----")
+        _info(f"--- test_iosys_attribute_lists(): {cls.__name__} ----", 0)
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', FutureWarning)
             test_iosys_attribute_lists(cls, None)
 
     for cls in [ct.InputOutputSystem, ct.LTI]:
-        print(f"--- test_iosys_container_classes(): {cls.__name__} ----")
+        _info(f"--- test_iosys_container_classes(): {cls.__name__} ----", 0)
         test_iosys_container_classes(cls)
 
     for cls in [ct.InterconnectedSystem, ct.LinearICSystem]:
-        print(f"--- test_iosys_intermediate_classes(): {cls.__name__} ----")
+        _info(f"--- test_iosys_intermediate_classes(): {cls.__name__} ----", 0)
         test_iosys_intermediate_classes(cls)
 
     for fcn in factory_args.keys():
-        print(f"--- test_iosys_factory_functions(): {fcn.__name__} ----")
+        _info(f"--- test_iosys_factory_functions(): {fcn.__name__} ----", 0)
         test_iosys_factory_functions(fcn)

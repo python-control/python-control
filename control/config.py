@@ -265,9 +265,11 @@ def use_matlab_defaults():
 
 # Set defaults to match FBS (Astrom and Murray)
 def use_fbs_defaults():
-    """Use `Feedback Systems <http://fbsbook.org>`_ (FBS) compatible settings.
+    """Use Feedback Systems (FBS) compatible settings.
 
-    The following conventions are used:
+    The following conventions fomr `Feedback Systems <http://fbsbook.org>`_
+    are used:
+
         * Bode plots plot gain in powers of ten, phase in degrees,
           frequency in rad/sec, no grid
         * Nyquist plots use dashed lines for mirror image of Nyquist curve

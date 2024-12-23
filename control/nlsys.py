@@ -374,7 +374,7 @@ class NonlinearIOSystem(InputOutputSystem):
             self.updfcn(t, x, u, self._current_params)).reshape(-1)
 
     def dynamics(self, t, x, u, params=None):
-        """Compute the dynamics of a differential or difference equation.
+        """Dynamics of a differential or difference equation.
 
         Given time `t`, input `u` and state `x`, returns the value of the
         right hand side of the dynamical system. If the system is continuous,
@@ -395,13 +395,13 @@ class NonlinearIOSystem(InputOutputSystem):
         Parameters
         ----------
         t : float
-            the time at which to evaluate
+            Time at which to evaluate.
         x : array_like
-            current state
+            Current state.
         u : array_like
-            input
+            Current input.
         params : dict, optional
-            system parameter values
+            System parameter values.
 
         Returns
         -------
@@ -433,7 +433,7 @@ class NonlinearIOSystem(InputOutputSystem):
                 self.outfcn(t, x, u, self._current_params)).reshape(-1)
 
     def output(self, t, x, u, params=None):
-        """Compute the output of the system
+        """Compute the output of the system.
 
         Given time `t`, input `u` and state `x`, returns the output of the
         system:
@@ -445,13 +445,13 @@ class NonlinearIOSystem(InputOutputSystem):
         Parameters
         ----------
         t : float
-            the time at which to evaluate
+            The time at which to evaluate.
         x : array_like
-            current state
+            Current state.
         u : array_like
-            input
+            Current input.
         params : dict, optional
-            system parameter values
+            System parameter values.
 
         Returns
         -------
@@ -1061,7 +1061,7 @@ class InterconnectedSystem(NonlinearIOSystem):
 
 
     def connection_table(self, show_names=False, column_width=32):
-        """Print table of connections inside an interconnected system model.
+        """Table of connections inside an interconnected system.
 
         Intended primarily for :class:`InterconnectedSystem`'s that have been
         connected implicitly using signal names.
@@ -1164,7 +1164,7 @@ class InterconnectedSystem(NonlinearIOSystem):
     # TODO: change to internal function?  (not sure users need to see this)
     def check_unused_signals(
             self, ignore_inputs=None, ignore_outputs=None, warning=True):
-        """Check for unused subsystem inputs and outputs
+        """Check for unused subsystem inputs and outputs.
 
         Check to see if there are any unused signals and return a list of
         unused input and output signal descriptions.  If `warning` is True
@@ -1759,7 +1759,7 @@ def input_output_response(
 
 
 class OperatingPoint():
-    """A class for representing the operating point of a nonlinear I/O system.
+    """Class for representing operating point of nonlinear I/O system.
 
     The ``OperatingPoint`` class stores the operating point of a nonlinear
     system, consisting of the state and input vectors for the system.  The
@@ -2230,7 +2230,7 @@ def interconnect(
     Parameters
     ----------
     syslist : list of InputOutputSystems
-        The list of input/output systems to be connected
+        The list of input/output systems to be connected.
 
     connections : list of connections, optional
         Description of the internal connections between the subsystems:
@@ -2855,7 +2855,7 @@ def _convert_static_iosystem(sys):
             outputs=sys.shape[0], inputs=sys.shape[1], dt=None)
 
 def connection_table(sys, show_names=False, column_width=32):
-    """Print table of connections inside an interconnected system model.
+    """Print table of connections inside interconnected system.
 
     Intended primarily for :class:`InterconnectedSystems` that have been
     connected implicitly using signal names.
@@ -2863,7 +2863,7 @@ def connection_table(sys, show_names=False, column_width=32):
     Parameters
     ----------
     sys : :class:`InterconnectedSystem`
-        Interconnected system object
+        Interconnected system object.
     show_names : bool, optional
         Instead of printing out the system number, print out the name of
         each system. Default is False because system name is not usually
@@ -2871,7 +2871,6 @@ def connection_table(sys, show_names=False, column_width=32):
         :func:`interconnect`.
     column_width : int, optional
         Character width of printed columns.
-
 
     Examples
     --------

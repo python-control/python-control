@@ -72,7 +72,7 @@ __all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect',
 def series(sys1, *sysn, **kwargs):
     r"""series(sys1, sys2, [..., sysn])
 
-    Return the series connection (`sysn` \* ...\  \*) `sys2` \* `sys1`.
+    Return series connection (`sysn` \* ...\  \*) `sys2` \* `sys1`.
 
     Parameters
     ----------
@@ -144,7 +144,7 @@ def series(sys1, *sysn, **kwargs):
 def parallel(sys1, *sysn, **kwargs):
     r"""parallel(sys1, sys2, [..., sysn])
 
-    Return the parallel connection `sys1` + `sys2` (+ ...\  + `sysn`).
+    Return parallel connection `sys1` + `sys2` (+ ...\  + `sysn`).
 
     Parameters
     ----------
@@ -440,9 +440,9 @@ def connect(sys, Q, inputv, outputv):
         values mean the feedback is negative. A zero value is ignored. Inputs
         and outputs are indexed starting at 1 to communicate sign information.
     inputv : 1D array
-        list of final external inputs, indexed starting at 1
+        List of final external inputs, indexed starting at 1.
     outputv : 1D array
-        list of final external outputs, indexed starting at 1
+        List of final external outputs, indexed starting at 1.
 
     Returns
     -------
@@ -513,7 +513,7 @@ def connect(sys, Q, inputv, outputv):
     return Ytrim * sys * Utrim
 
 def combine_tf(tf_array, **kwargs):
-    """Combine array-like of transfer functions into MIMO transfer function.
+    """Combine array of transfer functions into MIMO transfer function.
 
     Parameters
     ----------
@@ -640,7 +640,7 @@ def combine_tf(tf_array, **kwargs):
 
 
 def split_tf(transfer_function):
-    """Split MIMO transfer function into NumPy array of SISO transfer functions.
+    """Split MIMO transfer function into SISO transfer functions.
 
     System and signal names for the array of SISO transfer functions are
     copied from the MIMO system.

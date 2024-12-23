@@ -78,7 +78,7 @@ class DescribingFunctionNonlinearity():
 
 def describing_function(
         F, A, num_points=100, zero_check=True, try_method=True):
-    """Numerically compute the describing function of a nonlinear function.
+    """Numerically compute describing function of a nonlinear function.
 
     The describing function of a nonlinearity is given by magnitude and phase
     of the first harmonic of the function when evaluated along a sinusoidal
@@ -285,8 +285,8 @@ def describing_function_response(
     Parameters
     ----------
     H : LTI system
-        Linear time-invariant (LTI) system (state space, transfer function, or
-        FRD)
+        Linear time-invariant (LTI) system (state space, transfer function,
+        or FRD).
     F : static nonlinear function
         A static nonlinearity, either a scalar function or a single-input,
         single-output, static input/output system.
@@ -391,7 +391,7 @@ def describing_function_plot(
         *sysdata, point_label="%5.2g @ %-5.2g", label=None, **kwargs):
     """describing_function_plot(data, *args, **kwargs)
 
-    Plot a Nyquist plot with a describing function for a nonlinear system.
+    Nyquist plot with describing function for a nonlinear system.
 
     This function generates a Nyquist plot for a closed loop system
     consisting of a linear system with a static nonlinear function in the
@@ -413,8 +413,8 @@ def describing_function_plot(
         A describing function response data object created by
         :func:`~control.describing_function_response`.
     H : LTI system
-        Linear time-invariant (LTI) system (state space, transfer function, or
-        FRD)
+        Linear time-invariant (LTI) system (state space, transfer function,
+        or FRD).
     F : static nonlinear function
         A static nonlinearity, either a scalar function or a single-input,
         single-output, static input/output system.
@@ -427,7 +427,7 @@ def describing_function_plot(
     refine : bool, optional
         If True (default), refine the location of the intersection of the
         Nyquist curve for the linear system and the describing function to
-        determine the intersection point
+        determine the intersection point.
     label : str or array_like of str, optional
         If present, replace automatically generated label with the given label.
     point_label : str, optional
@@ -552,7 +552,7 @@ def _find_intersection(L1a, L1b, L2a, L2b):
 
 # Saturation nonlinearity
 class saturation_nonlinearity(DescribingFunctionNonlinearity):
-    """Create saturation nonlinearity for use in describing function analysis.
+    """Saturation nonlinearity for describing function analysis.
 
     This class creates a nonlinear function representing a saturation with
     given upper and lower bounds, including the describing function for the
@@ -614,7 +614,7 @@ class saturation_nonlinearity(DescribingFunctionNonlinearity):
 
 # Relay with hysteresis (FBS2e, Example 10.12)
 class relay_hysteresis_nonlinearity(DescribingFunctionNonlinearity):
-    """Relay w/ hysteresis nonlinearity for describing function analysis.
+    """Relay w/ hysteresis for describing function analysis.
 
     This class creates a nonlinear function representing a a relay with
     symmetric upper and lower bounds of magnitude `b` and a hysteretic region

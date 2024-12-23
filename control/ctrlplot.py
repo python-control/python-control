@@ -281,7 +281,7 @@ def pole_zero_subplots(
     Returns
     -------
     ax_array : array
-        2D array of axes
+        2D array of axes.
 
     """
     from .grid import nogrid, sgrid, zgrid

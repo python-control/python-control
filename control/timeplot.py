@@ -671,7 +671,7 @@ def time_response_plot(
 
 
 def combine_time_responses(response_list, trace_labels=None, title=None):
-    """Combine multiple individual time responses into a multi-trace response.
+    """Combine individual time responses into multi-trace response.
 
     This function combines multiple instances of :class:`TimeResponseData`
     into a multi-trace :class:`TimeResponseData` object.

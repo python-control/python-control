@@ -397,18 +397,20 @@ def mixsyn(g, w1=None, w2=None, w3=None):
         then cl is the system from w->z with `u = -k*y`.
 
     info : tuple
-        gamma: scalar
-            H-infinity norm of cl.
-        rcond: array
-            Estimates of reciprocal condition numbers computed during
-            synthesis.  See hinfsyn for details.
+        Two-tuple `(gamma, rcond)` containing additional information:
 
-    If a weighting w is scalar, it will be replaced by I*w, where I is
-    ny-by-ny for w1 and w3, and nu-by-nu for w2.
+        * gamma (scalar): H-infinity norm of cl.
+        * rcond (array): Estimates of reciprocal condition numbers computed
+          during synthesis.  See hinfsyn for details.
 
     See Also
     --------
     hinfsyn, augw
+
+    Notes
+    -----
+    If a weighting `w` is scalar, it will be replaced by `I*w`, where `I` is
+    ny-by-ny for `w1` and `w3`, and nu-by-nu for `w2`.
 
     """
     nmeas = g.noutputs

@@ -75,7 +75,7 @@ class SystemTrajectory:
 
     # Evaluate the trajectory over a list of time points
     def eval(self, tlist):
-        """Return the state and input for a trajectory at a list of times.
+        """Compute state and input for a trajectory at a list of times.
 
         Evaluate the trajectory at a list of time points, returning the state
         and input vectors for the trajectory:
@@ -121,7 +121,7 @@ class SystemTrajectory:
 
     # Return the system trajectory as a TimeResponseData object
     def response(self, tlist, transpose=False, return_x=False, squeeze=None):
-        """Return the trajectory of a system as a TimeResponseData object
+        """Compute trajectory of a system as a TimeResponseData object.
 
         Evaluate the trajectory at a list of time points, returning the state
         and input vectors for the trajectory:

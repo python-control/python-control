@@ -948,9 +948,9 @@ class TransferFunction(LTI):
         Returns
         -------
         out : list of list of :class:`scipy.signal.TransferFunction`
-            continuous time (inheriting from :class:`scipy.signal.lti`)
+            Continuous time (inheriting from :class:`scipy.signal.lti`)
             or discrete time (inheriting from :class:`scipy.signal.dlti`)
-            SISO objects
+            SISO objects.
         """
         if strict and self.dt is None:
             raise ValueError("with strict=True, dt cannot be None")
@@ -1146,7 +1146,7 @@ class TransferFunction(LTI):
         Parameters
         ----------
         Ts : float
-            Sampling period
+            Sampling period.
         method : {"gbt", "bilinear", "euler", "backward_diff",
                   "zoh", "matched"}
             Method to use for sampling:
@@ -1180,7 +1180,7 @@ class TransferFunction(LTI):
         Returns
         -------
         sysd : TransferFunction system
-            Discrete-time system, with sample period Ts
+            Discrete-time system, with sample period Ts.
 
         Other Parameters
         ----------------
@@ -1820,22 +1820,22 @@ def ss2tf(*args, **kwargs):
     Parameters
     ----------
     sys : StateSpace
-        A linear system
+        A linear system.
     A : array_like or string
-        System matrix
+        System matrix.
     B : array_like or string
-        Control matrix
+        Control matrix.
     C : array_like or string
-        Output matrix
+        Output matrix.
     D : array_like or string
-        Feedthrough matrix
+        Feedthrough matrix.
     **kwargs : keyword arguments
-        Additional arguments passed to :func:`tf` (e.g., signal names)
+        Additional arguments passed to :func:`tf` (e.g., signal names).
 
     Returns
     -------
     out : TransferFunction
-        New linear system in transfer function form
+        New linear system in transfer function form.
 
     Other Parameters
     ----------------
@@ -1906,12 +1906,12 @@ def tfdata(sys):
     Parameters
     ----------
     sys : LTI (StateSpace, or TransferFunction)
-        LTI system whose data will be returned
+        LTI system whose data will be returned.
 
     Returns
     -------
     (num, den): numerator and denominator arrays
-        Transfer function coefficients (SISO only)
+        Transfer function coefficients (SISO only).
     """
     tf = _convert_to_transfer_function(sys)
 

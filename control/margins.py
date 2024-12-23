@@ -252,18 +252,16 @@ def _likely_numerical_inaccuracy(sys):
 #                    systems
 
 
+# TODO: consider handling sysdata similar to margin (via *sysdata?)
 def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
-    """Calculate stability margins and associated crossover frequencies.
+    """Stability margins and associated crossover frequencies.
 
     Parameters
     ----------
-    sysdata : LTI system or (mag, phase, omega) sequence
-        sys : LTI system
-            Linear SISO system representing the loop transfer function
-        mag, phase, omega : sequence of array_like
-            Arrays of magnitudes (absolute values, not dB), phases (degrees),
-            and corresponding frequencies. Crossover frequencies returned are
-            in the same units as those in `omega` (e.g., rad/sec or Hz).
+    sysdata : LTI system or 3-tuple of array_like
+        Linear SISO system representing the loop transfer function.
+        Alternatively, a three tuple of the form (mag, phase, omega)
+        providing the frequency response can be passed.
     returnall : bool, optional
         If true, return all margins found. If False (default), return only the
         minimum stability margins. For frequency data or FRD systems, only
@@ -284,11 +282,11 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
     Returns
     -------
     gm : float or array_like
-        Gain margin
+        Gain margin.
     pm : float or array_like
-        Phase margin
+        Phase margin.
     sm : float or array_like
-        Stability margin, the minimum distance from the Nyquist plot to -1
+        Stability margin, the minimum distance from the Nyquist plot to -1.
     wpc : float or array_like
         Phase crossover frequency (where phase crosses -180 degrees), which is
         associated with the gain margin.
@@ -296,14 +294,16 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
         Gain crossover frequency (where gain crosses 1), which is associated
         with the phase margin.
     wms : float or array_like
-        Stability margin frequency (where Nyquist plot is closest to -1)
+        Stability margin frequency (where Nyquist plot is closest to -1).
 
-    Note that the gain margin is determined by the gain of the loop
-    transfer function at the phase crossover frequency(s), the phase
-    margin is determined by the phase of the loop transfer function at
-    the gain crossover frequency(s), and the stability margin is
-    determined by the frequency of maximum sensitivity (given by the
-    magnitude of 1/(1+L)).
+    Notes
+    -----
+    The gain margin is determined by the gain of the loop transfer function
+    at the phase crossover frequency(s), the phase margin is determined by
+    the phase of the loop transfer function at the gain crossover
+    frequency(s), and the stability margin is determined by the frequency
+    of maximum sensitivity (given by the magnitude of 1/(1+L)).
+
     """
     # TODO: FRD method for cont-time systems doesn't work
     try:
@@ -463,20 +463,20 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
 
 # Contributed by Steffen Waldherr <waldherr@ist.uni-stuttgart.de>
 def phase_crossover_frequencies(sys):
-    """Compute frequencies and gains at intersections with real axis
-    in Nyquist plot.
+    """Compute Nyquist plot real-axis crossover frequencies and gains.
 
     Parameters
     ----------
-    sys : SISO LTI system
+    sys : LTI
+        SISO LTI system.
 
     Returns
     -------
     omega : ndarray
         1d array of (non-negative) frequencies where Nyquist plot
-        intersects the real axis
+        intersects the real axis.
     gains : ndarray
-        1d array of corresponding gains
+        1d array of corresponding gains.
 
     Examples
     --------
@@ -509,23 +509,25 @@ def phase_crossover_frequencies(sys):
 def margin(*args):
     """margin(sysdata)
 
-    Calculate gain and phase margins and associated crossover frequencies.
+    Gain and phase margins and associated crossover frequencies.
+
+    Can be called as ``margin(sys)`` where ``sys`` is a SISO LTI sytem or
+    ``margin(mag, phase, omega)``.
 
     Parameters
     ----------
-    sysdata : LTI system or (mag, phase, omega) sequence
-        sys : StateSpace or TransferFunction
-            Linear SISO system representing the loop transfer function
-        mag, phase, omega : sequence of array_like
-            Input magnitude, phase (in deg.), and frequencies (rad/sec) from
-            bode frequency response data
+    sys : StateSpace or TransferFunction
+        Linear SISO system representing the loop transfer function.
+    mag, phase, omega : sequence of array_like
+        Input magnitude, phase (in deg.), and frequencies (rad/sec) from
+        bode frequency response data.
 
     Returns
     -------
     gm : float
-        Gain margin
+        Gain margin.
     pm : float
-        Phase margin (in degrees)
+        Phase margin (in degrees).
     wcg : float or array_like
         Crossover frequency associated with gain margin (phase crossover
         frequency), where phase crosses below -180 degrees.

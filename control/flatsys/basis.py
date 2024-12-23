@@ -41,7 +41,7 @@ import numpy as np
 
 # Basis family class (for use as a base class)
 class BasisFamily:
-    """Base class for implementing basis functions for flat systems.
+    """Base class for basis functions for flat systems.
 
     A BasisFamily object is used to construct trajectories for a flat system.
     The class must implement a single function that computes the jth

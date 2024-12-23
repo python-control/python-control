@@ -55,14 +55,14 @@ def unwrap(angle, period=2*math.pi):
     Parameters
     ----------
     angle : array_like
-        Array of angles to be unwrapped
+        Array of angles to be unwrapped.
     period : float, optional
-        Period (defaults to `2*pi`)
+        Period (defaults to `2*pi`).
 
     Returns
     -------
     angle_out : array_like
-        Output array, with jumps of period/2 eliminated
+        Output array, with jumps of period/2 eliminated.
 
     Examples
     --------
@@ -106,12 +106,12 @@ def db2mag(db):
     Parameters
     ----------
     db : float or ndarray
-        input value or array of values, given in decibels
+        Input value or array of values, given in decibels.
 
     Returns
     -------
     mag : float or ndarray
-        corresponding magnitudes
+        Corresponding magnitudes.
 
     Examples
     --------
@@ -134,12 +134,12 @@ def mag2db(mag):
     Parameters
     ----------
     mag : float or ndarray
-        input magnitude or array of magnitudes
+        Input magnitude or array of magnitudes.
 
     Returns
     -------
     db : float or ndarray
-        corresponding values in decibels
+        Corresponding values in decibels.
 
     Examples
     --------

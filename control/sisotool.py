@@ -27,7 +27,7 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
              plotstr_rlocus='C0', rlocus_grid=False, omega=None, dB=None,
              Hz=None, deg=None, omega_limits=None, omega_num=None,
              margins_bode=True, tvect=None, kvect=None):
-    """Sisotool style collection of plots inspired by MATLAB's sisotool.
+    """Collection of plots inspired by MATLAB's sisotool.
 
     The left two plots contain the bode magnitude and phase diagrams.
     The top right plot is a clickable root locus plot, clicking on the
@@ -58,7 +58,7 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
         Control of x-axis range, normally with tuple
         (see :doc:`matplotlib:api/axes_api`).
     ylim_rlocus : tuple or list, optional
-        control of y-axis range
+        Control of y-axis range.
     plotstr_rlocus : :func:`matplotlib.pyplot.plot` format string, optional
         Plotting style for the root locus plot(color, linestyle, etc).
     rlocus_grid : boolean (default = False)

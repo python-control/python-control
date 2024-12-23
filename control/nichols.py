@@ -46,7 +46,7 @@ def nichols_plot(
         List of LTI systems or :class:`FrequencyResponseData` objects.  A
         single system or frequency response can also be passed.
     omega : array_like
-        Range of frequencies (list or bounds) in rad/sec
+        Range of frequencies (list or bounds) in rad/sec.
     *fmt : :func:`matplotlib.pyplot.plot` format string, optional
         Passed to `matplotlib` as the format string for all lines in the plot.
         The `omega` parameter must be present (use omega=None if needed).
@@ -200,7 +200,7 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
         Nichols chart. Must be in the range -360 < cl_phases < 0
     line_style : string, optional
         :doc:`Matplotlib linestyle \
-            <matplotlib:gallery/lines_bars_and_markers/linestyles>`
+            <matplotlib:gallery/lines_bars_and_markers/linestyles>`.
     ax : matplotlib.axes.Axes, optional
         Axes to add grid to.  If ``None``, use ``matplotlib.pyplot.gca()``.
     label_cl_phases : bool, optional
@@ -209,15 +209,15 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
     Returns
     -------
     cl_mag_lines : list of `matplotlib.line.Line2D`
-      The constant closed-loop gain contours
+      The constant closed-loop gain contours.
     cl_phase_lines : list of `matplotlib.line.Line2D`
-      The constant closed-loop phase contours
+      The constant closed-loop phase contours.
     cl_mag_labels : list of `matplotlib.text.Text`
-      mcontour labels; each entry corresponds to the respective entry
-      in ``cl_mag_lines``
+      Magnitude contour labels; each entry corresponds to the respective entry.
+      in ``cl_mag_lines``.
     cl_phase_labels : list of `matplotlib.text.Text`
-      ncontour labels; each entry corresponds to the respective entry
-      in ``cl_phase_lines``
+      Phase contour labels; each entry corresponds to the respective entry
+      in ``cl_phase_lines``.
     """
     if ax is None:
         ax = plt.gca()

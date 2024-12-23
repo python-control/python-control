@@ -23,7 +23,7 @@ def canonical_form(xsys, form='reachable'):
     Parameters
     ----------
     xsys : StateSpace object
-        System to be transformed, with state 'x'
+        System to be transformed, with state 'x'.
     form : str
         Canonical form for transformation.  Chosen from:
           * 'reachable' - reachable canonical form
@@ -33,9 +33,9 @@ def canonical_form(xsys, form='reachable'):
     Returns
     -------
     zsys : StateSpace object
-        System in desired canonical form, with state 'z'
+        System in desired canonical form, with state 'z'.
     T : (M, M) real ndarray
-        Coordinate transformation matrix, z = T * x
+        Coordinate transformation matrix, z = T * x.
 
     Examples
     --------
@@ -75,14 +75,14 @@ def reachable_form(xsys):
     Parameters
     ----------
     xsys : StateSpace object
-        System to be transformed, with state `x`
+        System to be transformed, with state `x`.
 
     Returns
     -------
     zsys : StateSpace object
-        System in reachable canonical form, with state `z`
+        System in reachable canonical form, with state `z`.
     T : (M, M) real ndarray
-        Coordinate transformation: z = T * x
+        Coordinate transformation: z = T * x.
 
     Examples
     --------
@@ -138,14 +138,14 @@ def observable_form(xsys):
     Parameters
     ----------
     xsys : StateSpace object
-        System to be transformed, with state `x`
+        System to be transformed, with state `x`.
 
     Returns
     -------
     zsys : StateSpace object
-        System in observable canonical form, with state `z`
+        System in observable canonical form, with state `z`.
     T : (M, M) real ndarray
-        Coordinate transformation: z = T * x
+        Coordinate transformation: z = T * x.
 
     Examples
     --------
@@ -190,7 +190,7 @@ def observable_form(xsys):
 
 
 def similarity_transform(xsys, T, timescale=1, inverse=False):
-    """Perform a similarity transformation, with option time rescaling.
+    """Similarity transformation, with option time rescaling.
 
     Transform a linear state space system to a new state space representation
     z = T x, or x = T z, where T is an invertible matrix.
@@ -198,11 +198,11 @@ def similarity_transform(xsys, T, timescale=1, inverse=False):
     Parameters
     ----------
     xsys : StateSpace object
-           System to transform
+        System to transform.
     T : (M, M) array_like
         The matrix `T` defines the new set of coordinates z = T x.
     timescale : float, optional
-        If present, also rescale the time unit to tau = timescale * t
+        If present, also rescale the time unit to tau = timescale * t.
     inverse : bool, optional
         If False (default), transform so z = T x.  If True, transform
         so x = T z.
@@ -210,7 +210,7 @@ def similarity_transform(xsys, T, timescale=1, inverse=False):
     Returns
     -------
     zsys : StateSpace object
-        System in transformed coordinates, with state 'z'
+        System in transformed coordinates, with state 'z'.
 
 
     Examples
@@ -397,20 +397,20 @@ def bdschur(a, condmax=None, sort=None):
     Parameters
     ----------
     a : (M, M) array_like
-        Real matrix to decompose
+        Real matrix to decompose.
     condmax : None or float, optional
-        If None (default), use 1/sqrt(eps), which is approximately 1e8
+        If None (default), use 1/sqrt(eps), which is approximately 1e8.
     sort : {None, 'continuous', 'discrete'}
         Block sorting; see below.
 
     Returns
     -------
     amodal : (M, M) real ndarray
-        Block-diagonal Schur decomposition of `a`
+        Block-diagonal Schur decomposition of `a`.
     tmodal : (M, M) real ndarray
-        Similarity transform relating `a` and `amodal`
+        Similarity transform relating `a` and `amodal`.
     blksizes : (N,) int ndarray
-        Array of Schur block sizes
+        Array of Schur block sizes.
 
     Notes
     -----
@@ -486,7 +486,7 @@ def modal_form(xsys, condmax=None, sort=False):
     Parameters
     ----------
     xsys : StateSpace object
-        System to be transformed, with state `x`
+        System to be transformed, with state `x`.
     condmax : None or float, optional
         An upper bound on individual transformations.  If None, use
         `bdschur` default.
@@ -497,9 +497,9 @@ def modal_form(xsys, condmax=None, sort=False):
     Returns
     -------
     zsys : StateSpace object
-        System in modal canonical form, with state `z`
+        System in modal canonical form, with state `z`.
     T : (M, M) ndarray
-        Coordinate transformation: z = T * x
+        Coordinate transformation: z = T * x.
 
     Examples
     --------

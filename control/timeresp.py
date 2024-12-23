@@ -768,7 +768,9 @@ class TimeResponseData:
 #
 
 class TimeResponseList(list):
-    """This class consist of a list of :class:`TimeResponseData` objects.
+    """List of TimeResponseData objects with plotting capability.
+
+    This class consists of a list of :class:`TimeResponseData` objects.
     It is a subclass of the Python `list` class, with a `plot` method that
     plots the individual :class:`TimeResponseData` objects.
 
@@ -1534,7 +1536,7 @@ def step_response(
 def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
               SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1, 0.9)):
     """
-    Step response characteristics (Rise time, Settling Time, Peak and others).
+    Step response characteristics (rise time, settling time, etc).
 
     Parameters
     ----------
@@ -1557,9 +1559,9 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
     params : dict, optional
         If system is a nonlinear I/O system, set parameter values.
     SettlingTimeThreshold : float, optional
-        Defines the error to compute settling time (default = 0.02)
+        Defines the error to compute settling time (default = 0.02).
     RiseTimeLimits : tuple (lower_threshold, upper_theshold)
-        Defines the lower and upper threshold for RiseTime computation
+        Defines the lower and upper threshold for RiseTime computation.
 
     Returns
     -------
@@ -1777,11 +1779,11 @@ def initial_response(
         I/O system(s) for which initial response is computed.
 
     sys : StateSpace or TransferFunction
-        LTI system to simulate
+        LTI system to simulate.
 
     T :  array_like or float, optional
         Time vector, or simulation time duration if a number (time vector is
-        autocomputed if not given; see  :func:`step_response` for more detail)
+        autocomputed if not given; see  :func:`step_response` for more detail).
 
     X0 : array_like or float, optional
         Initial condition (default = 0).  Numbers are converted to constant
@@ -1898,7 +1900,7 @@ def impulse_response(
 
     T : array_like or float, optional
         Time vector, or simulation time duration if a scalar (time vector is
-        autocomputed if not given; see :func:`step_response` for more detail)
+        autocomputed if not given; see :func:`step_response` for more detail).
 
     input : int, optional
         Only compute the impulse response for the listed input.  If not

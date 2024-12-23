@@ -752,7 +752,7 @@ class OptimalControlProblem():
     def compute_trajectory(
             self, x, squeeze=None, transpose=None, return_states=True,
             initial_guess=None, print_summary=True, **kwargs):
-        """Compute the optimal input at state x
+        """Compute the optimal input at state x.
 
         Parameters
         ----------
@@ -823,7 +823,7 @@ class OptimalControlProblem():
 
     # Compute the current input to apply from the current state (MPC style)
     def compute_mpc(self, x, squeeze=None):
-        """Compute the optimal input at state x
+        """Compute the optimal input at state x.
 
         This function calls the :meth:`compute_trajectory` method and returns
         the input at the first time point.
@@ -1148,7 +1148,7 @@ def solve_ocp(
 def create_mpc_iosystem(
         sys, timepts, cost, constraints=None, terminal_cost=None,
         terminal_constraints=None, log=False, **kwargs):
-    """Create a model predictive I/O control system
+    """Create a model predictive I/O control system.
 
     This function creates an input/output system that implements a model
     predictive control for a system given the time points, cost function and
@@ -1672,7 +1672,7 @@ class OptimalEstimationProblem():
     def compute_estimate(
             self, Y, U, X0=None, initial_guess=None,
             squeeze=None, print_summary=True):
-        """Compute the optimal input at state x
+        """Compute the optimal input at state x.
 
         Parameters
         ----------
@@ -1760,7 +1760,7 @@ class OptimalEstimationProblem():
     def create_mhe_iosystem(
             self, estimate_labels=None, measurement_labels=None,
             control_labels=None, inputs=None, outputs=None, **kwargs):
-        """Create an I/O system implementing an MPC controller
+        """Create an I/O system implementing an MPC controller.
 
         This function creates an input/output system that implements a
         moving horizon estimator for a an optimal estimation problem.  The
@@ -1959,7 +1959,7 @@ def solve_oep(
         trajectory_constraints=None, initial_guess=None,
         squeeze=None, print_summary=True, **kwargs):
 
-    """Compute the solution to a moving horizon estimation problem
+    """Compute the solution to a moving horizon estimation problem.
 
     Parameters
     ----------
@@ -2043,7 +2043,7 @@ def solve_oep(
 # the `_cost_function` evaluates the cost at each point in the trajectory.
 #
 def quadratic_cost(sys, Q, R, x0=0, u0=0):
-    """Create quadratic cost function
+    """Create quadratic cost function.
 
     Returns a quadratic cost function that can be used for an optimal control
     problem.  The cost function is of the form
@@ -2096,7 +2096,7 @@ def quadratic_cost(sys, Q, R, x0=0, u0=0):
 
 
 def gaussian_likelihood_cost(sys, Rv, Rw=None):
-    """Create cost function for Gaussian likelihoods
+    """Create cost function for Gaussian likelihoods.
 
     Returns a quadratic cost function that can be used for an optimal
     estimation problem.  The cost function is of the form
@@ -2158,7 +2158,7 @@ def gaussian_likelihood_cost(sys, Rv, Rw=None):
 # keep things consistent with the terminology in scipy.optimize.
 #
 def state_poly_constraint(sys, A, b):
-    """Create state constraint from polytope
+    """Create state constraint from polytope.
 
     Creates a linear constraint on the system state of the form A x <= b that
     can be used as an optimal control constraint (trajectory or terminal).
@@ -2168,9 +2168,9 @@ def state_poly_constraint(sys, A, b):
     sys : InputOutputSystem
         I/O system for which the constraint is being defined.
     A : 2D array
-        Constraint matrix
+        Constraint matrix.
     b : 1D array
-        Upper bound for the constraint
+        Upper bound for the constraint.
 
     Returns
     -------
@@ -2193,7 +2193,7 @@ def state_poly_constraint(sys, A, b):
 
 
 def state_range_constraint(sys, lb, ub):
-    """Create state constraint from range
+    """Create state constraint from range.
 
     Creates a linear constraint on the system state that bounds the range of
     the individual states to be between `lb` and `ub`.  The upper and lower
@@ -2230,7 +2230,7 @@ def state_range_constraint(sys, lb, ub):
 
 # Create a constraint polytope on the system input
 def input_poly_constraint(sys, A, b):
-    """Create input constraint from polytope
+    """Create input constraint from polytope.
 
     Creates a linear constraint on the system input of the form A u <= b that
     can be used as an optimal control constraint (trajectory or terminal).
@@ -2240,9 +2240,9 @@ def input_poly_constraint(sys, A, b):
     sys : InputOutputSystem
         I/O system for which the constraint is being defined.
     A : 2D array
-        Constraint matrix
+        Constraint matrix.
     b : 1D array
-        Upper bound for the constraint
+        Upper bound for the constraint.
 
     Returns
     -------
@@ -2266,7 +2266,7 @@ def input_poly_constraint(sys, A, b):
 
 
 def input_range_constraint(sys, lb, ub):
-    """Create input constraint from polytope
+    """Create input constraint from polytope.
 
     Creates a linear constraint on the system input that bounds the range of
     the individual states to be between `lb` and `ub`.  The upper and lower
@@ -2315,7 +2315,7 @@ def input_range_constraint(sys, lb, ub):
 #         [A @ sys.C, np.zeros((A.shape[0], sys.ninputs))])
 #
 def output_poly_constraint(sys, A, b):
-    """Create output constraint from polytope
+    """Create output constraint from polytope.
 
     Creates a linear constraint on the system output of the form A y <= b that
     can be used as an optimal control constraint (trajectory or terminal).
@@ -2325,9 +2325,9 @@ def output_poly_constraint(sys, A, b):
     sys : InputOutputSystem
         I/O system for which the constraint is being defined.
     A : 2D array
-        Constraint matrix
+        Constraint matrix.
     b : 1D array
-        Upper bound for the constraint
+        Upper bound for the constraint.
 
     Returns
     -------
@@ -2354,7 +2354,7 @@ def output_poly_constraint(sys, A, b):
 
 
 def output_range_constraint(sys, lb, ub):
-    """Create output constraint from range
+    """Create output constraint from range.
 
     Creates a linear constraint on the system output that bounds the range of
     the individual states to be between `lb` and `ub`.  The upper and lower
@@ -2395,7 +2395,7 @@ def output_range_constraint(sys, lb, ub):
 #
 
 def disturbance_range_constraint(sys, lb, ub):
-    """Create constraint for bounded disturbances
+    """Create constraint for bounded disturbances.
 
     This function computes a constraint that puts a bound on the size of
     input disturbances.  The output of this function can be passed as a

@@ -231,7 +231,7 @@ def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
         defaults.
 
     name : string, optional
-        System name (used for specifying signals)
+        System name (used for specifying signals).
 
     Returns
     -------

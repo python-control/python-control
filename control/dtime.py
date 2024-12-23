@@ -59,11 +59,11 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
     Parameters
     ----------
     sysc : LTI (:class:`StateSpace` or :class:`TransferFunction`)
-        Continuous time system to be converted
+        Continuous time system to be converted.
     Ts : float > 0
-        Sampling period
+        Sampling period.
     method : string
-        Method to use for conversion, e.g. 'bilinear', 'zoh' (default)
+        Method to use for conversion, e.g. 'bilinear', 'zoh' (default).
     alpha : float within [0, 1]
         The generalized bilinear transformation weighting parameter, which
         should only be specified with method="gbt", and is ignored
@@ -71,12 +71,12 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
     prewarp_frequency : float within [0, infinity)
         The frequency [rad/s] at which to match with the input continuous-
         time system's magnitude and phase (only valid for method='bilinear',
-        'tustin', or 'gbt' with alpha=0.5)
+        'tustin', or 'gbt' with alpha=0.5).
 
     Returns
     -------
-    sysd : LTI of the same class (:class:`StateSpace` or :class:`TransferFunction`)
-        Discrete time system, with sampling rate Ts
+    sysd : LTI of the same class (StateSpace or TransferFunction)
+        Discrete time system, with sampling rate Ts.
 
     Other Parameters
     ----------------

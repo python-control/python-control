@@ -43,16 +43,16 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
     Parameters
     ----------
     sys : LTI
-        System to be checked
+        System to be checked.
     rho : float or None
-        Output feedback passivity index
+        Output feedback passivity index.
     nu : float or None
-        Input feedforward passivity index
+        Input feedforward passivity index.
 
     Returns
     -------
     solution : ndarray
-        The LMI solution
+        The LMI solution.
     """
     if cvx is None:
         raise ModuleNotFoundError("cvxopt required for passivity module")
@@ -190,12 +190,12 @@ def get_output_fb_index(sys):
     Parameters
     ----------
     sys : LTI
-        System to be checked
+        System to be checked.
 
     Returns
     -------
     float
-        The OFP index
+        The OFP index.
     """
     sol = solve_passivity_LMI(sys, nu=0.0)
     if sol is None:
@@ -205,11 +205,11 @@ def get_output_fb_index(sys):
 
 
 def get_input_ff_index(sys):
-    """Return the input feedforward passivity (IFP) index for the system.
+    """Input feedforward passivity (IFP) index for a system.
 
-    The IFP is the largest gain that can be placed in negative parallel
-    interconnection with a system such that the new interconnected system is
-    passive.
+    The input feedforward passivity (IFP) is the largest gain that can be
+    placed in negative parallel interconnection with a system such that the
+    new interconnected system is passive.
 
     Parameters
     ----------
@@ -219,7 +219,8 @@ def get_input_ff_index(sys):
     Returns
     -------
     float
-        The IFP index
+        The IFP index.
+
     """
     sol = solve_passivity_LMI(sys, rho=0.0)
     if sol is None:
@@ -261,11 +262,11 @@ def ispassive(sys, ofp_index=0, ifp_index=0):
     Parameters
     ----------
     sys : LTI
-        System to be checked
+        System to be checked.
     ofp_index : float
-        Output feedback passivity index
+        Output feedback passivity index.
     ifp_index : float
-        Input feedforward passivity index
+        Input feedforward passivity index.
 
     Returns
     -------

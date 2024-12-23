@@ -618,7 +618,7 @@ class FrequencyResponseData(LTI):
         Parameters
         ----------
         omega : float or 1D array_like
-            Frequencies in radians per second
+            Frequencies in radians per second.
         squeeze : bool, optional
             If squeeze=True, remove single-dimensional entries from the shape
             of the output even if the system is not SISO. If squeeze=False,

@@ -223,28 +223,28 @@ def bode_plot(
         the specified value. Default value is `False` and can be set using
         config.defaults['freqplot.wrap_phase'].
 
-    The default values for Bode plot configuration parameters can be reset
-    using the `config.defaults` dictionary, with module name 'bode'.
-
     See Also
     --------
     frequency_response
 
     Notes
     -----
-    1. Starting with python-control version 0.10, `bode_plot` returns a
-       :class:`ControlPlot` object instead of magnitude, phase, and
-       frequency. To recover the old behavior, call `bode_plot` with
-       `plot=True`, which will force the legacy values (mag, phase, omega)
-       to be returned (with a warning).  To obtain just the frequency
-       response of a system (or list of systems) without plotting, use the
-       :func:`~control.frequency_response` command.
+    Starting with python-control version 0.10, `bode_plot` returns a
+    :class:`ControlPlot` object instead of magnitude, phase, and
+    frequency. To recover the old behavior, call `bode_plot` with
+    `plot=True`, which will force the legacy values (mag, phase, omega) to
+    be returned (with a warning).  To obtain just the frequency response of
+    a system (or list of systems) without plotting, use the
+    :func:`~control.frequency_response` command.
 
-    2. If a discrete time model is given, the frequency response is plotted
-       along the upper branch of the unit circle, using the mapping ``z =
-       exp(1j * omega * dt)`` where `omega` ranges from 0 to `pi/dt` and `dt`
-       is the discrete timebase.  If timebase not specified (``dt=True``),
-       `dt` is set to 1.
+    If a discrete time model is given, the frequency response is plotted
+    along the upper branch of the unit circle, using the mapping ``z =
+    exp(1j * omega * dt)`` where `omega` ranges from 0 to `pi/dt` and `dt`
+    is the discrete timebase.  If timebase not specified (``dt=True``),
+    `dt` is set to 1.
+
+    The default values for Bode plot configuration parameters can be reset
+    using the `config.defaults` dictionary, with module name 'bode'.
 
     Examples
     --------
@@ -2093,7 +2093,7 @@ def _compute_curve_offset(resp, mask, max_offset):
 #
 def gangof4_response(
         P, C, omega=None, omega_limits=None, omega_num=None, Hz=False):
-    """Compute the response of the "Gang of 4" transfer functions for a system.
+    """Compute response of "Gang of 4" transfer functions.
 
     Generates a 2x2 frequency response for the "Gang of 4" sensitivity
     functions [T, PS; CS, S].
@@ -2172,7 +2172,7 @@ def gangof4_response(
 def gangof4_plot(
         *args, omega=None, omega_limits=None, omega_num=None,
         Hz=False, **kwargs):
-    """Plot the response of the "Gang of 4" transfer functions for a system.
+    """Plot response of "Gang of 4" transfer functions.
 
     Plots a 2x2 frequency response for the "Gang of 4" sensitivity
     functions [T, PS; CS, S].  Can be called in one of two ways:

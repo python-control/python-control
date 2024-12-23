@@ -113,11 +113,11 @@ def lyap(A, Q, C=None, E=None, method=None):
     Parameters
     ----------
     A, Q : 2D array_like
-        Input matrices for the Lyapunov or Sylvestor equation
+        Input matrices for the Lyapunov or Sylvestor equation.
     C : 2D array_like, optional
-        If present, solve the Sylvester equation
+        If present, solve the Sylvester equation.
     E : 2D array_like, optional
-        If present, solve the generalized Lyapunov equation
+        If present, solve the generalized Lyapunov equation.
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -126,7 +126,7 @@ def lyap(A, Q, C=None, E=None, method=None):
     Returns
     -------
     X : 2D array
-        Solution to the Lyapunov or Sylvester equation
+        Solution to the Lyapunov or Sylvester equation.
 
     """
     # Decide what method to use
@@ -239,11 +239,11 @@ def dlyap(A, Q, C=None, E=None, method=None):
     Parameters
     ----------
     A, Q : 2D array_like
-        Input matrices for the Lyapunov or Sylvestor equation
+        Input matrices for the Lyapunov or Sylvestor equation.
     C : 2D array_like, optional
-        If present, solve the Sylvester equation
+        If present, solve the Sylvester equation.
     E : 2D array_like, optional
-        If present, solve the generalized Lyapunov equation
+        If present, solve the generalized Lyapunov equation.
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -252,7 +252,7 @@ def dlyap(A, Q, C=None, E=None, method=None):
     Returns
     -------
     X : 2D array (or matrix)
-        Solution to the Lyapunov or Sylvester equation
+        Solution to the Lyapunov or Sylvester equation.
 
     """
     # Decide what method to use
@@ -367,9 +367,9 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
     Parameters
     ----------
     A, B, Q : 2D array_like
-        Input matrices for the Riccati equation
+        Input matrices for the Riccati equation.
     R, S, E : 2D array_like, optional
-        Input matrices for generalized Riccati equation
+        Input matrices for generalized Riccati equation.
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -381,11 +381,11 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
     Returns
     -------
     X : 2D array (or matrix)
-        Solution to the Ricatti equation
+        Solution to the Ricatti equation.
     L : 1D array
-        Closed loop eigenvalues
+        Closed loop eigenvalues.
     G : 2D array (or matrix)
-        Gain matrix
+        Gain matrix.
 
     """
     # Decide what method to use
@@ -497,8 +497,7 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
 
 def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
          _As="A", _Bs="B", _Qs="Q", _Rs="R", _Ss="S", _Es="E"):
-    """Solves the discrete-time algebraic Riccati
-    equation.
+    """Solves the discrete-time algebraic Riccati equation.
 
     X, L, G = dare(A, B, Q, R) solves
 
@@ -524,9 +523,9 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
     Parameters
     ----------
     A, B, Q : 2D arrays
-        Input matrices for the Riccati equation
+        Input matrices for the Riccati equation.
     R, S, E : 2D arrays, optional
-        Input matrices for generalized Riccati equation
+        Input matrices for generalized Riccati equation.
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -538,11 +537,11 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
     Returns
     -------
     X : 2D array (or matrix)
-        Solution to the Ricatti equation
+        Solution to the Ricatti equation.
     L : 1D array
-        Closed loop eigenvalues
+        Closed loop eigenvalues.
     G : 2D array (or matrix)
-        Gain matrix
+        Gain matrix.
 
     """
     # Decide what method to use

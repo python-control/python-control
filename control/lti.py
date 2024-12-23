@@ -20,7 +20,7 @@ __all__ = ['poles', 'zeros', 'damp', 'evalfr', 'frequency_response',
 
 
 class LTI(InputOutputSystem):
-    """LTI is a parent class to linear time-invariant (LTI) system objects.
+    """Parent class for linear time-invariant (LTI) system objects.
 
     LTI is the parent to the StateSpace and TransferFunction child classes. It
     contains the number of inputs and outputs, and the timebase (dt) for the
@@ -39,16 +39,16 @@ class LTI(InputOutputSystem):
             name=name, inputs=inputs, outputs=outputs, states=states, **kwargs)
 
     def damp(self):
-        '''Natural frequency, damping ratio of system poles
+        '''Natural frequency, damping ratio of system poles.
 
         Returns
         -------
         wn : array
-            Natural frequency for each system pole
+            Natural frequency for each system pole.
         zeta : array
-            Damping ratio for each system pole
+            Damping ratio for each system pole.
         poles : array
-            System pole locations
+            System pole locations.
         '''
         poles = self.poles()
 
@@ -61,8 +61,7 @@ class LTI(InputOutputSystem):
         return wn, zeta, poles
 
     def frequency_response(self, omega=None, squeeze=None):
-        """Evaluate the linear time-invariant system at an array of angular
-        frequencies.
+        """Evaluate LTI system response at an array of frequencies.
 
         For continuous time systems, computes the frequency response as
 
@@ -146,7 +145,7 @@ class LTI(InputOutputSystem):
             return zeroresp
 
     def bandwidth(self, dbdrop=-3):
-        """Evaluate the bandwidth of the LTI system for a given dB drop.
+        """Evaluate bandwidth of an LTI system for a given dB drop.
 
         Evaluate the first frequency that the response magnitude is lower than
         DC gain by dbdrop dB.
@@ -162,7 +161,7 @@ class LTI(InputOutputSystem):
         bandwidth : ndarray
             The first frequency (rad/time-unit) where the gain drops below
             dbdrop of the dc gain of the system, or nan if the system has
-            infinite dc gain, inf if the gain does not drop for all frequency
+            infinite dc gain, inf if the gain does not drop for all frequency.
 
         Raises
         ------
@@ -248,7 +247,7 @@ def poles(sys):
     Parameters
     ----------
     sys : StateSpace or TransferFunction
-        Linear system
+        Linear system.
 
     Returns
     -------
@@ -273,7 +272,7 @@ def zeros(sys):
     Parameters
     ----------
     sys : StateSpace or TransferFunction
-        Linear system
+        Linear system.
 
     Returns
     -------
@@ -292,24 +291,23 @@ def zeros(sys):
 
 
 def damp(sys, doprint=True):
-    """
-    Compute natural frequencies, damping ratios, and poles of a system.
+    """Compute system's natural frequencies, damping ratios, and poles.
 
     Parameters
     ----------
     sys : LTI (StateSpace or TransferFunction)
-        A linear system object
+        A linear system object.
     doprint : bool (optional)
-        if True, print table with values
+        If True, print table with values.
 
     Returns
     -------
     wn : array
-        Natural frequency for each system pole
+        Natural frequency for each system pole.
     zeta : array
-        Damping ratio for each system pole
+        Damping ratio for each system pole.
     poles : array
-        System pole locations
+        System pole locations.
 
     See Also
     --------
@@ -353,7 +351,7 @@ def damp(sys, doprint=True):
 
 
 def evalfr(sys, x, squeeze=None):
-    """Evaluate the transfer function of an LTI system for complex frequency x.
+    """Evaluate transfer function of LTI system at complex frequency.
 
     Returns the complex frequency response `sys(x)` where `x` is `s` for
     continuous-time systems and `z` for discrete-time systems, with
@@ -368,9 +366,9 @@ def evalfr(sys, x, squeeze=None):
     Parameters
     ----------
     sys : StateSpace or TransferFunction
-        Linear system
+        Linear system.
     x : complex scalar or 1D array_like
-        Complex frequency(s)
+        Complex frequency(s).
     squeeze : bool, optional (default=True)
         If squeeze=True, remove single-dimensional entries from the shape of
         the output even if the system is not SISO. If squeeze=False, keep all
@@ -412,11 +410,12 @@ def evalfr(sys, x, squeeze=None):
 def frequency_response(
         sysdata, omega=None, omega_limits=None, omega_num=None,
         Hz=None, squeeze=None):
-    """Frequency response of an LTI system at multiple angular frequencies.
+    """Frequency response of an LTI system.
 
-    In general the system may be multiple input, multiple output (MIMO), where
-    `m = sys.ninputs` number of inputs and `p = sys.noutputs` number of
-    outputs.
+    Computes the frequency response of an LTI system at a list of
+    frequencies.  In general the system may be multiple input, multiple
+    output (MIMO), where `m = sys.ninputs` number of inputs and `p =
+    sys.noutputs` number of outputs.
 
     Parameters
     ----------
@@ -588,7 +587,7 @@ def dcgain(sys):
 
 
 def bandwidth(sys, dbdrop=-3):
-    """Return the first freqency where the gain drop by dbdrop of the system.
+    """Find first freqency where the gain drop by dbdrop of the system.
 
     Parameters
     ----------
@@ -603,7 +602,7 @@ def bandwidth(sys, dbdrop=-3):
     bandwidth : ndarray
         The first frequency (rad/time-unit) where the gain drops below dbdrop
         of the dc gain of the system, or nan if the system has infinite dc
-        gain, inf if the gain does not drop for all frequency
+        gain, inf if the gain does not drop for all frequency.
 
     Raises
     ------
