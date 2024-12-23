@@ -10,10 +10,8 @@ osmap = {'linux': 'ubuntu',
          'win': 'windows',
          }
 
-blas_implementations = ['unset', 'Generic', 'OpenBLAS', 'Intel10_64lp']
-
-combinations = {'ubuntu': blas_implementations,
-                'macos': blas_implementations,
+combinations = {'ubuntu': ['unset', 'Generic', 'OpenBLAS', 'Intel10_64lp'],
+                'macos': ['unset', 'Generic', 'OpenBLAS'],
                 'windows': ['unset', 'Intel10_64lp'],
                }
 
