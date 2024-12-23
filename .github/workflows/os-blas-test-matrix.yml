@@ -226,7 +226,7 @@ jobs:
           sudo apt-get -y update
           case ${{ matrix.blas_lib }} in
             Generic )  sudo apt-get -y install libblas3 liblapack3 ;;
-            unset | OpenBLAS        ) sudo apt-get -y install libopenblas-base ;;
+            unset | OpenBLAS ) sudo apt-get -y install libopenblas0 ;;
             *)
               echo "BLAS ${{ matrix.blas_lib }} not supported for wheels on Ubuntu"
               exit 1 ;;
