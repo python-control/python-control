@@ -36,6 +36,13 @@ jobs:
         make html
         make doctest
 
+    - name: Run pytest
+      shell: bash -l {0}
+      working-directory: doc
+      run: |
+        make html
+        PYTHONPATH=../ pytest
+
     - name: Archive results
       uses: actions/upload-artifact@v4
       with:
