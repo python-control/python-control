@@ -356,14 +356,14 @@ def feedback(sys1, sys2=1, sign=-1, **kwargs):
 def append(*sys, **kwargs):
     """append(sys1, sys2, [..., sysn])
 
-    Group LTI state space models by appending their inputs and outputs.
+    Group LTI models by appending their inputs and outputs.
 
     Forms an augmented system model, and appends the inputs and
     outputs together.
 
     Parameters
     ----------
-    sys1, sys2, ..., sysn: scalar, array, or :class:`StateSpace`
+    sys1, sys2, ..., sysn: scalar, array, or :class:`LTI`
         I/O systems to combine.
 
     Other Parameters
@@ -382,9 +382,10 @@ def append(*sys, **kwargs):
 
     Returns
     -------
-    out: :class:`StateSpace`
+    out: :class:`LTI`
         Combined system, with input/output vectors consisting of all
-        input/output vectors appended.
+        input/output vectors appended. Specific type returned is the type of
+        the first argument.
 
     See Also
     --------
@@ -405,7 +406,7 @@ def append(*sys, **kwargs):
     (3, 8, 7)
 
     """
-    s1 = ss._convert_to_statespace(sys[0])
+    s1 = sys[0]
     for s in sys[1:]:
         s1 = s1.append(s)
     s1.update_names(**kwargs)
@@ -541,26 +542,20 @@ def combine_tf(tf_array):
     --------
     Combine two transfer functions
 
-    >>> s = control.TransferFunction.s
-    >>> control.combine_tf([
+    >>> s = ct.TransferFunction.s
+    >>> ct.combine_tf([
     ...     [1 / (s + 1)],
     ...     [s / (s + 2)],
     ... ])
-    TransferFunction([[array([1])], [array([1, 0])]],
-                     [[array([1, 1])], [array([1, 2])]])
+    TransferFunction([[array([1])], [array([1, 0])]], [[array([1, 1])], [array([1, 2])]])
 
     Combine NumPy arrays with transfer functions
 
-    >>> control.combine_tf([
+    >>> ct.combine_tf([
     ...     [np.eye(2), np.zeros((2, 1))],
-    ...     [np.zeros((1, 2)), control.TransferFunction([1], [1, 0])],
+    ...     [np.zeros((1, 2)), ct.TransferFunction([1], [1, 0])],
     ... ])
-    TransferFunction([[array([1.]), array([0.]), array([0.])],
-                      [array([0.]), array([1.]), array([0.])],
-                      [array([0.]), array([0.]), array([1])]],
-                     [[array([1.]), array([1.]), array([1.])],
-                      [array([1.]), array([1.]), array([1.])],
-                      [array([1.]), array([1.]), array([1, 0])]])
+    TransferFunction([[array([1.]), array([0.]), array([0.])], [array([0.]), array([1.]), array([0.])], [array([0.]), array([0.]), array([1])]], [[array([1.]), array([1.]), array([1.])], [array([1.]), array([1.]), array([1.])], [array([1.]), array([1.]), array([1, 0])]])
     """
     # Find common timebase or raise error
     dt_list = []
@@ -635,7 +630,7 @@ def split_tf(transfer_function):
     --------
     Split a MIMO transfer function
 
-    >>> G = control.TransferFunction(
+    >>> G = ct.TransferFunction(
     ...     [
     ...         [[87.8], [-86.4]],
     ...         [[108.2], [-109.6]],
@@ -645,7 +640,7 @@ def split_tf(transfer_function):
     ...         [[1, 1], [1, 1]],
     ...     ],
     ... )
-    >>> control.split_tf(G)
+    >>> ct.split_tf(G)
     array([[TransferFunction(array([87.8]), array([1, 1])),
             TransferFunction(array([-86.4]), array([1, 1]))],
            [TransferFunction(array([108.2]), array([1, 1])),
