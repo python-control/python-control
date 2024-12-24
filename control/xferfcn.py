@@ -1288,8 +1288,8 @@ class TransferFunction(LTI):
     #: The ``s`` constant can be used to create continuous time transfer
     #: functions using algebraic expressions.
     #:
-    #: Example
-    #: -------
+    #: Examples
+    #: --------
     #: >>> s = TransferFunction.s                               # doctest: +SKIP
     #: >>> G  = (s + 1)/(s**2 + 2*s + 1)                        # doctest: +SKIP
     #:
@@ -1301,8 +1301,8 @@ class TransferFunction(LTI):
     #: The ``z`` constant can be used to create discrete time transfer
     #: functions using algebraic expressions.
     #:
-    #: Example
-    #: -------
+    #: Examples
+    #: --------
     #: >>> z = TransferFunction.z                               # doctest: +SKIP
     #: >>> G  = 2 * z / (4 * z**3 + 3*z - 1)                    # doctest: +SKIP
     #:

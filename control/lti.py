@@ -612,8 +612,8 @@ def bandwidth(sys, dbdrop=-3):
     ValueError
         if 'dbdrop' is not a negative scalar
 
-    Example
-    -------
+    Examples
+    --------
     >>> G = ct.tf([1], [1, 1])
     >>> ct.bandwidth(G)
     np.float64(0.9976283451102316)
