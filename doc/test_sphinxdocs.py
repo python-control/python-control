@@ -21,6 +21,7 @@ sphinx_dir = str(resources.files('control')) + '/../doc/generated/'
 
 # Functions that should not be referenced
 legacy_functions = [
+    'FRD',                      # FrequencyResponseData (or frd)
     'balred',                   # balanced_reduction
     'bode',                     # bode_plot
     'c2d',                      # sample_system

@@ -31,7 +31,6 @@ System interconnections
 
     append
     combine_tf
-    connect
     feedback
     interconnect
     negate
@@ -75,7 +74,7 @@ Time domain simulation
     impulse_response
     initial_response
     input_output_response
-    phase_plot
+    phase_plane_plot
     step_response
 
 Control system analysis
@@ -182,7 +181,6 @@ Utility functions and conversions
     isctime
     isdtime
     issiso
-    issys
     mag2db
     modal_form
     norm
