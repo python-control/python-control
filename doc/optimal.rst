@@ -492,5 +492,6 @@ The following classes and functions are defined in the
    ~control.optimal.output_range_constraint
    ~control.optimal.quadratic_cost
    ~control.optimal.solve_ocp
+   ~control.optimal.solve_oep
    ~control.optimal.state_poly_constraint
    ~control.optimal.state_range_constraint

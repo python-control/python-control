@@ -673,7 +673,9 @@ Plotting functions
    ~control.nichols_plot
    ~control.nyquist_plot
    ~control.phase_plane_plot
+   phaseplot.circlegrid
    phaseplot.equilpoints
+   phaseplot.meshgrid
    phaseplot.separatrices
    phaseplot.streamlines
    phaseplot.vectorfield

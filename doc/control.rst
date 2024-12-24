@@ -30,12 +30,14 @@ System interconnections
    :toctree: generated/
 
     append
+    combine_tf
     connect
     feedback
     interconnect
     negate
     parallel
     series
+    split_tf
     connection_table
     combine_tf
     split_tf
@@ -81,6 +83,7 @@ Control system analysis
 .. autosummary::
    :toctree: generated/
 
+    bandwidth
     dcgain
     describing_function
     frequency_response
@@ -88,6 +91,7 @@ Control system analysis
     get_output_fb_index
     ispassive
     margin
+    solve_passivity_LMI
     stability_margins
     step_info
     phase_crossover_frequencies

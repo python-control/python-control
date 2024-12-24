@@ -1953,13 +1953,18 @@ class OptimalEstimationResult(sp.optimize.OptimizeResult):
         self.outputs = response.outputs
 
 
-# Compute the moving horizon estimate for a nonlinear system
+# Compute the finite horizon estimate for a nonlinear system
 def solve_oep(
         sys, timepts, Y, U, trajectory_cost, X0=None,
         trajectory_constraints=None, initial_guess=None,
         squeeze=None, print_summary=True, **kwargs):
 
-    """Compute the solution to a moving horizon estimation problem.
+    """Compute the solution to a finite horizon estimation problem.
+
+    This function computes the maximum likelihood estimate of a system
+    state given the input and output over a fixed horizon.  The likelihood
+    is evaluated according to a cost function whose value is minimized
+    to compute the maximum likelhood estimate.
 
     Parameters
     ----------

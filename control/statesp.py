@@ -1929,6 +1929,9 @@ def ssdata(sys):
 def linfnorm(sys, tol=1e-10):
     """L-infinity norm of a linear system.
 
+    .. deprecated:: 0.10.2
+        This functionality is now available in :func:`sysnorm`.
+
     Parameters
     ----------
     sys : LTI (StateSpace or TransferFunction)
@@ -1952,6 +1955,7 @@ def linfnorm(sys, tol=1e-10):
     --------
     slycot.ab13dd : the Slycot routine linfnorm that does the calculation
     """
+    warn("linfnorm() is deprecated; use sysnorm(sys, p='inf')", FutureWarning)
 
     if ab13dd is None:
         raise ControlSlycot("Can't find slycot module 'ab13dd'")
