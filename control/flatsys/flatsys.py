@@ -1,42 +1,5 @@
 # flatsys.py - trajectory generation for differentially flat systems
 # RMM, 10 Nov 2012
-#
-# This file contains routines for computing trajectories for differentially
-# flat nonlinear systems.  It is (very) loosely based on the NTG software
-# package developed by Mark Milam and Kudah Mushambi, but rewritten from
-# scratch in python.
-#
-# Copyright (c) 2012 by California Institute of Technology
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-# 1. Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#
-# 2. Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#
-# 3. Neither the name of the California Institute of Technology nor
-#    the names of its contributors may be used to endorse or promote
-#    products derived from this software without specific prior
-#    written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
-# OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
 
 import itertools
 import numpy as np
@@ -54,8 +17,30 @@ class FlatSystem(NonlinearIOSystem):
     """Base class for representing a differentially flat system.
 
     The FlatSystem class is used as a base class to describe differentially
-    flat systems for trajectory generation.  The output of the system does not
-    need to be the differentially flat output.
+    flat systems for trajectory generation.  The output of the system does
+    not need to be the differentially flat output.  Flat systems are
+    usually created with the :func:`~control.flatsys.flatsys` factory
+    function.
+
+    Parameters
+    ----------
+    forward : callable
+        A function to compute the flat flag given the states and input.
+    reverse : callable
+        A function to compute the states and input given the flat flag.
+    dt : None, True or float, optional
+        System timebase.
+
+    Attributes
+    ----------
+    ninputs, noutputs, nstates : int
+        Number of input, output and state variables.
+    shape : tuple
+        2-tuple of I/O system dimension, (noutputs, ninputs).
+    input_labels, output_labels, state_labels : list of str
+        Names for the input, output, and state variables.
+    name : string, optional
+        System name.
 
     Notes
     -----
@@ -234,10 +219,9 @@ def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
         Description of the system states.  Same format as `inputs`.
 
     dt : None, True or float, optional
-        System timebase.  None (default) indicates continuous
-        time, True indicates discrete time with undefined sampling
-        time, positive number is discrete time with specified
-        sampling time.
+        System timebase.  None (default) indicates continuous time, True
+        indicates discrete time with undefined sampling time, positive
+        number is discrete time with specified sampling time.
 
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation
@@ -251,6 +235,12 @@ def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
     -------
     sys: :class:`FlatSystem`
         Flat system.
+
+    Other Parameters
+    ----------------
+    input_prefix, output_prefix, state_prefix : string, optional
+        Set the prefix for input, output, and state signals.  Defaults =
+        'u', 'y', 'x'.
 
     """
     from .linflat import LinearFlatSystem
