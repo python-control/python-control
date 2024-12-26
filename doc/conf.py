@@ -23,7 +23,6 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
     try:
         import sphinx_rtd_theme
         html_theme = 'sphinx_rtd_theme'
-        html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
     except ImportError:
         html_theme = 'default'
 
@@ -49,13 +48,13 @@ print("version %s, release %s" % (version, release))
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
-needs_sphinx = '3.1'
+needs_sphinx = '3.4'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.napoleon',
+    'sphinx.ext.autodoc', 'sphinx.ext.todo',
     'sphinx.ext.intersphinx', 'sphinx.ext.imgmath',
     'sphinx.ext.autosummary', 'nbsphinx', 'numpydoc',
     'sphinx.ext.linkcode', 'sphinx.ext.doctest'

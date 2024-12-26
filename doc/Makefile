@@ -38,5 +38,5 @@ ctrlplot-servomech.png: ../control/tests/ctrlplot_test.py
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-html pdf clean doctest: Makefile $(FIGS)
+html latexpdf clean doctest: Makefile $(FIGS)
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
