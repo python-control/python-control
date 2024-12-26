@@ -54,10 +54,9 @@ needs_sphinx = '3.4'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc', 'sphinx.ext.todo',
-    'sphinx.ext.intersphinx', 'sphinx.ext.imgmath',
-    'sphinx.ext.autosummary', 'nbsphinx', 'numpydoc',
-    'sphinx.ext.linkcode', 'sphinx.ext.doctest'
+    'sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.intersphinx',
+    'sphinx.ext.imgmath', 'sphinx.ext.autosummary', 'nbsphinx', 'numpydoc',
+    'sphinx.ext.linkcode', 'sphinx.ext.doctest', 'sphinx_copybutton'
 ]
 
 # scan documents for autosummary directives and generate stub pages for each.
