@@ -10,15 +10,10 @@ examples illustrating their use.
 Package overview
 ================
 
-The python-control package is a set of python classes and functions that
-implement common operations for the analysis and design of feedback control
-systems.  The initial goal is to implement all of the functionality required
-to work through the examples in the textbook `Feedback Systems
-<http://fbsbook.org>`_ by Astrom and Murray. A :ref:`matlab-module` is
-available that provides many of the common functions corresponding to
-commands available in the MATLAB Control Systems Toolbox.
-
-.. todo:: Add information from :module:`control`?
+.. automodule:: control
+   :no-members:
+   :no-inherited-members:
+   :no-special-members:
 
 Installation
 ============
@@ -51,7 +46,7 @@ To install using pip::
 
 .. note::
    If you install Slycot using pip you'll need a development
-   environment (e.g., Python development files, C and Fortran compilers).
+   environment (e.g., Python development files, C, and Fortran compilers).
    Pip installation can be particularly complicated for Windows.
 
 Many parts of `python-control` will work without `slycot`, but some
@@ -65,9 +60,10 @@ and verifying that no error message appears. More information on the
 Slycot package can be obtained from the `Slycot project page
 <https://github.com/python-control/Slycot>`_.
 
-Alternatively, to install from source, first `download the source
-<https://github.com/python-control/python-control/releases>`_ and unpack it.
-To install in your home directory, use::
+Alternatively, to install `python-control` from source, first
+`download the source code
+<https://github.com/python-control/python-control/releases>`_ and
+unpack it.  To install in your Python environment, use::
 
   pip install .
 
@@ -87,17 +83,29 @@ functionality may not be available.
 
 Some differences from MATLAB
 ============================
-The python-control package makes use of `NumPy <http://www.numpy.org>`_ and
-`SciPy <https://www.scipy.org>`_.  A list of general differences between
-NumPy and MATLAB can be found `here
+
+Users familiar with the MATLAB control systems toolbox will find much
+of the functionality implemented in `python-control`, though using
+Python constructs and coding conventions.  The python-control package
+makes heavy use of `NumPy <http://www.numpy.org>`_ and `SciPy
+<https://www.scipy.org>`_ and many differences are reflected in the
+use of those .  A list of general differences between NumPy and MATLAB
+can be found `here
 <https://docs.scipy.org/doc/numpy/user/numpy-for-matlab-users.html>`_.
 
 In terms of the python-control package more specifically, here are
 some things to keep in mind:
 
-* You must include commas in vectors.  So [1 2 3] must be [1, 2, 3].
-* Functions that return multiple values use objects (with elements for
-  each return value) or tuples.
+* Vectors and matrices used as arguments to functions can be written
+  using lists, with commas required between elements and column
+  vectors implemented as nested list .  So [1 2 3] must be written as
+  [1, 2, 3] and matrices are written using 2D nested lists, e.g., [[1,
+  2], [3, 4]].
+* Functions that return multiple values use either objects (with
+  elements for each return value) or tuples.  The number of elements
+  in a tuple is fixed and so functions that return variable numbers of
+  return values will have a parameter of the form ``return_<val>``
+  that is used to return additional data.
 * You cannot use braces for collections; use tuples instead.
 * Time series data have time as the final index (see
   :ref:`time-series-convention`).
