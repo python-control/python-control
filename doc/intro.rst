@@ -2,13 +2,13 @@
 Introduction
 ************
 
-Welcome to the Python Control Systems Toolbox (python-control) User's
-Manual.  This manual contains information on using the python-control
+Welcome to the Python Control Systems Library (python-control) User
+Guide.  This guide contains information on using the python-control
 package, including documentation for all functions in the package and
 examples illustrating their use.
 
-Overview of the toolbox
-=======================
+Package overview
+================
 
 The python-control package is a set of python classes and functions that
 implement common operations for the analysis and design of feedback control
@@ -18,21 +18,7 @@ to work through the examples in the textbook `Feedback Systems
 available that provides many of the common functions corresponding to
 commands available in the MATLAB Control Systems Toolbox.
 
-Some differences from MATLAB
-============================
-The python-control package makes use of `NumPy <http://www.numpy.org>`_ and
-`SciPy <https://www.scipy.org>`_.  A list of general differences between
-NumPy and MATLAB can be found `here
-<https://docs.scipy.org/doc/numpy/user/numpy-for-matlab-users.html>`_.
-
-In terms of the python-control package more specifically, here are
-some things to keep in mind:
-
-* You must include commas in vectors.  So [1 2 3] must be [1, 2, 3].
-* Functions that return multiple arguments use tuples.  
-* You cannot use braces for collections; use tuples instead.
-* Time series data have time as the final index (see
-  :ref:`time-series-convention`).
+.. todo:: Add information from :module:`control`?
 
 Installation
 ============
@@ -85,14 +71,33 @@ To install in your home directory, use::
 
   pip install .
 
-Getting started
-===============
+The python-control package can also be used with `Google Colab
+<colab.google.com>`_ by including the following lines to import the
+control package::
 
-There are two different ways to use the package.  For the default interface
-described in :ref:`function-ref`, simply import the control package as follows::
+  try:
+      import control as ct
+      print("python-control", ct.__version__)
+  except ImportError:
+      !pip install control
+      import control as ct
 
-    >>> import control as ct
+Note that Google colab does not currently support Slycot, so some
+functionality may not be available.
 
-If you want to have a MATLAB-like environment, use the :ref:`matlab-module`::
+Some differences from MATLAB
+============================
+The python-control package makes use of `NumPy <http://www.numpy.org>`_ and
+`SciPy <https://www.scipy.org>`_.  A list of general differences between
+NumPy and MATLAB can be found `here
+<https://docs.scipy.org/doc/numpy/user/numpy-for-matlab-users.html>`_.
 
-    >>> from control.matlab import *
+In terms of the python-control package more specifically, here are
+some things to keep in mind:
+
+* You must include commas in vectors.  So [1 2 3] must be [1, 2, 3].
+* Functions that return multiple values use objects (with elements for
+  each return value) or tuples.
+* You cannot use braces for collections; use tuples instead.
+* Time series data have time as the final index (see
+  :ref:`time-series-convention`).

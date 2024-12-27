@@ -312,7 +312,6 @@ Module classes and functions
 ============================
 
 .. autosummary::
-   :toctree: generated/
    :template: custom-class-template.rst
 
    ~control.flatsys.BasisFamily
@@ -324,7 +323,6 @@ Module classes and functions
    ~control.flatsys.SystemTrajectory
 
 .. autosummary::
-   :toctree: generated/
 
    ~control.flatsys.flatsys
    ~control.flatsys.point_to_point

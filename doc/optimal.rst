@@ -1,8 +1,7 @@
 .. _optimal-module:
 
-**************************
 Optimization-based control
-**************************
+==========================
 
 .. automodule:: control.optimal
    :no-members:
@@ -10,7 +9,7 @@ Optimization-based control
    :no-special-members:
 
 Optimal control problem setup
-=============================
+-----------------------------
 
 Consider the *optimal control problem*:
 
@@ -80,7 +79,7 @@ trajectory is applied to the system for a fraction of the horizon
 length. This process is then repeated, resulting in a sampled data feedback
 law.  This approach is illustrated in the following figure:
 
-.. image:: mpc-overview.png
+.. image:: figures/mpc-overview.png
 
 Every :math:`\Delta T` seconds, an optimal control problem is solved over a
 :math:`T` second horizon, starting from the current state.  The first
@@ -100,7 +99,7 @@ conditions (see, for example, the FBS2e supplement on `Optimization-Based
 Control <https://fbswiki.org/wiki/index.php/OBC>`_.
 
 Optimal estimation problem setup
-================================
+--------------------------------
 
 Consider a nonlinear system with discrete time dynamics of the form
 
@@ -203,7 +202,7 @@ implement an estimator by repeatedly solving the optimization of a window
 of length :math:`N` backwards in time.
 
 Module usage
-============
+------------
 
 The optimization-based control module provides a means of computing
 optimal trajectories for nonlinear systems and implementing
@@ -315,7 +314,7 @@ problems:
    ~control.optimal.disturbance_range_constraint
 
 Example
-=======
+-------
 
 Consider the vehicle steering example described in FBS2e.  The dynamics of
 the system can be defined as a nonlinear input/output system using the
@@ -411,7 +410,7 @@ Plotting the results::
 
 yields
 
-.. image:: steering-optimal.png
+.. image:: figures/steering-optimal.png
 
 
 An example showing the use of the optimal estimation problem and moving
@@ -419,7 +418,7 @@ horizon estimation (MHE) is given in the :doc:`mhe-pvtol Jupyter
 notebook <mhe-pvtol>`.
 
 Optimization Tips
-=================
+-----------------
 
 The python-control optimization module makes use of the SciPy optimization
 toolbox and it can sometimes be tricky to get the optimization to converge.
@@ -466,13 +465,12 @@ formulations.
 
 
 Module classes and functions
-============================
+----------------------------
 
 The following classes and functions are defined in the
 ``optimal`` module:
 
 .. autosummary::
-   :toctree: generated/
    :template: custom-class-template.rst
 
    ~control.optimal.OptimalControlProblem
@@ -481,7 +479,6 @@ The following classes and functions are defined in the
    ~control.optimal.OptimalEstimationResult
 
 .. autosummary::
-   :toctree: generated/
 
    ~control.optimal.create_mpc_iosystem
    ~control.optimal.disturbance_range_constraint

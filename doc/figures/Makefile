@@ -11,6 +11,9 @@ SRCDIR = ../..
 
 all: $(FIGS)
 
+clean:
+	/bin/rm -f $(FIGS)
+
 classes.pdf: classes.fig
 	fig2dev -Lpdf $< $@
 

@@ -562,7 +562,6 @@ Module classes and functions
 ============================
 
 .. autosummary::
-   :toctree: generated/
    :template: custom-class-template.rst
 
    ~control.InputOutputSystem
@@ -572,7 +571,6 @@ Module classes and functions
    ~control.OperatingPoint
 
 .. autosummary::
-   :toctree: generated/
 
    ~control.find_operating_point
    ~control.interconnect

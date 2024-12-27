@@ -246,8 +246,9 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'PythonControlLibrary.tex', u'Python Control Library Documentation',
-     u'RMM', 'manual'),
+    (master_doc, 'python-control.tex',
+     u'Python Control Systems Library User Guide',
+     u'Python Control Developers', 'manual'),
 ]
 
 

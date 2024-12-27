@@ -68,7 +68,7 @@ response for a two-input, two-output can be plotted using the commands::
 
 which produces the following plot:
 
-.. image:: timeplot-mimo_step-default.png
+.. image:: figures/timeplot-mimo_step-default.png
 
 The  :class:`~control.TimeResponseData` object can also be used to access
 the data from the simulation::
@@ -104,7 +104,7 @@ following plot::
         title="Step response for 2x2 MIMO system " +
         "[plot_inputs, overlay_signals]")
 
-.. image:: timeplot-mimo_step-pi_cs.png
+.. image:: figures/timeplot-mimo_step-pi_cs.png
 
 Input/output response plots created with either the
 :func:`~control.forced_response` or the
@@ -123,7 +123,7 @@ keyword::
       title="I/O response for 2x2 MIMO system " +
       "[plot_inputs='overlay', legend_map]")
 
-.. image:: timeplot-mimo_ioresp-ov_lm.png
+.. image:: figures/timeplot-mimo_ioresp-ov_lm.png
 
 Another option that is available is to use the `transpose` keyword so that
 instead of plotting the outputs on the top and inputs on the bottom, the
@@ -142,7 +142,7 @@ following figure::
           title="I/O responses for 2x2 MIMO system, multiple traces "
           "[transpose]")
 
-.. image:: timeplot-mimo_ioresp-mt_tr.png
+.. image:: figures/timeplot-mimo_ioresp-mt_tr.png
 
 This figure also illustrates the ability to create "multi-trace" plots
 using the :func:`~control.combine_time_responses` function.  The line
@@ -160,7 +160,7 @@ and styles for various signals and traces::
       input_props=[{'color': c} for c in ['red', 'green']],
       trace_props=[{'linestyle': s} for s in ['-', '--']])
 
-.. image:: timeplot-mimo_step-linestyle.png
+.. image:: figures/timeplot-mimo_step-linestyle.png
 
 Frequency response data
 =======================
@@ -180,7 +180,7 @@ be generated using the :func:`~control.bode_plot` function::
 
   ct.bode_plot(response, initial_phase=0)
 
-.. image:: freqplot-siso_bode-default.png
+.. image:: figures/freqplot-siso_bode-default.png
 
 Computing the response for multiple systems at the same time yields a
 common frequency range that covers the features of all listed systems.
@@ -193,7 +193,7 @@ Bode plots can also be created directly using the
       [[[1, 0.6, 1], [1, 1, 1]], [[1, 0.4, 1], [1, 2, 1]]], name="sys_mimo")
   ct.frequency_response(sys_mimo).plot()
 
-.. image:: freqplot-mimo_bode-default.png
+.. image:: figures/freqplot-mimo_bode-default.png
 
 A variety of options are available for customizing Bode plots, for
 example allowing the display of the phase to be turned off or
@@ -202,7 +202,7 @@ overlaying the inputs or outputs::
   ct.frequency_response(sys_mimo).plot(
       plot_phase=False, overlay_inputs=True, overlay_outputs=True)
 
-.. image:: freqplot-mimo_bode-magonly.png
+.. image:: figures/freqplot-mimo_bode-magonly.png
 
 The :func:`~control.singular_values_response` function can be used to
 generate Bode plots that show the singular values of a transfer
@@ -210,7 +210,7 @@ function::
 
   ct.singular_values_response(sys_mimo).plot()
 
-.. image:: freqplot-mimo_svplot-default.png
+.. image:: figures/freqplot-mimo_svplot-default.png
 
 Different types of plots can also be specified for a given frequency
 response.  For example, to plot the frequency response using a a Nichols
@@ -218,7 +218,7 @@ plot, use `plot_type='nichols'`::
 
   response.plot(plot_type='nichols')
 
-.. image:: freqplot-siso_nichols-default.png
+.. image:: figures/freqplot-siso_nichols-default.png
 
 Another response function that can be used to generate Bode plots is the
 :func:`~control.gangof4_response` function, which computes the four primary
@@ -229,7 +229,7 @@ sensitivity functions for a feedback control system in standard form::
   response = rect.gangof4_response(proc, ctrl)
   ct.bode_plot(response)	# or response.plot()
 
-.. image:: freqplot-gangof4.png
+.. image:: figures/freqplot-gangof4.png
 
 Nyquist analysis can be done using the :func:`~control.nyquist_response`
 function, which evaluates an LTI system along the Nyquist contour, and
@@ -238,7 +238,7 @@ the :func:`~control.nyquist_plot` function, which generates a Nyquist plot::
   sys = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='sys')
   nyquist_plot(sys)
 
-.. image:: freqplot-nyquist-default.png
+.. image:: figures/freqplot-nyquist-default.png
 
 The :func:`~control.nyquist_response` function can be used to compute
 the number of encirclements of the -1 point and can return the Nyquist
@@ -260,7 +260,7 @@ the computation of the Nyquist curve and the way the data are plotted::
       arrows=[0, 0.15, 0.3, 0.6, 0.7, 0.925], label='sys')
   print("Encirclements =", nyqresp.count)
 
-.. image:: freqplot-nyquist-custom.png
+.. image:: figures/freqplot-nyquist-custom.png
 
 All frequency domain plotting functions will automatically compute the
 range of frequencies to plot based on the poles and zeros of the frequency
@@ -272,7 +272,7 @@ array of frequencies as a second argument (after the list of systems)::
   omega = np.logspace(-2, 2, 500)
   ct.frequency_response([sys1, sys2], omega).plot(initial_phase=0)
 
-.. image:: freqplot-siso_bode-omega.png
+.. image:: figures/freqplot-siso_bode-omega.png
 
 Alternatively, frequency ranges can be specified by passing a list of the
 form ``[wmin, wmax]``, where ``wmin`` and ``wmax`` are the minimum and
@@ -309,14 +309,14 @@ zeros and can be used to generate a pole/zero plot::
   response = ct.pole_zero_map(sys)
   ct.pole_zero_plot(response)
 
-.. image:: pzmap-siso_ctime-default.png
+.. image:: figures/pzmap-siso_ctime-default.png
 
 A root locus plot shows the location of the closed loop poles of a system
 as a function of the loop gain::
 
   ct.root_locus_map(sys).plot()
 
-.. image:: rlocus-siso_ctime-default.png
+.. image:: figures/rlocus-siso_ctime-default.png
 
 The grid in the left hand plane shows lines of constant damping ratio as
 well as arcs corresponding to the frequency of the complex pole.  The grid
@@ -329,7 +329,7 @@ root locus diagram will mark the pole locations on all branches of the
 diagram and display the gain and damping ratio for the clicked point below
 the plot title:
 
-.. image:: rlocus-siso_ctime-clicked.png
+.. image:: figures/rlocus-siso_ctime-clicked.png
 
 Root locus diagrams are also supported for discrete time systems, in which
 case the grid is show inside the unit circle::
@@ -337,7 +337,7 @@ case the grid is show inside the unit circle::
   sysd = sys.sample(0.1)
   ct.root_locus_plot(sysd)
 
-.. image:: rlocus-siso_dtime-default.png
+.. image:: figures/rlocus-siso_dtime-default.png
 
 Lists of systems can also be given, in which case the root locus diagram
 for each system is plotted in different colors::
@@ -346,7 +346,7 @@ for each system is plotted in different colors::
   sys2 = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='sys2')
   ct.root_locus_plot([sys1, sys2], grid=False)
 
-.. image:: rlocus-siso_multiple-nogrid.png
+.. image:: figures/rlocus-siso_multiple-nogrid.png
 
 
 Phase plane plots
@@ -367,7 +367,7 @@ The default method for generating a phase plane plot is to provide a
     T = 8
     ct.phase_plane_plot(sys, axis_limits, T)
 
-.. image:: phaseplot-dampedosc-default.png
+.. image:: figures/phaseplot-dampedosc-default.png
 
 By default, the plot includes streamlines generated from starting
 points on limits of the plot, with arrows showing the flow of the
@@ -392,7 +392,7 @@ an inverted pendulum system, which is created using a mesh grid::
     plt.xlabel(r"$\theta$ [rad]")
     plt.ylabel(r"$\dot\theta$ [rad/sec]")
 
-.. image:: phaseplot-invpend-meshgrid.png
+.. image:: figures/phaseplot-invpend-meshgrid.png
 
 This figure shows several features of more complex phase plane plots:
 multiple equilibrium points are shown, with saddle points showing
@@ -423,11 +423,12 @@ are part of the :mod:`~control.phaseplot` (pp) module::
         oscillator, np.array([[1, 0]]), 2*pi, arrows=6, color='b')
     plt.gca().set_aspect('equal')
 
-.. image:: phaseplot-oscillator-helpers.png
+.. image:: figures/phaseplot-oscillator-helpers.png
 
 The following helper functions are available:
 
 .. autosummary::
+   
    phaseplot.equilpoints
    phaseplot.separatrices
    phaseplot.streamlines
@@ -611,7 +612,7 @@ features::
     fig.suptitle("Loop analysis for servomechanism control design")
     plt.tight_layout()
 
-.. image:: ctrlplot-servomech.png
+.. image:: figures/ctrlplot-servomech.png
 
 As this example illustrates, python-control plotting functions and
 Matplotlib plotting functions can generally be intermixed.  One type of
@@ -629,7 +630,7 @@ example::
     cplt = ct.root_locus_plot([sys1, sys2], ax=ax_array[1, 0])
     cplt.set_plot_title("Root locus plots (w/ specified axes)")
 
-.. image:: ctrlplot-pole_zero_subplots.png
+.. image:: figures/ctrlplot-pole_zero_subplots.png
 
 Alternatively, turning off the omega-damping grid (using ``grid=False`` or
 ``grid='empty'``) allows use of Matplotlib layout commands.
@@ -647,7 +648,6 @@ number of encirclements for a Nyquist plot) as well as plotting (via the
 ``plot`` method).
 
 .. autosummary::
-   :toctree: generated/
 
    ~control.describing_function_response
    ~control.frequency_response
@@ -666,7 +666,6 @@ Plotting functions
 ------------------
 
 .. autosummary::
-   :toctree: generated/
 
    ~control.bode_plot
    ~control.describing_function_plot
@@ -692,7 +691,6 @@ carry out other operations in creating control plots.
 
 
 .. autosummary::
-   :toctree: generated/
 
    phaseplot.boxgrid
    ~control.combine_time_responses
@@ -706,7 +704,6 @@ Response and plotting classes
 The following classes are used in generating response data.
 
 .. autosummary::
-   :toctree: generated/
 
    ~control.ControlPlot
    ~control.DescribingFunctionResponse

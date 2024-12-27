@@ -1,8 +1,7 @@
 .. _descfcn-module:
 
-********************
 Describing functions
-********************
+====================
 
 For nonlinear systems consisting of a feedback connection between a
 linear system and a static nonlinearity, it is possible to obtain a
@@ -28,7 +27,7 @@ Describing function analysis is a simple method, but it is approximate
 because it assumes that higher harmonics can be neglected. 
 
 Module usage
-============
+------------
 
 The function :func:`~control.describing_function` can be used to
 compute the describing function of a nonlinear function::
@@ -57,7 +56,7 @@ calls the :func:`~control.describing_function_plot` function.
 
 
 Pre-defined nonlinearities
-==========================
+--------------------------
 
 To facilitate the use of common describing functions, the following
 nonlinearity constructors are predefined:
@@ -81,9 +80,8 @@ These functions use the
 analytical description of the describing function.
 
 Module classes and functions
-============================
+----------------------------
 .. autosummary::
-   :toctree: generated/
    :template: custom-class-template.rst
 
    ~control.DescribingFunctionNonlinearity
