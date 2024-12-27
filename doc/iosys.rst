@@ -252,14 +252,14 @@ In this command, the states and the inputs are broadcast to the size of the
 state and input vectors, respectively.
 
 If we want to linearize the closed loop system around a process state
-``x0`` (with two elements) and an estimator state ``0`` (for both states),
+`x0` (with two elements) and an estimator state `0` (for both states),
 we can use the list processing feature::
 
   H = clsys.linearize([x0, 0], 0)
 
 Note that this also utilizes the zero-padding functionality, since the
-second argument in the list ``[x0, 0]`` is a scalar and so the vector
-``[x0, 0]`` only has three elements instead of the required four.
+second argument in the list `[x0, 0]` is a scalar and so the vector
+`[x0, 0]` only has three elements instead of the required four.
 
 To run an input/output simulation with a sinusoidal signal for the first
 input, a constant for the second input, and no external disturbance, we can
@@ -285,8 +285,8 @@ use the command
 
   sumblk = ct.summing_junction(3)
 
-By default, the name of the inputs will be of the form ``u[i]`` and the output
-will be ``y``.  This can be changed by giving an explicit list of names::
+By default, the name of the inputs will be of the form `u[i]` and the output
+will be `y`.  This can be changed by giving an explicit list of names::
 
   sumblk = ct.summing_junction(inputs=['a', 'b', 'c'], output='d')
 
@@ -306,16 +306,16 @@ the command
 
   sumblk = ct.summing_junction(inputs=['r', '-y'], output='e', dimension=2)
 
-will produce an input/output block that implements ``e[0] = r[0] - y[0]`` and
-``e[1] = r[1] - y[1]``.
+will produce an input/output block that implements `e[0] = r[0] - y[0]` and
+`e[1] = r[1] - y[1]`.
 
 Automatic connections using signal names
 ----------------------------------------
 
 The :func:`~control.interconnect` function allows the interconnection of
-multiple systems by using signal names of the form ``sys.signal``.  In many
+multiple systems by using signal names of the form `sys.signal`.  In many
 situations, it can be cumbersome to explicitly connect all of the appropriate
-inputs and outputs.  As an alternative, if the ``connections`` keyword is
+inputs and outputs.  As an alternative, if the `connections` keyword is
 omitted, the :func:`~control.interconnect` function will connect all signals
 of the same name to each other.  This can allow for simplified methods of
 interconnecting systems, especially when combined with the
@@ -331,7 +331,7 @@ If a signal name appears in multiple outputs then that signal will be summed
 when it is interconnected.  Similarly, if a signal name appears in multiple
 inputs then all systems using that signal name will receive the same input.
 The :func:`~control.interconnect` function will generate an error if a signal
-listed in ``inplist`` or ``outlist`` (corresponding to the inputs and outputs
+listed in `inplist` or `outlist` (corresponding to the inputs and outputs
 of the interconnected system) is not found, but inputs and outputs of
 individual systems that are not connected to other systems are left
 unconnected (so be careful!).

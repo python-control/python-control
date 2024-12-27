@@ -109,8 +109,8 @@ argument::
     mag, phase, omega = response(squeeze=False)
 
 Frequency response objects are also available as named properties of the
-``response`` object: ``response.magnitude``, ``response.phase``, and
-``response.response`` (for the complex response).  For MIMO systems, these
+`response` object: `response.magnitude`, `response.phase`, and
+`response.response` (for the complex response).  For MIMO systems, these
 elements of the frequency response can be accessed using the names of the
 inputs and outputs::
 
@@ -119,8 +119,8 @@ inputs and outputs::
 where the signal names are based on the system that generated the frequency
 response.
 
-Note: The ``fresp`` data member is stored as a NumPy array and cannot be
-accessed with signal names.  Use ``response.response`` to access the
+Note: The `fresp` data member is stored as a NumPy array and cannot be
+accessed with signal names.  Use `response.response` to access the
 complex frequency response using signal names.
 
 Multi-input, multi-output (MIMO) systems
@@ -137,8 +137,8 @@ names::
 
 Signal names for an indexed subsystem are preserved from the original
 system and the subsystem name is set according to the values of
-``config.defaults['iosys.indexed_system_name_prefix']`` and
-``config.defaults['iosys.indexed_system_name_suffix']``.  The default
+`config.defaults['iosys.indexed_system_name_prefix']` and
+`config.defaults['iosys.indexed_system_name_suffix']`.  The default
 subsystem name is the original system name with '$indexed' appended.
 
 .. include:: statesp.rst

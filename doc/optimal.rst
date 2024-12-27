@@ -468,7 +468,7 @@ Module classes and functions
 ----------------------------
 
 The following classes and functions are defined in the
-``optimal`` module:
+`optimal` module:
 
 .. autosummary::
    :template: custom-class-template.rst

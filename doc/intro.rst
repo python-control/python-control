@@ -104,7 +104,7 @@ some things to keep in mind:
 * Functions that return multiple values use either objects (with
   elements for each return value) or tuples.  The number of elements
   in a tuple is fixed and so functions that return variable numbers of
-  return values will have a parameter of the form ``return_<val>``
+  return values will have a parameter of the form `return_<val>`
   that is used to return additional data.
 * You cannot use braces for collections; use tuples instead.
 * Time series data have time as the final index (see

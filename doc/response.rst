@@ -275,13 +275,13 @@ array of frequencies as a second argument (after the list of systems)::
 .. image:: figures/freqplot-siso_bode-omega.png
 
 Alternatively, frequency ranges can be specified by passing a list of the
-form ``[wmin, wmax]``, where ``wmin`` and ``wmax`` are the minimum and
+form `[wmin, wmax]`, where `wmin` and `wmax` are the minimum and
 maximum frequencies in the (log-spaced) frequency range::
 
   response = ct.frequency_response([sys1, sys2], [1e-2, 1e2])
 
 The number of (log-spaced) points in the frequency can be specified using
-the ``omega_num`` keyword parameter.
+the `omega_num` keyword parameter.
 
 Frequency response data can also be accessed directly and plotted manually::
 
@@ -290,9 +290,9 @@ Frequency response data can also be accessed directly and plotted manually::
   plt.loglog(fresp.omega, fresp.magnitude['y[1]', 'u[0]'])
 
 Access to frequency response data is available via the attributes
-``omega``, ``magnitude``,` `phase``, and ``response``, where ``response``
+`omega`, `magnitude`,` `phase`, and `response`, where `response`
 represents the complex value of the frequency response at each frequency.
-The ``magnitude``, ``phase``, and ``response`` arrays can be indexed using
+The `magnitude`, `phase`, and `response` arrays can be indexed using
 either input/output indices or signal names, with the first index
 corresponding to the output signal and the second input corresponding to
 the input signal.
@@ -464,20 +464,20 @@ various ways.  The following general rules apply:
   sequentially, the :func:`matplotlib.pyplot.figure` command should be used
   to explicitly create a new figure.
 
-* The ``ax`` keyword argument can be used to direct the plotting function
-  to use a specific axes or array of axes.  The value of the ``ax`` keyword
+* The `ax` keyword argument can be used to direct the plotting function
+  to use a specific axes or array of axes.  The value of the `ax` keyword
   must have the proper number of axes for the plot (so a plot generating a
-  2x2 array of subplots should be given a 2x2 array of axes for the ``ax``
+  2x2 array of subplots should be given a 2x2 array of axes for the `ax`
   keyword).
 
-* The ``color``, ``linestyle``, ``linewidth``, and other matplotlib line
+* The `color`, `linestyle`, `linewidth`, and other matplotlib line
   property arguments can be used to override the default line properties.
   If these arguments are absent, the default matplotlib line properties are
   used and the color cycles through the default matplotlib color cycle.
 
   The :func:`~control.bode_plot`, :func:`~control.time_response_plot`,
   and selected other commands can also accept a matplotlib format
-  string (e.g., ``'r--'``).  The format string must appear as a positional
+  string (e.g., `'r--'`).  The format string must appear as a positional
   argument right after the required data argument.
 
   Note that line property arguments are the same for all lines generated as
@@ -486,9 +486,9 @@ various ways.  The following general rules apply:
   often easiest to call multiple plot commands in sequence, with each
   command setting the line properties for that system/trace.
 
-* The ``label`` keyword argument can be used to override the line labels
+* The `label` keyword argument can be used to override the line labels
   that are used in generating the title and legend.  If more than one line
-  is being plotted in a given call to a plot command, the ``label``
+  is being plotted in a given call to a plot command, the `label`
   argument value should be a list of labels, one for each line, in the
   order they will appear in the legend.
 
@@ -502,33 +502,33 @@ various ways.  The following general rules apply:
   For non-input/output plots (e.g., Nyquist plots, pole/zero plots, root
   locus plots), the default labels are the system name.
 
-  If ``label`` is set to ``False``, individual lines are still given
+  If `label` is set to `False`, individual lines are still given
   labels, but no legend is generated in the plot. (This can also be
-  accomplished by setting ``legend_map`` to ``False``).
+  accomplished by setting `legend_map` to `False`).
 
-  Note: the ``label`` keyword argument is not implemented for describing
+  Note: the `label` keyword argument is not implemented for describing
   function plots or phase plane plots, since these plots are primarily
-  intended to be for a single system.  Standard ``matplotlib`` commands can
+  intended to be for a single system.  Standard `matplotlib` commands can
   be used to customize these plots for displaying information for multiple
   systems.
 
-* The ``legend_loc``, ``legend_map`` and ``show_legend`` keyword arguments
+* The `legend_loc`, `legend_map` and `show_legend` keyword arguments
   can be used to customize the locations for legends.  By default, a
   minimal number of legends are used such that lines can be uniquely
   identified and no legend is generated if there is only one line in the
-  plot.  Setting ``show_legend`` to ``False`` will suppress the legend and
-  setting it to ``True`` will force the legend to be displayed even if
+  plot.  Setting `show_legend` to `False` will suppress the legend and
+  setting it to `True` will force the legend to be displayed even if
   there is only a single line in each axes.  In addition, if the value of
-  the ``legend_loc`` keyword argument is set to a string or integer, it
+  the `legend_loc` keyword argument is set to a string or integer, it
   will set the position of the legend as described in the
-  :func:`matplotlib.legend` documentation.  Finally, ``legend_map`` can be
+  :func:`matplotlib.legend` documentation.  Finally, `legend_map` can be
   set to an array that matches the shape of the subplots, with each item
   being a string indicating the location of the legend for that axes (or
-  ``None`` for no legend).
+  `None` for no legend).
 
-* The ``rcParams`` keyword argument can be used to override the default
+* The `rcParams` keyword argument can be used to override the default
   matplotlib style parameters used when creating a plot.  The default
-  parameters for all control plots are given by the ``ct.rcParams``
+  parameters for all control plots are given by the `ct.rcParams`
   dictionary and have the following values:
 
   .. list-table::
@@ -551,8 +551,8 @@ various ways.  The following general rules apply:
        - 'small'
 
   Only those values that should be changed from the default need to be
-  specified in the ``rcParams`` keyword argument.  To override the defaults
-  for all control plots, update the ``ct.rcParams`` dictionary entries.
+  specified in the `rcParams` keyword argument.  To override the defaults
+  for all control plots, update the `ct.rcParams` dictionary entries.
 
   The default values for style parameters for control plots can be restored
   using :func:`~control.reset_rcParams`.
@@ -570,15 +570,15 @@ various ways.  The following general rules apply:
   and phase portions of the plot, and `share_frequency` can be used instead
   of `sharex`.
 
-* The ``title`` keyword can be used to override the automatic creation of
+* The `title` keyword can be used to override the automatic creation of
   the plot title.  The default title is a string of the form "<Type> plot
   for <syslist>" where <syslist> is a list of the sys names contained in
   the plot (which can be updated if the plotting is called multiple times).
-  Use ``title=False`` to suppress the title completely.  The title can also
+  Use `title=False` to suppress the title completely.  The title can also
   be updated using the :func:`~control.ControlPlot.set_plot_title` method
   for the returned control plot object.
 
-  The plot title is only generated if ``ax`` is ``None``.
+  The plot title is only generated if `ax` is `None`.
 
 The following code illustrates the use of some of these customization
 features::
@@ -632,8 +632,8 @@ example::
 
 .. image:: figures/ctrlplot-pole_zero_subplots.png
 
-Alternatively, turning off the omega-damping grid (using ``grid=False`` or
-``grid='empty'``) allows use of Matplotlib layout commands.
+Alternatively, turning off the omega-damping grid (using `grid=False` or
+`grid='empty'`) allows use of Matplotlib layout commands.
 
 
 Response and plotting functions
@@ -645,7 +645,7 @@ Response functions
 Response functions take a system or list of systems and return a response
 object that can be used to retrieve information about the system (e.g., the
 number of encirclements for a Nyquist plot) as well as plotting (via the
-``plot`` method).
+`plot` method).
 
 .. autosummary::
 
