@@ -1483,6 +1483,7 @@ def _convert_to_transfer_function(
     returned.  If sys is a scalar, then the number of inputs and outputs can be
     specified manually, as in:
 
+    >>> from control.xferfcn import _convert_to_transfer_function
     >>> sys = _convert_to_transfer_function(3.) # Assumes inputs = outputs = 1
     >>> sys = _convert_to_transfer_function(1., inputs=3, outputs=2)
 

@@ -580,6 +580,7 @@ def combine_tf(tf_array, **kwargs):
      [array([1.]), array([1.]), array([1.])],
      [array([1.]), array([1.]), array([1, 0])]],
     name='G', outputs=3, inputs=3)
+    
     """
     # Find common timebase or raise error
     dt_list = []
@@ -681,6 +682,7 @@ def split_tf(transfer_function):
                                             array([1, 1]),
                                             name='G', outputs=1, inputs=1)]],
           dtype=object)
+    
     """
     tf_split_lst = []
     for i_out in range(transfer_function.noutputs):
