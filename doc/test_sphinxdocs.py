@@ -42,7 +42,7 @@ legacy_functions = [
 
 # Functons that we can skip
 object_skiplist = [
-    control.NamedSignal,        # users don't need to know about this
+    control.NamedSignal,        # np.ndarray members cause errors
     control.common_timebase,    # mainly internal use
     control.cvxopt_check,       # mainly internal use
     control.pandas_check,       # mainly internal use

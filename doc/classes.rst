@@ -9,7 +9,7 @@ The classes listed below are used to represent models of input/output
 systems (both linear time-invariant and nonlinear).  They are usually
 created from factory functions such as :func:`tf` and :func:`ss`, so the
 user should normally not need to instantiate these directly.
-		   
+
 .. autosummary::
    :toctree: generated/
    :template: custom-class-template.rst
@@ -32,21 +32,34 @@ another:
 
 Additional classes
 ==================
+
+.. todo:: Break these up into more useful sections
+
 .. autosummary::
+   :toctree: generated/
    :template: custom-class-template.rst
    :nosignatures:
 
+   ControlPlot
    DescribingFunctionNonlinearity
    DescribingFunctionResponse
    flatsys.BasisFamily
+   flatsys.BezierFamily
+   flatsys.BSplineFamily
    flatsys.FlatSystem
    flatsys.LinearFlatSystem
    flatsys.PolyFamily
    flatsys.SystemTrajectory
+   FrequencyResponseList
+   NyquistResponseData
+   OperatingPoint
    optimal.OptimalControlProblem
    optimal.OptimalControlResult
    optimal.OptimalEstimationProblem
    optimal.OptimalEstimationResult
+   PoleZeroData
+   TimeResponseData
+   TimeResponseList
 
 The use of these classes is described in more detail in the
 :ref:`flatsys-module` module and the :ref:`optimal-module` module

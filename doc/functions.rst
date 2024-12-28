@@ -75,6 +75,15 @@ Time domain simulation
     phase_plane_plot
     step_response
     time_response_plot
+    combine_time_responses
+    phaseplot.boxgrid
+    phaseplot.circlegrid
+    phaseplot.equilpoints
+    phaseplot.meshgrid
+    phaseplot.separatrices
+    phaseplot.streamlines
+    phaseplot.vectorfield
+
 
 Frequency response
 ==================
@@ -84,8 +93,11 @@ Frequency response
 
     bode_plot
     describing_function_plot
+    describing_function_response
     frequency_response
+    nyquist_response
     nyquist_plot
+    gangof4_response
     gangof4_plot
     nichols_plot
     nichols_grid
@@ -110,8 +122,13 @@ Control system analysis
     phase_crossover_frequencies
     poles
     zeros
-    pzmap
-    root_locus
+    pole_zero_map
+    pole_zero_plot
+    pole_zero_subplots
+    root_locus_map
+    root_locus_plot
+    singular_values_plot
+    singular_values_response
     sisotool
     StateSpace.__call__
     TransferFunction.__call__
@@ -233,6 +250,7 @@ Utility functions
     issiso
     mag2db
     reset_defaults
+    reset_rcParams
     sample_system
     set_defaults
     ssdata
