@@ -1,7 +1,9 @@
 # ctrlplot.py - utility functions for plotting
 # Richard M. Murray, 14 Jun 2024
 #
-# Collection of functions that are used by various plotting functions.
+"""
+Collection of functions that are used by various plotting functions.
+"""
 
 # Code pattern for control system plotting functions:
 #
@@ -116,7 +118,7 @@ _ctrlplot_defaults = {'ctrlplot.rcParams': _ctrlplot_rcParams}
 #
 
 class ControlPlot(object):
-    """A class for returning control figures.
+    """A class for representing control figures.
 
     This class is used as the return type for control plotting functions.
     It contains the information required to access portions of the plot
