@@ -1,38 +1,19 @@
 .. _iosys-module:
 
-********************
-Input/output systems
-********************
+**************************
+Interconnected I/O Systems
+**************************
 
-Module usage
-============
+Operator overloading
+====================
 
-An input/output system is defined as a dynamical system that has a system
-state as well as inputs and outputs (either inputs or states can be empty).
-The dynamics of the system can be in continuous or discrete time.  To simulate
-an input/output system, use the :func:`~control.input_output_response`
-function::
 
-  resp = ct.input_output_response(io_sys, T, U, X0, params)
-  t, y, x = resp.time, resp.outputs, resp.states
+Block diagram algebra
+=====================
 
-An input/output system can be linearized around an equilibrium point
-to obtain a :class:`~control.StateSpace` linear system.  Use the
-:func:`~control.find_operating_point` function to obtain an
-equilibrium point and the :func:`~control.linearize` function to
-linearize about that equilibrium point::
 
-  xeq, ueq = ct.find_operating_point(io_sys, X0, U0)
-  ss_sys = ct.linearize(io_sys, xeq, ueq)
-
-Input/output systems are automatically created for state space LTI systems
-when using the :func:`~control.ss` function.  Nonlinear input/output
-systems can be created using the :func:`~control.nlsys` function, which
-requires the definition of an update function (for the right hand side of
-the differential or different equation) and an output function (computes
-the outputs from the state)::
-
-  io_sys = ct.nlsys(updfcn, outfcn, inputs=M, outputs=P, states=N)
+Signal-based interconnection
+============================
 
 More complex input/output systems can be constructed by using the
 :func:`~control.interconnect` function, which allows a collection of
@@ -556,25 +537,3 @@ bottom of the file).
 
 Integral action and state estimation can also be used with gain
 scheduled controllers.
-
-
-Module classes and functions
-============================
-
-.. autosummary::
-   :template: custom-class-template.rst
-
-   ~control.InputOutputSystem
-   ~control.InterconnectedSystem
-   ~control.LinearICSystem
-   ~control.NonlinearIOSystem
-   ~control.OperatingPoint
-
-.. autosummary::
-
-   ~control.find_operating_point
-   ~control.interconnect
-   ~control.input_output_response
-   ~control.linearize
-   ~control.nlsys
-   ~control.summing_junction

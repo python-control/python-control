@@ -1,9 +1,9 @@
 .. currentmodule:: control
-		   
+
 Phase plane plots
 =================
 Insight into nonlinear systems can often be obtained by looking at phase
-plane diagrams.  The :func:`~control.phase_plane_plot` function allows the
+plane diagrams.  The :func:`phase_plane_plot` function allows the
 creation of a 2-dimensional phase plane diagram for a system.  This
 functionality is supported by a set of mapping functions that are part of
 the `phaseplot` module.
@@ -56,7 +56,7 @@ multiple features in the phase plane plot give a good global picture of the
 topological structure of solutions of the dynamical system.
 
 Phase plots can be built up by hand using a variety of helper functions that
-are part of the :mod:`~control.phaseplot` (pp) module::
+are part of the :mod:`phaseplot` (pp) module::
 
     import control.phaseplot as pp
 
@@ -85,13 +85,13 @@ The following helper functions are available:
    phaseplot.streamlines
    phaseplot.vectorfield
 
-The :func:`~control.phase_plane_plot` function calls these helper functions
+The :func:`phase_plane_plot` function calls these helper functions
 based on the options it is passed.
 
 Note that unlike other plotting functions, phase plane plots do not involve
 computing a response and then plotting the result via a `plot()` method.
 Instead, the plot is generated directly be a call to the
-:func:`~control.phase_plane_plot` function (or one of the
-:mod:`~control.phaseplot` helper functions.
+:func:`phase_plane_plot` function (or one of the
+:mod:`phaseplot` helper functions.
 
 

@@ -1,6 +1,6 @@
-.. _descfcn-module:
-
 .. currentmodule:: control
+
+.. _descfcn-module:
 
 Describing functions
 ====================

@@ -2,14 +2,16 @@
 Nonlinear System Modeling, Analysis, and Design
 ***********************************************
 
-.. todo:: Figure out how to get these sections to display in a good
-          way without making the chapter too long.
+The Python Control Systems Library contains a variety of tools for
+modeling, analyzing, and designing nonlinear feedback systems,
+including support for simulation and optimization.
 
-.. toctree::
-   :maxdepth: 1
-	      
-   nlsys
-   phaseplot
-   optimal
-   descfcn
-   flatsys
+.. include:: nlsys.rst
+
+.. include:: phaseplot.rst
+
+.. include:: optimal.rst
+
+.. include:: descfcn.rst
+
+.. include:: flatsys.rst
