@@ -9,6 +9,7 @@ import warnings
 from .poly import PolyFamily
 from .systraj import SystemTrajectory
 from ..exception import ControlArgument
+from ..config import _process_legacy_keyword
 from ..nlsys import NonlinearIOSystem
 from ..timeresp import _check_convert_array
 
@@ -315,7 +316,7 @@ def point_to_point(
 
     Parameters
     ----------
-    flatsys : FlatSystem object
+    sys : FlatSystem object
         Description of the differentially flat system.  This object must
         define a function `flatsys.forward()` that takes the system state and
         produceds the flag of flat outputs and a system `flatsys.reverse()`
@@ -364,6 +365,20 @@ def point_to_point(
 
         The constraints are applied at each time point along the trajectory.
 
+    initial_guess : 2D array_like, optional
+        Initial guess for the trajectory coefficients (not implemented).
+
+    params : dict, optional
+        Parameter values for the system.  Passed to the evaluation
+        functions for the system as default values, overriding internal
+        defaults.
+
+    minimize_method : str, optional
+        Set the method used by :func:`scipy.optimize.minimize`.
+
+    minimize_options : str, optional
+        Set the options keyword used by :func:`scipy.optimize.minimize`.
+
     minimize_kwargs : str, optional
         Pass additional keywords to :func:`scipy.optimize.minimize`.
 
@@ -399,9 +414,8 @@ def point_to_point(
     T0 = timepts[0] if len(timepts) > 1 else T0
 
     # Process keyword arguments
-    if trajectory_constraints is None:
-        # Backwards compatibility
-        trajectory_constraints = kwargs.pop('constraints', None)
+    trajectory_constraints = _process_legacy_keyword(
+        kwargs, 'constraints', 'trajectory_constraints', trajectory_constraints)
 
     minimize_kwargs = {}
     minimize_kwargs['method'] = kwargs.pop('minimize_method', None)
@@ -632,7 +646,7 @@ def solve_flat_ocp(
 
     Parameters
     ----------
-    flatsys : FlatSystem object
+    sys : FlatSystem object
         Description of the differentially flat system.  This object must
         define a function `flatsys.forward()` that takes the system state and
         produceds the flag of flat outputs and a system `flatsys.reverse()`
@@ -684,6 +698,17 @@ def solve_flat_ocp(
     initial_guess : 2D array_like, optional
         Initial guess for the optimal trajectory of the flat outputs.
 
+    params : dict, optional
+        Parameter values for the system.  Passed to the evaluation
+        functions for the system as default values, overriding internal
+        defaults.
+
+    minimize_method : str, optional
+        Set the method used by :func:`scipy.optimize.minimize`.
+
+    minimize_options : str, optional
+        Set the options keyword used by :func:`scipy.optimize.minimize`.
+
     minimize_kwargs : str, optional
         Pass additional keywords to :func:`scipy.optimize.minimize`.
 
@@ -724,12 +749,10 @@ def solve_flat_ocp(
     T0 = timepts[0] if len(timepts) > 1 else 0
 
     # Process keyword arguments
-    if trajectory_constraints is None:
-        # Backwards compatibility
-        trajectory_constraints = kwargs.pop('constraints', None)
-    if trajectory_cost is None:
-        # Compatibility with point_to_point
-        trajectory_cost = kwargs.pop('cost', None)
+    trajectory_constraints = _process_legacy_keyword(
+        kwargs, 'constraints', 'trajectory_constraints', trajectory_constraints)
+    trajectory_cost = _process_legacy_keyword(
+        kwargs, 'cost', 'trajectory_cost', trajectory_cost)
 
     minimize_kwargs = {}
     minimize_kwargs['method'] = kwargs.pop('minimize_method', None)

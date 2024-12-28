@@ -558,6 +558,12 @@ class InputOutputSystem(object):
             Description of output signals; defaults to `y[i]`.
         states : int, list of str, int, or None, optional
             Description of system states; defaults to `x[i]`.
+        input_prefix : string, optional
+            Set the prefix for input signals.  Default = 'u'.
+        output_prefix : string, optional
+            Set the prefix for output signals.  Default = 'y'.
+        state_prefix : string, optional
+            Set the prefix for state signals.  Default = 'x'.
 
         """
         self.name = kwargs.pop('name', self.name)

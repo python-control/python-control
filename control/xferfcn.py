@@ -378,16 +378,6 @@ class TransferFunction(LTI):
         Expects inputs and outputs to be formatted correctly. Use ``sys(x)``
         for a more user-friendly interface.
 
-        Parameters
-        ----------
-        x : complex array_like or complex scalar
-            Complex frequencies
-
-        Returns
-        -------
-        output : (self.noutputs, self.ninputs, len(x)) complex ndarray
-            Frequency response
-
         """
         # Make sure the argument is a 1D array of complex numbers
         x_arr = np.atleast_1d(x).astype(complex, copy=False)

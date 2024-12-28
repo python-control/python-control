@@ -462,30 +462,7 @@ class NonlinearIOSystem(InputOutputSystem):
             t, np.asarray(x).reshape(-1), np.asarray(u).reshape(-1))
 
     def feedback(self, other=1, sign=-1, params=None):
-        """Feedback interconnection between two input/output systems
-
-        Parameters
-        ----------
-        sys1: InputOutputSystem
-            The primary process.
-        sys2: InputOutputSystem
-            The feedback process (often a feedback controller).
-        sign: scalar, optional
-            The sign of feedback.  `sign` = -1 indicates negative feedback,
-            and `sign` = 1 indicates positive feedback.  `sign` is an optional
-            argument; it assumes a value of -1 if not specified.
-
-        Returns
-        -------
-        out: InputOutputSystem
-
-        Raises
-        ------
-        ValueError
-            if the inputs, outputs, or timebases of the systems are
-            incompatible.
-
-        """
+        """Feedback interconnection between two input/output systems."""
         # Convert sys2 to an I/O system if needed
         other = _convert_static_iosystem(other)
 
@@ -1045,11 +1022,10 @@ class InterconnectedSystem(NonlinearIOSystem):
         self.noutputs = output_map.shape[0]
 
     def unused_signals(self):
-        """Find unused subsystem inputs and outputs
+        """Find unused subsystem inputs and outputs.
 
         Returns
         -------
-
         unused_inputs : dict
           A mapping from tuple of indices (isys, isig) to string
           '{sys}.{sig}', for all unused subsystem inputs.
@@ -1082,6 +1058,7 @@ class InterconnectedSystem(NonlinearIOSystem):
 
         return ({inputs[i][:2]: inputs[i][2] for i in unused_sysinp},
                 {outputs[i][:2]: outputs[i][2] for i in unused_sysout})
+
 
     def connection_table(self, show_names=False, column_width=32):
         """Print table of connections inside an interconnected system model.
@@ -1183,6 +1160,8 @@ class InterconnectedSystem(NonlinearIOSystem):
                 for sig, isig in sys.output_index.items()
                 if sig == (basename)}
 
+    # TODO: change `warning` to `print_warning` or `warn_unsed`?
+    # TODO: change to internal function?  (not sure users need to see this)
     def check_unused_signals(
             self, ignore_inputs=None, ignore_outputs=None, warning=True):
         """Check for unused subsystem inputs and outputs
@@ -1206,6 +1185,9 @@ class InterconnectedSystem(NonlinearIOSystem):
 
           If the 'sig' form is used, all subsystem outputs with that
           name are considered ignored.
+
+        warning : bool, optional
+            If `True`, print a warning listing any unused signals.
 
         Returns
         -------

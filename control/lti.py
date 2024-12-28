@@ -153,7 +153,7 @@ class LTI(InputOutputSystem):
 
         Parameters
         ----------
-        dpdrop : float, optional
+        dbdrop : float, optional
             A strictly negative scalar in dB (default = -3) defines the
             amount of gain drop for deciding bandwidth.
 

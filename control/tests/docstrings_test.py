@@ -12,6 +12,7 @@ import warnings
 
 import pytest
 import re
+import numpydoc.docscrape as npd
 
 import control
 import control.flatsys
@@ -54,7 +55,21 @@ keyword_skiplist = {
     control.bode_plot: ['sharex', 'sharey', 'margin_info'], # deprecated
     control.eigensys_realization: ['arg'],                  # quasi-positional
     control.find_operating_point: ['method'],               # internal use
-    control.zpk: ['args']                                   # 'dt' (manual)
+    control.zpk: ['args'],                                  # 'dt' (manual)
+    control.StateSpace.dynamics: ['params'],                # not allowed
+    control.StateSpace.output: ['params'],                  # not allowed
+    control.flatsys.point_to_point: [
+        'method', 'options',                                # minimize_kwargs
+    ],
+    control.flatsys.solve_flat_ocp: [
+        'method', 'options',                                # minimize_kwargs
+    ],
+    control.optimal.OptimalControlProblem.compute_trajectory: [
+        'return_x',                                         # legacy
+    ],
+    control.optimal.OptimalEstimationProblem.create_mhe_iosystem: [
+        'inputs', 'outputs', 'states',                      # doc'd elsewhere
+    ],
 }
 
 # Decide on the level of verbosity (use -rP when running pytest)
@@ -68,19 +83,27 @@ def test_parameter_docs(module, prefix):
     checked = set()             # Keep track of functions we have checked
 
     # Look through every object in the package
-    if verbose > 1:
-        print(f"Checking module {module}")
+    _info(f"Checking module {module}", 0)
     for name, obj in inspect.getmembers(module):
+        _info(f"Checking object {name}", 4)
+
+        # Parse the docstring using numpydoc
+        doc = None if obj is None else npd.FunctionDoc(obj)
+
         # Skip anything that is outside of this module
-        if inspect.getmodule(obj) is not None and (
-                not inspect.getmodule(obj).__name__.startswith('control')
-                or prefix != "" and inspect.getmodule(obj) != module):
+        if inspect.getmodule(obj) is not None and \
+           not inspect.getmodule(obj).__name__.startswith('control'):
             # Skip anything that isn't part of the control package
             continue
 
+        # Skip non-top-level functions without parameter lists
+        if prefix != "" and inspect.getmodule(obj) != module and \
+           doc is not None and doc["Parameters"] == []:
+            _info(f"skipping {prefix}.{name}", 2)
+            continue
+
         if inspect.isclass(obj):
-            if verbose > 1:
-                print(f"  Checking class {name}")
+            _info(f"Checking class {name}", 1)
             # Check member functions within the class
             test_parameter_docs(obj, prefix + name + '.')
 
@@ -94,11 +117,9 @@ def test_parameter_docs(module, prefix):
                 checked.add(obj)
 
             # Get the docstring (skip w/ warning if there isn't one)
-            if verbose > 1:
-                print(f"  Checking function {name}")
+            _info(f"Checking function {name}", 2)
             if obj.__doc__ is None:
-                warnings.warn(
-                    f"{module.__name__}.{name} is missing docstring")
+                _warn(f"{module.__name__}.{name} is missing docstring", 2)
                 continue
             else:
                 docstring = inspect.getdoc(obj)
@@ -106,22 +127,16 @@ def test_parameter_docs(module, prefix):
 
             # Skip deprecated functions
             if ".. deprecated::" in docstring:
-                if verbose > 1:
-                    print("    [deprecated]")
+                _info("  [deprecated]", 2)
                 continue
             elif re.search(name + r"(\(\))? is deprecated", docstring) or \
                  "function is deprecated" in docstring:
-                if verbose > 1:
-                    print("    [deprecated, but not numpydoc compliant]")
-                elif verbose:
-                    print(f"    {name} deprecation is not numpydoc compliant")
-                warnings.warn(f"{name} deprecated, but not numpydoc compliant")
+                _info("  [deprecated, but not numpydoc compliant]", 2)
+                _warn(f"{name} deprecated, but not numpydoc compliant", 0)
                 continue
 
             elif re.search(name + r"(\(\))? is deprecated", source):
-                if verbose:
-                    print(f"    {name} is deprecated, but not documented")
-                warnings.warn(f"{name} deprecated, but not documented")
+                _warn(f"{name} is deprecated, but not documented", 1)
                 continue
 
             # Get the signature for the function
@@ -142,7 +157,7 @@ def test_parameter_docs(module, prefix):
                         hash = hashlib.md5(
                             (docstring + source).encode('utf-8')).hexdigest()
                         if function_docstring_hash[obj] != hash:
-                            pytest.fail(
+                            _fail(
                                 f"source/docstring for {name}() modified; "
                                 f"recheck docstring and update hash to "
                                 f"{hash=}")
@@ -150,17 +165,14 @@ def test_parameter_docs(module, prefix):
 
                     # Too complicated to check
                     if f"*{argname}" not in docstring:
-                        if verbose:
-                            print(f"      {name} has positional arguments; "
-                                  "check manually")
-                        warnings.warn(
+                        _warn(
                             f"{name} {argname} has positional arguments; "
                             "docstring not checked")
                     continue
 
                 # Check for keyword arguments (then look at code for parsing)
                 elif par.kind == inspect.Parameter.VAR_KEYWORD:
-                    # See if we documented the keyward argumnt directly
+                    # See if we documented the keyward argument directly
                     # if f"**{argname} :" in docstring:
                     #     continue
 
@@ -169,45 +181,44 @@ def test_parameter_docs(module, prefix):
                     for _, kwargname in re.findall(
                             argname + r"(\[|\.pop\(|\.get\()'([\w]+)'",
                             source):
-                        if verbose > 2:
-                            print("    Found direct keyword argument",
-                                  kwargname)
+                        _info(f"Found direct keyword argument {kwargname}", 2)
                         kwargnames.add(kwargname)
 
                     # Look for kwargs accessed via _get_param
                     for kwargname in re.findall(
                             r"_get_param\(\s*'\w*',\s*'([\w]+)',\s*" + argname,
                             source):
-                        if verbose > 2:
-                            print("    Found config keyword argument",
-                                  {kwargname})
+                        _info(f"Found config keyword argument {kwargname}", 2)
                         kwargnames.add(kwargname)
 
                     # Look for kwargs accessed via _process_legacy_keyword
                     for kwargname in re.findall(
                             r"_process_legacy_keyword\([\s]*" + argname +
                             r",[\s]*'[\w]+',[\s]*'([\w]+)'", source):
-                        if verbose > 2:
-                            print("    Found legacy keyword argument",
-                                  {kwargname})
+                        _info(f"Found legacy keyword argument {kwargname}", 2)
                         kwargnames.add(kwargname)
 
                     for kwargname in kwargnames:
                         if obj in keyword_skiplist and \
                            kwargname in keyword_skiplist[obj]:
                             continue
-                        if verbose > 3:
-                            print(f"    Checking keyword argument {kwargname}")
+                        _info(f"Checking keyword argument {kwargname}", 3)
                         _check_parameter_docs(
                             name, kwargname, inspect.getdoc(obj),
                             prefix=prefix)
 
                 # Make sure this argument is documented properly in docstring
                 else:
-                    if verbose > 3:
-                        print(f"    Checking argument {argname}")
+                    _info(f"    Checking argument {argname}", 3)
                     _check_parameter_docs(
                         name, argname, docstring, prefix=prefix)
+
+            # Look at the return values
+            for val in doc["Returns"]:
+                if val.name == '' and \
+                   (match := re.search("([\w]+):", val.type)) is not None:
+                    retname = match.group(1)
+                    _warn(f"{obj.__name__} '{retname}' docstring missing space")
 
 
 @pytest.mark.parametrize("module, prefix", [
@@ -240,8 +251,7 @@ def test_deprecated_functions(module, prefix):
 
             # Get the docstring (skip w/ warning if there isn't one)
             if obj.__doc__ is None:
-                warnings.warn(
-                    f"{module.__name__}.{name} is missing docstring")
+                _warn(f"{module.__name__}.{name} is missing docstring")
                 continue
             else:
                 docstring = inspect.getdoc(obj)
@@ -251,12 +261,11 @@ def test_deprecated_functions(module, prefix):
             if ".. deprecated::" in docstring:
                 # Make sure a FutureWarning is issued
                 if not re.search("FutureWarning", source):
-                    pytest.fail(
-                        f"{name} deprecated but does not issue FutureWarning")
+                    _fail(f"{name} deprecated but does not issue FutureWarning")
             else:
                 if re.search(name + r"(\(\))? is deprecated", docstring) or \
                    re.search(name + r"(\(\))? is deprecated", source):
-                    pytest.fail(
+                    _fail(
                         f"{name} deprecated but w/ non-standard docs/warnings")
                 assert name != 'ss2io'
 
@@ -492,10 +501,10 @@ def _check_parameter_docs(
     funcname = prefix + funcname
 
     # Find the "Parameters" section of docstring, where we start searching
-    if not (match := re.search(
-            r"\nParameters\n----", docstring)):
+    # TODO: rewrite to use numpydoc
+    if not (match := re.search(r"\nParameters\n----", docstring)):
         if fail_if_missing:
-            pytest.fail(f"{funcname} docstring missing Parameters section")
+            _fail(f"{funcname} docstring missing Parameters section")
         else:
             return False
     else:
@@ -520,18 +529,16 @@ def _check_parameter_docs(
             "\n" + r"((\w+|\.{3}), )*" + argname + r"(, (\w+|\.{3}))*:",
             docstring):
         # Found the string, but not in numpydoc form
-        if verbose:
-            print(f"      {funcname}: {argname} docstring missing space")
-        warnings.warn(f"{funcname} '{argname}' docstring missing space")
+        _warn(f"{funcname}: {argname} docstring missing space")
 
     elif not (match := re.search(
             "\n" + r"((\w+|\.{3}), )*" + argname + r"(, (\w+|\.{3}))* :",
             docstring)):
-        if verbose:
-            print(f"      {funcname}: {argname} not documented")
         if fail_if_missing:
+            _fail(f"{funcname} '{argname}' not documented")
             pytest.fail(f"{funcname} '{argname}' not documented")
         else:
+            _info(f"{funcname} '{argname}' not documented")
             return False
 
     # Make sure there isn't another instance
@@ -539,6 +546,22 @@ def _check_parameter_docs(
             "\n" + r"((\w+|\.{3}), )*" + argname + r"(, (\w+|\.{3}))*[ ]*:",
             docstring[match.end():])
     if second_match:
-        pytest.fail(f"{funcname} '{argname}' documented twice")
+        _fail(f"{funcname} '{argname}' documented twice")
 
     return True
+
+
+# Utility function to warn with verbose output
+def _info(str, level=0):
+    if verbose > level:
+        print("  " * level + str)
+
+def _warn(str, level=0):
+    if verbose > level:
+        print("  " * level + str)
+    warnings.warn(str)
+
+def _fail(str, level=0):
+    if verbose > level:
+        print("  " * level + str)
+    pytest.fail(str)

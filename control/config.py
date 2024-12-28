@@ -381,7 +381,7 @@ def use_legacy_defaults(version):
 # exception is raised.
 #
 def _process_legacy_keyword(kwargs, oldkey, newkey, newval):
-    if kwargs.get(oldkey) is not None:
+    if oldkey in kwargs:
         warnings.warn(
             f"keyword '{oldkey}' is deprecated; use '{newkey}'",
             FutureWarning)

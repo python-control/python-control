@@ -863,20 +863,11 @@ class StateSpace(NonlinearIOSystem, LTI):
         Expects inputs and outputs to be formatted correctly. Use ``sys(x)``
         for a more user-friendly interface.
 
-        Parameters
-        ----------
-        x : complex array_like or complex
-            Complex frequencies
-
-        Returns
-        -------
-        output : (self.noutputs, self.ninputs, len(x)) complex ndarray
-            Frequency response
-
         Notes
         -----
-        Attempts to use Laub's method from Slycot library, with a
-        fall-back to python code.
+        Attempts to use Laub's method from Slycot library, with a fall-back
+        to Python code.
+
         """
         # Make sure the argument is a 1D array of complex numbers
         x_arr = np.atleast_1d(x).astype(complex, copy=False)
@@ -1390,8 +1381,9 @@ class StateSpace(NonlinearIOSystem, LTI):
         """
         return self._dcgain(warn_infinite)
 
+    # TODO: decide if we need this function (already in NonlinearIOSystem
     def dynamics(self, t, x, u=None, params=None):
-        """Compute the dynamics of the system
+        """Compute the dynamics of the system.
 
         Given input `u` and state `x`, returns the dynamics of the state-space
         system. If the system is continuous, returns the time derivative dx/dt
@@ -1439,6 +1431,7 @@ class StateSpace(NonlinearIOSystem, LTI):
             return (self.A @ x).reshape((-1,)) \
                 + (self.B @ u).reshape((-1,))  # return as row vector
 
+    # TODO: decide if we need this function (already in NonlinearIOSystem
     def output(self, t, x, u=None, params=None):
         """Compute the output of the system
 

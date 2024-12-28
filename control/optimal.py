@@ -748,6 +748,7 @@ class OptimalControlProblem():
     #
 
     # Compute the optimal trajectory from the current state
+    # TODO: update docstring to refer to primary function (?)
     def compute_trajectory(
             self, x, squeeze=None, transpose=None, return_states=True,
             initial_guess=None, print_summary=True, **kwargs):
@@ -757,6 +758,14 @@ class OptimalControlProblem():
         ----------
         x : array-like or number, optional
             Initial state for the system.
+        initial_guess : (tuple of) 1D or 2D array_like
+            Initial states and/or inputs to use as a guess for the optimal
+            trajectory.  For shooting methods, an array of inputs for each
+            time point should be specified.  For collocation methods, the
+            initial guess is either the input vector or a tuple consisting
+            guesses for the state and the input.  Guess should either be a
+            2D vector of shape (ninputs, ntimepts) or a 1D input of shape
+            (ninputs,) that will be broadcast by extension of the time axis.
         return_states : bool, optional
             If True (default), return the values of the state at each time.
         squeeze : bool, optional
@@ -768,6 +777,9 @@ class OptimalControlProblem():
             If True, assume that 2D input arrays are transposed from the
             standard format.  Used to convert MATLAB-style inputs to our
             format.
+        print_summary : bool, optional
+            If `True` (default), print a short summary of the computation.
+
 
         Returns
         -------
