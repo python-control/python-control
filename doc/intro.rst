@@ -11,10 +11,10 @@ Package overview
 ================
 
 .. automodule:: control
+   :noindex:
    :no-members:
    :no-inherited-members:
    :no-special-members:
-   :no-index:
 
 Installation
 ============
