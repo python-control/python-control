@@ -306,6 +306,16 @@ class TransferFunction(LTI):
     #: :meta hide-value:
     noutputs = 1
 
+    #: Numerator polynomial coefficients as a 2D array of 1D coefficents.
+    #:
+    #: :meta hide-value:
+    num_array = None
+
+    #: Denominator polynomial coefficients as a 2D array of 1D coefficents.
+    #:
+    #: :meta hide-value:
+    den_array = None
+
     # Numerator and denominator as lists of lists of lists
     @property
     def num_list(self):
