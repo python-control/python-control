@@ -24,5 +24,4 @@ clean:
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 distclean: clean
-	make -C figures clean
 	/bin/rm -rf generated

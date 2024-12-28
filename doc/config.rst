@@ -10,11 +10,11 @@ for various types of plots and establishing the underlying representation for
 state space matrices.
 
 To set the default value of a configuration variable, set the appropriate
-element of the `control.config.defaults` dictionary::
+element of the `config.defaults` dictionary::
 
     ct.config.defaults['module.parameter'] = value
 
-The :func:`~control.set_defaults` function can also be used to
+The :func:`set_defaults` function can also be used to
 set multiple configuration parameters at the same time::
 
     ct.set_defaults('module', param1=val1, param2=val2, ...]

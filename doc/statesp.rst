@@ -1,5 +1,5 @@
-.. module: control
-   
+.. currentmodule:: control
+
 State space analysis and design
 ===============================
 
@@ -33,7 +33,7 @@ The following basic attributes and methods are available for
    ~StateSpace.returnScipySignalLTI
 
 A complete list of attributes, methods, and properties is available in
-the :class:`~control.StateSpace` class documentation.
+the :class:`StateSpace` class documentation.
 
 
 Similarity transformations and canonical forms

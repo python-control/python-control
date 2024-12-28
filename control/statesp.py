@@ -1270,18 +1270,19 @@ class StateSpace(NonlinearIOSystem, LTI):
         ----------
         Ts : float
             Sampling period.
-        method :  {"gbt", "bilinear", "euler", "backward_diff", "zoh"}
-            Which method to use:
+        method : {'gbt', 'bilinear', 'euler', 'backward_diff', 'zoh'}
+            Method to use for sampling:
 
-            * gbt: generalized bilinear transformation
-            * bilinear: Tustin's approximation ("gbt" with alpha=0.5)
-            * euler: Euler (or forward differencing) method ("gbt" with
+            * 'gbt': generalized bilinear transformation
+            * 'backward_diff': Backwards differencing ('gbt' with alpha=1.0)
+            * 'bilinear' (or 'tustin'): Tustin's approximation ('gbt' with
+              alpha=0.5)
+            * 'euler': Euler (or forward differencing) method ('gbt' with
               alpha=0)
-            * backward_diff: Backwards differencing ("gbt" with alpha=1.0)
-            * zoh: zero-order hold (default)
+            * 'zoh': zero-order hold (default)
         alpha : float within [0, 1]
             The generalized bilinear transformation weighting parameter, which
-            should only be specified with method="gbt", and is ignored
+            should only be specified with method='gbt', and is ignored
             otherwise.
         prewarp_frequency : float within [0, infinity)
             The frequency [rad/s] at which to match with the input continuous-
@@ -1611,6 +1612,7 @@ def ss(*args, **kwargs):
         The matrices can be given as 2D array-like data types.  For SISO
         systems, `B` and `C` can be given as 1D arrays and D can be given
         as a scalar.
+
 
     ``ss(*args, inputs=['u1', ..., 'up'], outputs=['y1', ..., 'yq'], states=['x1', ..., 'xn'])``
         Create a system with named input, output, and state signals.

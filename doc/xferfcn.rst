@@ -1,3 +1,5 @@
+.. currentmodule:: control
+
 Frequency domain analysis and design
 ====================================
 
@@ -5,21 +7,21 @@ Transfer function properties
 ----------------------------
 
 The following basic attributes and methods are available for
-:class:`StateSpace` objects:
+:class:`TransferFunction` objects:
 
 .. autosummary::
 
-   ~StateSpace.num_array
-   ~StateSpace.den_array
-   ~StateSpace.shape
-   ~StateSpace.poles
-   ~StateSpace.zeros
-   ~StateSpace.dcgain
-   ~StateSpace.sample
-   ~StateSpace.returnScipySignalLTI
+   ~TransferFunction.num_array
+   ~TransferFunction.den_array
+   ~TransferFunction.shape
+   ~TransferFunction.poles
+   ~TransferFunction.zeros
+   ~TransferFunction.dcgain
+   ~TransferFunction.sample
+   ~TransferFunction.returnScipySignalLTI
 
 A complete list of attributes, methods, and properties is available in
-the :class:`~control.StateSpace` class documentation.
+the :class:`TransferFunction` class documentation.
 
 
 Frequency domain methods

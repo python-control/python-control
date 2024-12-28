@@ -2,14 +2,14 @@
 
 .. currentmodule:: control
 
-*************
-Plotting data
-*************
+**********************************
+Input/output Response and Plotting
+**********************************
 
 The Python Control Systems Toolbox contains a number of functions for
-plotting input/output responses in the time and frequency domain, root
-locus diagrams, and other standard charts used in control system analysis,
-for example::
+computing and plotting input/output responses in the time and
+frequency domain, root locus diagrams, and other standard charts used
+in control system analysis, for example::
 
   bode_plot(sys)
   nyquist_plot([sys1, sys2])
@@ -28,7 +28,7 @@ resulting in the following standard pattern::
   count = ct.response.count          # number of encirclements of -1
   cplt = ct.nyquist_plot(response)  # Nyquist plot
 
-Plotting commands return a :class:`~control.ControlPlot` object that
+Plotting commands return a :class:`ControlPlot` object that
 provides access to the individual lines in the generated plot using
 `cplt.lines`, allowing various aspects of the plot to be modified to
 suit specific needs.
@@ -49,15 +49,170 @@ these response and plotting functions can be customized.
 Time response data
 ==================
 
+LTI response functions
+----------------------
+
+A number of functions are available for computing the output (and
+state) response of an LTI systems:
+
+.. autosummary::
+
+   initial_response
+   step_response
+   impulse_response
+   forced_response
+
+Each of these functions returns a :class:`TimeResponseData` object
+that contains the data for the time response (described in more detail
+in the next section).
+
+The :func:`forced_response` system is the most general and allows by
+the zero initial state response to be simulated as well as the
+response from a non-zero initial condition.
+
+For linear time invariant (LTI) systems, the :func:`impulse_response`,
+:func:`initial_response`, and :func:`step_response` functions will
+automatically compute the time vector based on the poles and zeros of
+the system.  If a list of systems is passed, a common time vector will be
+computed and a list of responses will be returned in the form of a
+:class:`TimeResponseList` object.  The :func:`forced_response` function can
+also take a list of systems, to which a single common input is applied.
+The :class:`TimeResponseList` object has a `plot()` method that will plot
+each of the responses in turn, using a sequence of different colors with
+appropriate titles and legends.
+
+In addition the :func:`input_output_response` function, which handles
+simulation of nonlinear systems and interconnected systems, can be
+used.  For an LTI system, results are generally more accurate using
+the LTI simulation functions above.  The :func:`input_output_response`
+function is described in more detail in the :ref:`iosys-module` section.
+
+.. _time-series-convention:
+
+Time series data
+----------------
+A variety of functions in the library return time series data: sequences of
+values that change over time.  A common set of conventions is used for
+returning such data: columns represent different points in time, rows are
+different components (e.g., inputs, outputs or states).  For return
+arguments, an array of times is given as the first returned argument,
+followed by one or more arrays of variable values.  This convention is used
+throughout the library, for example in the functions
+:func:`forced_response`, :func:`step_response`, :func:`impulse_response`,
+and :func:`initial_response`.
+
+.. note::
+    The convention used by python-control is different from the convention
+    used in the `scipy.signal
+    <https://docs.scipy.org/doc/scipy/reference/signal.html>`_ library. In
+    Scipy's convention the meaning of rows and columns is interchanged.
+    Thus, all 2D values must be transposed when they are used with functions
+    from `scipy.signal`_.
+
+The time vector is a 1D array with shape (n, )::
+
+      T = [t1,     t2,     t3,     ..., tn    ]
+
+Input, state, and output all follow the same convention. Columns are different
+points in time, rows are different components::
+
+      U = [[u1(t1), u1(t2), u1(t3), ..., u1(tn)]
+           [u2(t1), u2(t2), u2(t3), ..., u2(tn)]
+           ...
+           ...
+           [ui(t1), ui(t2), ui(t3), ..., ui(tn)]]
+
+(and similarly for `X`, `Y`).  So, `U[:, 2]` is the system's input at the
+third point in time; and `U[1]` or `U[1, :]` is the sequence of values for
+the system's second input.
+
+When there is only one row, a 1D object is accepted or returned, which adds
+convenience for SISO systems:
+
+The initial conditions are either 1D, or 2D with shape (j, 1)::
+
+     X0 = [[x1]
+           [x2]
+           ...
+           ...
+           [xj]]
+
+Functions that return time responses (e.g., :func:`forced_response`,
+:func:`impulse_response`, :func:`input_output_response`,
+:func:`initial_response`, and :func:`step_response`) return a
+:class:`TimeResponseData` object that contains the data for the time
+response.  These data can be accessed via the
+:attr:`~TimeResponseData.time`, :attr:`~TimeResponseData.outputs`,
+:attr:`~TimeResponseData.states` and :attr:`~TimeResponseData.inputs`
+properties::
+
+    sys = ct.rss(4, 1, 1)
+    response = ct.step_response(sys)
+    plt.plot(response.time, response.outputs)
+
+The dimensions of the response properties depend on the function being
+called and whether the system is SISO or MIMO.  In addition, some time
+response function can return multiple "traces" (input/output pairs),
+such as the :func:`step_response` function applied to a MIMO system,
+which will compute the step response for each input/output pair.  See
+:class:`TimeResponseData` for more details.
+
+The input, output, and state elements of the response can be accessed using
+signal names in place of integer offsets::
+
+    plt.plot(response. time, response.states['x[1]']
+
+For multi-trace systems generated by :func:`step_response` and
+:func:`impulse_response`, the input name used to generate the trace can be
+used to access the appropriate input output pair::
+
+    plt.plot(response.time, response.outputs['y[0]', 'u[1]'])
+
+The time response functions can also be assigned to a tuple, which extracts
+the time and output (and optionally the state, if the `return_x` keyword is
+used).  This allows simple commands for plotting::
+
+    t, y = ct.step_response(sys)
+    plot(t, y)
+
+The output of a MIMO LTI system can be plotted like this::
+
+    t, y = ct.forced_response(sys, t, u)
+    plot(t, y[0], label='y_0')
+    plot(t, y[1], label='y_1')
+
+The convention also works well with the state space form of linear
+systems. If `D` is the feedthrough matrix (2D array) of a linear system,
+and `U` is its input (array), then the feedthrough part of the system's
+response, can be computed like this::
+
+    ft = D @ U
+
+Finally, the `to_pandas()` function can be used to create a pandas dataframe::
+
+    df = response.to_pandas()
+
+The column labels for the data frame are `time` and the labels for the input,
+output, and state signals (`u[i]`, `y[i]`, and `x[i]` by default, but these
+can be changed using the `inputs`, `outputs`, and `states` keywords when
+constructing the system, as described in :func:`ss`, :func:`tf`, and other
+system creation function.  Note that when exporting to pandas, "rows" in the
+data frame correspond to time and "cols" (DataSeries) correspond to signals.
+
+Time response plots
+-------------------
+
+.. todo:: Improve flow between previous section and this one
+
 Input/output time responses are produced one of several python-control
-functions: :func:`~control.forced_response`,
-:func:`~control.impulse_response`, :func:`~control.initial_response`,
-:func:`~control.input_output_response`, :func:`~control.step_response`.
-Each of these return a :class:`~control.TimeResponseData` object, which
+functions: :func:`forced_response`,
+:func:`impulse_response`, :func:`initial_response`,
+:func:`input_output_response`, :func:`step_response`.
+Each of these return a :class:`TimeResponseData` object, which
 contains the time, input, state, and output vectors associated with the
 simulation. Time response data can be plotted with the
-:func:`~control.time_response_plot` function, which is also available as
-the :func:`~control.TimeResponseData.plot` method.  For example, the step
+:func:`time_response_plot` function, which is also available as
+the :func:`TimeResponseData.plot` method.  For example, the step
 response for a two-input, two-output can be plotted using the commands::
 
   sys_mimo = ct.tf2ss(
@@ -70,7 +225,7 @@ which produces the following plot:
 
 .. image:: figures/timeplot-mimo_step-default.png
 
-The  :class:`~control.TimeResponseData` object can also be used to access
+The  :class:`TimeResponseData` object can also be used to access
 the data from the simulation::
 
   time, outputs, inputs = response.time, response.outputs, response.inputs
@@ -86,7 +241,7 @@ names can allow be used::
 
 A number of options are available in the `plot` method to customize
 the appearance of input output data.  For data produced by the
-:func:`~control.impulse_response` and :func:`~control.step_response`
+:func:`impulse_response` and :func:`step_response`
 commands, the inputs are not shown.  This behavior can be changed
 using the `plot_inputs` keyword.  It is also possible to combine
 multiple lines onto a single graph, using either the `overlay_signals`
@@ -107,8 +262,8 @@ following plot::
 .. image:: figures/timeplot-mimo_step-pi_cs.png
 
 Input/output response plots created with either the
-:func:`~control.forced_response` or the
-:func:`~control.input_output_response` functions include the input signals by
+:func:`forced_response` or the
+:func:`input_output_response` functions include the input signals by
 default. These can be plotted on separate axes, but also "overlaid" on the
 output axes (useful when the input and output signals are being compared to
 each other).  The following plot shows the use of `plot_inputs='overlay'`
@@ -145,10 +300,10 @@ following figure::
 .. image:: figures/timeplot-mimo_ioresp-mt_tr.png
 
 This figure also illustrates the ability to create "multi-trace" plots
-using the :func:`~control.combine_time_responses` function.  The line
+using the :func:`combine_time_responses` function.  The line
 properties that are used when combining signals and traces are set by
 the `input_props`, `output_props` and `trace_props` parameters for
-:func:`~control.time_response_plot`.
+:func:`time_response_plot`.
 
 Additional customization is possible using the `input_props`,
 `output_props`, and `trace_props` keywords to set complementary line colors
@@ -171,7 +326,7 @@ Frequency response data
 Linear time invariant (LTI) systems can be analyzed in terms of their
 frequency response and python-control provides a variety of tools for
 carrying out frequency response analysis.  The most basic of these is
-the :func:`~control.frequency_response` function, which will compute
+the :func:`frequency_response` function, which will compute
 the frequency response for one or more linear systems::
 
   sys1 = ct.tf([1], [1, 2, 1], name='sys1')
@@ -179,7 +334,7 @@ the frequency response for one or more linear systems::
   response = ct.frequency_response([sys1, sys2])
 
 A Bode plot provide a graphical view of the response an LTI system and can
-be generated using the :func:`~control.bode_plot` function::
+be generated using the :func:`bode_plot` function::
 
   ct.bode_plot(response, initial_phase=0)
 
@@ -189,7 +344,7 @@ Computing the response for multiple systems at the same time yields a
 common frequency range that covers the features of all listed systems.
 
 Bode plots can also be created directly using the
-:meth:`~control.FrequencyResponseData.plot` method::
+:meth:`FrequencyResponseData.plot` method::
 
   sys_mimo = ct.tf(
       [[[1], [0.1]], [[0.2], [1]]],
@@ -207,7 +362,7 @@ overlaying the inputs or outputs::
 
 .. image:: figures/freqplot-mimo_bode-magonly.png
 
-The :func:`~control.singular_values_response` function can be used to
+The :func:`singular_values_response` function can be used to
 generate Bode plots that show the singular values of a transfer
 function::
 
@@ -224,7 +379,7 @@ plot, use `plot_type='nichols'`::
 .. image:: figures/freqplot-siso_nichols-default.png
 
 Another response function that can be used to generate Bode plots is the
-:func:`~control.gangof4_response` function, which computes the four primary
+:func:`gangof4_response` function, which computes the four primary
 sensitivity functions for a feedback control system in standard form::
 
   proc = ct.tf([1], [1, 1, 1], name="process")
@@ -234,16 +389,16 @@ sensitivity functions for a feedback control system in standard form::
 
 .. image:: figures/freqplot-gangof4.png
 
-Nyquist analysis can be done using the :func:`~control.nyquist_response`
+Nyquist analysis can be done using the :func:`nyquist_response`
 function, which evaluates an LTI system along the Nyquist contour, and
-the :func:`~control.nyquist_plot` function, which generates a Nyquist plot::
+the :func:`nyquist_plot` function, which generates a Nyquist plot::
 
   sys = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='sys')
   nyquist_plot(sys)
 
 .. image:: figures/freqplot-nyquist-default.png
 
-The :func:`~control.nyquist_response` function can be used to compute
+The :func:`nyquist_response` function can be used to compute
 the number of encirclements of the -1 point and can return the Nyquist
 contour that was used to generate the Nyquist curve.
 
@@ -253,7 +408,7 @@ curve that are far from the origin are scaled to a maximum value, while the
 line style is changed to reflect the scaling, and it is possible to offset
 the scaled portions to separate out the portions of the Nyquist curve at
 :math:`\infty`.  A number of keyword parameters for both are available for
-:func:`~control.nyquist_response` and :func:`~control.nyquist_plot` to tune
+:func:`nyquist_response` and :func:`nyquist_plot` to tune
 the computation of the Nyquist curve and the way the data are plotted::
 
   sys = ct.tf([1, 0.2], [1, 0, 1]) * ct.tf([1], [1, 0])
@@ -305,7 +460,7 @@ Pole/zero data
 
 Pole/zero maps and root locus diagrams provide insights into system
 response based on the locations of system poles and zeros in the complex
-plane.  The :func:`~control.pole_zero_map` function returns the poles and
+plane.  The :func:`pole_zero_map` function returns the poles and
 zeros and can be used to generate a pole/zero plot::
 
   sys = ct.tf([1, 2], [1, 2, 3], name='SISO transfer function')
@@ -352,101 +507,6 @@ for each system is plotted in different colors::
 .. image:: figures/rlocus-siso_multiple-nogrid.png
 
 
-Phase plane plots
-=================
-Insight into nonlinear systems can often be obtained by looking at phase
-plane diagrams.  The :func:`~control.phase_plane_plot` function allows the
-creation of a 2-dimensional phase plane diagram for a system.  This
-functionality is supported by a set of mapping functions that are part of
-the `phaseplot` module.
-
-The default method for generating a phase plane plot is to provide a
-2D dynamical system along with a range of coordinates and time limit::
-
-    sys = ct.nlsys(
-        lambda t, x, u, params: np.array([[0, 1], [-1, -1]]) @ x,
-        states=['position', 'velocity'], inputs=0, name='damped oscillator')
-    axis_limits = [-1, 1, -1, 1]
-    T = 8
-    ct.phase_plane_plot(sys, axis_limits, T)
-
-.. image:: figures/phaseplot-dampedosc-default.png
-
-By default, the plot includes streamlines generated from starting
-points on limits of the plot, with arrows showing the flow of the
-system, as well as any equilibrium points for the system.  A variety
-of options are available to modify the information that is plotted,
-including plotting a grid of vectors instead of streamlines and
-turning on and off various features of the plot.
-
-To illustrate some of these possibilities, consider a phase plane plot for
-an inverted pendulum system, which is created using a mesh grid::
-
-    def invpend_update(t, x, u, params):
-        m, l, b, g = params['m'], params['l'], params['b'], params['g']
-        return [x[1], -b/m * x[1] + (g * l / m) * np.sin(x[0]) + u[0]/m]
-    invpend = ct.nlsys(invpend_update, states=2, inputs=1, name='invpend')
-
-    ct.phase_plane_plot(
-        invpend, [-2*pi, 2*pi, -2, 2], 5,
-        gridtype='meshgrid', gridspec=[5, 8], arrows=3,
-        plot_equilpoints={'gridspec': [12, 9]},
-        params={'m': 1, 'l': 1, 'b': 0.2, 'g': 1})
-    plt.xlabel(r"$\theta$ [rad]")
-    plt.ylabel(r"$\dot\theta$ [rad/sec]")
-
-.. image:: figures/phaseplot-invpend-meshgrid.png
-
-This figure shows several features of more complex phase plane plots:
-multiple equilibrium points are shown, with saddle points showing
-separatrices, and streamlines generated along a 5x8 mesh of initial
-conditions.  At each mesh point, a streamline is created that goes 5 time
-units forward and backward in time.  A separate grid specification is used
-to find equilibrium points and separatrices (since the course grid spacing
-of 5x8 does not find all possible equilibrium points).  Together, the
-multiple features in the phase plane plot give a good global picture of the
-topological structure of solutions of the dynamical system.
-
-Phase plots can be built up by hand using a variety of helper functions that
-are part of the :mod:`~control.phaseplot` (pp) module::
-
-    import control.phaseplot as pp
-
-    def oscillator_update(t, x, u, params):
-        return [x[1] + x[0] * (1 - x[0]**2 - x[1]**2),
-                -x[0] + x[1] * (1 - x[0]**2 - x[1]**2)]
-    oscillator = ct.nlsys(
-        oscillator_update, states=2, inputs=0, name='nonlinear oscillator')
-
-    ct.phase_plane_plot(oscillator, [-1.5, 1.5, -1.5, 1.5], 0.9)
-    pp.streamlines(
-        oscillator, np.array([[0, 0]]), 1.5,
-        gridtype='circlegrid', gridspec=[0.5, 6], dir='both')
-    pp.streamlines(
-        oscillator, np.array([[1, 0]]), 2*pi, arrows=6, color='b')
-    plt.gca().set_aspect('equal')
-
-.. image:: figures/phaseplot-oscillator-helpers.png
-
-The following helper functions are available:
-
-.. autosummary::
-   
-   phaseplot.equilpoints
-   phaseplot.separatrices
-   phaseplot.streamlines
-   phaseplot.vectorfield
-
-The :func:`~control.phase_plane_plot` function calls these helper functions
-based on the options it is passed.
-
-Note that unlike other plotting functions, phase plane plots do not involve
-computing a response and then plotting the result via a `plot()` method.
-Instead, the plot is generated directly be a call to the
-:func:`~control.phase_plane_plot` function (or one of the
-:mod:`~control.phaseplot` helper functions.
-
-
 Customizing control plots
 =========================
 
@@ -478,7 +538,7 @@ various ways.  The following general rules apply:
   If these arguments are absent, the default matplotlib line properties are
   used and the color cycles through the default matplotlib color cycle.
 
-  The :func:`~control.bode_plot`, :func:`~control.time_response_plot`,
+  The :func:`bode_plot`, :func:`time_response_plot`,
   and selected other commands can also accept a matplotlib format
   string (e.g., `'r--'`).  The format string must appear as a positional
   argument right after the required data argument.
@@ -558,7 +618,7 @@ various ways.  The following general rules apply:
   for all control plots, update the `ct.rcParams` dictionary entries.
 
   The default values for style parameters for control plots can be restored
-  using :func:`~control.reset_rcParams`.
+  using :func:`reset_rcParams`.
 
 * For multi-input, multi-output time and frequency domain plots, the
   `sharex` and `sharey` keyword arguments can be used to determine whether
@@ -578,7 +638,7 @@ various ways.  The following general rules apply:
   for <syslist>" where <syslist> is a list of the sys names contained in
   the plot (which can be updated if the plotting is called multiple times).
   Use `title=False` to suppress the title completely.  The title can also
-  be updated using the :func:`~control.ControlPlot.set_plot_title` method
+  be updated using the :func:`ControlPlot.set_plot_title` method
   for the returned control plot object.
 
   The plot title is only generated if `ax` is `None`.
@@ -622,7 +682,7 @@ Matplotlib plotting functions can generally be intermixed.  One type of
 plot for which this does not currently work is pole/zero plots with a
 continuous time omega-damping grid (including root locus diagrams), due to
 the way that axes grids are implemented.  As a workaround, the
-:func:`~control.pole_zero_subplots` command can be used to create an array
+:func:`pole_zero_subplots` command can be used to create an array
 of subplots with different grid types, as illustrated in the following
 example::
 
@@ -652,39 +712,39 @@ number of encirclements for a Nyquist plot) as well as plotting (via the
 
 .. autosummary::
 
-   ~control.describing_function_response
-   ~control.frequency_response
-   ~control.forced_response
-   ~control.gangof4_response
-   ~control.impulse_response
-   ~control.initial_response
-   ~control.input_output_response
-   ~control.nyquist_response
-   ~control.pole_zero_map
-   ~control.root_locus_map
-   ~control.singular_values_response
-   ~control.step_response
+   describing_function_response
+   frequency_response
+   forced_response
+   gangof4_response
+   impulse_response
+   initial_response
+   input_output_response
+   nyquist_response
+   pole_zero_map
+   root_locus_map
+   singular_values_response
+   step_response
 
 Plotting functions
 ------------------
 
 .. autosummary::
 
-   ~control.bode_plot
-   ~control.describing_function_plot
-   ~control.nichols_plot
-   ~control.nyquist_plot
-   ~control.phase_plane_plot
+   bode_plot
+   describing_function_plot
+   nichols_plot
+   nyquist_plot
+   phase_plane_plot
    phaseplot.circlegrid
    phaseplot.equilpoints
    phaseplot.meshgrid
    phaseplot.separatrices
    phaseplot.streamlines
    phaseplot.vectorfield
-   ~control.pole_zero_plot
-   ~control.root_locus_plot
-   ~control.singular_values_plot
-   ~control.time_response_plot
+   pole_zero_plot
+   root_locus_plot
+   singular_values_plot
+   time_response_plot
 
 
 Utility functions
@@ -696,9 +756,9 @@ carry out other operations in creating control plots.
 .. autosummary::
 
    phaseplot.boxgrid
-   ~control.combine_time_responses
-   ~control.pole_zero_subplots
-   ~control.reset_rcParams
+   combine_time_responses
+   pole_zero_subplots
+   reset_rcParams
 
 
 Response and plotting classes
@@ -708,11 +768,11 @@ The following classes are used in generating response data.
 
 .. autosummary::
 
-   ~control.ControlPlot
-   ~control.DescribingFunctionResponse
-   ~control.FrequencyResponseData
-   ~control.FrequencyResponseList
-   ~control.NyquistResponseData
-   ~control.PoleZeroData
-   ~control.TimeResponseData
-   ~control.TimeResponseList
+   ControlPlot
+   DescribingFunctionResponse
+   FrequencyResponseData
+   FrequencyResponseList
+   NyquistResponseData
+   PoleZeroData
+   TimeResponseData
+   TimeResponseList

@@ -14,6 +14,7 @@ Package overview
    :no-members:
    :no-inherited-members:
    :no-special-members:
+   :no-index:
 
 Installation
 ============

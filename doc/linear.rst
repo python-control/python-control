@@ -1,4 +1,4 @@
-.. module:: control
+.. currentmodule:: control
 
 ********************************************
 Linear System Modeling, Analysis, and Design

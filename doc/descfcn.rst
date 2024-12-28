@@ -1,5 +1,7 @@
 .. _descfcn-module:
 
+.. currentmodule:: control
+
 Describing functions
 ====================
 
@@ -29,7 +31,7 @@ because it assumes that higher harmonics can be neglected.
 Module usage
 ------------
 
-The function :func:`~control.describing_function` can be used to
+The function :func:`describing_function` can be used to
 compute the describing function of a nonlinear function::
 
   N = ct.describing_function(F, A)
@@ -44,7 +46,7 @@ amplitudes :math:`a` and frequencies :math`\omega` such that
 These points can be determined by generating a Nyquist plot in which
 the transfer function :math:`H(j\omega)` intersections the negative
 reciprocal of the describing function :math:`N(A)`.  The
-:func:`~control.describing_function_response` function computes the
+:func:`describing_function_response` function computes the
 amplitude and frequency of any points of intersection::
 
     response = ct.describing_function_response(H, F, amp_range[, omega_range])
@@ -52,7 +54,7 @@ amplitude and frequency of any points of intersection::
 
 A Nyquist plot showing the describing function and the intersections
 with the Nyquist curve can be generated using `response.plot()`, which
-calls the :func:`~control.describing_function_plot` function.
+calls the :func:`describing_function_plot` function.
 
 
 Pre-defined nonlinearities
@@ -76,7 +78,7 @@ nonlinearity::
   F = ct.saturation_nonlinearity(1)
 
 These functions use the
-:class:`~control.DescribingFunctionNonlinearity`, which allows an
+:class:`DescribingFunctionNonlinearity`, which allows an
 analytical description of the describing function.
 
 Module classes and functions
@@ -84,7 +86,7 @@ Module classes and functions
 .. autosummary::
    :template: custom-class-template.rst
 
-   ~control.DescribingFunctionNonlinearity
-   ~control.friction_backlash_nonlinearity
-   ~control.relay_hysteresis_nonlinearity
-   ~control.saturation_nonlinearity
+   DescribingFunctionNonlinearity
+   friction_backlash_nonlinearity
+   relay_hysteresis_nonlinearity
+   saturation_nonlinearity

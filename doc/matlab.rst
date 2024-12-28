@@ -21,8 +21,6 @@ Creating linear models
    tf
    ss
    frd
-   rss
-   drss
 
 Utility functions and conversions
 =================================

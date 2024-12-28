@@ -1155,15 +1155,17 @@ class TransferFunction(LTI):
         ----------
         Ts : float
             Sampling period.
-        method : {"gbt", "bilinear", "euler", "backward_diff",
-                  "zoh", "matched"}
+        method : {'gbt', 'bilinear', 'euler', 'backward_diff', 'zoh', 'matched'}
             Method to use for sampling:
 
-            * gbt: generalized bilinear transformation
-            * bilinear or tustin: Tustin's approximation ("gbt" with alpha=0.5)
-            * euler: Euler (or forward difference) method ("gbt" with alpha=0)
-            * backward_diff: Backwards difference ("gbt" with alpha=1.0)
-            * zoh: zero-order hold (default)
+            * 'gbt': generalized bilinear transformation
+            * 'backward_diff': Backwards differencing ('gbt' with alpha=1.0)
+            * 'bilinear' (or 'tustin'): Tustin's approximation ('gbt' with
+              alpha=0.5)
+            * 'euler': Euler (or forward differencing) method ('gbt' with
+              alpha=0)
+            * 'matched': pole-zero match method
+            * 'zoh': zero-order hold (default)
         alpha : float within [0, 1]
             The generalized bilinear transformation weighting parameter, which
             should only be specified with method="gbt", and is ignored

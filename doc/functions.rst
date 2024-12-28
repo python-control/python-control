@@ -58,6 +58,7 @@ System interconnections
     append
     combine_tf
     split_tf
+    summing_junction
     connection_table
     combine_tf
     split_tf
@@ -110,7 +111,6 @@ Control system analysis
     bandwidth
     damp
     dcgain
-    describing_function
     get_input_ff_index
     get_output_fb_index
     ispassive
@@ -130,8 +130,7 @@ Control system analysis
     singular_values_plot
     singular_values_response
     sisotool
-    StateSpace.__call__
-    TransferFunction.__call__
+
 
 Control system synthesis
 ========================
@@ -140,7 +139,6 @@ Control system synthesis
 
     acker
     create_statefbk_iosystem
-    create_estimator_iosystem
     dlqr
     h2syn
     hinfsyn
@@ -167,12 +165,8 @@ Nonlinear system support
 .. autosummary::
    :toctree: generated/
 
-    describing_function
     find_operating_point
     linearize
-    input_output_response
-    summing_junction
-    flatsys.point_to_point
 
 Stochastic system support
 =========================
@@ -209,6 +203,7 @@ Describing functions
 .. autosummary::
    :toctree: generated/
 
+   describing_function
    friction_backlash_nonlinearity
    relay_hysteresis_nonlinearity
    saturation_nonlinearity

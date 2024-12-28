@@ -12,3 +12,4 @@ Nonlinear System Modeling, Analysis, and Design
    phaseplot
    optimal
    descfcn
+   flatsys

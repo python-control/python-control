@@ -1,5 +1,7 @@
 .. _optimal-module:
 
+.. currentmodule:: control
+
 Optimization-based control
 ==========================
 
@@ -220,11 +222,11 @@ state and/or input, either along the trajectory and at the terminal time.
 The optimal control module operates by converting the optimal control
 problem into a standard optimization problem that can be solved by
 :func:`scipy.optimize.minimize`.  The optimal control problem can be solved
-by using the :func:`~control.optimal.solve_ocp` function::
+by using the :func:`optimal.solve_ocp` function::
 
   res = obc.solve_ocp(sys, timepts, X0, cost, constraints)
 
-The `sys` parameter should be an :class:`~control.InputOutputSystem` and the
+The `sys` parameter should be an :class:`InputOutputSystem` and the
 `timepts` parameter should represent a time vector that gives the list of
 times at which the cost and constraints should be evaluated.
 
@@ -261,7 +263,7 @@ all points on the trajectory.  The `terminal_constraint` parameter can be
 used to specify a constraint that only holds at the final point of the
 trajectory.
 
-The return value for :func:`~control.optimal.solve_ocp` is a bundle object
+The return value for :func:`optimal.solve_ocp` is a bundle object
 that has the following elements:
 
   * `res.success`: `True` if the optimization was successfully solved
@@ -273,35 +275,37 @@ In addition, the results from :func:`scipy.optimize.minimize` are also
 available.
 
 To simplify the specification of cost functions and constraints, the
-:mod:`~control.ios` module defines a number of utility functions for
+:mod:`optimal` module defines a number of utility functions for
 optimal control problems:
+
+.. currentmodule:: control
 
 .. autosummary::
 
-   ~control.optimal.quadratic_cost
-   ~control.optimal.input_poly_constraint
-   ~control.optimal.input_range_constraint
-   ~control.optimal.output_poly_constraint
-   ~control.optimal.output_range_constraint
-   ~control.optimal.state_poly_constraint
-   ~control.optimal.state_range_constraint
+   optimal.quadratic_cost
+   optimal.input_poly_constraint
+   optimal.input_range_constraint
+   optimal.output_poly_constraint
+   optimal.output_range_constraint
+   optimal.state_poly_constraint
+   optimal.state_range_constraint
 
 The optimization-based control module also implements functions for solving
 optimal estimation problems.  The
-:class:`~control.optimal.OptimalEstimationProblem` class is used to define
+:class:`optimal.OptimalEstimationProblem` class is used to define
 an optimal estimation problem over a finite horizon::
 
   oep = OptimalEstimationProblem(sys, timepts, cost[, constraints])
 
 Given noisy measurements :math:`y` and control inputs :math:`u`, an
 estimate of the states over the time points can be computed using the
-:func:`~control.optimal.OptimalEstimationProblem.compute_estimate` method::
+:func:`optimal.OptimalEstimationProblem.compute_estimate` method::
 
   estim = oep.compute_optimal(Y, U[, X0=x0, initial_guess=(xhat, v)])
   xhat, v, w = estim.states, estim.inputs, estim.outputs
 
 For discrete time systems, the
-:func:`~control.optimal.OptimalEstimationProblem.create_mhe_iosystem`
+:func:`optimal.OptimalEstimationProblem.create_mhe_iosystem`
 method can be used to generate an input/output system that implements a
 moving horizon estimator.
 
@@ -310,8 +314,8 @@ problems:
 
 .. autosummary::
 
-   ~control.optimal.gaussian_likelihood_cost
-   ~control.optimal.disturbance_range_constraint
+   optimal.gaussian_likelihood_cost
+   optimal.disturbance_range_constraint
 
 Example
 -------
@@ -415,7 +419,7 @@ yields
 
 An example showing the use of the optimal estimation problem and moving
 horizon estimation (MHE) is given in the :doc:`mhe-pvtol Jupyter
-notebook <mhe-pvtol>`.
+notebook <examples/mhe-pvtol>`.
 
 Optimization Tips
 -----------------
@@ -443,12 +447,12 @@ solutions do not seem close to optimal, here are a few things to try:
 * Use a smooth basis: as an alternative to parameterizing the optimal
   control inputs using the value of the control at the listed time points,
   you can specify a set of basis functions using the `basis` keyword in
-  :func:`~control.solve_ocp` and then parameterize the controller by linear
+  :func:`solve_ocp` and then parameterize the controller by linear
   combination of the basis functions.  The :mod:`!control.flatsys` module
   defines several sets of basis functions that can be used.
 
 * Tweak the optimizer: by using the `minimize_method`, `minimize_options`,
-  and `minimize_kwargs` keywords in :func:`~control.solve_ocp`, you can
+  and `minimize_kwargs` keywords in :func:`solve_ocp`, you can
   choose the SciPy optimization function that you use and set many
   parameters.  See :func:`scipy.optimize.minimize` for more information on
   the optimizers that are available and the options and keywords that they
@@ -473,22 +477,22 @@ The following classes and functions are defined in the
 .. autosummary::
    :template: custom-class-template.rst
 
-   ~control.optimal.OptimalControlProblem
-   ~control.optimal.OptimalControlResult
-   ~control.optimal.OptimalEstimationProblem
-   ~control.optimal.OptimalEstimationResult
+   optimal.OptimalControlProblem
+   optimal.OptimalControlResult
+   optimal.OptimalEstimationProblem
+   optimal.OptimalEstimationResult
 
 .. autosummary::
 
-   ~control.optimal.create_mpc_iosystem
-   ~control.optimal.disturbance_range_constraint
-   ~control.optimal.gaussian_likelihood_cost
-   ~control.optimal.input_poly_constraint
-   ~control.optimal.input_range_constraint
-   ~control.optimal.output_poly_constraint
-   ~control.optimal.output_range_constraint
-   ~control.optimal.quadratic_cost
-   ~control.optimal.solve_ocp
-   ~control.optimal.solve_oep
-   ~control.optimal.state_poly_constraint
-   ~control.optimal.state_range_constraint
+   optimal.create_mpc_iosystem
+   optimal.disturbance_range_constraint
+   optimal.gaussian_likelihood_cost
+   optimal.input_poly_constraint
+   optimal.input_range_constraint
+   optimal.output_poly_constraint
+   optimal.output_range_constraint
+   optimal.quadratic_cost
+   optimal.solve_ocp
+   optimal.solve_oep
+   optimal.state_poly_constraint
+   optimal.state_range_constraint
