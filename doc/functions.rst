@@ -42,8 +42,11 @@ Systems can also be created by transforming existing systems:
     tf2ss
     tfdata
 
+.. _interconnections-ref:
+
 System interconnections
 =======================
+
 .. autosummary::
    :toctree: generated/
 
