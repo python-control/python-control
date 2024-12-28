@@ -133,9 +133,8 @@ class LTI(InputOutputSystem):
             outputs=self.output_labels, plot_type='bode')
 
     def dcgain(self):
-        """Return the zero-frequency gain"""
-        raise NotImplementedError("dcgain not implemented for %s objects" %
-                                  str(self.__class__))
+        """Return the zero-frequency (DC) gain."""
+        return NotImplemented
 
     def _dcgain(self, warn_infinite):
         zeroresp = self(0 if self.isctime() else 1,

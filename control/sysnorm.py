@@ -18,7 +18,7 @@ import numpy.linalg as la
 
 import control as ct
 
-__all__ = ['norm']
+__all__ = ['system_norm', 'norm']
 
 #------------------------------------------------------------------------------
 
@@ -83,24 +83,26 @@ def _h2norm_slycot(sys, print_warning=True):
 
 #------------------------------------------------------------------------------
 
-def norm(system, p=2, tol=1e-6, print_warning=True, method=None):
-    """Computes norm of system.
+def system_norm(system, p=2, tol=1e-6, print_warning=True, method=None):
+    """Computes the input/output norm of system.
     
     Parameters
     ----------
     system : LTI (:class:`StateSpace` or :class:`TransferFunction`)
-        System in continuous or discrete time for which the norm should be computed.
+        System in continuous or discrete time for which the norm should
+        be computed.
     p : int or str
-        Type of norm to be computed. ``p=2`` gives the H2 norm, and ``p='inf'`` gives the L-infinity norm.
+        Type of norm to be computed. `p=2` gives the H2 norm, and
+        `p='inf'` gives the L-infinity norm.
     tol : float
         Relative tolerance for accuracy of L-infinity norm computation. Ignored
-        unless ``p='inf'``.
+        unless `p='inf'`.
     print_warning : bool
         Print warning message in case norm value may be uncertain.
     method : str, optional
         Set the method used for computing the result.  Current methods are
-        ``'slycot'`` and ``'scipy'``. If set to ``None`` (default), try ``'slycot'`` first
-        and then ``'scipy'``.
+        'slycot' and 'scipy'. If set to `None` (default), try 'slycot' first
+        and then 'scipy'.
     
     Returns
     -------
@@ -121,7 +123,8 @@ def norm(system, p=2, tol=1e-6, print_warning=True, method=None):
     """
            
     if not isinstance(system, (ct.StateSpace, ct.TransferFunction)):
-        raise TypeError('Parameter ``system``: must be a ``StateSpace`` or ``TransferFunction``')
+        raise TypeError(
+            "Parameter `system`: must be a `StateSpace` or `TransferFunction`")
     
     G = ct.ss(system)
     A = G.A
@@ -292,3 +295,5 @@ def norm(system, p=2, tol=1e-6, print_warning=True, method=None):
     else:
         raise ct.ControlArgument(f"Norm computation for p={p} currently not supported.")           
 
+
+norm = system_norm

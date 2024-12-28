@@ -271,13 +271,14 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
         and not returned as margin.
     method : string, optional
         Method to use (default is 'best'):
-        'poly': use polynomial method if passed a :class:`LTI` system.
-        'frd': calculate crossover frequencies using numerical interpolation
-        of a :class:`FrequencyResponseData` representation of the system if
-        passed a :class:`LTI` system.
-        'best': use the 'poly' method if possible, reverting to 'frd' if it is
-        detected that numerical inaccuracy is likey to arise in the 'poly'
-        method for for discrete-time systems.
+
+        * 'poly': use polynomial method if passed a :class:`LTI` system.
+        * 'frd': calculate crossover frequencies using numerical
+          interpolation of a :class:`FrequencyResponseData` representation
+          of the system if passed a :class:`LTI` system.
+        * 'best': use the 'poly' method if possible, reverting to 'frd' if
+          it is detected that numerical inaccuracy is likey to arise in the
+          'poly' method for for discrete-time systems.
 
     Returns
     -------

@@ -1,4 +1,4 @@
-.. _plotting-module:
+.. _response-chapter:
 
 .. currentmodule:: control
 

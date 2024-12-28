@@ -121,6 +121,9 @@ html_theme = 'sphinx_rtd_theme'
 # Set the default role to render items in backticks as code
 default_role = 'py:obj'
 
+# Align inline math with text
+imgmath_use_preview = True
+
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.

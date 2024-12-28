@@ -57,6 +57,28 @@ documentation pages for the individual functions:
    similarity_transform
 
 
+Time domain properties
+----------------------
+
+The following functions are available to analyze the time domain
+properties of a linear systems:
+
+.. autosummary::
+
+   damp
+   forced_response
+   impulse_response
+   initial_response
+   ssdata
+   step_info
+   step_response
+
+The time response functions (:func:`forced_response`,
+:func:`impulse_response`, :func:`initial_response`, and
+:func:`step_response) are described in more detail in the
+:ref:`response-chapter` chapter.
+
+
 State feedback design
 ---------------------
 
@@ -81,10 +103,11 @@ methods:
    place
    place_varga
 
-The :func:`acker`, :func:`place`, and :func:`place_varga` place the
-eigenvalues of the closed loop system to a desired set of values.
-Each takes the `A` and `B` matrices of the state space system and the
-desired locaton of the eigenvalues and returns a gain matrix `K`::
+The :func:`acker`, :func:`place`, and :func:`place_varga` functions
+place the eigenvalues of the closed loop system to a desired set of
+values.  Each takes the `A` and `B` matrices of the state space system
+and the desired location of the eigenvalues and returns a gain matrix
+`K`::
 
   K = ct.place(sys.A, sys.B, E)
 
@@ -109,8 +132,9 @@ several forms:
 
 If `sys` is a discrete time system, the first two forms will compute
 the discrete time optimal controller.  For the second two forms, the
-:func:`dlqr` function can be used.  Additional arguments and details
-are given on the :func:`lqr` and :func:`dlqr` documentation pages.
+:func:`dlqr` function can be used to compute the discrete time optimal
+controller.  Additional arguments and details are given on the
+:func:`lqr` and :func:`dlqr` documentation pages.
 
 State estimation
 ----------------
@@ -156,11 +180,10 @@ with covariances satisfying
    {\mathbb E}\{v v^T\} = RN,\qquad
    {\mathbb E}\{w v^T\} = NN
 
-where :math:`{\mathbb E}\{\cdot\}` represents the expectation of a
-quantity.
+where :math:`{\mathbb E}\{\cdot\}` represents expectation.
 
-The :func:`lqe` function computes the observer gain matrix L such that the
-stationary (non-time-varying) Kalman filter
+The :func:`lqe` function computes the observer gain matrix :math:`L`
+such that the stationary (non-time-varying) Kalman filter
 
 .. math::
 

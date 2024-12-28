@@ -33,6 +33,7 @@ legacy_functions = [
     'minreal',                  # minimal_realization
     'modred',                   # model_reduction
     'nichols',                  # nichols_plot
+    'norm',                     # system_norm
     'nyquist',                  # nyquist_plot
     'pzmap',                    # pole_zero_plot
     'rlocus',                   # root_locus_plot

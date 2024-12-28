@@ -114,11 +114,12 @@ Control system analysis
     get_input_ff_index
     get_output_fb_index
     ispassive
+    linfnorm
     margin
-    norm
     solve_passivity_LMI
     stability_margins
     step_info
+    system_norm
     phase_crossover_frequencies
     poles
     zeros

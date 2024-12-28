@@ -58,9 +58,9 @@ customized access to system information::
       A, B, C, D, name='sys',
       states=['x1', 'x2'], inputs=['u1', 'u2'], outputs=['y'])
 
-State space can be manipulated using standard arithmetic operations as
-well as the :func:`feedback`, :func:`parallel`, and :func:`series`
-function.  A full list of functions can be found in
+State space models can be manipulated using standard arithmetic
+operations as well as the :func:`feedback`, :func:`parallel`, and
+:func:`series` function.  A full list of functions can be found in
 :ref:`function-ref`.
 
 The :func:`rss` function can be used to create a random state space
@@ -85,8 +85,8 @@ transfer functions
        = \frac{a_0 s^m + a_1 s^{m-1} + \cdots + a_m}
               {b_0 s^n + b_1 s^{n-1} + \cdots + b_n},
 
-where n is generally greater than or equal to m (for a proper transfer
-function).
+where :math:`n` is greater than or equal to :math:`m` for a proper
+transfer function.  Improper transfer functions are also allowed.
 
 To create a transfer function, use the :func:`tf` function::
 
@@ -102,6 +102,20 @@ operations as well as the :func:`feedback`, :func:`parallel`, and
 :func:`series` functions.  A full list of "block diagram algebra"
 functions can be found in the :ref:`interconnections-ref` section of the
 :ref:`function-ref`.
+
+To aid in the construction of transfer functions, the :func:`tf`
+factory function can used to create transfer function corresponding
+to the derivative or difference operator::
+
+  s = ct.tf('s')
+
+Standard algebraic operations can be used to construct more
+complicated transfer functions::
+
+  sys = 5 * (s + 10)/(s**2 + 2*s + 1)
+
+Discrete time transfer functions (described in more detail below) can
+be created using `z = ct.tf('z')`.
 
 
 Frequency response data (FRD) systems
@@ -127,11 +141,11 @@ functions that are available, although all of the standard algebraic
 manipulations can be performed.
 
 The FRD class is also used as the return type for the
-:func:`frequency_response` function (and the equivalent method for the
-:class:`StateSpace` and :class:`TransferFunction` classes).  This
-object can be assigned to a tuple using::
+:func:`frequency_response` function.  This object can be assigned to a
+tuple using::
 
-    mag, phase, omega = response
+  response = ct.frequency_response(sys)
+  mag, phase, omega = response
 
 where `mag` is the magnitude (absolute value, not dB or log10) of the
 system frequency response, `phase` is the wrapped phase in radians of
@@ -148,7 +162,7 @@ Multi-input, multi-output (MIMO) systems
 
 Multi-input, multi-output (MIMO) sytems are created by providing
 parameters of the appropriate dimensions to the relevant factory
-function.  For transfer function, this is done by providing a 2D list
+function.  For transfer functions, this is done by providing a 2D list
 of numerator and denominator polynomials to the :func:`tf` function,
 e.g.::
 
@@ -156,11 +170,11 @@ e.g.::
       [[num11, num12], [num21, num22]],
       [[den11, den12], [den21, denm22]])
 
-Similarly, MIMO frequency response data systems are created by
+Similarly, MIMO frequency response data (FRD) systems are created by
 providing the :func:`frd` function with a 3D array of response
-values,with the first dimension corresponding to the output index
-of the system, the second dimension corresponding to the input index,
-and the 3rd dimension corresponding to the frequency points in omega.
+values,with the first dimension corresponding to the output index of
+the system, the second dimension corresponding to the input index, and
+the 3rd dimension corresponding to the frequency points in omega.
 
 Signal names for MIMO systems are specified using lists of labels::
 
@@ -194,13 +208,14 @@ can be accessed using the names of the inputs and outputs::
 where the signal names are based on the system that generated the frequency
 response.
 
-.. note:: If an LTI system is SISO, `magnitude` and `phase` default to
-	  1D arrays, indexed by frequency.  If the system is not SISO
-	  or `squeeze` is set to `False`, the array is 3D, indexed by
-	  the output, input, and frequency.  If `squeeze` is `True`
-	  for a MIMO system then single-dimensional axes are removed.
-	  The processing of the `squeeze` keyword can be changed by
-	  calling the response function with a new argument::
+.. note:: If a system is single-input, single-output (SISO),
+	  `magnitude` and `phase` default to 1D arrays, indexed by
+	  frequency.  If the system is not SISO or `squeeze` is set to
+	  `False`, the array is 3D, indexed by the output, input, and
+	  frequency.  If `squeeze` is `True` for a MIMO system then
+	  single-dimensional axes are removed.  The processing of the
+	  `squeeze` keyword can be changed by calling the response
+	  function with a new argument::
 
 	    mag, phase, omega = response(squeeze=False)
 
@@ -442,21 +457,21 @@ Information about an LTI system can be obtained using the Python
   D = [[-0.  0.]
        [ 0.  0.]]
 
-For a more compact represent, the LTI objects can be evaluated to
-return a summary of the system input/output properties::
+For a more compact represention, LTI objects can be evaluated directly
+to return a summary of the system input/output properties::
 
   >>> sys = ct.rss(4, 2, 2, name='sys_2x2')
   >>> sys
   <StateSpace sys_2x2: ['u[0]', 'u[1]'] -> ['y[0]', 'y[1]']>
 
 Alternative representations of the system are available using the
-:func:iosys_repr` function.
+:func:`iosys_repr` function.
 
 Transfer functions are displayed as ratios of polynomials, using
 either 's' or 'z' depending on whether the systems is continuous or
 discrete time::
 
-  >>> sys_tf = ct.tf([1, 0], [1, 2, 1])
+  >>> sys_tf = ct.tf([1, 0], [1, 2, 1], 0.1)
   >>> print(sys_tf)
   <TransferFunction>: sys[1]
   Inputs (1): ['u[0]']
@@ -466,5 +481,5 @@ discrete time::
   -------------
   z^2 + 2 z + 1
   
-  dt = 1
+  dt = 0.1
 

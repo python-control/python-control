@@ -1243,7 +1243,7 @@ class TransferFunction(LTI):
         return TransferFunction(sysd, name=name, **kwargs)
 
     def dcgain(self, warn_infinite=False):
-        """Return the zero-frequency (or DC) gain.
+        """Return the zero-frequency ("DC") gain.
 
         For a continous-time transfer function G(s), the DC gain is G(0)
         For a discrete-time transfer function G(z), the DC gain is G(1)

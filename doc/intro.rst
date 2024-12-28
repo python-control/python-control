@@ -7,6 +7,7 @@ Guide.  This guide contains information on using the python-control
 package, including documentation for all functions in the package and
 examples illustrating their use.
 
+
 Package overview
 ================
 
@@ -15,6 +16,7 @@ Package overview
    :no-members:
    :no-inherited-members:
    :no-special-members:
+
 
 Installation
 ============
@@ -82,6 +84,35 @@ control package::
 Note that Google colab does not currently support Slycot, so some
 functionality may not be available.
 
+
+Package conventions
+===================
+
+The python-control package makes use of a few naming and calling conventions:
+
+* Function names are written in lower case with underscores between
+  words ('frequency_response').
+
+* Class names use camel case ('StateSpace', 'ControlPlot', etc) and
+  instances of the class are created with "factory functions" ('ss')
+  or as the output of an operation ('bode_plot').
+
+* Functions that return multiple values use either objects (with
+  elements for each return value) or tuples.  For those functions that
+  return tuples, the underscore variable can be used if only some of
+  the return values are needed::
+
+    K, _, _ = lqr(sys)
+
+* Python-control supports both single-input, single-output (SISO)
+  systems and mullti-input, multi-output (MIMO) systems, including
+  time and frequency responses.  By default, SISO systems will
+  typically generate objects that have the input and output dimensions
+  supressed (using the NumPy :func:`~numpy.squeeze` function).  The
+  `squeeze` keyword can be set to `False` to force functions to return
+  objects that include the input and output dimensions.
+
+
 Some differences from MATLAB
 ============================
 
@@ -102,11 +133,11 @@ some things to keep in mind:
   vectors implemented as nested list .  So [1 2 3] must be written as
   [1, 2, 3] and matrices are written using 2D nested lists, e.g., [[1,
   2], [3, 4]].
-* Functions that return multiple values use either objects (with
-  elements for each return value) or tuples.  The number of elements
-  in a tuple is fixed and so functions that return variable numbers of
-  return values will have a parameter of the form `return_<val>`
-  that is used to return additional data.
+* Functions that in MATLAB would return variable numbers of values
+  will have a parameter of the form `return_<val>` that is used to
+  return additional data.  (These functions usually return an object of
+  a class that has attributpes that can be used to access the
+  information and this is the preferred usage pattern.)
 * You cannot use braces for collections; use tuples instead.
 * Time series data have time as the final index (see
   :ref:`time-series-convention`).

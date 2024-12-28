@@ -211,10 +211,10 @@ optimal trajectories for nonlinear systems and implementing
 optimization-based controllers, including model predictive control and
 moving horizon estimation.  It follows the basic problem setups
 described above, but carries out all computations in *discrete time*
-(so that integrals become sums) and over a *finite horizon*.  To local
-the optimal control modules, import `control.optimal`:
+(so that integrals become sums) and over a *finite horizon*.  To access
+the optimal control modules, import `control.optimal`::
 
-  import control.optimal as obc
+  import control.optimal as opt
 
 To describe an optimal control problem we need an input/output system, a
 time horizon, a cost function, and (optionally) a set of constraints on the
@@ -224,7 +224,7 @@ problem into a standard optimization problem that can be solved by
 :func:`scipy.optimize.minimize`.  The optimal control problem can be solved
 by using the :func:`optimal.solve_ocp` function::
 
-  res = obc.solve_ocp(sys, timepts, X0, cost, constraints)
+  res = opt.solve_ocp(sys, timepts, X0, cost, constraints)
 
 The `sys` parameter should be an :class:`InputOutputSystem` and the
 `timepts` parameter should represent a time vector that gives the list of
@@ -367,18 +367,18 @@ penalizes the state and input using quadratic cost functions::
   Q = np.diag([0, 0, 0.1])          # don't turn too sharply
   R = np.diag([1, 1])               # keep inputs small
   P = np.diag([1000, 1000, 1000])   # get close to final point
-  traj_cost = obc.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
-  term_cost = obc.quadratic_cost(vehicle, P, 0, x0=xf)
+  traj_cost = opt.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
+  term_cost = opt.quadratic_cost(vehicle, P, 0, x0=xf)
 
 We also constrain the maximum turning rate to 0.1 radians (about 6 degrees)
 and constrain the velocity to be in the range of 9 m/s to 11 m/s::
 
-  constraints = [ obc.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
+  constraints = [ opt.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
 
 Finally, we solve for the optimal inputs::
 
   timepts = np.linspace(0, Tf, 10, endpoint=True)
-  result = obc.solve_ocp(
+  result = opt.solve_ocp(
       vehicle, timepts, x0, traj_cost, constraints,
       terminal_cost=term_cost, initial_guess=u0)
 
