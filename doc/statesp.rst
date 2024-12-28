@@ -3,21 +3,182 @@
 State space analysis and design
 ===============================
 
+This section describes the functions the are available to analyze
+state space systems and design state feedback controllers.  The
+functionality described here is mainly specific to state space system
+representations; additional functions for analysis of linear
+input/output systems are defined in the next section and can also be
+applied to LTI systems in state space form.
+
+
 State space properties
 ----------------------
+
+The following basic attributes and methods are available for
+:class:`StateSpace` objects:
+
+.. autosummary::
+
+   ~StateSpace.A
+   ~StateSpace.B
+   ~StateSpace.C
+   ~StateSpace.D
+   ~StateSpace.dt
+   ~StateSpace.shape
+   ~StateSpace.nstates
+   ~StateSpace.poles
+   ~StateSpace.zeros
+   ~StateSpace.dcgain
+   ~StateSpace.sample
+   ~StateSpace.returnScipySignalLTI
+
+A complete list of attributes, methods, and properties is available in
+the :class:`~control.StateSpace` class documentation.
+
+
+Similarity transformations and canonical forms
+----------------------------------------------
+
+State space systems can be transformed into different internal
+representations representing a variety of standard cananonical forms
+that have the same input/output properties.  The
+:func:`similarity_transform` function allows a change of internal
+state variable via similarity transformation and the
+:func:`canonical_form` function converts sytems into different
+canonical forms.  Additional information is available on the
+documentation pages for the individual functions:
+
+.. autosummary::
+
+   canonical_form
+   observable_form
+   modal_form
+   reachable_form
+   similarity_transform
+
 
 State feedback design
 ---------------------
 
-Canonical forms
----------------
+State feedback controllers for a linear system are controllers of the form
+
+.. math::
+
+   u = -K x
+
+where :math:`K \in {\mathbb R}^{m \times n}` is a matrix of feedback
+gains.  Assuming the systems is controllable, the resulting closed
+loop system will have dynamics matrix :math:`A - B K` with stable
+eigenvalues.
+
+Feedback controllers can be designed using one of several
+methods:
+
+.. autosummary::
+
+   acker
+   lqr
+   place
+   place_varga
+
+The :func:`acker`, :func:`place`, and :func:`place_varga` place the
+eigenvalues of the closed loop system to a desired set of values.
+Each takes the `A` and `B` matrices of the state space system and the
+desired locaton of the eigenvalues and returns a gain matrix `K`::
+
+  K = ct.place(sys.A, sys.B, E)
+
+where `E` is a 1D array of desired eigenvalues.
+
+The :func:`lqr` function computes the optimal state feedback controller
+that minimizes the quadratic cost
+
+.. math::
+
+   J = \int_0^\infty (x' Q x + u' R u + 2 x' N u) dt
+
+by solving the approriate Riccati equation.  It returns the gain
+matrix `K`, the solution to the Riccati equation `S`, and the location
+of the closed loop eigenvalues `E`.  It can be called in one of
+several forms:
+
+  * `K, S, E = ct.lqr(sys, Q, R)`
+  * `K, S, E = ct.lqr(sys, Q, R, N)`
+  * `K, S, E = ct.lqr(A, B, Q, R)`
+  * `K, S, E = ct.lqr(A, B, Q, R, N)`
+
+If `sys` is a discrete time system, the first two forms will compute
+the discrete time optimal controller.  For the second two forms, the
+:func:`dlqr` function can be used.  Additional arguments and details
+are given on the :func:`lqr` and :func:`dlqr` documentation pages.
 
 State estimation
 ----------------
 
-Passive systems
----------------
-.. automodule:: passive
-   :no-members:
-   :no-inherited-members:
-   :no-special-members:
+State estimators (or observers) are dynamical systems that estimate
+the state of the system given a model of the dynamics and the input
+and output signals as a function of time.  Linear state estimators
+have the form
+
+.. math::
+
+     \frac{d\hat x}{dt} = A \hat x + B u + L(y - C\hat x - D u),
+
+where :math:`\hat x` is an estimate of the state and :math:`L \in
+{\mathbb R}^{n \times p}` represents the estimator gain.  The gain
+:math:`L` is chosen such that the eigenvalues of the matrix :math:`A -
+L C` are stable, resulting in an estimate that converges to the value
+of the system state.
+
+The gain matrix :math:`L` can be chosen using eigenvalue placement by
+calling the :func:`place` function::
+
+  L = ct.place(sys.A.T, sys.C.T, E).T
+
+where `E` is the desired location of the eigenvalues and `.T` computes
+the transpose of a matrix.
+
+Alternatively, an optimal estimator can be computed using the
+:func:`lqe` function.  We consider a continuous time, state space
+system
+
+.. math::
+
+     \frac{dx}{dt} &= Ax + Bu + Gw \\
+     y &= Cx + Du + v
+
+with unbiased process noise :math:`w` and measurement noise :math:`v`
+with covariances satisfying
+
+.. math::
+
+   {\mathbb E}\{w w^T\} = QN,\qquad
+   {\mathbb E}\{v v^T\} = RN,\qquad
+   {\mathbb E}\{w v^T\} = NN
+
+where :math:`{\mathbb E}\{\cdot\}` represents the expectation of a
+quantity.
+
+The :func:`lqe` function computes the observer gain matrix L such that the
+stationary (non-time-varying) Kalman filter
+
+.. math::
+
+     \frac{d\hat x}{dt} = A \hat x + B u + L(y - C\hat x - D u),
+
+produces a state estimate :math:`\hat x` that minimizes the expected
+squared error using the sensor measurements :math:`y`.
+
+As with the :func:`lqr` function, the :func:`lqe` function can be called in several forms:
+
+  * `L, P, E = lqe(sys, QN, RN)`
+  * `L, P, E = lqe(sys, QN, RN, NN)`
+  * `L, P, E = lqe(A, G, C, QN, RN)`
+  * `L, P, E = lqe(A, G, C, QN, RN, NN)`
+
+where `sys` is an :class:`LTI` object, and `A`, `G`, `C`, `QN`, `RN`,
+and `NN` are 2D arrays of appropriate dimension.  If `sys` is a
+discrete time system, the first two forms will compute the discrete
+time optimal controller.  For the second two forms, the :func:`dlqr`
+function can be used.  Additional arguments and details are given on
+the :func:`lqr` and :func:`dlqr` documentation pages.

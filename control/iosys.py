@@ -243,6 +243,11 @@ class InputOutputSystem(object):
     #: :meta hide-value:
     nstates = None
 
+    #: System timebase.
+    #:
+    #: :meta hide-value:
+    dt = None
+
     #
     # System representation
     #
@@ -256,7 +261,7 @@ class InputOutputSystem(object):
             out += f"\nStates ({self.nstates}): {self.state_labels}"
         out += self._dt_repr(separator="\n", space=" ")
         return out
-
+    
     def __repr__(self):
         return iosys_repr(self, format=self.repr_format)
 

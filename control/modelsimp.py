@@ -3,8 +3,10 @@
 # Author: Steve Brunton, Kevin Chen, Lauren Padilla
 # Date: 30 Nov 2010
 #
-# This file contains routines for obtaining reduced order models
-#
+"""This :mod:`modelsimp` modules contains routines for obtaining
+reduced order models for state space systems.
+
+"""
 
 import warnings
 

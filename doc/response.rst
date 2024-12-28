@@ -162,6 +162,9 @@ and styles for various signals and traces::
 
 .. image:: figures/timeplot-mimo_step-linestyle.png
 
+
+.. _frequency_response:
+
 Frequency response data
 =======================
 

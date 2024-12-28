@@ -1,8 +1,11 @@
+# passivity.py
+#
+# Author: Mark Yeatman
+#Date: July 17, 2022
+
 """
 Functions for passive control.
 
-Author: Mark Yeatman
-Date: July 17, 2022
 """
 
 import numpy as np
