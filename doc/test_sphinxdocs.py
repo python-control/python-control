@@ -6,6 +6,7 @@
 
 import inspect
 import os
+import re
 import sys
 import warnings
 from importlib import resources
@@ -43,11 +44,13 @@ legacy_functions = [
 
 # Functons that we can skip
 object_skiplist = [
-    control.NamedSignal,        # np.ndarray members cause errors
-    control.common_timebase,    # mainly internal use
-    control.cvxopt_check,       # mainly internal use
-    control.pandas_check,       # mainly internal use
-    control.slycot_check,       # mainly internal use
+    control.NamedSignal,                # np.ndarray members cause errors
+    control.FrequencyResponseList,      # Use FrequencyResponseData
+    control.TimeResponseList,           # Use TimeResponseData
+    control.common_timebase,            # mainly internal use
+    control.cvxopt_check,               # mainly internal use
+    control.pandas_check,               # mainly internal use
+    control.slycot_check,               # mainly internal use
 ]
 
 # Global list of objects we have checked
@@ -105,6 +108,57 @@ def test_sphinx_functions(module):
                     _fail(f"{objname} not referenced in sphinx docs")
 
 
+defaults_skiplist = []
+def test_config_defaults():
+    # Keep track of params we found and params we have checked
+    config_rstdocs = dict()
+    config_defaults = control.config.defaults
+
+    # Read the documentation file and extract the keys
+    with open('config.rst', 'r') as file:
+        for line in file:
+            if (key_match := re.search(r"py:data:: ([\w]+\.[\w]+)", line)):
+                if (key := key_match.group(1)) in defaults_skiplist:
+                    _info(f"skipping config param {key}", 2)
+                    continue
+                else:
+                    _info(f"checking config param {key}", 2)
+
+                if key in config_rstdocs:
+                    _warn(f"config param '{key}' listed multiple times")
+
+                # Get the default value and check it
+                while not re.match(r"^$|^\.\.", line := next(file)):
+                    if (val_match := re.search(r":value: (.*)", line)):
+                        _info(f"found value for config param {key}", 3)
+                        config_rstdocs[key] = val_match.group(1)
+
+    # Check to make sure (almost) all keys in config.defaults were documented
+    for key in config_defaults:
+        if key in defaults_skiplist:
+            config_rstdocs.pop(key, None)
+            continue
+
+        if key not in config_rstdocs:
+            # TODO: change to _fail once everything is set up
+            _warn(f"config param '{key}' not documented")
+            continue
+
+        # Make sure the listed default value is correct
+        try:
+            if (defval := config_defaults[key]) != eval(config_rstdocs[key]):
+                _warn(f"config param '{key}' has different default value: "
+                      f"{config_rstdocs[key]} instead of {defval}")
+        except SyntaxError:
+            _warn(f"could not evaluate default value for config param '{key}'")
+
+        # Done processing this key
+        config_rstdocs.pop(key, None)
+
+    if config_rstdocs:
+        _warn(f"Unknown params in config.rst: {config_rstdocs}")
+
+
 def _check_deprecated(obj):
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')     # debug via sphinx, not here
@@ -138,3 +192,5 @@ if __name__ == "__main__":
 
     for module in control_module_list:
         test_sphinx_functions(module)
+
+    test_config_defaults()

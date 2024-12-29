@@ -759,3 +759,13 @@ The following classes are used in generating response data.
    PoleZeroData
    TimeResponseData
    TimeResponseList
+
+.. _controlplot-params:
+
+Plot parameters
+---------------
+
+Matplotlib users the :func:`matplotlib.rcParams` to specify default
+properties of figures and axes.  The `python-control` plotting
+functions make use of a set of default values for all plots that
+override the default Matplotlib values.

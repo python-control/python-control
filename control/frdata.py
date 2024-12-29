@@ -1014,8 +1014,13 @@ def frd(*args, **kwargs):
     input_prefix, output_prefix : string, optional
         Set the prefix for input and output signals.  Defaults = 'u', 'y'.
     name : string, optional
-        System name. If unspecified, a generic name <sys[id]> is generated
-        with a unique integer id.
+        Set the name of the system. If unspecified and the system is
+        sampled from an existing system, the new system name is determined
+        by adding the prefix and suffix strings in
+        config.defaults['iosys.sampled_system_name_prefix'] and
+        config.defaults['iosys.sampled_system_name_suffix'], with the
+        default being to add the suffix '$ampled'.  Otherwise, a generic
+        name <sys[id]> is generated with a unique integer id
 
     See Also
     --------

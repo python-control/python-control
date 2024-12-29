@@ -213,7 +213,8 @@ def bode_plot(
         Set the frame of reference used to center the plot title. If set to
         'axes' (default), the horizontal position of the title will be
         centered relative to the axes.  If set to 'figure', it will be
-        centered with respect to the figure (faster execution).
+        centered with respect to the figure (faster execution).  The
+        default value can be set using config.defaults['freqplot.title_frame'].
     wrap_phase : bool or float
         If wrap_phase is `False` (default), then the phase will be unwrapped
         so that it is continuously increasing or decreasing.  If wrap_phase is
@@ -1200,14 +1201,17 @@ def nyquist_response(
         be set using config.defaults['nyquist.encirclement_threshold'].
     indent_direction : str, optional
         For poles on the imaginary axis, set the direction of indentation to
-        be 'right' (default), 'left', or 'none'.
+        be 'right' (default), 'left', or 'none'.  The default value can
+        be set using config.defaults['nyquist.indent_direction'].
     indent_points : int, optional
         Number of points to insert in the Nyquist contour around poles that
         are at or near the imaginary axis.
     indent_radius : float, optional
         Amount to indent the Nyquist contour around poles on or near the
-        imaginary axis. Portions of the Nyquist plot corresponding to indented
-        portions of the contour are plotted using a different line style.
+        imaginary axis. Portions of the Nyquist plot corresponding to
+        indented portions of the contour are plotted using a different line
+        style. The default value can be set using
+        config.defaults['nyquist.indent_radius'].
     omega_limits : array_like of two values
         Set limits for plotted frequency range. If Hz=True the limits are
         in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
@@ -1539,7 +1543,9 @@ def nyquist_plot(
         ``omega`` as a list of two elements is equivalent to providing
         ``omega_limits``.
     unit_circle : bool, optional
-        If ``True``, display the unit circle, to read gain crossover frequency.
+        If ``True``, display the unit circle, to read gain crossover
+        frequency.  The circle style is determined by
+        config.defaults['nyquist.circle_style'].
     mt_circles : array_like, optional
         Draw circles corresponding to the given magnitudes of sensitivity.
     ms_circles : array_like, optional
@@ -1577,12 +1583,13 @@ def nyquist_plot(
     arrows : int or 1D/2D array of floats, optional
         Specify the number of arrows to plot on the Nyquist curve.  If an
         integer is passed. that number of equally spaced arrows will be
-        plotted on each of the primary segment and the mirror image.  If a 1D
-        array is passed, it should consist of a sorted list of floats between
-        0 and 1, indicating the location along the curve to plot an arrow.  If
-        a 2D array is passed, the first row will be used to specify arrow
-        locations for the primary curve and the second row will be used for
-        the mirror image.
+        plotted on each of the primary segment and the mirror image.  If a
+        1D array is passed, it should consist of a sorted list of floats
+        between 0 and 1, indicating the location along the curve to plot an
+        arrow.  If a 2D array is passed, the first row will be used to
+        specify arrow locations for the primary curve and the second row
+        will be used for the mirror image.  Default value is 2 and can be
+        set using config.defaults['nyquist.arrows'].
     arrow_size : float, optional
         Arrowhead width and length (in display coordinates).  Default value is
         8 and can be set using config.defaults['nyquist.arrow_size'].
@@ -1619,11 +1626,14 @@ def nyquist_plot(
     max_curve_magnitude : float, optional
         Restrict the maximum magnitude of the Nyquist plot to this value.
         Portions of the Nyquist plot whose magnitude is restricted are
-        plotted using a different line style.
+        plotted using a different line style.  The default value is 20 and
+        can be set using config.defaults['nyquist.max_curve_magnitude'].
     max_curve_offset : float, optional
         When plotting scaled portion of the Nyquist plot, increase/decrease
         the magnitude by this fraction of the max_curve_magnitude to allow
         any overlaps between the primary and mirror curves to be avoided.
+        The default value is 0.02 and can be set using
+        config.defaults['nyquist.max_curve_magnitude'].
     mirror_style : [str, str] or False
         Linestyles for mirror image of the Nyquist curve.  The first element
         is used for unscaled portions of the Nyquist curve, the second element

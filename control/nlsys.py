@@ -2320,9 +2320,10 @@ def interconnect(
 
     states : int, list of str, or None, optional
         Description of the system states.  Same format as `inputs`. The
-        default is `None`, in which case the states will be given names of the
-        form '<subsys_name>.<state_name>', for each subsys in syslist and each
-        state_name of each subsys.
+        default is `None`, in which case the states will be given names of
+        the form '<subsys_name><delim><state_name>', for each subsys in
+        syslist and each state_name of each subsys, where <delim> is the
+        value of config.defaults['iosys.state_name_delim'].
 
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions

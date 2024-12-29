@@ -153,7 +153,7 @@ def time_response_plot(
     trace_labels : list of str, optional
         Replace the default trace labels with the given labels.
     trace_props : array of dicts
-        List of line properties to use when plotting combined outputs.  The
+        List of line properties to use when plotting multiple traces.  The
         default values are set by config.defaults['timeplot.trace_props'].
 
     Notes

@@ -51,7 +51,8 @@ def nichols_plot(
         Passed to `matplotlib` as the format string for all lines in the plot.
         The `omega` parameter must be present (use omega=None if needed).
     grid : boolean, optional
-        True if the plot should include a Nichols-chart grid. Default is True.
+        True if the plot should include a Nichols-chart grid. Default is
+        True and can be set using config.defaults['nichols.grid'].
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 

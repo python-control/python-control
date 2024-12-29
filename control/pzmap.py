@@ -31,7 +31,7 @@ __all__ = ['pole_zero_map', 'pole_zero_plot', 'pzmap', 'PoleZeroData']
 
 # Define default parameter values for this module
 _pzmap_defaults = {
-    'pzmap.grid': None,                 # Plot omega-damping grid
+    'pzmap.grid': False,                 # Plot omega-damping grid
     'pzmap.marker_size': 6,             # Size of the markers
     'pzmap.marker_width': 1.5,          # Width of the markers
     'pzmap.expansion_factor': 1.8,      # Amount to scale plots beyond features
@@ -273,16 +273,27 @@ def pole_zero_plot(
 
     Notes
     -----
-    1. By default, the pzmap function calls matplotlib.pyplot.axis('equal'),
-       which means that trying to reset the axis limits may not behave as
-       expected.  To change the axis limits, use the `scaling` keyword of
-       use matplotlib.pyplot.gca().axis('auto') and then set the axis
-       limits to the desired values.
+    By default, the pzmap function calls matplotlib.pyplot.axis('equal'),
+    which means that trying to reset the axis limits may not behave as
+    expected.  To change the axis limits, use the `scaling` keyword of use
+    matplotlib.pyplot.gca().axis('auto') and then set the axis limits to
+    the desired values.
 
-    2. Pole/zero plots that use the continuous time omega-damping grid do
-       not work with the ``ax`` keyword argument, due to the way that axes
-       grids are implemented.  The ``grid`` argument must be set to
-       ``False`` or ``'empty'`` when using the ``ax`` keyword argument.
+    Pole/zero plots that use the continuous time omega-damping grid do not
+    work with the ``ax`` keyword argument, due to the way that axes grids
+    are implemented.  The ``grid`` argument must be set to ``False`` or
+    ``'empty'`` when using the ``ax`` keyword argument.
+
+    The limits of the pole/zero plot are set based on the location features
+    in the plot, including the location of poles, zeros, and local maxima
+    of root locus curves.  The locations of local maxima are expanded by a
+    buffer factor set by config.defaults['phaseplot.buffer_factor'] that is
+    applied to the locations of the local maxima.  The final axis limits
+    are set to by the largest features in the plot multiplied by an
+    expansion factor set by config.defaults['phaseplot.expansion_factor'].
+    The default value for the buffer factor is 1.05 (5% buffer around local
+    maxima) and the default value for the expansion factor is 1.8 (80%
+    increase in limits around the most distant features).
 
     """
     # Get parameter values

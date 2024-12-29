@@ -48,6 +48,7 @@ __all__ = ['phase_plane_plot', 'phase_plot', 'box_grid']
 _phaseplot_defaults = {
     'phaseplot.arrows': 2,                  # number of arrows around curve
     'phaseplot.arrow_size': 8,              # pixel size for arrows
+    'phaseplot.arrow_style': None,          # set arrow style
     'phaseplot.separatrices_radius': 0.1    # initial radius for separatrices
 }
 
@@ -120,6 +121,15 @@ def phase_plane_plot(
 
     Other Parameters
     ----------------
+    arrows : int
+        Set the number of arrows to plot along the streamlines. The default
+        value can be set in config.defaults['phaseplot.arrows'].
+    arrow_size : float
+        Set the size of arrows to plot along the streamlines.  The default
+        value can be set in config.defaults['phaseplot.arrow_size'].
+    arrow_style : matplotlib patch
+        Set the style of arrows to plot along the streamlines.  The default
+        value can be set in config.defaults['phaseplot.arrow_style'].
     dir : str, optional
         Direction to draw streamlines: 'forward' to flow forward in time
         from the reference points, 'reverse' to flow backward in time, or
@@ -383,6 +393,15 @@ def streamlines(
 
     Other Parameters
     ----------------
+    arrows : int
+        Set the number of arrows to plot along the streamlines. The default
+        value can be set in config.defaults['phaseplot.arrows'].
+    arrow_size : float
+        Set the size of arrows to plot along the streamlines.  The default
+        value can be set in config.defaults['phaseplot.arrow_size'].
+    arrow_style : matplotlib patch
+        Set the style of arrows to plot along the streamlines.  The default
+        value can be set in config.defaults['phaseplot.arrow_style'].
     rcParams : dict
         Override the default parameters used for generating plots.
         Default is set by config.default['ctrlplot.rcParams'].
@@ -592,6 +611,13 @@ def separatrices(
         Default is set by config.default['ctrlplot.rcParams'].
     suppress_warnings : bool, optional
         If set to `True`, suppress warning messages in generating trajectories.
+
+    Notes
+    -----
+    The value of config.defaults['separatrices_radius'] is used to set the
+    offset from the equlibrium point to the starting point of the separatix
+    traces, in the direction of the eigenvectors evaluated at that
+    equilibrium point.
 
     """
     # Process keywords
