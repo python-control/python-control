@@ -550,7 +550,7 @@ def combine_tf(tf_array, **kwargs):
 
     Examples
     --------
-    Combine two transfer functions
+    Combine two transfer functions:
 
     >>> s = ct.tf('s')
     >>> ct.combine_tf(
@@ -565,7 +565,7 @@ def combine_tf(tf_array, **kwargs):
      [array([1, 2])]],
     name='G', outputs=2, inputs=1)
 
-    Combine NumPy arrays with transfer functions
+    Combine NumPy arrays with transfer functions:
 
     >>> ct.combine_tf(
     ...     [[np.eye(2), np.zeros((2, 1))],
@@ -639,6 +639,7 @@ def combine_tf(tf_array, **kwargs):
     return tf.TransferFunction(num, den, dt=dt, **kwargs)
 
 
+
 def split_tf(transfer_function):
     """Split MIMO transfer function into SISO transfer functions.
 
@@ -657,7 +658,7 @@ def split_tf(transfer_function):
 
     Examples
     --------
-    Split a MIMO transfer function
+    Split a MIMO transfer function:
 
     >>> G = ct.tf(
     ...     [ [[87.8], [-86.4]],
