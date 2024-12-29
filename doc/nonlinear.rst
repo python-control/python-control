@@ -1,3 +1,5 @@
+.. _nonlinear-systems:
+
 ***********************************************
 Nonlinear System Modeling, Analysis, and Design
 ***********************************************

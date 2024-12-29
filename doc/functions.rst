@@ -14,8 +14,8 @@ Function reference
 System creation
 ===============
 
-The control toolbox makes use of "factory functions" to create input/output
-systems of different types (classes):
+Functions that create input/output systems from a description of the
+system properties:
 
 .. autosummary::
    :toctree: generated/
@@ -25,10 +25,11 @@ systems of different types (classes):
     frd
     nlsys
     zpk
+    pade
     rss
     drss
 
-Systems can also be created by transforming existing systems:
+Functions that transform systems from one form to another:
 
 .. autosummary::
    :toctree: generated/
@@ -38,7 +39,6 @@ Systems can also be created by transforming existing systems:
     observable_form
     reachable_form
     similarity_transform
-    pade
     ss2tf
     tf2ss
     tfdata
@@ -64,8 +64,9 @@ System interconnections
     combine_tf
     split_tf
 
-Time domain simulation
-======================
+
+Time response
+=============
 
 .. autosummary::
    :toctree: generated/
@@ -78,6 +79,12 @@ Time domain simulation
     step_response
     time_response_plot
     combine_time_responses
+
+Additional functions for customizing phase plots:
+
+.. autosummary::
+   :toctree: generated/
+
     phaseplot.boxgrid
     phaseplot.circlegrid
     phaseplot.equilpoints
@@ -104,24 +111,39 @@ Frequency response
     nichols_plot
     nichols_grid
 
+
 Control system analysis
 =======================
+
+Time domain analysis:
+
+.. autosummary::
+   :toctree: generated/
+
+    damp
+    step_info
+
+Frequency domain analysis:
+
 .. autosummary::
    :toctree: generated/
 
     bandwidth
-    damp
     dcgain
-    get_input_ff_index
-    get_output_fb_index
-    ispassive
     linfnorm
     margin
-    solve_passivity_LMI
     stability_margins
-    step_info
     system_norm
     phase_crossover_frequencies
+    singular_values_plot
+    singular_values_response
+    sisotool
+
+Pole/zero-based analysis:
+
+.. autosummary::
+   :toctree: generated/
+
     poles
     zeros
     pole_zero_map
@@ -129,26 +151,43 @@ Control system analysis
     pole_zero_subplots
     root_locus_map
     root_locus_plot
-    singular_values_plot
-    singular_values_response
-    sisotool
+
+Passive systems analysis:
+
+.. autosummary::
+   :toctree: generated/
+
+    get_input_ff_index
+    get_output_fb_index
+    ispassive
+    solve_passivity_LMI
 
 
 Control system synthesis
 ========================
+
+State space synthesis:
+
 .. autosummary::
    :toctree: generated/
 
     acker
     create_statefbk_iosystem
     dlqr
-    h2syn
-    hinfsyn
     lqr
-    mixsyn
     place
     place_varga
+
+Frequency domain synthesis:
+
+.. autosummary::
+   :toctree: generated/
+
+    h2syn
+    hinfsyn
+    mixsyn
     rootlocus_pid_designer
+
 
 System ID and model reduction
 =============================
@@ -162,6 +201,7 @@ System ID and model reduction
     eigensys_realization
     markov
 
+
 Nonlinear system support
 ========================
 .. autosummary::
@@ -170,19 +210,27 @@ Nonlinear system support
     find_operating_point
     linearize
 
-Stochastic system support
-=========================
+Describing functions
+--------------------
 .. autosummary::
    :toctree: generated/
 
-    correlation
-    create_estimator_iosystem
-    dlqe
-    lqe
-    white_noise
+   describing_function
+   friction_backlash_nonlinearity
+   relay_hysteresis_nonlinearity
+   saturation_nonlinearity
+
+Differentially flat systems
+---------------------------
+.. autosummary::
+   :toctree: generated/
+
+   flatsys.flatsys
+   flatsys.point_to_point
+   flatsys.solve_flat_ocp
 
 Optimal control
-===============
+---------------
 .. autosummary::
    :toctree: generated/
 
@@ -200,24 +248,17 @@ Optimal control
    optimal.state_range_constraint
 
 
-Describing functions
-====================
+Stochastic system support
+=========================
 .. autosummary::
    :toctree: generated/
 
-   describing_function
-   friction_backlash_nonlinearity
-   relay_hysteresis_nonlinearity
-   saturation_nonlinearity
+    correlation
+    create_estimator_iosystem
+    dlqe
+    lqe
+    white_noise
 
-Differentially flat systems
-===========================
-.. autosummary::
-   :toctree: generated/
-
-   flatsys.flatsys
-   flatsys.point_to_point
-   flatsys.solve_flat_ocp
 
 Matrix computations
 ===================
