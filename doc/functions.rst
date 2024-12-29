@@ -10,6 +10,7 @@ Function reference
    :no-inherited-members:
    :no-special-members:
 
+
 System creation
 ===============
 
@@ -243,6 +244,7 @@ Utility functions
     db2mag
     isctime
     isdtime
+    iosys_repr
     issiso
     mag2db
     reset_defaults

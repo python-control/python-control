@@ -61,6 +61,11 @@ class LTI(InputOutputSystem):
         zeta = -real(splane_poles)/wn
         return wn, zeta, poles
 
+    def feedback(self, other=1, sign=-1):
+        """Feedback interconnection between two LTI objects."""
+        # Implemented in subclasses, but documented here
+        return NotImplemented
+
     def frequency_response(self, omega=None, squeeze=None):
         """Evaluate LTI system response at an array of frequencies.
 

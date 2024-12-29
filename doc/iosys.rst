@@ -1,42 +1,139 @@
 .. _iosys-module:
 
+.. currentmodule:: control
+
 **************************
 Interconnected I/O Systems
 **************************
 
+Input/output systems can be interconnected in a variety of ways,
+including operator overloading, block diagram algebra functions, and
+using the :func:`interconnect` function to build a hiearchical system
+description.  This chapter provides more detailed information on
+operator overloading and block diagram algebra, as well as a
+description of the :class:`InterconnectedSystem` class, which can be
+created using the :func:`interconnect` function.
+
 Operator overloading
 ====================
+
+The following operators are defined to operate between I/O systems:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Operation
+     - Desription
+     - Equivalent command
+   * - `sys1 + sys2`
+     - Add the outputs of two systems receiving the same input
+     - `parallel(sys1, sys2)`
+   * - `sys1 * sys2`
+     - Connect output(s) of sys2 to input(s) of sys1
+     - `series(sys2, sys1)`
+   * - `-sys`
+     - Multiply the output(s) of the system by -1
+     - `negate(sys)`
+   * - `tf1 / tf2`
+     - Divide one SISO transfer function by another
+     - N/A
+   * - `tf**n`
+     - Multiply a transfer function by itself `n` times
+     - N/A
+
+If either of the systems is a number or an array of appropriate
+dimension, then the appropriate scalar or matrix operation is
+performed.
+
+Systems of different types can be combined using these operations,
+with the following rules:
+
+* If the two systems can be converted into the type of the other, the
+  leftmost system determines the type of the output.
+
+* If one system can be converted into the other, then the more general
+  system determines the type of the output.  In particular:
+
+    - State space and transfer function systems can be converted to
+      nonlinear systems.
+
+    - Linear systems can be converted to frequency response data (FRD)
+      systems, using the frequencies of the FRD system.
+
+    - FRD systems can only be combined with FRD systems, constants,
+      and arrays.
 
 
 Block diagram algebra
 =====================
+
+Block diagram algebra is implemented using the following functions:
+
+.. autosummary::
+
+   series
+   parallel
+   feedback
+   negate
+   append
+
+The :func:`feedback` function implements a standard feedback
+interconnection between two systems, as illustrated in the following
+diagram:
+
+.. image:: figures/bdalg-feedback.png
+   :width: 240
+
+By default a gain of -1 is applied at the output of the second system,
+so the dynamics illustrate above can be created using the command
+
+.. code::
+
+   Gyu = ct.feedback(G1, G2)
+
+An optional `gain` parameter can be used to change the sign of the gain.
+
+For LTI systems, the :func:`feedback` operation is also implemented
+via the :func:`LTI.feedback` method, so if `G1` is an LTI system then
+the following command will also work::
+
+  Gyu = G1.feedback(G2)
+
+All block diagram algebra functions allow the names of the system and
+signals to be specified using the usual `name`, `inputs`, and
+`outputs` keywords, as described in the :class:`InputOutputSystem`
+class.  For state space systems, the names of the states can also be
+given, but caution should be used since the order of states in the
+combined system is not gauranteed.
 
 
 Signal-based interconnection
 ============================
 
 More complex input/output systems can be constructed by using the
-:func:`~control.interconnect` function, which allows a collection of
+:func:`interconnect` function, which allows a collection of
 input/output subsystems to be combined with internal connections
 between the subsystems and a set of overall system inputs and outputs
-that link to the subsystems::
+that link to the subsystems.  For example, the closed loop dynamics of
+a feedback control system using the standard names and labels for
+inputs and outputs could be constructed using the command
 
-    steering = ct.interconnect(
+.. code::
+
+    clsys = ct.interconnect(
         [plant, controller], name='system',
         connections=[['controller.e', '-plant.y']],
         inplist=['controller.e'], inputs='r',
         outlist=['plant.y'], outputs='y')
 
-Interconnected systems can also be created using block diagram manipulations
-such as the :func:`~control.series`, :func:`~control.parallel`, and
-:func:`~control.feedback` functions.  The :class:`~control.InputOutputSystem`
-class also supports various algebraic operations such as `*` (series
-interconnection) and `+` (parallel interconnection).
+The remainder of this section provides a detailed description of the
+operation of the :func:`interconnect` function.
 
-Example
-=======
 
-To illustrate the use of the input/output systems module, we create a
+Illustrative example
+--------------------
+
+To illustrate the use of the :func:`interconnect` function, we create a
 model for a predator/prey system, following the notation and parameter
 values in `Feedback Systems <http://fbsbook.org>`_.
 
@@ -123,7 +220,7 @@ lynxes as the desired output (following `Feedback Systems
 To construct the control law, we build a simple input/output system that
 applies a corrective input based on deviations from the equilibrium point.
 This system has no dynamics, since it is a static (affine) map, and can
-constructed using :func:`~control.nlsys` with no update function:
+constructed using :func:`nlsys` with no update function:
 
 .. code-block:: python
 
@@ -169,13 +266,13 @@ Finally, we simulate the closed loop system:
   plt.legend(['input'])
   plt.show(block=False)
 
-Additional features
-===================
+This example shows the standard operations that would be used to build
+up an interconnected nonlinear system.  The I/O systems module has a
+number of other features that can be used to simplify the creation and
+use of interconnected input/output systems.
 
-The I/O systems module has a number of other features that can be used to
-simplify the creation and use of interconnected input/output systems.
 
-Vector elements processing
+Vector element processing
 --------------------------
 
 Several I/O system commands perform processing of vector elements
@@ -183,7 +280,7 @@ Several I/O system commands perform processing of vector elements
 proper shape.
 
 For static elements, such as the initial state in a simulation or the
-nominal state and input for a linearization), the following processing
+nominal state and input for a linearization, the following processing
 is done:
 
 * Scalars are automatically converted to a vector of the appropriate
@@ -254,6 +351,7 @@ use the list processing feature combined with time series broadcasting::
 In this command, the second and third arguments will be broadcast to match
 the number of time points.
 
+
 Summing junction
 ----------------
 
@@ -290,6 +388,7 @@ the command
 will produce an input/output block that implements `e[0] = r[0] - y[0]` and
 `e[1] = r[1] - y[1]`.
 
+
 Automatic connections using signal names
 ----------------------------------------
 
@@ -316,6 +415,7 @@ listed in `inplist` or `outlist` (corresponding to the inputs and outputs
 of the interconnected system) is not found, but inputs and outputs of
 individual systems that are not connected to other systems are left
 unconnected (so be careful!).
+
 
 Advanced specification of signal names
 --------------------------------------
@@ -429,6 +529,7 @@ complicated to debug error message when things go wrong.  Setting
 `debug=True` when calling :func:`~control.interconnect` prints out
 information about how the arguments are processed that may be helpful
 in understanding what is going wrong.
+
 
 Automated creation of state feedback systems
 --------------------------------------------

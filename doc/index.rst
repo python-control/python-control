@@ -94,4 +94,3 @@ Your contributions are welcome!  Simply fork the `GitHub repository <https://git
 Please see the `Developer's Wiki`_ for detailed instructions.
 
 .. _Developer's Wiki: https://github.com/python-control/python-control/wiki
-
