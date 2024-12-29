@@ -1,8 +1,9 @@
 # statesp.py - state space class and related functions
 #
-# Author: Richard M. Murray
-# Date: 24 May 09
-# Revised: Kevin K. Chen, Dec 10
+# Original author: Richard M. Murray
+# Creation date: 24 May 2009
+# Pre-2014 revisions: Kevin K. Chen, Dec 10
+# Use `git shortlog -n -s statesp.py` for full list of contributors
 
 """State space representation and functions.
 

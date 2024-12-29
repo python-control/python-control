@@ -284,7 +284,7 @@ class_factory_function = {
 #
 # List of arguments described in class docstrings
 #
-# These are the minimal arguments needed to initialized the class.  Optional
+# These are the minimal arguments needed to initialize the class.  Optional
 # arguments should be documented in the factory functions and do not need
 # to be duplicated in the class documentation.
 #
@@ -301,7 +301,7 @@ class_args = {
 # List of attributes described in class docstrings
 #
 # This is the list of attributes for the class that are not already listed
-# as parameters used to inialize the class.  These should all be defined
+# as parameters used to initialize the class.  These should all be defined
 # in the class docstring.
 #
 # Attributes that are part of all I/O system classes should be listed in

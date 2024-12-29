@@ -1,8 +1,9 @@
 # xferfcn.py - transfer function class and related functions
 #
-# Author: Richard M. Murray
-# Date: 24 May 09
-# Revised: Kevin K. Chen, Dec 2010
+# Original author: Richard M. Murray
+# Creation date: 24 May 2009
+# Pre-2014 revisions: Kevin K. Chen, Dec 2010
+# Use `git shortlog -n -s xferfcn.py` for full list of contributors
 
 """Transfer function representation and functions.
 
@@ -91,7 +92,7 @@ class TransferFunction(LTI):
 
     Notes
     -----
-    The numerator and denominator polynomials are stored as 2D ndarray's
+    The numerator and denominator polynomials are stored as 2D ndarrays
     with each element containing a 1D ndarray of coefficients.  These data
     structures can be retrieved using ``num_array`` and ``den_array``.  For
     example,
@@ -1399,9 +1400,9 @@ def _tf_factorized_polynomial_to_string(roots, gain=1, var='s'):
 
 
 def _tf_string_to_latex(thestr, var='s'):
-    """Superscript all digits in a polynomial string and convert float
-        coefficients in scientific notation to prettier LaTeX
-        representation.
+    """Superscript all digits in a polynomial string and convert
+    float coefficients in scientific notation to prettier LaTeX
+    representation.
 
     """
     # TODO: make the multiplication sign configurable

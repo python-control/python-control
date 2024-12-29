@@ -81,7 +81,7 @@ class FrequencyResponseData(LTI):
     frequency : 1D array
         Array of frequency points for which data are available.
     ninputs, noutputs : int
-        Number of inputs and outputs signals.
+        Number of input and output signals.
     shape : tuple
         2-tuple of I/O system dimension, (noutputs, ninputs).
     input_labels, output_labels : array of str
@@ -93,7 +93,7 @@ class FrequencyResponseData(LTI):
     magnitude : array
         Magnitude of the frequency response, indexed by frequency.
     phase : array
-        Magnitude of the frequency response, indexed by frequency.
+        Phase of the frequency response, indexed by frequency.
 
     Other Parameters
     ----------------
