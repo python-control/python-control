@@ -64,7 +64,7 @@ operations as well as the :func:`feedback`, :func:`parallel`, and
 :ref:`function-ref`.
 
 The :func:`rss` function can be used to create a random state space
-system with a desired numbef or inputs, outputs, and states::
+system with a desired number or inputs, outputs, and states::
 
   sys = ct.rss(states=4, outputs=1, inputs=1], strictly_proper=True)
 
@@ -160,7 +160,7 @@ and `response.response` (for the complex response).
 Multi-input, multi-output (MIMO) systems
 ----------------------------------------
 
-Multi-input, multi-output (MIMO) sytems are created by providing
+Multi-input, multi-output (MIMO) systems are created by providing
 parameters of the appropriate dimensions to the relevant factory
 function.  For transfer functions, this is done by providing a 2D list
 of numerator and denominator polynomials to the :func:`tf` function,
@@ -168,7 +168,7 @@ e.g.::
 
   sys = ct.tf(
       [[num11, num12], [num21, num22]],
-      [[den11, den12], [den21, denm22]])
+      [[den11, den12], [den21, den22]])
 
 Similarly, MIMO frequency response data (FRD) systems are created by
 providing the :func:`frd` function with a 3D array of response
@@ -252,7 +252,7 @@ time system from a continuous time system.  See
 changing the value of `config.defaults['control.default_dt']`.
 
 Functions operating on LTI systems will take into account whether a
-system is continous time or discrete time when carrying out operations
+system is continuous time or discrete time when carrying out operations
 that depend on this difference.  For example, the :func:`rss` function
 will place all system eigenvalues within the unit circle when called
 using `dt` corresponding to a discrete time system::
@@ -271,7 +271,7 @@ Model conversion and reduction
 ==============================
 
 A variety of functions are available to manipulate LTI systems,
-including functions for convering between state space and frequency
+including functions for converting between state space and frequency
 domain, sampling systems in time and frequency domain, and creating
 reduced order models.
 
@@ -286,7 +286,7 @@ explicit conversions are not necessary, since functions designed to
 operate on LTI systems will work on any subclass.
 
 To explicitly convert a state space system into a transfer function
-represetation, the state space system can be passed as an argument to
+representation, the state space system can be passed as an argument to
 the :func:`tf` factory functions::
 
   sys_ss = ct.rss(4, 2, 2, name='sys_ss')
@@ -315,7 +315,7 @@ Conversion of transfer functions to state space form is also possible::
 Time sampling
 -------------
 
-Continous time systems can be converted to discrete time systems using
+Continuous time systems can be converted to discrete time systems using
 the :func:`sample_system` function and specifying a sampling time::
 
   >> csys = ct.rss(4, 2, 2, name='csys')
@@ -345,7 +345,7 @@ the :func:`sample_system` function and specifying a sampling time::
   dt = 0.1
 
 Note that the system name for the discrete time system is the name of
-the origal system with the string '$sampled' appended.
+the original system with the string '$sampled' appended.
 
 Discrete time systems can also be created using the
 :func:`StateSpace.sample` or :func:`TransferFunction.sample` methods
@@ -410,7 +410,7 @@ realization on the stable part, then reinserts the unstable modes.
 
 The :func:`minimal_realization` function eliminates uncontrollable or
 unobservable states in state space models or cancels pole-zero pairs
-in transfer functions. The resuling output system has minimal order
+in transfer functions. The resulting output system has minimal order
 and the same input/output response characteristics as the original
 model system.  Unlike the :func:`balanced_reduction` function, the
 :func:`minimal_realization` eliminates all uncontrollable and/or
@@ -457,7 +457,7 @@ Information about an LTI system can be obtained using the Python
   D = [[-0.  0.]
        [ 0.  0.]]
 
-For a more compact represention, LTI objects can be evaluated directly
+For a more compact representation, LTI objects can be evaluated directly
 to return a summary of the system input/output properties::
 
   >>> sys = ct.rss(4, 2, 2, name='sys_2x2')

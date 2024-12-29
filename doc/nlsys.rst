@@ -30,10 +30,10 @@ The `updfcn` argument is a function returning the state update function::
   updfcn(t, x, u, params) -> array
 
 where `x` is a 1-D array with shape (n,), `u` is a 1-D array
-with shape (m,), `t` is a float representing the currrent time,
+with shape (m,), `t` is a float representing the current time,
 and `params` is a dict containing the values of parameters used by the
 function.  The dynamics of the system can be in continuous or discrete
-time (use the `dt` keyword to create a discrte time system).
+time (use the `dt` keyword to create a discrete time system).
 
 The output function `outfcn` is used to specify the outputs of the
 system and has the same calling signature as `updfcn`.  If it is not
@@ -135,7 +135,8 @@ time systems).
 More complex operating points can be found by specifying which states,
 inputs, or outputs should be used in computing the operating point, as
 well as desired values of the states, inputs, outputs, or state
-updates.  See the :func:`find_operating_point` documentation for more deatils.
+updates.  See the :func:`find_operating_point` documentation for more
+details.
 
 
 Simulations and plotting

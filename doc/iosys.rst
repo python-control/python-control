@@ -8,7 +8,7 @@ Interconnected I/O Systems
 
 Input/output systems can be interconnected in a variety of ways,
 including operator overloading, block diagram algebra functions, and
-using the :func:`interconnect` function to build a hiearchical system
+using the :func:`interconnect` function to build a hierarchical system
 description.  This chapter provides more detailed information on
 operator overloading and block diagram algebra, as well as a
 description of the :class:`InterconnectedSystem` class, which can be
@@ -23,7 +23,7 @@ The following operators are defined to operate between I/O systems:
    :header-rows: 1
 
    * - Operation
-     - Desription
+     - Description
      - Equivalent command
    * - `sys1 + sys2`
      - Add the outputs of two systems receiving the same input
@@ -104,7 +104,7 @@ signals to be specified using the usual `name`, `inputs`, and
 `outputs` keywords, as described in the :class:`InputOutputSystem`
 class.  For state space systems, the names of the states can also be
 given, but caution should be used since the order of states in the
-combined system is not gauranteed.
+combined system is not guaranteed.
 
 
 Signal-based interconnection
@@ -444,9 +444,9 @@ is not specified, then it defaults to the minimum or maximum value of
 the signal range.  Note that despite the similarity to slice notation,
 negative indices and step specifications are not supported.
 
-Using   these  various   forms  can   simplfy  the   specification  of
+Using these various forms can simplify the specification of
 interconnections.  For example, consider a process with inputs 'u' and
-'v',  each of  dimension  2, and  two  outputs 'w'  and  'y', each  of
+'v', each of dimension 2, and two outputs 'w' and 'y', each of
 dimension 2::
 
   P = ct.rss(
@@ -472,7 +472,7 @@ the closed loop system to consist of all system outputs `y` and `z`,
 as well as the controller input `u`.
 
 This collection of systems can be combined in a variety of ways.  The
-most explict would specify every signal::
+most explicit would specify every signal::
 
   clsys1 = ct.interconnect(
     [C, P, sumblk],
@@ -569,7 +569,8 @@ feedforward gain (normally chosen so that the steady state output
 
 A reference gain controller can be created with the command::
 
-  ctrl, clsys = ct.create_statefbk_iosystem(sys, K, kf, feedfwd_pattern='refgain')
+  ctrl, clsys = ct.create_statefbk_iosystem(
+      sys, K, kf, feedfwd_pattern='refgain')
 
 This reference gain design pattern is described in more detail in
 Section 7.2 of `Feedback Systems <http://fbsbook.org>`_ (Stabilization

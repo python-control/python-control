@@ -15,16 +15,15 @@ Stochastic signals
 ==================
 
 A stochastic signal is a representation of the output of a random
-process.  NumPy and SciPy have a number of functions to calculate the
-covariance and correlation of random signals:
+process.  NumPy and SciPy have a functions to calculate the covariance
+and correlation of random signals:
 
-  * :func:`numpy.cov` - returns the sample variance of vector random
-    variable :math:`X \in \mathbb{R}^n` where the input argument
-    represents samples of :math:`X`.
-
-  * :func:`numpy.cov` - returns the (cross-)covariance of the
-    variables :math:`X` and :math:`Y` where the input arguments
-    represent samples of the given random variables.
+  * :func:`numpy.cov` - with a single argument, returns the sample
+    variance of a vector random variable :math:`X \in \mathbb{R}^n`
+    where the input argument represents samples of :math:`X`.  With
+    two arguments, returns the (cross-)covariance of random variables
+    :math:`X` and :math:`Y` where the input arguments represent
+    samples of the given random variables.
 
   * :func:`scipy.signal.correlate` - the "cross-correlation" between two
     random (1D) sequences.  If these sequences came from a random

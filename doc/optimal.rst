@@ -279,7 +279,7 @@ Plotting the results::
   plt.xlabel("t [sec]")
   plt.ylabel("u2 [rad/s]")
 
-  plt.suptitle("Lane change manuever")
+  plt.suptitle("Lane change maneuver")
   plt.tight_layout()
   plt.show()
 

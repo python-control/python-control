@@ -49,7 +49,7 @@ To install using pip::
 
 .. note::
    If you install Slycot using pip you'll need a development
-   environment (e.g., Python development files, C, and Fortran compilers).
+   environment (e.g., Python development files, C, and FORTRAN compilers).
    Pip installation can be particularly complicated for Windows.
 
 Many parts of `python-control` will work without `slycot`, but some
@@ -81,7 +81,7 @@ control package::
       !pip install control
       import control as ct
 
-Note that Google colab does not currently support Slycot, so some
+Note that Google Colab does not currently support Slycot, so some
 functionality may not be available.
 
 
@@ -91,11 +91,11 @@ Package conventions
 The python-control package makes use of a few naming and calling conventions:
 
 * Function names are written in lower case with underscores between
-  words ('frequency_response').
+  words (`frequency_response`).
 
-* Class names use camel case ('StateSpace', 'ControlPlot', etc) and
-  instances of the class are created with "factory functions" ('ss')
-  or as the output of an operation ('bode_plot').
+* Class names use camel case (`StateSpace`, `ControlPlot`, etc) and
+  instances of the class are created with "factory functions" (`ss`)
+  or as the output of an operation (`bode_plot`).
 
 * Functions that return multiple values use either objects (with
   elements for each return value) or tuples.  For those functions that
@@ -105,10 +105,10 @@ The python-control package makes use of a few naming and calling conventions:
     K, _, _ = lqr(sys)
 
 * Python-control supports both single-input, single-output (SISO)
-  systems and mullti-input, multi-output (MIMO) systems, including
+  systems and multi-input, multi-output (MIMO) systems, including
   time and frequency responses.  By default, SISO systems will
   typically generate objects that have the input and output dimensions
-  supressed (using the NumPy :func:`~numpy.squeeze` function).  The
+  suppressed (using the NumPy :func:`~numpy.squeeze` function).  The
   `squeeze` keyword can be set to `False` to force functions to return
   objects that include the input and output dimensions.
 
@@ -136,7 +136,7 @@ some things to keep in mind:
 * Functions that in MATLAB would return variable numbers of values
   will have a parameter of the form `return_<val>` that is used to
   return additional data.  (These functions usually return an object of
-  a class that has attributpes that can be used to access the
+  a class that has attributes that can be used to access the
   information and this is the preferred usage pattern.)
 * You cannot use braces for collections; use tuples instead.
 * Time series data have time as the final index (see
