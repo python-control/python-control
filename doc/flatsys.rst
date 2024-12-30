@@ -18,23 +18,23 @@ Overview of differential flatness
 A nonlinear differential equation of the form
 
 .. math::
-   
-    \dot x = f(x, u), \qquad x \in R^n, u \in R^m
+
+   \dot x = f(x, u), \qquad x \in R^n, u \in R^m
 
 is *differentially flat* if there exists a function :math:`\alpha` such that
 
 .. math::
-   
-    z = \alpha(x, u, \dot u\, \dots, u^{(p)})
+
+   z = \alpha(x, u, \dot u\, \dots, u^{(p)})
 
 and we can write the solutions of the nonlinear system as functions of
 :math:`z` and a finite number of derivatives
 
 .. math::
-    :label: flat2state
-	    
-    x &= \beta(z, \dot z, \dots, z^{(q)}) \\
-    u &= \gamma(z, \dot z, \dots, z^{(q)}).
+   :label: flat2state
+
+   x &= \beta(z, \dot z, \dots, z^{(q)}) \\
+   u &= \gamma(z, \dot z, \dots, z^{(q)}).
 
 For a differentially flat system, all of the feasible trajectories for
 the system can be written as functions of a flat output :math:`z(\cdot)` and
@@ -48,15 +48,15 @@ space, and then map these to appropriate inputs.  Suppose we wish to
 generate a feasible trajectory for the nonlinear system
 
 .. math::
-   
-    \dot x = f(x, u), \qquad x(0) = x_0,\, x(T) = x_f.
+
+   \dot x = f(x, u), \qquad x(0) = x_0,\, x(T) = x_f.
 
 If the system is differentially flat then
 
 .. math::
-   
-    x(0) &= \beta\bigl(z(0), \dot z(0), \dots, z^{(q)}(0) \bigr) = x_0, \\
-    x(T) &= \gamma\bigl(z(T), \dot z(T), \dots, z^{(q)}(T) \bigr) = x_f,
+
+   x(0) &= \beta\bigl(z(0), \dot z(0), \dots, z^{(q)}(0) \bigr) = x_0, \\
+   x(T) &= \gamma\bigl(z(T), \dot z(T), \dots, z^{(q)}(T) \bigr) = x_f,
 
 and we see that the initial and final condition in the full state
 space depends on just the output :math:`z` and its derivatives at the
@@ -72,8 +72,8 @@ trajectory of the system.  We can parameterize the flat output trajectory
 using a set of smooth basis functions :math:`\psi_i(t)`:
 
 .. math::
-   
-  z(t) = \sum_{i=1}^N c_i \psi_i(t), \qquad c_i \in R
+
+   z(t) = \sum_{i=1}^N c_i \psi_i(t), \qquad c_i \in R
 
 We seek a set of coefficients :math:`c_i`, :math:`i = 1, \dots, N` such
 that :math:`z(t)` satisfies the boundary conditions for :math:`x(0)` and
@@ -81,36 +81,36 @@ that :math:`z(t)` satisfies the boundary conditions for :math:`x(0)` and
 the derivatives of the basis functions:
 
 .. math::
-   
-  \dot z(t) &= \sum_{i=1}^N c_i \dot \psi_i(t) \\
-  &\,\vdots \\
-  \dot z^{(q)}(t) &= \sum_{i=1}^N c_i \psi^{(q)}_i(t).
+
+   \dot z(t) &= \sum_{i=1}^N c_i \dot \psi_i(t) \\
+   &\, \vdots \\
+   \dot z^{(q)}(t) &= \sum_{i=1}^N c_i \psi^{(q)}_i(t).
 
 We can thus write the conditions on the flat outputs and their
 derivatives as
 
 .. math::
-   
-  \begin{bmatrix}
-    \psi_1(0) & \psi_2(0) & \dots & \psi_N(0) \\
-    \dot \psi_1(0) & \dot \psi_2(0) & \dots & \dot \psi_N(0) \\
-    \vdots & \vdots & & \vdots \\
-    \psi^{(q)}_1(0) & \psi^{(q)}_2(0) & \dots & \psi^{(q)}_N(0) \\[1ex]
-    \psi_1(T) & \psi_2(T) & \dots & \psi_N(T) \\
-    \dot \psi_1(T) & \dot \psi_2(T) & \dots & \dot \psi_N(T) \\
-    \vdots & \vdots & & \vdots \\
-    \psi^{(q)}_1(T) & \psi^{(q)}_2(T) & \dots & \psi^{(q)}_N(T) \\
-  \end{bmatrix}
-  \begin{bmatrix} c_1 \\ \vdots \\ c_N \end{bmatrix} =
-  \begin{bmatrix}
-    z(0) \\ \dot z(0) \\ \vdots \\ z^{(q)}(0) \\[1ex]
-    z(T) \\ \dot z(T) \\ \vdots \\ z^{(q)}(T) \\
-  \end{bmatrix}
+
+   \begin{bmatrix}
+     \psi_1(0) & \psi_2(0) & \dots & \psi_N(0) \\
+     \dot \psi_1(0) & \dot \psi_2(0) & \dots & \dot \psi_N(0) \\
+     \vdots & \vdots & & \vdots \\
+     \psi^{(q)}_1(0) & \psi^{(q)}_2(0) & \dots & \psi^{(q)}_N(0) \\[1ex]
+     \psi_1(T) & \psi_2(T) & \dots & \psi_N(T) \\
+     \dot \psi_1(T) & \dot \psi_2(T) & \dots & \dot \psi_N(T) \\
+     \vdots & \vdots & & \vdots \\
+     \psi^{(q)}_1(T) & \psi^{(q)}_2(T) & \dots & \psi^{(q)}_N(T) \\
+   \end{bmatrix}
+   \begin{bmatrix} c_1 \\ \vdots \\ c_N \end{bmatrix} =
+   \begin{bmatrix}
+     z(0) \\ \dot z(0) \\ \vdots \\ z^{(q)}(0) \\[1ex]
+     z(T) \\ \dot z(T) \\ \vdots \\ z^{(q)}(T) \\
+   \end{bmatrix}
 
 This equation is a *linear* equation of the form
 
 .. math::
-   
+
    M c = \begin{bmatrix} \bar z(0) \\ \bar z(T) \end{bmatrix}
 
 where :math:`\bar z` is called the *flat flag* for the system.
@@ -123,29 +123,29 @@ Module usage
 
 To create a trajectory for a differentially flat system, a
 :class:`~flatsys.FlatSystem` object must be created.  This is done
-using the :func:`~flatsys.flatsys` function:
+using the :func:`~flatsys.flatsys` function::
 
-    import control.flatsys as fs
-    sys = fs.flatsys(forward, reverse)
+  import control.flatsys as fs
+  sys = fs.flatsys(forward, reverse)
 
 The `forward` and `reverse` parameters describe the mappings between the
 system state/input and the differentially flat outputs and their
 derivatives ("flat flag").
 
 The :func:`~flatsys.FlatSystem.forward` method computes the
-flat flag given a state and input:
+flat flag given a state and input::
 
-    zflag = sys.forward(x, u)
+  zflag = sys.forward(x, u)
 
 The :func:`~flatsys.FlatSystem.reverse` method computes the state
-and input given the flat flag:
+and input given the flat flag::
 
-    x, u = sys.reverse(zflag)
+  x, u = sys.reverse(zflag)
 
 The flag :math:`\bar z` is implemented as a list of flat outputs :math:`z_i`
 and their derivatives up to order :math:`q_i`:
 
-    zflag[i][j] = :math:`z_i^{(j)}`
+  `zflag[i][j]` = :math:`z_i^{(j)}`
 
 The number of flat outputs must match the number of system inputs.
 
@@ -153,13 +153,13 @@ For a linear system, a flat system representation can be generated by
 passing a :class:`StateSpace` system to the
 :func:`~flatsys.flatsys` factory function::
 
-    sys = fs.flatsys(linsys)
+  sys = fs.flatsys(linsys)
 
 The :func:`~flatsys.flatsys` function also supports the use of
 named input, output, and state signals::
 
-    sys = fs.flatsys(
-        forward, reverse, states=['x1', ..., 'xn'], inputs=['u1', ..., 'um'])
+  sys = fs.flatsys(
+      forward, reverse, states=['x1', ..., 'xn'], inputs=['u1', ..., 'um'])
 
 In addition to the flat system description, a set of basis functions
 :math:`\phi_i(t)` must be chosen.  The `FlatBasis` class is used to
@@ -168,7 +168,7 @@ form 1, :math:`t`, :math:`t^2`, ... can be computed using the
 :class:`~flatsys.PolyFamily` class, which is initialized by
 passing the desired order of the polynomial basis set::
 
-    basis = fs.PolyFamily(N)
+  basis = fs.PolyFamily(N)
 
 Additional basis function families include Bezier curves
 (:class:`~flatsys.BezierFamily`) and B-splines
@@ -178,14 +178,14 @@ Once the system and basis function have been defined, the
 :func:`~flatsys.point_to_point` function can be used to compute a
 trajectory between initial and final states and inputs::
 
-    traj = fs.point_to_point(
-        sys, Tf, x0, u0, xf, uf, basis=basis)
+  traj = fs.point_to_point(
+      sys, Tf, x0, u0, xf, uf, basis=basis)
 
 The returned object has class :class:`~flatsys.SystemTrajectory` and
 can be used to compute the state and input trajectory between the initial and
 final condition::
 
-    xd, ud = traj.eval(T)
+  xd, ud = traj.eval(T)
 
 where `T` is a list of times on which the trajectory should be evaluated
 (e.g., `T = numpy.linspace(0, Tf, M)`.
@@ -197,8 +197,8 @@ format as :func:`optimal.solve_ocp`.
 The :func:`~flatsys.solve_flat_ocp` function can be used to
 solve an optimal control problem without a final state::
 
-    traj = fs.solve_flat_ocp(
-        sys, timepts, x0, u0, cost, basis=basis)
+  traj = fs.solve_flat_ocp(
+  sys, timepts, x0, u0, cost, basis=basis)
 
 The `cost` parameter is a function with call signature
 `cost(x, u)` and should return the (incremental) cost at the given
@@ -295,7 +295,7 @@ the endpoints.
 
 Alternatively, we can solve an optimal control problem in which we
 minimize a cost function along the trajectory as well as a terminal
-cost:`
+cost:
 
 .. code-block:: python
 
