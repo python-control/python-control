@@ -124,6 +124,10 @@ default_role = 'py:obj'
 # Align inline math with text
 imgmath_use_preview = True
 
+# Skip prompts when using copy button
+copybutton_prompt_text = r">>> |\.\.\. "
+copybutton_prompt_is_regexp = True
+
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.

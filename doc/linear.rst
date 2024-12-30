@@ -318,9 +318,9 @@ Time sampling
 Continuous time systems can be converted to discrete time systems using
 the :func:`sample_system` function and specifying a sampling time::
 
-  >> csys = ct.rss(4, 2, 2, name='csys')
-  >> dsys = ct.sample_system(csys, 0.1, method='bilinear')
-  >> print(dsys)
+  >>> csys = ct.rss(4, 2, 2, name='csys')
+  >>> dsys = ct.sample_system(csys, 0.1, method='bilinear')
+  >>> print(dsys)
   <StateSpace>: cys$sampled
   Inputs (2): ['u[0]', 'u[1]']
   Outputs (2): ['y[0]', 'y[1]']

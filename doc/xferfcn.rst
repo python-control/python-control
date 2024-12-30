@@ -155,9 +155,9 @@ Time delays are not directly representable in `python-control`, but
 the :func:`pade` function generates a linear system that approximates
 a time delay to a given order::
 
-  >> num, den = ct.pade(0.1, 3)
-  >> delay = ct.tf(num, den, name='delay')
-  >> print(delay)
+  >>> num, den = ct.pade(0.1, 3)
+  >>> delay = ct.tf(num, den, name='delay')
+  >>> print(delay)
   <TransferFunction>: delay
   Inputs (1): ['u[0]']
   Outputs (1): ['y[0]']
