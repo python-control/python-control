@@ -683,6 +683,10 @@ def correlation(T, X, Y=None, squeeze=True):
 
     Returns
     -------
+    tau : array
+        Array of time offsets.
+    Rtau : array
+        Correlation for each offset tau.
 
     """
     T = np.atleast_1d(T)

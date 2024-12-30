@@ -615,9 +615,13 @@ def _check_numpydoc_style(obj, doc):
         pass
     elif inspect.isfunction(obj):
         # Specialized checks for functions
-        def _check_param(param, empty_ok=False, noname_ok=False):
+        def _check_param(param, empty_ok=False, noname_ok=False, section="??"):
             param_desc = "\n".join(param.desc)
             param_name = f"{name} '{param.name}'"
+
+            # Check for empty section
+            if param.name == "" and param.type == '':
+                _fail(f"Empty {section} section in {name}")
 
             # Make sure we have a name and description
             if param.name == "" and not noname_ok:
@@ -636,11 +640,13 @@ def _check_numpydoc_style(obj, doc):
                 _warn(f"{param_name} description starts with lower case letter")
 
         for param in doc["Parameters"] + doc["Other Parameters"]:
-            _check_param(param)
+            _check_param(param, section="Parameters")
         for param in doc["Returns"]:
-            _check_param(param, empty_ok=True, noname_ok=True)
+            _check_param(
+                param, empty_ok=True, noname_ok=True, section="Returns")
         for param in doc["Yields"]:
-            _check_param(param, empty_ok=True, noname_ok=True)
+            _check_param(
+                param, empty_ok=True, noname_ok=True, section="Yields")
     else:
         raise TypeError("unknown object type for {obj}")
 
