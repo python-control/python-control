@@ -1,5 +1,6 @@
-.. _class-ref:
 .. currentmodule:: control
+
+.. _class-ref:
 
 **********************
 Control system classes

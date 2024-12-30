@@ -1,5 +1,6 @@
-.. _examples:
 .. currentmodule:: control
+
+.. _examples:
 
 ********
 Examples

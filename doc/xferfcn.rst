@@ -19,6 +19,7 @@ The following basic attributes and methods are available for
    ~TransferFunction.dcgain
    ~TransferFunction.sample
    ~TransferFunction.returnScipySignalLTI
+   ~TransferFunction.__call__
 
 A complete list of attributes, methods, and properties is available in
 the :class:`TransferFunction` class documentation.

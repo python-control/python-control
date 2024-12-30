@@ -331,7 +331,6 @@ class TransferFunction(LTI):
     num, den = num_list, den_list
 
     def __call__(self, x, squeeze=None, warn_infinite=True):
-
         """Evaluate system's transfer function at complex frequencies.
 
         Returns the complex frequency response `sys(x)` where `x` is `s` for

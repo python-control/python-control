@@ -1,6 +1,6 @@
-.. _iosys-module:
-
 .. currentmodule:: control
+
+.. _iosys-module:
 
 **************************
 Interconnected I/O Systems

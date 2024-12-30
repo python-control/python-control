@@ -71,11 +71,11 @@ class BasisFamily:
             f'N={self.N}>'
 
     def __call__(self, i, t, var=None):
-        """Evaluate the ith basis function at a point in time"""
+        """Evaluate the ith basis function at a point in time."""
         return self.eval_deriv(i, 0, t, var=var)
 
     def var_ncoefs(self, var):
-        """Get the number of coefficients for a variable"""
+        """Get the number of coefficients for a variable."""
         return self.N if self.nvars is None else self.coef_length[var]
 
     def eval(self, coeffs, tlist, var=None):

@@ -26,7 +26,8 @@ If such an intersection exists, it indicates that there may be a limit
 cycle of amplitude :math:`A` with frequency :math:`\omega`.
 
 Describing function analysis is a simple method, but it is approximate
-because it assumes that higher harmonics can be neglected. 
+because it assumes that higher harmonics can be neglected.
+
 
 Module usage
 ------------
@@ -90,3 +91,5 @@ Module classes and functions
    friction_backlash_nonlinearity
    relay_hysteresis_nonlinearity
    saturation_nonlinearity
+   ~DescribingFunctionNonlinearity.__call__
+

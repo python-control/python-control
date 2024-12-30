@@ -1,4 +1,4 @@
-..currentmodule control
+.. currentmodule:: control
 
 Nonlinear system models
 =======================
@@ -111,7 +111,7 @@ Operating points and linearization
 ----------------------------------
 
 A nonlinear input/output system can be linearized around an equilibrium point
-to obtain a :class:`~control.StateSpace` linear system::
+to obtain a :class:`StateSpace` linear system::
 
   sys_ss = ct.linearize(sys_nl, xeq, ueq)
 
@@ -143,7 +143,7 @@ Simulations and plotting
 ------------------------
 
 To simulate an input/output system, use the
-:func:`~control.input_output_response` function::
+:func:`input_output_response` function::
 
   resp = ct.input_output_response(io_sys, T, U, x0, params)
   t, y, x = resp.time, resp.outputs, resp.states
@@ -159,3 +159,32 @@ different plot elements. The :func:`combine_time_responses` function
 an be used to combine multiple time responses into a single
 `TimeResponseData` object.  See the :ref:`response-chapter` chapter
 for more information on this functionality.
+
+Nonlinear system properties
+---------------------------
+
+The following basic attributes and methods are available for
+:class:`NonlinearIOSystem` objects:
+
+.. autosummary::
+
+   ~NonlinearIOSystem.dynamics
+   ~NonlinearIOSystem.output
+   ~NonlinearIOSystem.linearize
+   ~NonlinearIOSystem.__call__
+
+The :func:`~NonlinearIOSystem.dynamics` method returns the right hand
+side of the differential or difference equation, evaluated at the
+current time, state, input, and (optionally) parameter values.  The
+:func:`~NonlinearIOSystem.output` method returns the system output.
+For static nonlinear systems, it is also possible to obtain the value
+of the output by directly calling the system with the value of the
+input::
+
+  >>> sys = ct.nlsys(
+  ...    None, lambda t, x, u, params: np.sin(u), inputs=1, outputs=1)
+  >>> sys(1)
+  np.float64(0.8414709848078965)
+
+The :func:`~NonlinearIOSystem.linearize` method is equivalent to the
+:func:`linearize` function.

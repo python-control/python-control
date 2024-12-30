@@ -130,7 +130,7 @@ class FrequencyResponseData(LTI):
 
     A frequency response data object is callable and returns the value of the
     transfer function evaluated at a point in the complex plane (must be on
-    the imaginary access).  See :meth:`~control.FrequencyResponseData.__call__`
+    the imaginary axis).  See :meth:`~control.FrequencyResponseData.__call__`
     for a more detailed description.
 
     A state space system is callable and returns the value of the transfer

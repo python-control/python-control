@@ -31,6 +31,7 @@ The following basic attributes and methods are available for
    ~StateSpace.dcgain
    ~StateSpace.sample
    ~StateSpace.returnScipySignalLTI
+   ~StateSpace.__call__
 
 A complete list of attributes, methods, and properties is available in
 the :class:`StateSpace` class documentation.

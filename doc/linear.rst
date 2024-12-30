@@ -114,6 +114,11 @@ complicated transfer functions::
 
   sys = 5 * (s + 10)/(s**2 + 2*s + 1)
 
+Transfer functions can be evaluated at a point in the complex plane by
+calling the transfer function object::
+
+  val = sys(s)
+
 Discrete time transfer functions (described in more detail below) can
 be created using `z = ct.tf('z')`.
 
@@ -227,6 +232,7 @@ response.
 
 .. _discrete_time_systems:
 
+
 Discrete time systems
 =====================
 
@@ -274,6 +280,7 @@ A variety of functions are available to manipulate LTI systems,
 including functions for converting between state space and frequency
 domain, sampling systems in time and frequency domain, and creating
 reduced order models.
+
 
 Conversion between representations
 ----------------------------------
@@ -381,6 +388,7 @@ The :func:`frequency_response` function an also be used for this
 purpose, although in that case the output is usually used for plotting
 the frequency response, as described in more detail in the
 :ref:`frequency_response` section.
+
 
 Model reduction
 ---------------

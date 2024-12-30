@@ -163,7 +163,7 @@ class NonlinearIOSystem(InputOutputSystem):
 
     # Return the value of a static nonlinear system
     def __call__(sys, u, params=None, squeeze=None):
-        """Evaluate a (static) nonlinearity at a given input value
+        """Evaluate a (static) nonlinearity at a given input value.
 
         If a nonlinear I/O system has no internal state, then evaluating the
         system at an input `u` gives the output `y = F(u)`, determined by the
