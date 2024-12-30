@@ -1948,7 +1948,7 @@ def linfnorm(sys, tol=1e-10):
     L-infinity norm is finite if the system has no poles on the
     imaginary axis.
 
-    See also
+    See Also
     --------
     slycot.ab13dd : the Slycot routine linfnorm that does the calculation
     """

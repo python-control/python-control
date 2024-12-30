@@ -17,25 +17,26 @@ def step(sys, T=None, input=0, output=None, return_x=False):
 
     Parameters
     ----------
-    sys: StateSpace, or TransferFunction
-        LTI system to simulate
-    T: array-like or number, optional
+    sys : StateSpace, or TransferFunction
+        LTI system to simulate.
+    T : array-like or number, optional
         Time vector, or simulation time duration if a number (time vector is
-        autocomputed if not given)
-    input: int
+        autocomputed if not given).
+    input : int
         Index of the input that will be used in this simulation.
-    output: int
+    output : int
         If given, index of the output that is returned by this simulation.
+    return_x : bool, optional
+        If True, return the state vector in addition to outputs.
 
     Returns
     -------
-    yout: array
-        Response of the system
-    T: array
-        Time values of the output
-    xout: array (if selected)
-        Individual response of each x variable
-
+    yout : array
+        Response of the system.
+    T : array
+        Time values of the output.
+    xout : array (if selected)
+        Individual response of each x variable.
 
     See Also
     --------
@@ -59,7 +60,8 @@ def step(sys, T=None, input=0, output=None, return_x=False):
 
 def stepinfo(sysdata, T=None, yfinal=None, SettlingTimeThreshold=0.02,
              RiseTimeLimits=(0.1, 0.9)):
-    """Step response characteristics (Rise time, Settling Time, Peak and others)
+    """
+    Step response characteristics (rise time, settling time, etc).
 
     Parameters
     ----------
@@ -76,9 +78,9 @@ def stepinfo(sysdata, T=None, yfinal=None, SettlingTimeThreshold=0.02,
         used for a given time series of response data. Scalar for SISO,
         (noutputs, ninputs) array_like for MIMO systems.
     SettlingTimeThreshold : float, optional
-        Defines the error to compute settling time (default = 0.02)
+        Defines the error to compute settling time (default = 0.02).
     RiseTimeLimits : tuple (lower_threshold, upper_theshold)
-        Defines the lower and upper threshold for RiseTime computation
+        Defines the lower and upper threshold for RiseTime computation.
 
     Returns
     -------
@@ -108,7 +110,6 @@ def stepinfo(sysdata, T=None, yfinal=None, SettlingTimeThreshold=0.02,
         If `sysdata` corresponds to a MIMO system, `S` is a 2D list of dicts.
         To get the step response characteristics from the j-th input to the
         i-th output, access ``S[i][j]``
-
 
     See Also
     --------
@@ -142,24 +143,26 @@ def impulse(sys, T=None, input=0, output=None, return_x=False):
 
     Parameters
     ----------
-    sys: StateSpace, TransferFunction
-        LTI system to simulate
-    T: array-like or number, optional
+    sys : StateSpace, TransferFunction
+        LTI system to simulate.
+    T : array-like or number, optional
         Time vector, or simulation time duration if a number (time vector is
-        autocomputed if not given)
-    input: int
+        autocomputed if not given).
+    input : int
         Index of the input that will be used in this simulation.
-    output: int
+    output : int
         Index of the output that will be used in this simulation.
+    return_x : bool, optional
+        If True, return the state vector in addition to outputs.
 
     Returns
     -------
-    yout: array
-        Response of the system
-    T: array
-        Time values of the output
-    xout: array (if selected)
-        Individual response of each x variable
+    yout : array
+        Response of the system.
+    T : array
+        Time values of the output.
+    xout : array (if selected)
+        Individual response of each x variable.
 
     See Also
     --------
@@ -189,27 +192,29 @@ def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
 
     Parameters
     ----------
-    sys: StateSpace, or TransferFunction
-        LTI system to simulate
-    T: array-like or number, optional
+    sys : StateSpace, or TransferFunction
+        LTI system to simulate.
+    T : array-like or number, optional
         Time vector, or simulation time duration if a number (time vector is
-        autocomputed if not given)
-    X0: array-like object or number, optional
-        Initial condition (default = 0)
-    input: int
+        autocomputed if not given).
+    X0 : array-like object or number, optional
+        Initial condition (default = 0).
+    input : int
         This input is ignored, but present for compatibility with step
         and impulse.
-    output: int
+    output : int
         If given, index of the output that is returned by this simulation.
+    return_x : bool, optional
+        If True, return the state vector in addition to outputs.
 
     Returns
     -------
-    yout: array
-        Response of the system
-    T: array
-        Time values of the output
-    xout: array (if selected)
-        Individual response of each x variable
+    yout : array
+        Response of the system.
+    T : array
+        Time values of the output.
+    xout : array (if selected)
+        Individual response of each x variable.
 
     See Also
     --------
@@ -240,25 +245,25 @@ def lsim(sys, U=0., T=None, X0=0.):
 
     Parameters
     ----------
-    sys: LTI (StateSpace, or TransferFunction)
-        LTI system to simulate
-    U: array-like or number, optional
+    sys : LTI (StateSpace, or TransferFunction)
+        LTI system to simulate.
+    U : array-like or number, optional
         Input array giving input at each time `T` (default = 0).
 
         If `U` is ``None`` or ``0``, a special algorithm is used. This special
         algorithm is faster than the general algorithm, which is used otherwise.
-    T: array-like, optional for discrete LTI `sys`
+    T : array-like, optional for discrete LTI `sys`
         Time steps at which the input is defined; values must be evenly spaced.
-    X0: array-like or number, optional
+    X0 : array-like or number, optional
         Initial condition (default = 0).
 
     Returns
     -------
-    yout: array
+    yout : array
         Response of the system.
-    T: array
+    T : array
         Time values of the output.
-    xout: array
+    xout : array
         Time evolution of the state vector.
 
     See Also

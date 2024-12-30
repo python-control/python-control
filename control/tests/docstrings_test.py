@@ -24,6 +24,7 @@ import pytest
 
 import control
 import control.flatsys
+import control.matlab
 
 # List of functions that we can skip testing (special cases)
 function_skiplist = [
@@ -71,7 +72,8 @@ max_summary_len = 64    # Maximum length of a summary line
 
 module_list = [
     (control, ""), (control.flatsys, "flatsys."),
-    (control.optimal, "optimal."), (control.phaseplot, "phaseplot.")]
+    (control.optimal, "optimal."), (control.phaseplot, "phaseplot."),
+    (control.matlab, "matlab.")]
 @pytest.mark.parametrize("module, prefix", module_list)
 def test_parameter_docs(module, prefix):
     checked = set()             # Keep track of functions we have checked
@@ -560,6 +562,8 @@ def _check_parameter_docs(
     if match_other and match_returns:
         docstring = docstring[start:match_returns.start()] + \
             docstring[match_other.start():]
+    elif match_returns:
+        docstring = docstring[start:match_returns.start()]
     else:
         docstring = docstring[start:]
 

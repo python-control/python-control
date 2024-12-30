@@ -25,7 +25,7 @@ __all__ = ['norm']
 def _h2norm_slycot(sys, print_warning=True):
     """H2 norm of a linear system. For internal use. Requires Slycot.
 
-    See also
+    See Also
     --------
     ``slycot.ab13bd`` : the Slycot routine that does the calculation
     https://github.com/python-control/Slycot/issues/199 : Post on issue with ``ab13bf``

@@ -303,7 +303,7 @@ class TimeResponseData:
             the system is SISO. The default value can be set using
             config.defaults['control.squeeze_time_response'].
 
-        Other parameters
+        Other Parameters
         ----------------
         input_labels, output_labels, state_labels: array of str, optional
             Optional labels for the inputs, outputs, and states, given as a

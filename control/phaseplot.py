@@ -118,7 +118,7 @@ def phase_plane_plot(
         See :class:`ControlPlot` for more detailed information.
 
 
-    Other parameters
+    Other Parameters
     ----------------
     dir : str, optional
         Direction to draw streamlines: 'forward' to flow forward in time
@@ -280,7 +280,7 @@ def vectorfield(
     -------
     out : Quiver
 
-    Other parameters
+    Other Parameters
     ----------------
     rcParams : dict
         Override the default parameters used for generating plots.
@@ -381,7 +381,7 @@ def streamlines(
     -------
     out : list of Line2D objects
 
-    Other parameters
+    Other Parameters
     ----------------
     rcParams : dict
         Override the default parameters used for generating plots.
@@ -493,7 +493,7 @@ def equilpoints(
     -------
     out : list of Line2D objects
 
-    Other parameters
+    Other Parameters
     ----------------
     rcParams : dict
         Override the default parameters used for generating plots.
@@ -585,7 +585,7 @@ def separatrices(
     -------
     out : list of Line2D objects
 
-    Other parameters
+    Other Parameters
     ----------------
     rcParams : dict
         Override the default parameters used for generating plots.
@@ -1066,7 +1066,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     params: tuple, optional
         List of parameters to pass to vector field: `func(x, t, *params)`
 
-    See also
+    See Also
     --------
     box_grid : construct box-shaped grid of initial conditions
 
