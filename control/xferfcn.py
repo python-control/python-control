@@ -991,8 +991,6 @@ class TransferFunction(LTI):
 
         denorder: array of int, orders of den, one per input
 
-
-
         Examples
         --------
         >>> num, den, denorder = sys._common_den()              # doctest: +SKIP
@@ -1076,7 +1074,7 @@ class TransferFunction(LTI):
                 # create the denominator matching this input
                 # coefficients should be padded on right, ending at maxindex
                 maxindex = len(poles[j])
-                den[j, :maxindex+1] = poly(poles[j])
+                den[j, :maxindex+1] = poly(poles[j]).real
                 denorder[j] = maxindex
 
                 # now create the numerator, also padded on the right
@@ -1106,7 +1104,8 @@ class TransferFunction(LTI):
 
                     # numerator polynomial should be padded on left and right
                     #   ending at maxindex to line up with what td04ad expects.
-                    num[i, j, maxindex+1-len(numpoly):maxindex+1] = numpoly
+                    num[i, j, maxindex+1-len(numpoly):maxindex+1] = \
+                        numpoly.real
                     # print(num[i, j])
 
         if havenonproper:
