@@ -73,6 +73,28 @@ class DefaultDict(collections.UserDict):
         else:
             return key
 
+    #
+    # Context manager functionality
+    #
+
+    def __call__(self, mapping):
+        self.saved_mapping = dict()
+        self.temp_mapping = mapping.copy()
+        return self
+
+    def __enter__(self):
+        for key, val in self.temp_mapping.items():
+            if not key in self:
+                raise ValueError(f"unknown parameter '{key}'")
+            self.saved_mapping[key] = self[key]
+            self[key] = val
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        for key, val in self.saved_mapping.items():
+            self[key] = val
+        del self.saved_mapping, self.temp_mapping
+        return None
 
 defaults = DefaultDict(_control_defaults)
 

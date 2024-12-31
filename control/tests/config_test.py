@@ -332,3 +332,20 @@ class TestConfig:
         new = eval(repr(sys))
         for attr in ['A', 'B', 'C', 'D']:
             assert getattr(sys, attr) == getattr(sys, attr)
+
+
+def test_config_context_manager():
+    # Make sure we can temporarily set the value of a parameter
+    default_val = ct.config.defaults['statesp.latex_repr_type']
+    with ct.config.defaults({'statesp.latex_repr_type': 'new value'}):
+        assert ct.config.defaults['statesp.latex_repr_type'] != default_val
+        assert ct.config.defaults['statesp.latex_repr_type'] == 'new value'
+    assert ct.config.defaults['statesp.latex_repr_type'] == default_val
+
+    # OK to call the context manager and not do anything with it
+    ct.config.defaults({'statesp.latex_repr_type': 'new value'})
+    assert ct.config.defaults['statesp.latex_repr_type'] == default_val
+
+    with pytest.raises(ValueError, match="unknown parameter 'unknown'"):
+        with ct.config.defaults({'unknown': 'new value'}):
+            pass
