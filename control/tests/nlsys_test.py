@@ -227,11 +227,6 @@ def test_ICsystem_str():
         r"Outputs \(2\): \['y1', 'y2'\]" + "\n" + \
         r"States \(4\): \['sys1_x\[0\].*'sys2_x\[1\]'\]" + "\n" + \
         "\n" + \
-        r"A = \[\[.*\]\]" + "\n\n" + \
-        r"B = \[\[.*\]\]" + "\n\n" + \
-        r"C = \[\[.*\]\]" + "\n\n" + \
-        r"D = \[\[.*\]\]" + "\n" + \
-        "\n" + \
         r"Subsystems \(2\):" + "\n" + \
         r" \* <StateSpace sys1: \[.*\] -> \['y\[0\]', 'y\[1\]']>" + "\n" + \
         r" \* <StateSpace sys2: \['u\[0\]', 'u\[1\]'] -> \[.*\]>" + "\n" + \
@@ -245,6 +240,11 @@ def test_ICsystem_str():
         "\n\n" + \
         r"Outputs:" + "\n" + \
         r" \* y1 <- sys2.y\[0\]" + "\n" + \
-        r" \* y2 <- sys2.y\[1\]"
+        r" \* y2 <- sys2.y\[1\]" + \
+        "\n\n" + \
+        r"A = \[\[.*\]\]" + "\n\n" + \
+        r"B = \[\[.*\]\]" + "\n\n" + \
+        r"C = \[\[.*\]\]" + "\n\n" + \
+        r"D = \[\[.*\]\]"
 
     assert re.match(ref, str(sys), re.DOTALL)

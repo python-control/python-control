@@ -1483,9 +1483,38 @@ class LinearICSystem(InterconnectedSystem, StateSpace):
             outputs=io_sys.output_labels, states=io_sys.state_labels,
             params=io_sys.params, remove_useless_states=False)
 
-        # Use StateSpace.__call__ to evaluate at a given complex value
-        def __call__(self, *args, **kwargs):
-            return StateSpace.__call__(self, *args, **kwargs)
+    # Use StateSpace.__call__ to evaluate at a given complex value
+    def __call__(self, *args, **kwargs):
+        return StateSpace.__call__(self, *args, **kwargs)
+
+    def __str__(self):
+        string = InterconnectedSystem.__str__(self) + "\n"
+        string += "\n\n".join([
+            "{} = {}".format(Mvar,
+                               "\n    ".join(str(M).splitlines()))
+            for Mvar, M in zip(["A", "B", "C", "D"],
+                               [self.A, self.B, self.C, self.D])])
+        return string
+
+    # Use InputOutputSystem repr for 'eval' since we can't recreate structure
+    # (without this, StateSpace._repr_eval_ gets used...)
+    def _repr_eval_(self):
+        return InputOutputSystem._repr_eval_(self)
+
+    def _repr_html_(self):
+        syssize = self.nstates + max(self.noutputs, self.ninputs)
+        if syssize > config.defaults['statesp.latex_maxsize']:
+            return None
+        elif config.defaults['statesp.latex_repr_type'] == 'partitioned':
+            return InterconnectedSystem._repr_info_(self, html=True) + \
+                "\n" + StateSpace._latex_partitioned(self)
+        elif config.defaults['statesp.latex_repr_type'] == 'separate':
+            return InterconnectedSystem._repr_info_(self, html=True) + \
+                "\n" + StateSpace._latex_separate(self)
+        else:
+            raise ValueError(
+                "Unknown statesp.latex_repr_type '{cfg}'".format(
+                    cfg=config.defaults['statesp.latex_repr_type']))
 
     # The following text needs to be replicated from StateSpace in order for
     # this entry to show up properly in sphinx doccumentation (not sure why,

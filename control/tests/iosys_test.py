@@ -2357,12 +2357,18 @@ def test_iosys_repr(fcn, spec, expected, missing, format):
         if missing is not None:
             assert re.search(missing, out) is None
 
-        # Make sure we can change the default format back to 'info'
-        sys.repr_format = None
+    elif format == 'info':
+        assert out == info_expected
 
-    # Test 'info', either set explicitly or via config.defaults
+    # Make sure we can change back to the default format
+    sys.repr_format = None
+
+    # Make sure the default format is OK
     out = repr(sys)
-    assert out == info_expected
+    if ct.config.defaults['iosys.repr_format'] == 'info':
+        assert out == info_expected
+    elif ct.config.defaults['iosys.repr_format'] == 'eval':
+        assert re.search(expected, out) != None
 
 
 @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd, ct.nlsys, fs.flatsys])

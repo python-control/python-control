@@ -111,9 +111,9 @@ syslist += [sys_fs, sys_fsnl]
 # Utility function to display outputs
 def display_representations(
         description, fcn, class_list=(ct.InputOutputSystem, )):
-    print("=" * 78)
-    print(" " * round((78 - len(description)) / 2) + f"{description}")
-    print("=" * 78 + "\n")
+    print("=" * 76)
+    print(" " * round((76 - len(description)) / 2) + f"{description}")
+    print("=" * 76 + "\n")
     for sys in syslist:
         if isinstance(sys, tuple(class_list)):
             print(str := f"{type(sys).__name__}: {sys.name}, dt={sys.dt}:")

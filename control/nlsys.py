@@ -784,7 +784,7 @@ class InterconnectedSystem(NonlinearIOSystem):
 
     def __str__(self):
         import textwrap
-        out = super().__str__()
+        out = InputOutputSystem.__str__(self)
 
         out += f"\n\nSubsystems ({len(self.syslist)}):\n"
         for sys in self.syslist:
@@ -845,7 +845,7 @@ class InterconnectedSystem(NonlinearIOSystem):
                     cxn, width=78, initial_indent=" * ",
                     subsequent_indent="     ")) + "\n"
 
-        return out[:-1]
+        return out
 
     def _update_params(self, params, warning=False):
         for sys in self.syslist:
@@ -1087,7 +1087,7 @@ class InterconnectedSystem(NonlinearIOSystem):
     def connection_table(self, show_names=False, column_width=32):
         """Print table of connections inside an interconnected system model.
 
-        Intended primarily for :class:`InterconnectedSystems` that have been
+        Intended primarily for :class:`InterconnectedSystem`'s that have been
         connected implicitly using signal names.
 
         Parameters

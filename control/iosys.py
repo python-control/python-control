@@ -31,7 +31,7 @@ _iosys_defaults = {
     'iosys.indexed_system_name_suffix': '$indexed',
     'iosys.converted_system_name_prefix': '',
     'iosys.converted_system_name_suffix': '$converted',
-    'iosys.repr_format': 'info',
+    'iosys.repr_format': 'eval',
 }
 
 
