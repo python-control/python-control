@@ -394,7 +394,7 @@ class StateSpace(NonlinearIOSystem, LTI):
             A=self.A.__repr__(), B=self.B.__repr__(),
             C=self.C.__repr__(), D=self.D.__repr__())
 
-        out += super()._dt_repr(",\n")
+        out += super()._dt_repr(separator=",\n", space="")
         if len(labels := super()._label_repr(show_count=False)) > 0:
             out += ",\n" + labels
 
@@ -422,9 +422,11 @@ class StateSpace(NonlinearIOSystem, LTI):
         if syssize > config.defaults['statesp.latex_maxsize']:
             return None
         elif config.defaults['statesp.latex_repr_type'] == 'partitioned':
-            return super()._repr_info_(html=True) + self._latex_partitioned()
+            return super()._repr_info_(html=True) + \
+                "\n" + self._latex_partitioned()
         elif config.defaults['statesp.latex_repr_type'] == 'separate':
-            return super()._repr_info_(html=True) + self._latex_separate()
+            return super()._repr_info_(html=True) + \
+                "\n" + self._latex_separate()
         else:
             raise ValueError(
                 "Unknown statesp.latex_repr_type '{cfg}'".format(

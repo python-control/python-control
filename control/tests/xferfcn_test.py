@@ -877,18 +877,18 @@ class TestXferFcn:
         """Print SISO"""
         sys = ss2tf(rss(4, 1, 1))
         assert isinstance(str(sys), str)
-        assert isinstance(sys._repr_latex_(), str)
+        assert isinstance(sys._repr_html_(), str)
 
         # SISO, discrete time
         sys = sample_system(sys, 1)
         assert isinstance(str(sys), str)
-        assert isinstance(sys._repr_latex_(), str)
+        assert isinstance(sys._repr_html_(), str)
 
     @pytest.mark.parametrize(
         "args, output",
-        [(([0], [1]), "0\n-\n1\n"),
-         (([1.0001], [-1.1111]), "  1\n------\n-1.111\n"),
-         (([0, 1], [0, 1.]), "1\n-\n1\n"),
+        [(([0], [1]), "  0\n  -\n  1"),
+         (([1.0001], [-1.1111]), "    1\n  ------\n  -1.111"),
+         (([0, 1], [0, 1.]), "  1\n  -\n  1"),
          ])
     def test_printing_polynomial_const(self, args, output):
         """Test _tf_polynomial_to_string for constant systems"""
@@ -897,71 +897,77 @@ class TestXferFcn:
     @pytest.mark.parametrize(
         "args, outputfmt",
         [(([1, 0], [2, 1]),
-          "   {var}\n-------\n2 {var} + 1\n{dtstring}"),
+          "     {var}\n  -------\n  2 {var} + 1"),
          (([2, 0, -1], [1, 0, 0, 1.2]),
-          "2 {var}^2 - 1\n---------\n{var}^3 + 1.2\n{dtstring}")])
+          "  2 {var}^2 - 1\n  ---------\n  {var}^3 + 1.2")])
     @pytest.mark.parametrize("var, dt, dtstring",
                              [("s", None, ''),
                               ("z", True, ''),
-                              ("z", 1, '\ndt = 1\n')])
+                              ("z", 1, 'dt = 1')])
     def test_printing_polynomial(self, args, outputfmt, var, dt, dtstring):
         """Test _tf_polynomial_to_string for all other code branches"""
-        assert str(TransferFunction(*(args + (dt,)))).partition('\n\n')[2] == \
-            outputfmt.format(var=var, dtstring=dtstring)
+        polystr = str(TransferFunction(*(args + (dt,)))).partition('\n\n')
+        if dtstring != '':
+            # Make sure the last line of the header has proper dt
+            assert polystr[0].split('\n')[3] == dtstring
+        else:
+            # Make sure there are only three header lines (sys, in, out)
+            assert len(polystr[0].split('\n')) == 4
+        assert polystr[2] == outputfmt.format(var=var)
 
     @slycotonly
     def test_printing_mimo(self):
         """Print MIMO, continuous time"""
         sys = ss2tf(rss(4, 2, 3))
         assert isinstance(str(sys), str)
-        assert isinstance(sys._repr_latex_(), str)
+        assert isinstance(sys._repr_html_(), str)
 
     @pytest.mark.parametrize(
         "zeros, poles, gain, output",
         [([0], [-1], 1,
-          '  s\n'
-          '-----\n'
-          's + 1\n'),
+          '    s\n'
+          '  -----\n'
+          '  s + 1'),
          ([-1], [-1], 1,
-          's + 1\n'
-          '-----\n'
-          's + 1\n'),
+          '  s + 1\n'
+          '  -----\n'
+          '  s + 1'),
          ([-1], [1], 1,
-          's + 1\n'
-          '-----\n'
-          's - 1\n'),
+          '  s + 1\n'
+          '  -----\n'
+          '  s - 1'),
          ([1], [-1], 1,
-          's - 1\n'
-          '-----\n'
-          's + 1\n'),
+          '  s - 1\n'
+          '  -----\n'
+          '  s + 1'),
          ([-1], [-1], 2,
-          '2 (s + 1)\n'
-          '---------\n'
-          '  s + 1\n'),
+          '  2 (s + 1)\n'
+          '  ---------\n'
+          '    s + 1'),
          ([-1], [-1], 0,
-          '0\n'
-          '-\n'
-          '1\n'),
+          '  0\n'
+          '  -\n'
+          '  1'),
          ([-1], [1j, -1j], 1,
-          '      s + 1\n'
-          '-----------------\n'
-          '(s - 1j) (s + 1j)\n'),
+          '        s + 1\n'
+          '  -----------------\n'
+          '  (s - 1j) (s + 1j)'),
          ([4j, -4j], [2j, -2j], 2,
-          '2 (s - 4j) (s + 4j)\n'
-          '-------------------\n'
-          ' (s - 2j) (s + 2j)\n'),
+          '  2 (s - 4j) (s + 4j)\n'
+          '  -------------------\n'
+          '   (s - 2j) (s + 2j)'),
          ([1j, -1j], [-1, -4], 2,
-          '2 (s - 1j) (s + 1j)\n'
-          '-------------------\n'
-          '  (s + 1) (s + 4)\n'),
+          '  2 (s - 1j) (s + 1j)\n'
+          '  -------------------\n'
+          '    (s + 1) (s + 4)'),
          ([1], [-1 + 1j, -1 - 1j], 1,
-          '          s - 1\n'
-          '-------------------------\n'
-          '(s + (1-1j)) (s + (1+1j))\n'),
+          '            s - 1\n'
+          '  -------------------------\n'
+          '  (s + (1-1j)) (s + (1+1j))'),
          ([1], [1 + 1j, 1 - 1j], 1,
-          '          s - 1\n'
-          '-------------------------\n'
-          '(s - (1+1j)) (s - (1-1j))\n'),
+          '            s - 1\n'
+          '  -------------------------\n'
+          '  (s - (1+1j)) (s - (1-1j))'),
          ])
     def test_printing_zpk(self, zeros, poles, gain, output):
         """Test _tf_polynomial_to_string for constant systems"""
@@ -972,17 +978,17 @@ class TestXferFcn:
     @pytest.mark.parametrize(
         "zeros, poles, gain, format, output",
         [([1], [1 + 1j, 1 - 1j], 1, ".2f",
-          '                1.00\n'
-          '-------------------------------------\n'
-          '(s + (1.00-1.41j)) (s + (1.00+1.41j))\n'),
+          '                  1.00\n'
+          '  -------------------------------------\n'
+          '  (s + (1.00-1.41j)) (s + (1.00+1.41j))'),
          ([1], [1 + 1j, 1 - 1j], 1, ".3f",
-           '                  1.000\n'
-           '-----------------------------------------\n'
-           '(s + (1.000-1.414j)) (s + (1.000+1.414j))\n'),
+           '                    1.000\n'
+           '  -----------------------------------------\n'
+           '  (s + (1.000-1.414j)) (s + (1.000+1.414j))'),
          ([1], [1 + 1j, 1 - 1j], 1, ".6g",
-          '                  1\n'
-          '-------------------------------------\n'
-          '(s + (1-1.41421j)) (s + (1+1.41421j))\n')
+          '                    1\n'
+          '  -------------------------------------\n'
+          '  (s + (1-1.41421j)) (s + (1+1.41421j))')
          ])
     def test_printing_zpk_format(self, zeros, poles, gain, format, output):
         """Test _tf_polynomial_to_string for constant systems"""
@@ -998,25 +1004,30 @@ class TestXferFcn:
         "num, den, output",
         [([[[11], [21]], [[12], [22]]],
          [[[1, -3, 2], [1, 1, -6]], [[1, 0, 1], [1, -1, -20]]],
-         ('Input 1 to output 1:\n'
-          '      11\n'
-          '---------------\n'
-          '(s - 2) (s - 1)\n'
-          '\n'
-          'Input 1 to output 2:\n'
-          '       12\n'
-          '-----------------\n'
-          '(s - 1j) (s + 1j)\n'
-          '\n'
-          'Input 2 to output 1:\n'
-          '      21\n'
-          '---------------\n'
-          '(s - 2) (s + 3)\n'
-          '\n'
-          'Input 2 to output 2:\n'
-          '      22\n'
-          '---------------\n'
-          '(s - 5) (s + 4)\n'))])
+         ("""Input 1 to output 1:
+
+        11
+  ---------------
+  (s - 2) (s - 1)
+
+Input 1 to output 2:
+
+         12
+  -----------------
+  (s - 1j) (s + 1j)
+
+Input 2 to output 1:
+
+        21
+  ---------------
+  (s - 2) (s + 3)
+
+Input 2 to output 2:
+
+        22
+  ---------------
+  (s - 5) (s + 4)"""))],
+    )
     def test_printing_zpk_mimo(self, num, den, output):
         """Test _tf_polynomial_to_string for constant systems"""
         G = tf(num, den, display_format='zpk')
@@ -1046,7 +1057,7 @@ class TestXferFcn:
         with pytest.raises(NotImplementedError):
             TransferFunction.feedback(sys2, sys1)
 
-    def test_latex_repr(self):
+    def test_html_repr(self):
         """Test latex printout for TransferFunction"""
         Hc = TransferFunction([1e-5, 2e5, 3e-4],
                               [1.2e34, 2.3e-4, 2.3e-45], name='sys')
@@ -1055,41 +1066,40 @@ class TestXferFcn:
                               .1, name='sys')
         # TODO: make the multiplication sign configurable
         expmul = r'\times'
-        for var, H, suffix in zip(['s', 'z'],
+        for var, H, dtstr in zip(['s', 'z'],
                                   [Hc, Hd],
-                                  ['', r'~,~dt = 0.1']):
-            ref = (r"<TransferFunction sys: ['u[0]'] -> ['y[0]']>"
-                   r'$$\frac{'
+                                  ['', ', dt=0.1']):
+            ref = (r"&lt;TransferFunction sys: ['u[0]'] -&gt; ['y[0]']" +
+                   dtstr + r"&gt;"
+                   "\n"
+                   r'$$\dfrac{'
                    r'1 ' + expmul + ' 10^{-5} ' + var + '^2 '
                    r'+ 2 ' + expmul + ' 10^{5} ' + var + ' + 0.0003'
                    r'}{'
                    r'1.2 ' + expmul + ' 10^{34} ' + var + '^2 '
                    r'+ 0.00023 ' + var + ' '
                    r'+ 2.3 ' + expmul + ' 10^{-45}'
-                   r'}' + suffix + '$$')
-            assert H._repr_latex_() == ref
+                   r'}' + '$$')
+            assert H._repr_html_() == ref
 
     @pytest.mark.parametrize(
         "Hargs, ref",
         [(([-1., 4.], [1., 3., 5.]),
           "TransferFunction(\n"
           "array([-1.,  4.]),\n"
-          "array([1., 3., 5.]),\n"
-          "outputs=1, inputs=1)"),
+          "array([1., 3., 5.]))"),
          (([2., 3., 0.], [1., -3., 4., 0], 2.0),
           "TransferFunction(\n"
           "array([2., 3., 0.]),\n"
           "array([ 1., -3.,  4.,  0.]),\n"
-          "dt=2.0,\n"
-          "outputs=1, inputs=1)"),
+          "dt=2.0)"),
          (([[[0, 1], [2, 3]], [[4, 5], [6, 7]]],
            [[[6, 7], [4, 5]], [[2, 3], [0, 1]]]),
           "TransferFunction(\n"
           "[[array([1]), array([2, 3])],\n"
           " [array([4, 5]), array([6, 7])]],\n"
           "[[array([6, 7]), array([4, 5])],\n"
-          " [array([2, 3]), array([1])]],\n"
-          "outputs=2, inputs=2)"),
+          " [array([2, 3]), array([1])]])"),
          (([[[0, 1], [2, 3]], [[4, 5], [6, 7]]],
            [[[6, 7], [4, 5]], [[2, 3], [0, 1]]],
            0.5),
@@ -1098,8 +1108,7 @@ class TestXferFcn:
           " [array([4, 5]), array([6, 7])]],\n"
           "[[array([6, 7]), array([4, 5])],\n"
           " [array([2, 3]), array([1])]],\n"
-          "dt=0.5,\n"
-          "outputs=2, inputs=2)"),
+          "dt=0.5)"),
          ])
     def test_loadable_repr(self, Hargs, ref):
         """Test __repr__ printout."""

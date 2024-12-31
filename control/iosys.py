@@ -253,7 +253,7 @@ class InputOutputSystem(object):
         out += f"\nOutputs ({self.noutputs}): {self.output_labels}"
         if self.nstates is not None:
             out += f"\nStates ({self.nstates}): {self.state_labels}"
-        out += self._dt_repr("\n")
+        out += self._dt_repr(separator="\n", space=" ")
         return out
 
     def __repr__(self):
@@ -262,7 +262,7 @@ class InputOutputSystem(object):
     def _repr_info_(self, html=False):
         out = f"<{self.__class__.__name__} {self.name}: " + \
             f"{list(self.input_labels)} -> {list(self.output_labels)}"
-        out += self._dt_repr(", ") + ">"
+        out += self._dt_repr(separator=", ", space="") + ">"
 
         if html:
             # Replace symbols that might be interpreted by HTML processing
@@ -353,10 +353,11 @@ class InputOutputSystem(object):
 
         return out
 
-    def _dt_repr(self, separator="\n"):
+    def _dt_repr(self, separator="\n", space=""):
         if config.defaults['control.default_dt'] != self.dt:
-            return "{separator}dt={dt}".format(
-                separator=separator, dt='None' if self.dt is None else self.dt)
+            return "{separator}dt{space}={space}{dt}".format(
+                separator=separator, space=space,
+                dt='None' if self.dt is None else self.dt)
         else:
             return ""
 

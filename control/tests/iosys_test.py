@@ -2290,32 +2290,32 @@ def test_signal_indexing():
 
 @slycotonly
 @pytest.mark.parametrize("fcn, spec, expected, missing", [
-    (ct.ss, {}, "\nstates=4, outputs=3, inputs=2", r"dt|name"),
-    (ct.tf, {}, "\noutputs=3, inputs=2", r"dt|name|states"),
-    (ct.frd, {}, "\noutputs=3, inputs=2", r"dt|states|name"),
-    (ct.ss, {'dt': 0.1}, ".*\ndt=0.1,\nstates=4, outputs=3, inputs=2", r"name"),
-    (ct.tf, {'dt': 0.1}, ".*\ndt=0.1,\noutputs=3, inputs=2", r"name|states"),
+    (ct.ss, {}, "", r"states|inputs|outputs|dt|name"),
+    (ct.tf, {}, "", r"states|inputs|outputs|dt|name"),
+    (ct.frd, {}, "", r"states|inputs|outputs|dt|name"),
+    (ct.ss, {'dt': 0.1}, ".*\ndt=0.1", r"states|inputs|outputs|name"),
+    (ct.tf, {'dt': 0.1}, ".*\ndt=0.1", r"states|inputs|outputs|name"),
     (ct.frd, {'dt': 0.1},
-     ".*\ndt=0.1,\noutputs=3, inputs=2", r"name|states"),
-    (ct.ss, {'dt': True}, "\ndt=True,\nstates=4, outputs=3, inputs=2", r"name"),
-    (ct.ss, {'dt': None}, "\ndt=None,\nstates=4, outputs=3, inputs=2", r"name"),
-    (ct.ss, {'dt': 0}, "\nstates=4, outputs=3, inputs=2", r"dt|name"),
-    (ct.ss, {'name': 'mysys'}, "\nname='mysys',", r"dt"),
-    (ct.tf, {'name': 'mysys'}, "\nname='mysys',", r"dt|states"),
-    (ct.frd, {'name': 'mysys'}, "\nname='mysys',", r"dt|states"),
+     ".*\ndt=0.1", r"states|inputs|outputs|name"),
+    (ct.ss, {'dt': True}, "\ndt=True", r"states|inputs|outputs|name"),
+    (ct.ss, {'dt': None}, "\ndt=None", r"states|inputs|outputs|name"),
+    (ct.ss, {'dt': 0}, "", r"states|inputs|outputs|dt|name"),
+    (ct.ss, {'name': 'mysys'}, "\nname='mysys'", r"dt"),
+    (ct.tf, {'name': 'mysys'}, "\nname='mysys'", r"dt|states"),
+    (ct.frd, {'name': 'mysys'}, "\nname='mysys'", r"dt|states"),
     (ct.ss, {'inputs': ['u1']},
-     r"[\n]states=4, outputs=3, inputs=\['u1'\]", r"dt|name"),
+     r"[\n]inputs=\['u1'\]", r"states|outputs|dt|name"),
     (ct.tf, {'inputs': ['u1']},
-     r"[\n]outputs=3, inputs=\['u1'\]", r"dt|name"),
+     r"[\n]inputs=\['u1'\]", r"outputs|dt|name"),
     (ct.frd, {'inputs': ['u1'], 'name': 'sampled'},
-     r"[\n]name='sampled', outputs=3, inputs=\['u1'\]", r"dt"),
+     r"[\n]name='sampled', inputs=\['u1'\]", r"outputs|dt"),
     (ct.ss, {'outputs': ['y1']},
-     r"[\n]states=4, outputs=\['y1'\], inputs=2", r"dt|name"),
+     r"[\n]outputs=\['y1'\]", r"states|inputs|dt|name"),
     (ct.ss, {'name': 'mysys', 'inputs': ['u1']},
-     r"[\n]name='mysys', states=4, outputs=3, inputs=\['u1'\]", r"dt"),
+     r"[\n]name='mysys', inputs=\['u1'\]", r"states|outputs|dt"),
     (ct.ss, {'name': 'mysys', 'states': [
         'long_state_1', 'long_state_2', 'long_state_3']},
-     r"[\n]name='.*', states=\[.*\],[\n]outputs=3, inputs=2\)", r"dt"),
+     r"[\n]name='.*', states=\[.*\]\)", r"inputs|outputs|dt"),
 ])
 @pytest.mark.parametrize("format", ['info', 'eval'])
 def test_iosys_repr(fcn, spec, expected, missing, format):
@@ -2335,7 +2335,11 @@ def test_iosys_repr(fcn, spec, expected, missing, format):
 
     # Construct the 'info' format
     info_expected = f"<{sys.__class__.__name__} {sys.name}: " \
-        f"{sys.input_labels} -> {sys.output_labels}>"
+        f"{sys.input_labels} -> {sys.output_labels}"
+    if sys.dt != 0:
+        info_expected += f", dt={sys.dt}>"
+    else:
+        info_expected += ">"
 
     # Make sure the default format is OK
     out = repr(sys)

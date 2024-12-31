@@ -468,9 +468,8 @@ class TestFRD:
         ref_common = "FrequencyResponseData(\n" \
             "array([[[1.  +0.j , 0.9 +0.1j, 0.1 +2.j , 0.05+3.j ]]]),\n" \
             "array([  0.1,   1. ,  10. , 100. ]),"
-        ref0 = ref_common + "\nname='sys0', outputs=1, inputs=1)"
-        ref1 = ref_common + " smooth=True," + \
-            "\nname='sys1', outputs=1, inputs=1)"
+        ref0 = ref_common + "\nname='sys0')"
+        ref1 = ref_common + " smooth=True," + "\nname='sys1')"
         sysm = ct.frd(
             np.matmul(array([[1], [2]]), sys0.fresp), sys0.omega, name='sysm')
 
@@ -505,19 +504,22 @@ Inputs (2): ['u[0]', 'u[1]']
 Outputs (1): ['y[0]']
 
 Input 1 to output 1:
-Freq [rad/s]  Response
-------------  ---------------------
-       0.100           1        +0j
-       1.000         0.9      +0.1j
-      10.000         0.1        +2j
-     100.000        0.05        +3j
+
+  Freq [rad/s]  Response
+  ------------  ---------------------
+         0.100           1        +0j
+         1.000         0.9      +0.1j
+        10.000         0.1        +2j
+       100.000        0.05        +3j
+
 Input 2 to output 1:
-Freq [rad/s]  Response
-------------  ---------------------
-       0.100           2        +0j
-       1.000         1.8      +0.2j
-      10.000         0.2        +4j
-     100.000         0.1        +6j"""
+
+  Freq [rad/s]  Response
+  ------------  ---------------------
+         0.100           2        +0j
+         1.000         1.8      +0.2j
+        10.000         0.2        +4j
+       100.000         0.1        +6j"""
         assert str(sysm) == refm
 
     def test_unrecognized_keyword(self):

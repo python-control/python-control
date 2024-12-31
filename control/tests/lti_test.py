@@ -408,5 +408,5 @@ def test_printoptions(
         if str_expected is not None:
             assert re.search(str_expected, str(sys)) is not None
 
-        # Test LaTeX representation
-        assert re.search(latex_expected, sys._repr_latex_()) is not None
+        # Test LaTeX/HTML representation
+        assert re.search(latex_expected, sys._repr_html_()) is not None

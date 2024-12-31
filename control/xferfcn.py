@@ -508,7 +508,7 @@ class TransferFunction(LTI):
                     out += "]," if i < self.noutputs - 1 else "]"
                 out += "],\n[" if entry is self.num_array else "]"
 
-        out += super()._dt_repr(separator=",\n")
+        out += super()._dt_repr(separator=",\n", space="")
         if len(labels := self._label_repr(show_count=False)) > 0:
             out += ",\n" + labels
 
@@ -522,7 +522,7 @@ class TransferFunction(LTI):
         mimo = not self.issiso()
         if var is None:
             var = 's' if self.isctime() else 'z'
-        out = [super()._repr_info_(html=True), '$$']
+        out = [super()._repr_info_(html=True), '\n$$']
 
         if mimo:
             out.append(r"\begin{bmatrix}")
