@@ -718,8 +718,10 @@ class TimeResponseData:
     def to_pandas(self):
         """Convert response data to pandas data frame.
 
-        Creates a pandas data frame using the input, output, and state
-        labels for the time response.
+        Creates a pandas data frame using the input, output, and state labels
+        for the time response.  The column labels are given by the input and
+        output (and state, when present) labels, with time labeled by 'time'
+        and traces (for multi-trace responses) labeled by 'trace'.
 
         """
         if not pandas_check():
@@ -727,16 +729,23 @@ class TimeResponseData:
         import pandas
 
         # Create a dict for setting up the data frame
-        data = {'time': self.time}
+        data = {'time': np.tile(
+            self.time, self.ntraces if self.ntraces > 0 else 1)}
+        if self.ntraces > 0:
+            data['trace'] = np.hstack([
+                np.full(self.time.size, label) for label in self.trace_labels])
         if self.ninputs > 0:
             data.update(
-                {name: self.u[i] for i, name in enumerate(self.input_labels)})
+                {name: self.u[i].reshape(-1)
+                 for i, name in enumerate(self.input_labels)})
         if self.noutputs > 0:
             data.update(
-                {name: self.y[i] for i, name in enumerate(self.output_labels)})
+                {name: self.y[i].reshape(-1)
+                 for i, name in enumerate(self.output_labels)})
         if self.nstates > 0:
             data.update(
-                {name: self.x[i] for i, name in enumerate(self.state_labels)})
+                {name: self.x[i].reshape(-1)
+                 for i, name in enumerate(self.state_labels)})
 
         return pandas.DataFrame(data)
 

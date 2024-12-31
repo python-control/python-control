@@ -1266,16 +1266,28 @@ def test_to_pandas():
     np.testing.assert_equal(df['u[0]'], resp.inputs)
     np.testing.assert_equal(df['y[0]'], resp.inputs * 5)
 
+    # Multi-trace data
     # https://github.com/python-control/python-control/issues/1087
     model = ct.rss(
         states=['x0', 'x1'], outputs=['y0', 'y1'],
         inputs=['u0', 'u1'], name='My Model')
     T = np.linspace(0, 10, 100, endpoint=False)
     X0 = np.zeros(model.nstates)
-    res = ct.step_response(model, T=T, X0=X0, input=0)
+
+    res = ct.step_response(model, T=T, X0=X0, input=0)  # extract single trace
     df = res.to_pandas()
-    np.testing.assert_equal(df['time'], res.time)
-    np.testing.assert_equal(df['y1'], res.outputs['y1'])
+    np.testing.assert_equal(
+        df[df['trace'] == 'From u0']['time'], res.time)
+    np.testing.assert_equal(
+        df[df['trace'] == 'From u0']['y1'], res.outputs['y1', 0])
+
+    res = ct.step_response(model, T=T, X0=X0)           # all traces
+    df = res.to_pandas()
+    for i, label in enumerate(res.trace_labels):
+        np.testing.assert_equal(
+            df[df['trace'] == label]['time'], res.time)
+        np.testing.assert_equal(
+            df[df['trace'] == label]['u0'], res.inputs['u0', i])
 
 
 @pytest.mark.skipif(pandas_check(), reason="pandas installed")
