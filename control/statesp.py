@@ -132,12 +132,12 @@ class StateSpace(NonlinearIOSystem, LTI):
     signal offsets.  The subsystem is created by truncating the inputs and
     outputs, but leaving the full set of system states.
 
-    StateSpace instances have support for IPython LaTeX output, intended
-    for pretty-printing in Jupyter notebooks.  The LaTeX output can be
+    StateSpace instances have support for IPython HTML/LaTeX output, intended
+    for pretty-printing in Jupyter notebooks.  The HTML/LaTeX output can be
     configured using `control.config.defaults['statesp.latex_num_format']`
-    and `control.config.defaults['statesp.latex_repr_type']`.  The LaTeX
-    output is tailored for MathJax, as used in Jupyter, and may look odd
-    when typeset by non-MathJax LaTeX systems.
+    and `control.config.defaults['statesp.latex_repr_type']`.  The
+    HTML/LaTeX output is tailored for MathJax, as used in Jupyter, and
+    may look odd when typeset by non-MathJax LaTeX systems.
 
     `control.config.defaults['statesp.latex_num_format']` is a format string
     fragment, specifically the part of the format string after `'{:'`
@@ -386,8 +386,6 @@ class StateSpace(NonlinearIOSystem, LTI):
                                "\n    ".join(str(M).splitlines()))
             for Mvar, M in zip(["A", "B", "C", "D"],
                                [self.A, self.B, self.C, self.D])])
-        if self.isdtime(strict=True):
-            string += f"\ndt = {self.dt}\n"
         return string
 
     def _repr_eval_(self):
@@ -396,15 +394,41 @@ class StateSpace(NonlinearIOSystem, LTI):
             A=self.A.__repr__(), B=self.B.__repr__(),
             C=self.C.__repr__(), D=self.D.__repr__())
 
-        if config.defaults['control.default_dt'] != self.dt:
-            out += ",\ndt={dt}".format(
-                dt='None' if self.dt is None else self.dt)
-
-        if len(labels := self._label_repr()) > 0:
+        out += super()._dt_repr(",\n")
+        if len(labels := super()._label_repr(show_count=False)) > 0:
             out += ",\n" + labels
 
         out += ")"
         return out
+
+    def _repr_html_(self):
+        """HTML representation of state-space model.
+
+        Output is controlled by config options statesp.latex_repr_type,
+        statesp.latex_num_format, and statesp.latex_maxsize.
+
+        The output is primarily intended for Jupyter notebooks, which
+        use MathJax to render the LaTeX, and the results may look odd
+        when processed by a 'conventional' LaTeX system.
+
+        Returns
+        -------
+        s : string
+            HTML/LaTeX representation of model, or None if either matrix
+            dimension is greater than statesp.latex_maxsize.
+
+        """
+        syssize = self.nstates + max(self.noutputs, self.ninputs)
+        if syssize > config.defaults['statesp.latex_maxsize']:
+            return None
+        elif config.defaults['statesp.latex_repr_type'] == 'partitioned':
+            return super()._repr_info(html=True) + self._latex_partitioned()
+        elif config.defaults['statesp.latex_repr_type'] == 'separate':
+            return super()._repr_info(html=True) + self._latex_separate()
+        else:
+            raise ValueError(
+                "Unknown statesp.latex_repr_type '{cfg}'".format(
+                    cfg=config.defaults['statesp.latex_repr_type']))
 
     def _latex_partitioned_stateless(self):
         """`Partitioned` matrix LaTeX representation for stateless systems
@@ -420,7 +444,6 @@ class StateSpace(NonlinearIOSystem, LTI):
             D = eval(repr(self.D))
 
         lines = [
-            self._repr_info_(),
             r'$$',
             (r'\left('
              + r'\begin{array}'
@@ -433,8 +456,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         lines.extend([
             r'\end{array}'
-            r'\right)'
-            + self._latex_dt(),
+            r'\right)',
             r'$$'])
 
         return '\n'.join(lines)
@@ -458,7 +480,6 @@ class StateSpace(NonlinearIOSystem, LTI):
                 eval(repr(getattr(self, M))) for M in ['A', 'B', 'C', 'D'])
 
         lines = [
-            self._repr_info_(),
             r'$$',
             (r'\left('
              + r'\begin{array}'
@@ -477,8 +498,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         lines.extend([
             r'\end{array}'
-            + r'\right)'
-            + self._latex_dt(),
+            + r'\right)',
             r'$$'])
 
         return '\n'.join(lines)
@@ -493,7 +513,6 @@ class StateSpace(NonlinearIOSystem, LTI):
         s : string with LaTeX representation of model
         """
         lines = [
-            self._repr_info_(),
             r'$$',
             r'\begin{array}{ll}',
             ]
@@ -522,51 +541,10 @@ class StateSpace(NonlinearIOSystem, LTI):
         lines.extend(fmt_matrix(self.D, 'D'))
 
         lines.extend([
-            r'\end{array}'
-            + self._latex_dt(),
+            r'\end{array}',
             r'$$'])
 
         return '\n'.join(lines)
-
-    def _latex_dt(self):
-        if self.isdtime(strict=True):
-            if self.dt is True:
-                return r"~,~dt=~\mathrm{True}"
-            else:
-                fmt = config.defaults['statesp.latex_num_format']
-                return f"~,~dt={self.dt:{fmt}}"
-        return ""
-
-    def _repr_latex_(self):
-        """LaTeX representation of state-space model
-
-        Output is controlled by config options statesp.latex_repr_type,
-        statesp.latex_num_format, and statesp.latex_maxsize.
-
-        The output is primarily intended for Jupyter notebooks, which
-        use MathJax to render the LaTeX, and the results may look odd
-        when processed by a 'conventional' LaTeX system.
-
-
-        Returns
-        -------
-
-        s : string with LaTeX representation of model, or None if
-            either matrix dimension is greater than
-            statesp.latex_maxsize
-
-        """
-        syssize = self.nstates + max(self.noutputs, self.ninputs)
-        if syssize > config.defaults['statesp.latex_maxsize']:
-            return None
-        elif config.defaults['statesp.latex_repr_type'] == 'partitioned':
-            return self._latex_partitioned()
-        elif config.defaults['statesp.latex_repr_type'] == 'separate':
-            return self._latex_separate()
-        else:
-            raise ValueError(
-                "Unknown statesp.latex_repr_type '{cfg}'".format(
-                    cfg=config.defaults['statesp.latex_repr_type']))
 
     # Negation of a system
     def __neg__(self):

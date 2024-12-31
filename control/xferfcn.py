@@ -210,11 +210,8 @@ class TransferFunction(LTI):
         # get initialized when defaults are not fully initialized yet.
         # Use 'poly' in these cases.
 
-        self.display_format = kwargs.pop(
-            'display_format',
-            config.defaults.get('xferfcn.display_format', 'poly'))
-
-        if self.display_format not in ('poly', 'zpk'):
+        self.display_format = kwargs.pop('display_format', None)
+        if self.display_format not in (None, 'poly', 'zpk'):
             raise ValueError("display_format must be 'poly' or 'zpk',"
                              " got '%s'" % self.display_format)
 
@@ -442,30 +439,34 @@ class TransferFunction(LTI):
         Based on the display_format property, the output will be formatted as
         either polynomials or in zpk form.
         """
+        display_format = config.defaults['xferfcn.display_format'] if \
+            self.display_format is None else self.display_format
         mimo = not self.issiso()
         if var is None:
             var = 's' if self.isctime() else 'z'
-        outstr = f"{InputOutputSystem.__str__(self)}\n"
+        outstr = f"{InputOutputSystem.__str__(self)}"
 
         for ni in range(self.ninputs):
             for no in range(self.noutputs):
+                outstr += "\n"
                 if mimo:
-                    outstr += "\nInput %i to output %i:" % (ni + 1, no + 1)
+                    outstr += "\nInput %i to output %i:\n" % (ni + 1, no + 1)
 
                 # Convert the numerator and denominator polynomials to strings.
-                if self.display_format == 'poly':
+                if display_format == 'poly':
                     numstr = _tf_polynomial_to_string(
                         self.num_array[no, ni], var=var)
                     denstr = _tf_polynomial_to_string(
                         self.den_array[no, ni], var=var)
-                elif self.display_format == 'zpk':
+                elif display_format == 'zpk':
                     num = self.num_array[no, ni]
                     if num.size == 1 and num.item() == 0:
                         # Catch a special case that SciPy doesn't handle
                         z, p, k = tf2zpk([1.], self.den_array[no, ni])
                         k = 0
                     else:
-                        z, p, k = tf2zpk(self.num[no][ni], self.den_array[no, ni])
+                        z, p, k = tf2zpk(
+                            self.num[no][ni], self.den_array[no, ni])
                     numstr = _tf_factorized_polynomial_to_string(
                         z, gain=k, var=var)
                     denstr = _tf_factorized_polynomial_to_string(p, var=var)
@@ -480,11 +481,7 @@ class TransferFunction(LTI):
                 if len(denstr) < dashcount:
                     denstr = ' ' * ((dashcount - len(denstr)) // 2) + denstr
 
-                outstr += "\n" + numstr + "\n" + dashes + "\n" + denstr + "\n"
-
-        # If this is a strict discrete time system, print the sampling time
-        if type(self.dt) != bool and self.isdtime(strict=True):
-            outstr += "\ndt = " + str(self.dt) + "\n"
+                outstr += "\n  " + numstr + "\n  " + dashes + "\n  " + denstr
 
         return outstr
 
@@ -511,22 +508,21 @@ class TransferFunction(LTI):
                     out += "]," if i < self.noutputs - 1 else "]"
                 out += "],\n[" if entry is self.num_array else "]"
 
-        if config.defaults['control.default_dt'] != self.dt:
-            out += ",\ndt={dt}".format(
-                dt='None' if self.dt is None else self.dt)
-
-        if len(labels := self._label_repr()) > 0:
+        out += super()._dt_repr(separator=",\n")
+        if len(labels := self._label_repr(show_count=False)) > 0:
             out += ",\n" + labels
 
         out += ")"
         return out
 
-    def _repr_latex_(self, var=None):
-        """LaTeX representation of transfer function, for Jupyter notebook."""
+    def _repr_html_(self, var=None):
+        """HTML/LaTeX representation of xferfcn, for Jupyter notebook."""
+        display_format = config.defaults['xferfcn.display_format'] if \
+            self.display_format is None else self.display_format
         mimo = not self.issiso()
         if var is None:
             var = 's' if self.isctime() else 'z'
-        out = [self._repr_info_(), '$$']
+        out = ['$$']
 
         if mimo:
             out.append(r"\begin{bmatrix}")
@@ -534,12 +530,12 @@ class TransferFunction(LTI):
         for no in range(self.noutputs):
             for ni in range(self.ninputs):
                 # Convert the numerator and denominator polynomials to strings.
-                if self.display_format == 'poly':
+                if display_format == 'poly':
                     numstr = _tf_polynomial_to_string(
                         self.num_array[no, ni], var=var)
                     denstr = _tf_polynomial_to_string(
                         self.den_array[no, ni], var=var)
-                elif self.display_format == 'zpk':
+                elif display_format == 'zpk':
                     z, p, k = tf2zpk(
                         self.num_array[no, ni], self.den_array[no, ni])
                     numstr = _tf_factorized_polynomial_to_string(
@@ -559,10 +555,6 @@ class TransferFunction(LTI):
 
         if mimo:
             out.append(r" \end{bmatrix}")
-
-        # See if this is a discrete time system with specific sampling time
-        if not (self.dt is None) and type(self.dt) != bool and self.dt > 0:
-            out += [r"~,~dt = ", str(self.dt)]
 
         out.append("$$")
 

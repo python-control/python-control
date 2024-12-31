@@ -242,12 +242,51 @@ class InputOutputSystem(object):
     #: :meta hide-value:
     nstates = None
 
+    #
+    # System representation
+    #
+
+    def __str__(self):
+        """String representation of an input/output object"""
+        out = f"<{self.__class__.__name__}>: {self.name}"
+        out += f"\nInputs ({self.ninputs}): {self.input_labels}"
+        out += f"\nOutputs ({self.noutputs}): {self.output_labels}"
+        if self.nstates is not None:
+            out += f"\nStates ({self.nstates}): {self.state_labels}"
+        out += self._dt_repr("\n")
+        return out
+
     def __repr__(self):
         return iosys_repr(self, format=self.repr_format)
 
-    def _repr_info_(self):
-        return f'<{self.__class__.__name__} {self.name}: ' + \
-            f'{list(self.input_labels)} -> {list(self.output_labels)}>'
+    def _repr_info_(self, html=False):
+        out = f"<{self.__class__.__name__} {self.name}: " + \
+            f"{list(self.input_labels)} -> {list(self.output_labels)}"
+        out += self._dt_repr(", ") + ">"
+
+        if html:
+            # Replace symbols that might be interpreted by HTML processing
+            escape_chars = {
+                '$': r'\$',
+                '<': '&lt;',
+                '>': '&gt;',
+            }
+            return "".join([c if c not in escape_chars else
+                            escape_chars[c] for c in out])
+        else:
+            return out
+
+    def _repr_eval_(self):
+        # Defaults to _repr_info_; override in subclasses
+        return self._repr_info_()
+
+    def _repr_latex_(self):
+        # Defaults to using __repr__; override in subclasses
+        return None
+
+    def _repr_html_(self):
+        # Defaults to using __repr__; override in subclasses
+        return None
 
     @property
     def repr_format(self):
@@ -257,7 +296,7 @@ class InputOutputSystem(object):
 
           * 'info' : <IOSystemType:sysname:[inputs]->[outputs]
           * 'eval' : system specific, loadable representation
-          * 'latex' : latex representation of the object
+          * 'latex' : HTML/LaTeX representation of the object
 
         The default representation for an input/output is set to 'info'.
         This value can be changed for an individual system by setting the
@@ -273,15 +312,6 @@ class InputOutputSystem(object):
     @repr_format.setter
     def repr_format(self, value):
         self._repr_format = value
-
-    def __str__(self):
-        """String representation of an input/output object"""
-        out = f"<{self.__class__.__name__}>: {self.name}"
-        out += f"\nInputs ({self.ninputs}): {self.input_labels}"
-        out += f"\nOutputs ({self.noutputs}): {self.output_labels}"
-        if self.nstates is not None:
-            out += f"\nStates ({self.nstates}): {self.state_labels}"
-        return out
 
     def _label_repr(self, show_count=True):
         out, count = "", 0
@@ -306,6 +336,8 @@ class InputOutputSystem(object):
                 spec = f"{sig_name}={sig_labels}"
             elif show_count:
                 spec = f"{sig_name}={len(sig_labels)}"
+            else:
+                spec = ""
 
             # Append the specification string to the output, with wrapping
             if count == 0:
@@ -314,12 +346,19 @@ class InputOutputSystem(object):
                 # TODO: check to make sure a single line is enough (minor)
                 out += ",\n"
                 count = len(spec)
-            else:
+            elif len(spec) > 0:
                 out += ", "
                 count += len(spec) + 2
             out += spec
 
         return out
+
+    def _dt_repr(self, separator="\n"):
+        if config.defaults['control.default_dt'] != self.dt:
+            return "{separator}dt={dt}".format(
+                separator=separator, dt='None' if self.dt is None else self.dt)
+        else:
+            return ""
 
     # Find a list of signals by name, index, or pattern
     def _find_signals(self, name_list, sigdict):
@@ -768,7 +807,7 @@ def iosys_repr(sys, format=None):
 
           * 'info' : <IOSystemType:sysname:[inputs]->[outputs]
           * 'eval' : system specific, loadable representation
-          * 'latex' : latex representation of the object
+          * 'latex' : HTML/LaTeX representation of the object
 
     Returns
     -------
@@ -792,7 +831,7 @@ def iosys_repr(sys, format=None):
         case 'eval':
             return sys._repr_eval_()
         case 'latex':
-            return sys._repr_latex_()
+            return sys._repr_html_()
         case _:
             raise ValueError(f"format '{format}' unknown")
 

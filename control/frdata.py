@@ -399,16 +399,19 @@ class FrequencyResponseData(LTI):
         """String representation of the transfer function."""
 
         mimo = self.ninputs > 1 or self.noutputs > 1
-        outstr = [f"{InputOutputSystem.__str__(self)}", ""]
+        outstr = [f"{InputOutputSystem.__str__(self)}"]
+        nl = "\n  " if mimo else "\n"
+        sp = "  " if mimo else ""
 
         for i in range(self.ninputs):
             for j in range(self.noutputs):
                 if mimo:
-                    outstr.append("Input %i to output %i:" % (i + 1, j + 1))
-                outstr.append('Freq [rad/s]  Response')
-                outstr.append('------------  ---------------------')
+                    outstr.append(
+                        "\nInput %i to output %i:" % (i + 1, j + 1))
+                outstr.append(nl + 'Freq [rad/s]  Response')
+                outstr.append(sp + '------------  ---------------------')
                 outstr.extend(
-                    ['%12.3f  %10.4g%+10.4gj' % (w, re, im)
+                    [sp + '%12.3f  %10.4g%+10.4gj' % (w, re, im)
                      for w, re, im in zip(self.omega,
                                           real(self.fresp[j, i, :]),
                                           imag(self.fresp[j, i, :]))])
@@ -421,10 +424,7 @@ class FrequencyResponseData(LTI):
             d=repr(self.fresp), w=repr(self.omega),
             smooth=(self._ifunc and ", smooth=True") or "")
 
-        if config.defaults['control.default_dt'] != self.dt:
-            out += ",\ndt={dt}".format(
-                dt='None' if self.dt is None else self.dt)
-
+        out += self._dt_repr()
         if len(labels := self._label_repr()) > 0:
             out += ",\n" + labels
 
