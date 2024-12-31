@@ -422,9 +422,9 @@ class StateSpace(NonlinearIOSystem, LTI):
         if syssize > config.defaults['statesp.latex_maxsize']:
             return None
         elif config.defaults['statesp.latex_repr_type'] == 'partitioned':
-            return super()._repr_info(html=True) + self._latex_partitioned()
+            return super()._repr_info_(html=True) + self._latex_partitioned()
         elif config.defaults['statesp.latex_repr_type'] == 'separate':
-            return super()._repr_info(html=True) + self._latex_separate()
+            return super()._repr_info_(html=True) + self._latex_separate()
         else:
             raise ValueError(
                 "Unknown statesp.latex_repr_type '{cfg}'".format(
@@ -445,7 +445,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         lines = [
             r'$$',
-            (r'\left('
+            (r'\left['
              + r'\begin{array}'
              + r'{' + 'rll' * self.ninputs + '}')
             ]
@@ -456,7 +456,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         lines.extend([
             r'\end{array}'
-            r'\right)',
+            r'\right]',
             r'$$'])
 
         return '\n'.join(lines)
@@ -481,7 +481,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         lines = [
             r'$$',
-            (r'\left('
+            (r'\left['
              + r'\begin{array}'
              + r'{' + 'rll' * self.nstates + '|' + 'rll' * self.ninputs + '}')
             ]
@@ -498,7 +498,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         lines.extend([
             r'\end{array}'
-            + r'\right)',
+            + r'\right]',
             r'$$'])
 
         return '\n'.join(lines)
@@ -519,7 +519,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         def fmt_matrix(matrix, name):
             matlines = [name
-                        + r' = \left(\begin{array}{'
+                        + r' = \left[\begin{array}{'
                         + 'rll' * matrix.shape[1]
                         + '}']
             for row in asarray(matrix):
@@ -527,7 +527,7 @@ class StateSpace(NonlinearIOSystem, LTI):
                                 + '\\\\')
             matlines.extend([
                 r'\end{array}'
-                r'\right)'])
+                r'\right]'])
             return matlines
 
         if self.nstates > 0:

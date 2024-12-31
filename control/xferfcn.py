@@ -522,7 +522,7 @@ class TransferFunction(LTI):
         mimo = not self.issiso()
         if var is None:
             var = 's' if self.isctime() else 'z'
-        out = ['$$']
+        out = [super()._repr_info_(html=True), '$$']
 
         if mimo:
             out.append(r"\begin{bmatrix}")
@@ -545,7 +545,7 @@ class TransferFunction(LTI):
                 numstr = _tf_string_to_latex(numstr, var=var)
                 denstr = _tf_string_to_latex(denstr, var=var)
 
-                out += [r"\frac{", numstr, "}{", denstr, "}"]
+                out += [r"\dfrac{", numstr, "}{", denstr, "}"]
 
                 if mimo and ni < self.ninputs - 1:
                     out.append("&")
