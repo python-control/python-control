@@ -188,7 +188,7 @@ def observable_form(xsys):
 
 
 def similarity_transform(xsys, T, timescale=1, inverse=False):
-    """Similarity transformation, with option time rescaling.
+    """Similarity transformation, with optional time rescaling.
 
     Transform a linear state space system to a new state space representation
     z = T x, or x = T z, where T is an invertible matrix.

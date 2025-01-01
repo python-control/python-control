@@ -162,7 +162,7 @@ a time delay to a given order::
   <TransferFunction>: delay
   Inputs (1): ['u[0]']
   Outputs (1): ['y[0]']
-  
+
   -s^3 + 120 s^2 - 6000 s + 1.2e+05
   ---------------------------------
   s^3 + 120 s^2 + 6000 s + 1.2e+05

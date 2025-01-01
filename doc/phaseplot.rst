@@ -79,7 +79,7 @@ are part of the :mod:`phaseplot` (pp) module::
 The following helper functions are available:
 
 .. autosummary::
-   
+
    phaseplot.equilpoints
    phaseplot.separatrices
    phaseplot.streamlines

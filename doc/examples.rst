@@ -20,7 +20,6 @@ other sources.
 
 .. toctree::
    :maxdepth: 1
-   :glob: 
 
    examples/secord-matlab
    examples/pvtol-nested

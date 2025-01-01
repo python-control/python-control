@@ -1,7 +1,7 @@
 # passivity.py
 #
-# Author: Mark Yeatman
-#Date: July 17, 2022
+# Original author: Mark Yeatman
+# Creation date: July 17, 2022
 
 """
 Functions for passive control.

@@ -136,7 +136,7 @@ System display parameters
 
 .. py:data:: iosys.repr_format
    :type: str
-   :value: 'info'
+   :value: 'eval'
 
    Set the default format used by :func:`iosys_repr` to create the
    representation of an :class:`InputOutputSystem`:

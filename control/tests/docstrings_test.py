@@ -94,11 +94,6 @@ def test_parameter_docs(module, prefix):
             warnings.simplefilter('ignore')     # debug via sphinx, not here
             doc = None if obj is None else npd.FunctionDoc(obj)
 
-        # Parse the docstring using numpydoc
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')     # debug via sphinx, not here
-            doc = None if obj is None else npd.FunctionDoc(obj)
-
         # Skip anything that is outside of this module
         if inspect.getmodule(obj) is not None and \
            not inspect.getmodule(obj).__name__.startswith('control'):
@@ -121,7 +116,7 @@ def test_parameter_docs(module, prefix):
             test_parameter_docs(obj, prefix + name + '.')
             continue
 
-        # Skip anything that is inherited, hidden, deprecated, or checked
+        # Skip anything that is inherited, hidden, or already checked
         if not inspect.isfunction(obj) or \
            inspect.isclass(module) and name not in module.__dict__ \
            or name.startswith('_') or obj in function_skiplist \
@@ -152,7 +147,7 @@ def test_parameter_docs(module, prefix):
             docstring = inspect.getdoc(obj)
             source = inspect.getsource(obj)
 
-        # Skip deprecated functions
+        # Skip deprecated functions (and check for proper annotation)
         doc_extended = "\n".join(doc["Extended Summary"])
         if ".. deprecated::" in doc_extended:
             _info("  [deprecated]", 2)
@@ -162,7 +157,6 @@ def test_parameter_docs(module, prefix):
             _info("  [deprecated, but not numpydoc compliant]", 2)
             _warn(f"{objname} deprecated, but not numpydoc compliant", 0)
             continue
-
         elif re.search(name + r"(\(\))? is deprecated", source):
             _warn(f"{objname} is deprecated, but not documented", 1)
             continue
@@ -230,15 +224,6 @@ def test_parameter_docs(module, prefix):
                 _info(f"Checking argument {argname}", 3)
                 _check_parameter_docs(
                         objname, argname, docstring, prefix=prefix)
-
-        # Look at the return values
-        for val in doc["Returns"]:
-            if val.name == '' and \
-               (match := re.search(r"([\w]+):", val.type)) is not None:
-                retname = match.group(1)
-                _warn(
-                    f"{obj} return value '{retname}' "
-                    "docstring missing space")
 
         # Look at the return values
         for val in doc["Returns"]:

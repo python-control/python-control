@@ -147,7 +147,7 @@ with create_figure("step response") as fig:
 # time response
 with create_figure("time response"):
     timepts = np.linspace(0, 10)
-    
+
     U = np.vstack([np.sin(timepts), np.cos(2*timepts)])
     resp1 = ct.input_output_response(sys_mimo1, timepts, U)
 

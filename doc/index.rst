@@ -47,7 +47,7 @@ or the GitHub site: https://github.com/python-control/python-control.
    :caption: User Guide
    :maxdepth: 1
    :numbered: 2
-      
+
    intro
    Tutorial <examples/python-control_tutorial.ipynb>
    Linear systems <linear>
