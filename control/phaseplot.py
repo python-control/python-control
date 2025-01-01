@@ -7,19 +7,15 @@
 """Generate 2D phase portraits.
 
 This module contains functions for generating 2D phase plots. The base
-function for creating phase plane portraits is
-`phase_plane_plot`, which generates a phase plane
-portrait for a 2 state I/O system (with no inputs).  In addition,
-several other functions are available to create customized phase plane
-plots:
+function for creating phase plane portraits is `~control.phase_plane_plot`,
+which generates a phase plane portrait for a 2 state I/O system (with no
+inputs).
 
-* `phaseplot.boxgrid`: Generate a list of points along the edge of a box
-* `phaseplot.circlegrid`: Generate list of points around a circle
-* `phaseplot.equilpoints`: Plot equilibrium points in the phase plane
-* `phaseplot.meshgrid`: Generate a list of points forming a mesh
-* `phaseplot.separatrices`: Plot separatrices in the phase plane
-* `phaseplot.streamlines`: Plot stream lines in the phase plane
-* `phaseplot.vectorfield`: Plot a vector field in the phase plane
+The docstring examples assume the following import commands::
+
+  >>> import numpy as np
+  >>> import control as ct
+  >>> import control.phaseplot as pp
 
 """
 

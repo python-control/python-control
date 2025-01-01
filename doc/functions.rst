@@ -80,7 +80,17 @@ Time response
     time_response_plot
     combine_time_responses
 
-Additional functions for customizing phase plots:
+
+Phase plane plots
+-----------------
+
+.. automodule:: control.phaseplot
+   :no-members:
+   :no-inherited-members:
+   :no-special-members:
+
+.. Reset current module to main package to force reference to use prefix
+.. currentmodule:: control
 
 .. autosummary::
    :toctree: generated/
@@ -210,6 +220,7 @@ Nonlinear system support
     find_operating_point
     linearize
 
+
 Describing functions
 --------------------
 .. autosummary::
@@ -220,8 +231,17 @@ Describing functions
    relay_hysteresis_nonlinearity
    saturation_nonlinearity
 
+
 Differentially flat systems
 ---------------------------
+.. automodule:: control.flatsys
+   :no-members:
+   :no-inherited-members:
+   :no-special-members:
+
+.. Reset current module to main package to force reference to use prefix
+.. currentmodule:: control
+
 .. autosummary::
    :toctree: generated/
 
@@ -229,8 +249,17 @@ Differentially flat systems
    flatsys.point_to_point
    flatsys.solve_flat_ocp
 
+
 Optimal control
 ---------------
+.. automodule:: control.optimal
+   :no-members:
+   :no-inherited-members:
+   :no-special-members:
+
+.. Reset current module to main package to force reference to use prefix
+.. currentmodule:: control
+
 .. autosummary::
    :toctree: generated/
 
