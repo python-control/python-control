@@ -24,11 +24,11 @@ from .systraj import SystemTrajectory
 class FlatSystem(NonlinearIOSystem):
     """Base class for representing a differentially flat system.
 
-    The FlatSystem class is used as a base class to describe differentially
-    flat systems for trajectory generation.  The output of the system does
-    not need to be the differentially flat output.  Flat systems are
-    usually created with the :func:`~control.flatsys.flatsys` factory
-    function.
+    The FlatSystem class is used as a base class to describe
+    differentially flat systems for trajectory generation.  The output
+    of the system does not need to be the differentially flat output.
+    Flat systems are usually created with the `~control.flatsys.flatsys`
+    factory function.
 
     Parameters
     ----------
@@ -175,13 +175,13 @@ def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
     that also represents a differentially flat system.  It can be used in a
     variety of forms:
 
-    ``fs.flatsys(forward, reverse)``
+    `fs.flatsys(forward, reverse)`
         Create a flat system with mapings to/from flat flag.
 
-    ``fs.flatsys(forward, reverse, updfcn[, outfcn])``
+    `fs.flatsys(forward, reverse, updfcn[, outfcn])`
         Create a flat system that is also a nonlinear I/O system.
 
-    ``fs.flatsys(linsys)``
+    `fs.flatsys(linsys)`
         Create a flat system from a linear (StateSpace) system.
 
     Parameters
@@ -241,7 +241,7 @@ def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
 
     Returns
     -------
-    sys : :class:`FlatSystem`
+    sys : `FlatSystem`
         Flat system.
 
     Other Parameters
@@ -290,7 +290,7 @@ def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
 def _basis_flag_matrix(sys, basis, flag, t):
     """Compute the matrix of basis functions and their derivatives
 
-    This function computes the matrix ``M`` that is used to solve for the
+    This function computes the matrix `M` that is used to solve for the
     coefficients of the basis functions given the state and input.  Each
     column of the matrix corresponds to a basis function and each row is a
     derivative, with the derivatives (flag) for each output stacked on top
@@ -343,9 +343,9 @@ def point_to_point(
         The initial time for the trajectory (corresponding to x0).  If not
         specified, its value is taken to be zero.
 
-    basis : :class:`~control.flatsys.BasisFamily` object, optional
+    basis : `flatsys.BasisFamily` object, optional
         The basis functions to use for generating the trajectory.  If not
-        specified, the :class:`~control.flatsys.PolyFamily` basis family
+        specified, the `flatsys.PolyFamily` basis family
         will be used, with the minimal number of elements required to find a
         feasible trajectory (twice the number of system states)
 
@@ -356,8 +356,8 @@ def point_to_point(
     trajectory_constraints : list of tuples, optional
         List of constraints that should hold at each point in the time vector.
         Each element of the list should consist of a tuple with first element
-        given by :class:`scipy.optimize.LinearConstraint` or
-        :class:`scipy.optimize.NonlinearConstraint` and the remaining
+        given by `scipy.optimize.LinearConstraint` or
+        `scipy.optimize.NonlinearConstraint` and the remaining
         elements of the tuple are the arguments that would be passed to those
         functions.  The following tuples are supported:
 
@@ -380,17 +380,17 @@ def point_to_point(
         defaults.
 
     minimize_method : str, optional
-        Set the method used by :func:`scipy.optimize.minimize`.
+        Set the method used by `scipy.optimize.minimize`.
 
     minimize_options : str, optional
-        Set the options keyword used by :func:`scipy.optimize.minimize`.
+        Set the options keyword used by `scipy.optimize.minimize`.
 
     minimize_kwargs : str, optional
-        Pass additional keywords to :func:`scipy.optimize.minimize`.
+        Pass additional keywords to `scipy.optimize.minimize`.
 
     Returns
     -------
-    traj : :class:`~control.flatsys.SystemTrajectory` object
+    traj : `flatsys.SystemTrajectory` object
         The system trajectory is returned as an object that implements the
         `eval()` function, we can be used to compute the value of the state
         and input and a given time t.
@@ -399,7 +399,7 @@ def point_to_point(
     -----
     Additional keyword parameters can be used to fine tune the behavior of
     the underlying optimization function.  See `minimize_*` keywords in
-    :func:`OptimalControlProblem` for more information.
+    `OptimalControlProblem` for more information.
 
     """
     #
@@ -672,9 +672,9 @@ def solve_flat_ocp(
         values are given as None, they are replaced by a vector of zeros of
         the appropriate dimension.
 
-    basis : :class:`~control.flatsys.BasisFamily` object, optional
+    basis : `flatsys.BasisFamily` object, optional
         The basis functions to use for generating the trajectory.  If not
-        specified, the :class:`~control.flatsys.PolyFamily` basis family
+        specified, the `flatsys.PolyFamily` basis family
         will be used, with the minimal number of elements required to find a
         feasible trajectory (twice the number of system states)
 
@@ -689,8 +689,8 @@ def solve_flat_ocp(
     trajectory_constraints : list of tuples, optional
         List of constraints that should hold at each point in the time vector.
         Each element of the list should consist of a tuple with first element
-        given by :class:`scipy.optimize.LinearConstraint` or
-        :class:`scipy.optimize.NonlinearConstraint` and the remaining
+        given by `scipy.optimize.LinearConstraint` or
+        `scipy.optimize.NonlinearConstraint` and the remaining
         elements of the tuple are the arguments that would be passed to those
         functions.  The following tuples are supported:
 
@@ -713,17 +713,17 @@ def solve_flat_ocp(
         defaults.
 
     minimize_method : str, optional
-        Set the method used by :func:`scipy.optimize.minimize`.
+        Set the method used by `scipy.optimize.minimize`.
 
     minimize_options : str, optional
-        Set the options keyword used by :func:`scipy.optimize.minimize`.
+        Set the options keyword used by `scipy.optimize.minimize`.
 
     minimize_kwargs : str, optional
-        Pass additional keywords to :func:`scipy.optimize.minimize`.
+        Pass additional keywords to `scipy.optimize.minimize`.
 
     Returns
     -------
-    traj : :class:`~control.flatsys.SystemTrajectory` object
+    traj : `flatsys.SystemTrajectory` object
         The system trajectory is returned as an object that implements the
         `eval()` function, we can be used to compute the value of the state
         and input and a given time t.
@@ -732,7 +732,7 @@ def solve_flat_ocp(
     -----
     1. Additional keyword parameters can be used to fine tune the behavior
        of the underlying optimization function.  See `minimize_*` keywords
-       in :func:`~control.optimal.OptimalControlProblem` for more information.
+       in `optimal.OptimalControlProblem` for more information.
 
     2. The return data structure includes the following additional attributes:
            * success : bool indicating whether the optimization succeeded

@@ -34,35 +34,35 @@ def nichols_plot(
     Parameters
     ----------
     data : list of `FrequencyResponseData` or `LTI`
-        List of LTI systems or :class:`FrequencyResponseData` objects.  A
+        List of LTI systems or `FrequencyResponseData` objects.  A
         single system or frequency response can also be passed.
     omega : array_like
         Range of frequencies (list or bounds) in rad/sec.
-    *fmt : :func:`matplotlib.pyplot.plot` format string, optional
+    *fmt : `matplotlib.pyplot.plot` format string, optional
         Passed to `matplotlib` as the format string for all lines in the plot.
         The `omega` parameter must be present (use omega=None if needed).
     grid : boolean, optional
         True if the plot should include a Nichols-chart grid. Default is
         True and can be set using config.defaults['nichols.grid'].
-    **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
+    **kwargs : `matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
     Returns
     -------
-    cplt : :class:`ControlPlot` object
+    cplt : `ControlPlot` object
         Object containing the data that were plotted:
 
-          * cplt.lines: 1D array of :class:`matplotlib.lines.Line2D` objects.
+          * cplt.lines: 1D array of `matplotlib.lines.Line2D` objects.
             The size of the array matches the number of systems and the
             value of the array is a list of Line2D objects for that system.
 
-          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+          * cplt.axes: 2D array of `matplotlib.axes.Axes` for the plot.
 
-          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+          * cplt.figure: `matplotlib.figure.Figure` containing the plot.
 
           * cplt.legend: legend object(s) contained in the plot
 
-        See :class:`ControlPlot` for more detailed information.
+        See `ControlPlot` for more detailed information.
 
       lines : array of Line2D
 
@@ -83,9 +83,9 @@ def nichols_plot(
         Override the default parameters used for generating plots.
         Default is set by config.defaults['ctrlplot.rcParams'].
     show_legend : bool, optional
-        Force legend to be shown if ``True`` or hidden if ``False``.  If
-        ``None``, then show legend when there is more than one line on the
-        plot or ``legend_loc`` has been specified.
+        Force legend to be shown if `True` or hidden if `False`.  If
+        `None`, then show legend when there is more than one line on the
+        plot or `legend_loc` has been specified.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
 
@@ -194,7 +194,7 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
         :doc:`Matplotlib linestyle \
             <matplotlib:gallery/lines_bars_and_markers/linestyles>`.
     ax : matplotlib.axes.Axes, optional
-        Axes to add grid to.  If ``None``, use ``matplotlib.pyplot.gca()``.
+        Axes to add grid to.  If `None`, use `matplotlib.pyplot.gca()`.
     label_cl_phases : bool, optional
         If True, closed-loop phase lines will be labelled.
 
@@ -206,10 +206,10 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
       The constant closed-loop phase contours.
     cl_mag_labels : list of `matplotlib.text.Text`
       Magnitude contour labels; each entry corresponds to the respective entry.
-      in ``cl_mag_lines``.
+      in `cl_mag_lines`.
     cl_phase_labels : list of `matplotlib.text.Text`
       Phase contour labels; each entry corresponds to the respective entry
-      in ``cl_phase_lines``.
+      in `cl_phase_lines`.
     """
     if ax is None:
         ax = plt.gca()

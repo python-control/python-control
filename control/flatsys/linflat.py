@@ -85,7 +85,7 @@ class LinearFlatSystem(FlatSystem, StateSpace):
     def forward(self, x, u, params):
         """Compute the flat flag given the states and input.
 
-        See :func:`control.flatsys.FlatSystem.forward` for more info.
+        See `control.flatsys.FlatSystem.forward` for more info.
 
         """
         x = np.reshape(x, (-1, 1))
@@ -102,7 +102,7 @@ class LinearFlatSystem(FlatSystem, StateSpace):
     def reverse(self, zflag, params):
         """Compute the states and input given the flat flag.
 
-        See :func:`control.flatsys.FlatSystem.reverse` for more info.
+        See `control.flatsys.FlatSystem.reverse` for more info.
 
         """
         z = zflag[0][0:-1]

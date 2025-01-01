@@ -230,10 +230,10 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
     method : string, optional
         Method to use (default is 'best'):
 
-        * 'poly': use polynomial method if passed a :class:`LTI` system.
+        * 'poly': use polynomial method if passed a `LTI` system.
         * 'frd': calculate crossover frequencies using numerical
-          interpolation of a :class:`FrequencyResponseData` representation
-          of the system if passed a :class:`LTI` system.
+          interpolation of a `FrequencyResponseData` representation
+          of the system if passed a `LTI` system.
         * 'best': use the 'poly' method if possible, reverting to 'frd' if
           it is detected that numerical inaccuracy is likey to arise in the
           'poly' method for for discrete-time systems.
@@ -472,8 +472,8 @@ def margin(*args):
 
     Gain and phase margins and associated crossover frequencies.
 
-    Can be called as ``margin(sys)`` where ``sys`` is a SISO LTI system or
-    ``margin(mag, phase, omega)``.
+    Can be called as `margin(sys)` where `sys` is a SISO LTI system or
+    `margin(mag, phase, omega)`.
 
     Parameters
     ----------

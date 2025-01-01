@@ -112,7 +112,7 @@ def stepinfo(sysdata, T=None, yfinal=None, SettlingTimeThreshold=0.02,
 
         If `sysdata` corresponds to a MIMO system, `S` is a 2D list of dicts.
         To get the step response characteristics from the j-th input to the
-        i-th output, access ``S[i][j]``
+        i-th output, access `S[i][j]`
 
     See Also
     --------
@@ -253,7 +253,7 @@ def lsim(sys, U=0., T=None, X0=0.):
     U : array-like or number, optional
         Input array giving input at each time `T` (default = 0).
 
-        If `U` is ``None`` or ``0``, a special algorithm is used. This special
+        If `U` is `None` or `0`, a special algorithm is used. This special
         algorithm is faster than the general algorithm, which is used otherwise.
     T : array-like, optional for discrete LTI `sys`
         Time steps at which the input is defined; values must be evenly spaced.

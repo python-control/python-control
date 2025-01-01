@@ -3,11 +3,10 @@
 
 """I/O system class and helper functions.
 
-Theis module implements the :class:`InputOutputSystem` class, which is used
-as a parent class for :class`LTI`, :class:`StateSpace`,
-:class:`TransferFunction`, :class:`NonlinearIOSystem`,
-class:`FrequencyResponseData`, :class:`InterconnectedSystem` and other
-similar classes that allow naming of signals.
+This module implements the `InputOutputSystem` class, which is used as a
+parent class for `LTI`, `StateSpace`, `TransferFunction`,
+`NonlinearIOSystem`, class:`FrequencyResponseData`, `InterconnectedSystem`
+and other similar classes that allow naming of signals.
 
 """
 
@@ -170,7 +169,7 @@ class InputOutputSystem(object):
     state_prefix : string, optional
         Set the prefix for state signals.  Default = 'x'.
     repr_format : str
-        String representation format.  See :func:`control.iosys_repr`.
+        String representation format.  See `control.iosys_repr`.
 
     """
     # Allow NDarray * IOSystem to give IOSystem._rmul_() priority
@@ -564,7 +563,7 @@ class InputOutputSystem(object):
         inputs : list of str, int, or None, optional
             List of strings that name the individual input signals.  If
             given as an integer or None, signal names default to the form
-            `u[i]`.  See :class:`InputOutputSystem` for more information.
+            `u[i]`.  See `InputOutputSystem` for more information.
         outputs : list of str, int, or None, optional
             Description of output signals; defaults to `y[i]`.
         states : int, list of str, int, or None, optional

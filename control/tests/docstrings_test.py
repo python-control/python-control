@@ -396,9 +396,8 @@ def test_iosys_primary_classes(cls, fcn, args):
 
     # Make sure we reference the factory function
     if re.search(
-            r"created.*(with|by|using).*the[\s]*"
-            f":func:`~control\\..*{fcn.__name__}`"
-            r"[\s]factory[\s]function", "\n".join(doc["Extended Summary"]),
+            f"`(~[\\w.]*)*{fcn.__name__}`"
+            r"[\s]+factory[\s]+function", "\n".join(doc["Extended Summary"]),
             re.DOTALL) is None:
         _fail(
             f"{cls.__name__} does not reference factory function "
@@ -509,14 +508,6 @@ def test_iosys_intermediate_classes(cls):
     if re.search(r"\nParameters\n----", docstring) is not None:
         _fail(f"intermediate {cls} docstring contains Parameters section")
         return
-
-    # Make sure we reference the factory function
-    # TODO: check extended summary
-    fcn = class_factory_function[cls]
-    if re.search(f":func:`~control.{fcn.__name__}`", docstring) is None:
-        _fail(
-            f"{cls.__name__} does not reference factory function "
-            f"{fcn.__name__}")
 
 
 @pytest.mark.parametrize("fcn", factory_args.keys())

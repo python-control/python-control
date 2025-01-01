@@ -128,10 +128,10 @@ def root_locus_plot(
 
     Returns
     -------
-    cplt : :class:`ControlPlot` object
+    cplt : `ControlPlot` object
         Object containing the data that were plotted:
 
-          * cplt.lines: Array of :class:`matplotlib.lines.Line2D` objects
+          * cplt.lines: Array of `matplotlib.lines.Line2D` objects
             for each set of markers in the plot. The shape of the array is
             given by (nsys, 3) where nsys is the number of systems or
             responses passed to the function.  The second index specifies
@@ -141,11 +141,11 @@ def root_locus_plot(
               - lines[idx, 1]: zeros
               - lines[idx, 2]: loci
 
-          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+          * cplt.axes: 2D array of `matplotlib.axes.Axes` for the plot.
 
-          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+          * cplt.figure: `matplotlib.figure.Figure` containing the plot.
 
-        See :class:`ControlPlot` for more detailed information.
+        See `ControlPlot` for more detailed information.
 
     roots, gains : ndarray
         (legacy) If the `plot` keyword is given, returns the closed-loop
@@ -166,9 +166,9 @@ def root_locus_plot(
         Include a legend in the given location. Default is 'center right',
         with no legend for a single response.  Use False to suppress legend.
     show_legend : bool, optional
-        Force legend to be shown if ``True`` or hidden if ``False``.  If
-        ``None``, then show legend when there is more than one line on the
-        plot or ``legend_loc`` has been specified.
+        Force legend to be shown if `True` or hidden if `False`.  If
+        `None`, then show legend when there is more than one line on the
+        plot or `legend_loc` has been specified.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
 

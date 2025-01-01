@@ -8,7 +8,7 @@
 
 This module contains functions for generating 2D phase plots. The base
 function for creating phase plane portraits is
-:func:`~control.phase_plane_plot`, which generates a phase plane
+`phase_plane_plot`, which generates a phase plane
 portrait for a 2 state I/O system (with no inputs).  In addition,
 several other functions are available to create customized phase plane
 plots:
@@ -98,21 +98,21 @@ def phase_plane_plot(
 
     Returns
     -------
-    cplt : :class:`ControlPlot` object
+    cplt : `ControlPlot` object
         Object containing the data that were plotted:
 
-          * cplt.lines: array of list of :class:`matplotlib.artist.Artist`
+          * cplt.lines: array of list of `matplotlib.artist.Artist`
             objects:
 
               - lines[0] = list of Line2D objects (streamlines, separatrices).
               - lines[1] = Quiver object (vector field arrows).
               - lines[2] = list of Line2D objects (equilibrium points).
 
-          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+          * cplt.axes: 2D array of `matplotlib.axes.Axes` for the plot.
 
-          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+          * cplt.figure: `matplotlib.figure.Figure` containing the plot.
 
-        See :class:`ControlPlot` for more detailed information.
+        See `ControlPlot` for more detailed information.
 
 
     Other Parameters
@@ -130,23 +130,23 @@ def phase_plane_plot(
         Direction to draw streamlines: 'forward' to flow forward in time
         from the reference points, 'reverse' to flow backward in time, or
         'both' to flow both forward and backward.  The amount of time to
-        simulate in each direction is given by the ``timedata`` argument.
+        simulate in each direction is given by the `timedata` argument.
     plot_streamlines : bool or dict, optional
         If `True` (default) then plot streamlines based on the pointdata
         and gridtype.  If set to a dict, pass on the key-value pairs in
-        the dict as keywords to :func:`~control.phaseplot.streamlines`.
+        the dict as keywords to `phaseplot.streamlines`.
     plot_vectorfield : bool or dict, optional
         If `True` (default) then plot the vector field based on the pointdata
         and gridtype.  If set to a dict, pass on the key-value pairs in
-        the dict as keywords to :func:`~control.phaseplot.vectorfield`.
+        the dict as keywords to `phaseplot.vectorfield`.
     plot_equilpoints : bool or dict, optional
         If `True` (default) then plot equilibrium points based in the phase
         plot boundary. If set to a dict, pass on the key-value pairs in the
-        dict as keywords to :func:`~control.phaseplot.equilpoints`.
+        dict as keywords to `phaseplot.equilpoints`.
     plot_separatrices : bool or dict, optional
         If `True` (default) then plot separatrices starting from each
         equilibrium point.  If set to a dict, pass on the key-value pairs
-        in the dict as keywords to :func:`~control.phaseplot.separatrices`.
+        in the dict as keywords to `phaseplot.separatrices`.
     rcParams : dict
         Override the default parameters used for generating plots.
         Default is set by config.defaults['ctrlplot.rcParams'].
@@ -373,7 +373,7 @@ def streamlines(
         Direction to draw streamlines: 'forward' to flow forward in time
         from the reference points, 'reverse' to flow backward in time, or
         'both' to flow both forward and backward.  The amount of time to
-        simulate in each direction is given by the ``timedata`` argument.
+        simulate in each direction is given by the `timedata` argument.
     params : dict or list, optional
         Parameters to pass to system. For an I/O system, `params` should be
         a dict of parameters and values. For a callable, `params` should be
@@ -1034,11 +1034,11 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     """(legacy) Phase plot for 2D dynamical systems.
 
     .. deprecated:: 0.10.1
-        This function is deprecated; use :func:`phase_plane_plot` instead.
+        This function is deprecated; use `phase_plane_plot` instead.
 
     Produces a vector field or stream line plot for a planar system.  This
-    function has been replaced by the :func:`~control.phase_plane_map` and
-    :func:`~control.phase_plane_plot` functions.
+    function has been replaced by the `phase_plane_map` and
+    `phase_plane_plot` functions.
 
     Call signatures:
       phase_plot(func, X, Y, ...) - display vector field on meshgrid
@@ -1052,7 +1052,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     ----------
     func : callable(x, t, ...)
         Computes the time derivative of y (compatible with odeint).  The
-        function should be the same for as used for :mod:`scipy.integrate`.
+        function should be the same for as used for `scipy.integrate`.
         Namely, it should be a function of the form dxdt = F(t, x) that
         accepts a state x of dimension 2 and returns a derivative dx/dt of
         dimension 2.
@@ -1298,7 +1298,7 @@ def box_grid(xlimp, ylimp):
     """Generate list of points on edge of box.
 
     .. deprecated:: 0.10.0
-        Use :func:`phaseplot.boxgrid` instead.
+        Use `phaseplot.boxgrid` instead.
 
     list = box_grid([xmin xmax xnum], [ymin ymax ynum]) generates a
     list of points that correspond to a uniform grid at the end of the

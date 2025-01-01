@@ -23,7 +23,7 @@ compute time-domain simulations of LTI systems.
 Arguments to time-domain simulations include a time vector, an input
 vector (when needed), and an initial condition vector.  The most
 general function for simulating LTI systems the
-:func:`forced_response` function, which has the form::
+`forced_response` function, which has the form::
 
     t, y = forced_response(sys, T, U, X0)
 
@@ -72,38 +72,37 @@ class TimeResponseData:
     step responses for linear systems.  For multi-trace responses, the same
     time vector must be used for all traces.
 
-    Time responses are accessed through either the raw data, stored as
-    :attr:`t`, :attr:`y`, :attr:`x`, :attr:`u`, or using a set of properties
-    :attr:`time`, :attr:`outputs`, :attr:`states`, :attr:`inputs`.  When
-    accessing time responses via their properties, squeeze processing is
-    applied so that (by default) single-input, single-output systems will have
-    the output and input indices suppressed.  This behavior is set using the
-    ``squeeze`` keyword.
+    Time responses are accessed through either the raw data, stored as `t`,
+    `y`, `x`, `u`, or using a set of properties `time`, `outputs`,
+    `states`, `inputs`.  When accessing time responses via their
+    properties, squeeze processing is applied so that (by default)
+    single-input, single-output systems will have the output and input
+    indices suppressed.  This behavior is set using the `squeeze` parameter.
 
     Attributes
     ----------
     t : 1D array
         Time values of the input/output response(s).  This attribute is
-        normally accessed via the :attr:`time` property.
+        normally accessed via the `time` property.
 
     y : 2D or 3D array
         Output response data, indexed either by output index and time (for
         single trace responses) or output, trace, and time (for multi-trace
-        responses).  These data are normally accessed via the :attr:`outputs`
+        responses).  These data are normally accessed via the `outputs`
         property, which performs squeeze processing.
 
     x : 2D or 3D array, or None
         State space data, indexed either by output number and time (for single
         trace responses) or output, trace, and time (for multi-trace
-        responses).  If no state data are present, value is ``None``. These
-        data are normally accessed via the :attr:`states` property, which
+        responses).  If no state data are present, value is `None`. These
+        data are normally accessed via the `states` property, which
         performs squeeze processing.
 
     u : 2D or 3D array, or None
         Input signal data, indexed either by input index and time (for single
         trace responses) or input, trace, and time (for multi-trace
-        responses).  If no input data are present, value is ``None``.  These
-        data are normally accessed via the :attr:`inputs` property, which
+        responses).  If no input data are present, value is `None`.  These
+        data are normally accessed via the `inputs` property, which
         performs squeeze processing.
 
     squeeze : bool, optional
@@ -112,22 +111,22 @@ class TimeResponseData:
         (indexed by time) and if a system is multi-input or
         multi-output, then the outputs are returned as a 2D array
         (indexed by output and time) or a 3D array (indexed by output,
-        trace, and time).  If ``squeeze=True``, access to the output
+        trace, and time).  If `squeeze=True`, access to the output
         response will remove single-dimensional entries from the shape
         of the inputs and outputs even if the system is not SISO. If
-        ``squeeze=False``, the output is returned as a 2D or 3D array
+        `squeeze=False`, the output is returned as a 2D or 3D array
         (indexed by the output [if multi-input], trace [if multi-trace]
         and time) even if the system is SISO. The default value can be
         set using config.defaults['control.squeeze_time_response'].
 
     transpose : bool, optional
         If True, transpose all input and output arrays (for backward
-        compatibility with MATLAB and :func:`scipy.signal.lsim`).  Default
+        compatibility with MATLAB and `scipy.signal.lsim`).  Default
         value is False.
 
     issiso : bool, optional
-        Set to ``True`` if the system generating the data is single-input,
-        single-output.  If passed as ``None`` (default), the input data
+        Set to `True` if the system generating the data is single-input,
+        single-output.  If passed as `None` (default), the input data
         will be used to set the value.
 
     ninputs, noutputs, nstates : int
@@ -137,11 +136,11 @@ class TimeResponseData:
         Names for the input, output, and state variables.
 
     success : bool, optional
-        If ``False``, result may not be valid (see
-        :func:`~control.input_output_response`).  Defaults to ``True``.
+        If `False`, result may not be valid (see
+        `input_output_response`).  Defaults to `True`.
 
     message : str, optional
-        Informational message if ``success`` is ``False``.
+        Informational message if `success` is `False`.
 
     sysname : str, optional
         Name of the system that created the data.
@@ -187,14 +186,14 @@ class TimeResponseData:
       plt.plot(resp.time, resp.outputs[['y[0]', 'y[1]'], 'u[0]'].T)
 
     For backward compatibility with earlier versions of python-control,
-    this class has an ``__iter__`` method that allows it to be assigned to
+    this class has an `__iter__` method that allows it to be assigned to
     a tuple with a variable number of elements.  This allows the following
     patterns to work::
 
        t, y = step_response(sys)
        t, y, x = step_response(sys, return_x=True)
 
-    Similarly, the class has ``__getitem__`` and ``__len__`` methods that
+    Similarly, the class has `__getitem__` and `__len__` methods that
     allow the return value to be indexed:
 
     * response[0]: returns the time vector
@@ -204,14 +203,40 @@ class TimeResponseData:
     When using this (legacy) interface, the state vector is not affected
     by the `squeeze` parameter.
 
-    The default settings for ``return_x``, ``squeeze`` and ``transpose``
+    The default settings for `return_x`, `squeeze` and `transpose`
     can be changed by calling the class instance and passing new values::
 
          response(tranpose=True).input
 
-    See :meth:`TimeResponseData.__call__` for more information.
+    See `TimeResponseData.__call__` for more information.
 
     """
+    #
+    # Class attributes
+    #
+    # These attributes are defined as class attributes so that they are
+    # documented properly.  They are "overwritten" in __init__.
+    #
+
+    #: Squeeze processing parameter.
+    #:
+    #: By default, if a system is single-input, single-output (SISO)
+    #: then the inputs and outputs are returned as a 1D array (indexed
+    #: by time) and if a system is multi-input or multi-output, then
+    #: the inputs are returned as a 2D array (indexed by input and
+    #: time) and the outputs are returned as either a 2D array (indexed
+    #: by output and time) or a 3D array (indexed by output, trace, and
+    #: time).  If squeeze=True, access to the output response will
+    #: remove single-dimensional entries from the shape of the inputs
+    #: and outputs even if the system is not SISO. If squeeze=False,
+    #: keep the input as a 2D or 3D array (indexed by the input (if
+    #: multi-input), trace (if single input) and time) and the output
+    #: as a 3D array (indexed by the output, trace, and time) even if
+    #: the system is SISO. The default value can be set using
+    #: config.defaults['control.squeeze_time_response'].
+    #:
+    #: :meta hide-value:
+    squeeze = None
 
     def __init__(
             self, time, outputs, states=None, inputs=None, issiso=None,
@@ -280,7 +305,7 @@ class TimeResponseData:
 
         transpose : bool, optional
             If True, transpose all input and output arrays (for backward
-            compatibility with MATLAB and :func:`scipy.signal.lsim`).
+            compatibility with MATLAB and `scipy.signal.lsim`).
             Default value is False.
 
         return_x : bool, optional
@@ -292,16 +317,16 @@ class TimeResponseData:
             in the plot() method)
 
         multi_trace : bool, optional
-            If ``True``, then 2D input array represents multiple traces.  For
-            a MIMO system, the ``input`` attribute should then be set to
-            indicate which trace is being specified.  Default is ``False``.
+            If `True`, then 2D input array represents multiple traces.  For
+            a MIMO system, the `input` attribute should then be set to
+            indicate which trace is being specified.  Default is `False`.
 
         success : bool, optional
-            If ``False``, result may not be valid (see
-            :func:`~control.input_output_response`).
+            If `False`, result may not be valid (see
+            `input_output_response`).
 
         message : str, optional
-            Informational message if ``success`` is ``False``.
+            Informational message if `success` is `False`.
 
         """
         #
@@ -464,8 +489,8 @@ class TimeResponseData:
         """Change value of processing keywords.
 
         Calling the time response object will create a copy of the object and
-        change the values of the keywords used to control the ``outputs``,
-        ``states``, and ``inputs`` properties.
+        change the values of the keywords used to control the `outputs`,
+        `states`, and `inputs` properties.
 
         Parameters
         ----------
@@ -480,7 +505,7 @@ class TimeResponseData:
 
         transpose : bool, optional
             If True, transpose all input and output arrays (for backward
-            compatibility with MATLAB and :func:`scipy.signal.lsim`).
+            compatibility with MATLAB and `scipy.signal.lsim`).
             Default value is False.
 
         return_x : bool, optional
@@ -539,7 +564,7 @@ class TimeResponseData:
 
         Output response of the system, indexed by either the output and time
         (if only a single input is given) or the output, trace, and time
-        (for multiple traces).  See :attr:`TimeResponseData.squeeze` for a
+        (for multiple traces).  See `TimeResponseData.squeeze` for a
         description of how this can be modified using the `squeeze` keyword.
 
         Input and output signal names can be used to index the data in
@@ -562,7 +587,7 @@ class TimeResponseData:
 
         Time evolution of the state vector, indexed indexed by either the
         state and time (if only a single trace is given) or the state, trace,
-        and time (for multiple traces).  See :attr:`TimeResponseData.squeeze`
+        and time (for multiple traces).  See `TimeResponseData.squeeze`
         for a description of how this can be modified using the `squeeze`
         keyword.
 
@@ -595,7 +620,7 @@ class TimeResponseData:
         and time.  If a 1D vector is passed, the input corresponds to a
         scalar-valued input.  If a 2D vector is passed, then it can either
         represent multiple single-input traces or a single multi-input trace.
-        The optional ``multi_trace`` keyword should be used to disambiguate
+        The optional `multi_trace` keyword should be used to disambiguate
         the two.  If a 3D vector is passed, then it represents a multi-trace,
         multi-input signal, indexed by input, trace, and time.
 
@@ -603,7 +628,7 @@ class TimeResponseData:
         place of integer offsets, with the input signal names being used to
         access multi-input data.
 
-        See :attr:`TimeResponseData.squeeze` for a description of how the
+        See `TimeResponseData.squeeze` for a description of how the
         dimensions of the input vector can be modified using the `squeeze`
         keyword.
 
@@ -719,7 +744,7 @@ class TimeResponseData:
     def plot(self, *args, **kwargs):
         """Plot the time response data objects.
 
-        This method calls :func:`time_response_plot`, passing all arguments
+        This method calls `time_response_plot`, passing all arguments
         and keywords.
 
         """
@@ -736,9 +761,9 @@ class TimeResponseData:
 class TimeResponseList(list):
     """List of TimeResponseData objects with plotting capability.
 
-    This class consists of a list of :class:`TimeResponseData` objects.
+    This class consists of a list of `TimeResponseData` objects.
     It is a subclass of the Python `list` class, with a `plot` method that
-    plots the individual :class:`TimeResponseData` objects.
+    plots the individual `TimeResponseData` objects.
 
     """
     def plot(self, *args, **kwargs):
@@ -816,10 +841,10 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
 
     """Helper function for checking array_like parameters.
 
-    * Check type and shape of ``in_obj``.
-    * Convert ``in_obj`` to an array if necessary.
-    * Change shape of ``in_obj`` according to parameter ``squeeze``.
-    * If ``in_obj`` is a scalar (number) it is converted to an array with
+    * Check type and shape of `in_obj`.
+    * Convert `in_obj` to an array if necessary.
+    * Change shape of `in_obj` according to parameter `squeeze`.
+    * If `in_obj` is a scalar (number) it is converted to an array with
       a legal shape, that is filled with the scalar value.
 
     The function raises an exception when it detects an error.
@@ -834,8 +859,8 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
         The special value "any" means that there can be any
         number of elements in a certain dimension.
 
-        * ``(2, 3)`` describes an array with 2 rows and 3 columns
-        * ``(2, "any")`` describes an array with 2 rows and any number of
+        * `(2, 3)` describes an array with 2 rows and 3 columns
+        * `(2, "any")` describes an array with 2 rows and any number of
           columns
 
     err_msg_start : str
@@ -848,7 +873,7 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
         array. If False the array's shape is unmodified.
 
         For example:
-        ``array([[1,2,3]])`` is converted to ``array([1, 2, 3])``
+        `array([[1,2,3]])` is converted to `array([1, 2, 3])`
 
     transpose : bool, optional
         If True, assume that 2D input arrays are transposed from the standard
@@ -858,7 +883,7 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
     -------
 
     out_array : array
-        The checked and converted contents of ``in_obj``.
+        The checked and converted contents of `in_obj`.
 
     """
     # convert nearly everything to an array.
@@ -958,7 +983,7 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
 
     transpose : bool, default=False
         If True, transpose all input and output arrays (for backward
-        compatibility with MATLAB and :func:`scipy.signal.lsim`).
+        compatibility with MATLAB and `scipy.signal.lsim`).
 
     interpolate : bool, default=False
         If True and system is a discrete time system, the input will
@@ -989,9 +1014,9 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
 
     Returns
     -------
-    results : :class:`TimeResponseData` or :class:`TimeResponseList`
-        Time response represented as a :class:`TimeResponseData` object or
-        list of :class:`TimeResponseData` objects containing the following
+    results : `TimeResponseData` or `TimeResponseList`
+        Time response represented as a `TimeResponseData` object or
+        list of `TimeResponseData` objects containing the following
         properties:
 
         * time (array): Time values of the output.
@@ -1007,7 +1032,7 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
         * inputs (array): Input(s) to the system, indexed by input and time.
 
         The `plot()` method can be used to create a plot of the time
-        response(s) (see :func:`time_response_plot` for more information).
+        response(s) (see `time_response_plot` for more information).
 
     See Also
     --------
@@ -1016,7 +1041,7 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
     Notes
     -----
     1. For discrete time systems, the input/output response is computed
-       using the :func:`scipy.signal.dlsim` function.
+       using the `scipy.signal.dlsim` function.
 
     2. For continuous time systems, the output is computed using the matrix
        exponential `exp(A t)` and assuming linear interpolation of the
@@ -1030,7 +1055,7 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
 
     4. (legacy) The return value of the system can also be accessed by
         assigning the function to a tuple of length 2 (time, output) or of
-        length 3 (time, output, state) if ``return_x`` is ``True``.
+        length 3 (time, output, state) if `return_x` is `True`.
 
     Examples
     --------
@@ -1066,8 +1091,8 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
                 sys, T, U, X0, params=params, transpose=transpose,
                 return_x=return_x, squeeze=squeeze)
         else:
-            raise TypeError('Parameter ``sys``: must be a ``StateSpace`` or'
-                            ' ``TransferFunction``)')
+            raise TypeError('Parameter `sys`: must be a `StateSpace` or'
+                            ' `TransferFunction`)')
 
     # If return_x was not specified, figure out the default
     if return_x is None:
@@ -1105,7 +1130,7 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
     if isdtime(sys):
         if T is None:
             if U is None or (U.ndim == 0 and U == 0.):
-                raise ValueError('Parameters ``T`` and ``U`` can\'t both be '
+                raise ValueError('Parameters `T` and `U` can\'t both be '
                                  'zero for discrete-time simulation')
             # Set T to equally spaced samples with same length as U
             if U.ndim == 1:
@@ -1119,12 +1144,12 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
                 U = np.full((n_inputs, T.shape[0]), U)
     else:
         if T is None:
-            raise ValueError('Parameter ``T`` is mandatory for continuous '
+            raise ValueError('Parameter `T` is mandatory for continuous '
                              'time systems.')
 
     # Test if T has shape (n,) or (1, n);
     T = _check_convert_array(T, [('any',), (1, 'any')],
-                             'Parameter ``T``: ', squeeze=True,
+                             'Parameter `T`: ', squeeze=True,
                              transpose=transpose)
 
     n_steps = T.shape[0]            # number of simulation steps
@@ -1132,18 +1157,18 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
     # equally spaced also implies strictly monotonic increase,
     dt = (T[-1] - T[0]) / (n_steps - 1)
     if not np.allclose(np.diff(T), dt):
-        raise ValueError("Parameter ``T``: time values must be equally "
+        raise ValueError("Parameter `T`: time values must be equally "
                          "spaced.")
 
     # create X0 if not given, test if X0 has correct shape
     X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
-                              'Parameter ``X0``: ', squeeze=True)
+                              'Parameter `X0`: ', squeeze=True)
 
     # Test if U has correct shape and type
     legal_shapes = [(n_steps,), (1, n_steps)] if n_inputs == 1 else \
         [(n_inputs, n_steps)]
     U = _check_convert_array(U, legal_shapes,
-                             'Parameter ``U``: ', squeeze=False,
+                             'Parameter `U`: ', squeeze=False,
                              transpose=transpose)
 
     xout = np.zeros((n_states, n_steps))
@@ -1206,13 +1231,13 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
             # First make sure that time increment is bigger than sampling time
             # (with allowance for small precision errors)
             if dt < sys.dt and not np.isclose(dt, sys.dt):
-                raise ValueError("Time steps ``T`` must match sampling time")
+                raise ValueError("Time steps `T` must match sampling time")
 
             # Now check to make sure it is a multiple (with check against
             # sys.dt because floating point mod can have small errors
             if not (np.isclose(dt % sys.dt, 0) or
                     np.isclose(dt % sys.dt, sys.dt)):
-                raise ValueError("Time steps ``T`` must be multiples of "
+                raise ValueError("Time steps `T` must be multiples of "
                                  "sampling time")
             sys_dt = sys.dt
 
@@ -1275,12 +1300,12 @@ def _process_time_response(
         forced response) or a 3D array indexed by output, input, and time.
 
     issiso : bool, optional
-        If ``True``, process data as single-input, single-output data.
-        Default is ``False``.
+        If `True`, process data as single-input, single-output data.
+        Default is `False`.
 
     transpose : bool, optional
         If True, transpose data (for backward compatibility with MATLAB and
-        :func:`scipy.signal.lsim`).  Default value is False.
+        `scipy.signal.lsim`).  Default value is False.
 
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then the
@@ -1380,12 +1405,12 @@ def step_response(
 
     transpose : bool, optional
         If True, transpose all input and output arrays (for backward
-        compatibility with MATLAB and :func:`scipy.signal.lsim`).  Default
+        compatibility with MATLAB and `scipy.signal.lsim`).  Default
         value is False.
 
     return_x : bool, optional
         If True, return the state vector when assigning to a tuple (default =
-        False).  See :func:`forced_response` for more details.
+        False).  See `forced_response` for more details.
 
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then the
@@ -1399,9 +1424,9 @@ def step_response(
     Returns
     -------
     results : `TimeResponseData` or `TimeResponseList`
-        Time response represented as a :class:`TimeResponseData` object or
-        list of :class:`TimeResponseData` objects.  See
-        :func:`forced_response` for additional information.
+        Time response represented as a `TimeResponseData` object or
+        list of `TimeResponseData` objects.  See
+        `forced_response` for additional information.
 
     See Also
     --------
@@ -1511,7 +1536,7 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
         TransferFunction), or a time series of step response data.
     T : array_like or float, optional
         Time vector, or simulation time duration if a number (time vector is
-        autocomputed if not given, see :func:`step_response` for more detail).
+        autocomputed if not given, see `step_response` for more detail).
         Required, if sysdata is a time series of response data.
     T_num : int, optional
         Number of time steps to use in simulation if T is not provided as an
@@ -1556,7 +1581,7 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
 
         If `sysdata` corresponds to a MIMO system, `S` is a 2D list of dicts.
         To get the step response characteristics from the j-th input to the
-        i-th output, access ``S[i][j]``
+        i-th output, access `S[i][j]`
 
 
     See Also
@@ -1749,7 +1774,7 @@ def initial_response(
 
     T :  array_like or float, optional
         Time vector, or simulation time duration if a number (time vector is
-        autocomputed if not given; see  :func:`step_response` for more detail).
+        autocomputed if not given; see  `step_response` for more detail).
 
     X0 : array_like or float, optional
         Initial condition (default = 0).  Numbers are converted to constant
@@ -1768,12 +1793,12 @@ def initial_response(
 
     transpose : bool, optional
         If True, transpose all input and output arrays (for backward
-        compatibility with MATLAB and :func:`scipy.signal.lsim`).  Default
+        compatibility with MATLAB and `scipy.signal.lsim`).  Default
         value is False.
 
     return_x : bool, optional
         If True, return the state vector when assigning to a tuple (default =
-        False).  See :func:`forced_response` for more details.
+        False).  See `forced_response` for more details.
 
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then the
@@ -1787,9 +1812,9 @@ def initial_response(
     Returns
     -------
     results : `TimeResponseData` or `TimeResponseList`
-        Time response represented as a :class:`TimeResponseData` object or
-        list of :class:`TimeResponseData` objects.  See
-        :func:`forced_response` for additional information.
+        Time response represented as a `TimeResponseData` object or
+        list of `TimeResponseData` objects.  See
+        `forced_response` for additional information.
 
     See Also
     --------
@@ -1866,7 +1891,7 @@ def impulse_response(
 
     T : array_like or float, optional
         Time vector, or simulation time duration if a scalar (time vector is
-        autocomputed if not given; see :func:`step_response` for more detail).
+        autocomputed if not given; see `step_response` for more detail).
 
     input : int, optional
         Only compute the impulse response for the listed input.  If not
@@ -1883,12 +1908,12 @@ def impulse_response(
 
     transpose : bool, optional
         If True, transpose all input and output arrays (for backward
-        compatibility with MATLAB and :func:`scipy.signal.lsim`).  Default
+        compatibility with MATLAB and `scipy.signal.lsim`).  Default
         value is False.
 
     return_x : bool, optional
         If True, return the state vector when assigning to a tuple (default =
-        False).  See :func:`forced_response` for more details.
+        False).  See `forced_response` for more details.
 
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then the
@@ -1902,9 +1927,9 @@ def impulse_response(
     Returns
     -------
     results : `TimeResponseData` or `TimeResponseList`
-        Time response represented as a :class:`TimeResponseData` object or
-        list of :class:`TimeResponseData` objects.  See
-        :func:`forced_response` for additional information.
+        Time response represented as a `TimeResponseData` object or
+        list of `TimeResponseData` objects.  See
+        `forced_response` for additional information.
 
     See Also
     --------
@@ -1955,8 +1980,8 @@ def impulse_response(
 
     # Check to make sure there is not a direct term
     if np.any(sys.D != 0) and isctime(sys):
-        warnings.warn("System has direct feedthrough: ``D != 0``. The "
-                      "infinite impulse at ``t=0`` does not appear in the "
+        warnings.warn("System has direct feedthrough: `D != 0`. The "
+                      "infinite impulse at `t=0` does not appear in the "
                       "output.\n"
                       "Results may be meaningless!")
 

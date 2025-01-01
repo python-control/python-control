@@ -5,9 +5,8 @@
 
 """Functions to access default parameter values.
 
-The :mod:`control.config` module contains default values and utility
-functions for setting parameters that control the behavior of the
-control package.
+This module contains default values and utility functions for setting
+parameters that control the behavior of the control package.
 
 """
 

@@ -2,7 +2,7 @@
 # RMM, 10 Nov 2012
 
 """The :mod:`control.flatsys.basis` module defines the
-:class:`flatsys.BasisFamily` class that used to specify a set of basis
+`flatsys.BasisFamily` class that used to specify a set of basis
 functions for implementing differential flatness computations.
 
 """

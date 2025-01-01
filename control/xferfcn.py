@@ -7,8 +7,8 @@
 
 """Transfer function class and related functions.
 
-This module contains the :class:`TransferFunction` class and also
-functions that operate on transfer functions.
+This module contains the `TransferFunction` class and also functions
+that operate on transfer functions.
 
 """
 
@@ -52,7 +52,7 @@ class TransferFunction(LTI):
 
     The TransferFunction class is used to represent systems in transfer
     function form.  Transfer functions are usually created with the
-    :func:`~control.tf` factory function.
+    `tf` factory function.
 
     Parameters
     ----------
@@ -95,7 +95,7 @@ class TransferFunction(LTI):
     -----
     The numerator and denominator polynomials are stored as 2D ndarrays
     with each element containing a 1D ndarray of coefficients.  These data
-    structures can be retrieved using ``num_array`` and ``den_array``.  For
+    structures can be retrieved using `num_array` and `den_array`.  For
     example,
 
     >>> sys.num_array[2, 5]         # doctest: +SKIP
@@ -105,14 +105,14 @@ class TransferFunction(LTI):
     the numerators and denominators can have different numbers of
     coefficients in each entry.)
 
-    The attributes ``num_list`` and ``den_list`` are properties that return
+    The attributes `num_list` and `den_list` are properties that return
     2D nested lists containing MIMO numerator and denominator coefficients.
     For example,
 
     >>> sys.num_list[2][5]          # doctest: +SKIP
 
     For legacy purposes, this list-based representation can also be
-    obtained using ``num`` and ``den``.
+    obtained using `num` and `den`.
 
     A discrete time transfer function is created by specifying a nonzero
     'timebase' dt when the system is constructed:
@@ -129,11 +129,11 @@ class TransferFunction(LTI):
     a system with timebase `None` can be combined with a system having any
     timebase; the result will have the timebase of the latter system.
     The default value of dt can be changed by changing the value of
-    ``control.config.defaults['control.default_dt']``.
+    `control.config.defaults['control.default_dt']`.
 
     A transfer function is callable and returns the value of the transfer
     function evaluated at a point in the complex plane.  See
-    :meth:`~control.TransferFunction.__call__` for a more detailed description.
+    `TransferFunction.__call__` for a more detailed description.
 
     Subsystems corresponding to selected input/output pairs can be
     created by indexing the transfer function::
@@ -145,7 +145,7 @@ class TransferFunction(LTI):
     of the signals can be used and will be replaced with the equivalent
     signal offsets.
 
-    The TransferFunction class defines two constants ``s`` and ``z`` that
+    The TransferFunction class defines two constants `s` and `z` that
     represent the differentiation and delay operators in continuous and
     discrete time.  These can be used to create variables that allow algebraic
     creation of transfer functions.  For example,
@@ -167,7 +167,7 @@ class TransferFunction(LTI):
         TransferFunction(sys), where sys is a TransferFunction object
         (continuous or discrete).
 
-        See :class:`TransferFunction` and :func:`tf` for more information.
+        See `TransferFunction` and `tf` for more information.
 
         """
         #
@@ -340,9 +340,9 @@ class TransferFunction(LTI):
         self.noutputs` number of outputs.
 
         To evaluate at a frequency omega in radians per second, enter
-        ``x = omega * 1j``, for continuous-time systems, or
-        ``x = exp(1j * omega * dt)`` for discrete-time systems. Or use
-        :meth:`TransferFunction.frequency_response`.
+        `x = omega * 1j`, for continuous-time systems, or
+        `x = exp(1j * omega * dt)` for discrete-time systems. Or use
+        `TransferFunction.frequency_response`.
 
         Parameters
         ----------
@@ -367,7 +367,7 @@ class TransferFunction(LTI):
             squeeze is not True, the shape of the array matches the shape of
             omega.  If the system is not SISO or squeeze is False, the first
             two dimensions of the array are indices for the output and input
-            and the remaining dimensions match omega.  If ``squeeze`` is True
+            and the remaining dimensions match omega.  If `squeeze` is True
             then single-dimensional axes are removed.
 
         """
@@ -381,7 +381,7 @@ class TransferFunction(LTI):
         Evaluates `sys(x)` where `x` is `s` for continuous-time systems and `z`
         for discrete-time systems.
 
-        Expects inputs and outputs to be formatted correctly. Use ``sys(x)``
+        Expects inputs and outputs to be formatted correctly. Use `sys(x)`
         for a more user-friendly interface.
 
         """
@@ -822,8 +822,8 @@ class TransferFunction(LTI):
 
         .. deprecated::0.9.0
             Method has been given the more pythonic name
-            :meth:`TransferFunction.frequency_response`. Or use
-            :func:`freqresp` in the MATLAB compatibility module.
+            `TransferFunction.frequency_response`. Or use
+            `freqresp` in the MATLAB compatibility module.
         """
         warn("TransferFunction.freqresp(omega) will be removed in a "
              "future release of python-control; use "
@@ -931,14 +931,14 @@ class TransferFunction(LTI):
         return TransferFunction(num, den, self.dt)
 
     def returnScipySignalLTI(self, strict=True):
-        """Return a 2D array of :class:`scipy.signal.lti` objects.
+        """Return a 2D array of `scipy.signal.lti` objects.
 
         For instance,
 
         >>> out = tfobject.returnScipySignalLTI()               # doctest: +SKIP
         >>> out[3, 5]                                           # doctest: +SKIP
 
-        is a :class:`scipy.signal.lti` object corresponding to the
+        is a `scipy.signal.lti` object corresponding to the
         transfer function from the 6th input to the 4th output.
 
         Parameters
@@ -949,13 +949,13 @@ class TransferFunction(LTI):
                 continuous (0) or discrete (True or > 0).
             False:
                 if `tfobject.dt` is None, continuous time
-                :class:`scipy.signal.lti` objects are returned
+                `scipy.signal.lti` objects are returned
 
         Returns
         -------
-        out : list of list of :class:`scipy.signal.TransferFunction`
-            Continuous time (inheriting from :class:`scipy.signal.lti`)
-            or discrete time (inheriting from :class:`scipy.signal.dlti`)
+        out : list of list of `scipy.signal.TransferFunction`
+            Continuous time (inheriting from `scipy.signal.lti`)
+            or discrete time (inheriting from `scipy.signal.dlti`)
             SISO objects.
         """
         if strict and self.dt is None:
@@ -1167,7 +1167,7 @@ class TransferFunction(LTI):
         alpha : float within [0, 1]
             The generalized bilinear transformation weighting parameter, which
             should only be specified with method="gbt", and is ignored
-            otherwise. See :func:`scipy.signal.cont2discrete`.
+            otherwise. See `scipy.signal.cont2discrete`.
         prewarp_frequency : float within [0, infinity)
             The frequency [rad/s] at which to match with the input continuous-
             time system's magnitude and phase (the gain=1 crossover frequency,
@@ -1194,7 +1194,7 @@ class TransferFunction(LTI):
         ----------------
         inputs : int, list of str or None, optional
             Description of the system inputs.  If not specified, the origional
-            system inputs are used.  See :class:`InputOutputSystem` for more
+            system inputs are used.  See `InputOutputSystem` for more
             information.
         outputs : int, list of str or None, optional
             Description of the system outputs.  Same format as `inputs`.
@@ -1203,7 +1203,7 @@ class TransferFunction(LTI):
         -----
         1. Available only for SISO systems
 
-        2. Uses :func:`scipy.signal.cont2discrete`
+        2. Uses `scipy.signal.cont2discrete`
 
         Examples
         --------
@@ -1295,7 +1295,7 @@ class TransferFunction(LTI):
 
     #: Differentation operator (continuous time).
     #:
-    #: The ``s`` constant can be used to create continuous time transfer
+    #: The `s` constant can be used to create continuous time transfer
     #: functions using algebraic expressions.
     #:
     #: Examples
@@ -1308,7 +1308,7 @@ class TransferFunction(LTI):
 
     #: Delay operator (discrete time).
     #:
-    #: The ``z`` constant can be used to create discrete time transfer
+    #: The `z` constant can be used to create discrete time transfer
     #: functions using algebraic expressions.
     #:
     #: Examples
@@ -1579,11 +1579,11 @@ def tf(*args, **kwargs):
 
     The function accepts either 1, 2, or 3 parameters:
 
-    ``tf(sys)``
+    `tf(sys)`
         Convert a linear system into transfer function form. Always creates
         a new system, even if sys is already a TransferFunction object.
 
-    ``tf(num, den)``
+    `tf(num, den)`
         Create a transfer function system from its numerator and denominator
         polynomial coefficients.
 
@@ -1595,16 +1595,16 @@ def tf(*args, **kwargs):
         for details see note below).  If the denominator for all transfer
         function is the same, `den` can be specified as a 1D array.
 
-    ``tf(num, den, dt)``
+    `tf(num, den, dt)`
         Create a discrete time transfer function system; dt can either be a
         positive number indicating the sampling time or 'True' if no
         specific timebase is given.
 
-    ``tf([[G11, ..., G1m], ..., [Gp1, ..., Gpm]][, dt])``
+    `tf([[G11, ..., G1m], ..., [Gp1, ..., Gpm]][, dt])`
         Create a pxm MIMO system from SISO transfer functions Gij.  See
-        :func:`combine_tf` for more details.
+        `combine_tf` for more details.
 
-    ``tf('s')`` or ``tf('z')``
+    `tf('s')` or `tf('z')`
         Create a transfer function representing the differential operator
         ('s') or delay operator ('z').
 
@@ -1662,13 +1662,13 @@ def tf(*args, **kwargs):
     Notes
     -----
     MIMO transfer functions are created by passing a 2D array of coeffients:
-    ``num[i][j]`` contains the polynomial coefficients of the numerator
+    `num[i][j]` contains the polynomial coefficients of the numerator
     for the transfer function from the (j+1)st input to the (i+1)st output,
-    and ``den[i][j]`` works the same way.
+    and `den[i][j]` works the same way.
 
-    The list ``[2, 3, 4]`` denotes the polynomial :math:`2s^2 + 3s + 4`.
+    The list `[2, 3, 4]` denotes the polynomial :math:`2s^2 + 3s + 4`.
 
-    The special forms ``tf('s')`` and ``tf('z')`` can be used to create
+    The special forms `tf('s')` and `tf('z')` can be used to create
     transfer functions for differentiation and unit delays.
 
     Examples
@@ -1779,7 +1779,7 @@ def zpk(zeros, poles, gain, *args, **kwargs):
         List of strings that name the individual signals.  If this parameter
         is not given or given as `None`, the signal names will be of the
         form `s[i]` (where `s` is one of `u`, `y`, or `x`). See
-        :class:`InputOutputSystem` for more information.
+        `InputOutputSystem` for more information.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
@@ -1815,15 +1815,15 @@ def ss2tf(*args, **kwargs):
 
     The function accepts either 1 or 4 parameters:
 
-    ``ss2tf(sys)``
+    `ss2tf(sys)`
         Convert a linear system from state space into transfer function
         form. Always creates a new system.
 
-    ``ss2tf(A, B, C, D)``
+    `ss2tf(A, B, C, D)`
         Create a transfer function system from the matrices of its state and
         output equations.
 
-        For details see: :func:`tf`
+        For details see: `tf`
 
     Parameters
     ----------
@@ -1838,7 +1838,7 @@ def ss2tf(*args, **kwargs):
     D : array_like or string
         Feedthrough matrix.
     **kwargs : keyword arguments
-        Additional arguments passed to :func:`tf` (e.g., signal names).
+        Additional arguments passed to `tf` (e.g., signal names).
 
     Returns
     -------

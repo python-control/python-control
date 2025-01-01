@@ -72,7 +72,7 @@ class StateSpace(NonlinearIOSystem, LTI):
               y &= C x + D u
 
     where `u` is the input, `y` is the output, and `x` is the state.  State
-    space systems are usually created with the :func:`~control.ss` factory
+    space systems are usually created with the `ss` factory
     function.
 
     Parameters
@@ -98,7 +98,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
     Notes
     -----
-    The main data members in the ``StateSpace`` class are the A, B, C, and D
+    The main data members in the `StateSpace` class are the A, B, C, and D
     matrices.  The class also keeps track of the number of states (i.e.,
     the size of A).
 
@@ -117,11 +117,11 @@ class StateSpace(NonlinearIOSystem, LTI):
     a system with timebase `None` can be combined with a system having any
     timebase; the result will have the timebase of the latter system.
     The default value of dt can be changed by changing the value of
-    ``control.config.defaults['control.default_dt']``.
+    `control.config.defaults['control.default_dt']`.
 
     A state space system is callable and returns the value of the transfer
     function evaluated at a point in the complex plane.  See
-    :meth:`~control.StateSpace.__call__` for a more detailed description.
+    `StateSpace.__call__` for a more detailed description.
 
     Subsystems corresponding to selected input/output pairs can be
     created by indexing the state space system::
@@ -163,7 +163,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         True for unspecified sampling time).  To call the copy constructor,
         call StateSpace(sys), where sys is a StateSpace object.
 
-        See :class:`StateSpace` and :func:`ss` for more information.
+        See `StateSpace` and `ss` for more information.
 
         """
         #
@@ -333,11 +333,11 @@ class StateSpace(NonlinearIOSystem, LTI):
              FutureWarning, stacklevel=2)
         self.nstates = value
 
-    #: Deprecated attribute; use :attr:`nstates` instead.
+    #: Deprecated attribute; use `nstates` instead.
     #:
-    #: The ``state`` attribute was used to store the number of states for : a
+    #: The `state` attribute was used to store the number of states for : a
     #: state space system.  It is no longer used.  If you need to access the
-    #: number of states, use :attr:`nstates`.
+    #: number of states, use `nstates`.
     states = property(_get_states, _set_states)
 
     def _remove_useless_states(self):
@@ -764,9 +764,9 @@ class StateSpace(NonlinearIOSystem, LTI):
         continuous-time systems and `z` for discrete-time systems.
 
         To evaluate at a frequency omega in radians per second, enter
-        ``x = omega * 1j``, for continuous-time systems, or
-        ``x = exp(1j * omega * dt)`` for discrete-time systems. Or use
-        :meth:`StateSpace.frequency_response`.
+        `x = omega * 1j`, for continuous-time systems, or
+        `x = exp(1j * omega * dt)` for discrete-time systems. Or use
+        `StateSpace.frequency_response`.
 
         Parameters
         ----------
@@ -788,7 +788,7 @@ class StateSpace(NonlinearIOSystem, LTI):
             squeeze is not True, the shape of the array matches the shape of
             omega.  If the system is not SISO or squeeze is False, the first
             two dimensions of the array are indices for the output and input
-            and the remaining dimensions match omega.  If ``squeeze`` is True
+            and the remaining dimensions match omega.  If `squeeze` is True
             then single-dimensional axes are removed.
 
         """
@@ -801,7 +801,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         Evaluate transfer function at complex frequency using Laub's
         method from Slycot.  Expects inputs and outputs to be
-        formatted correctly. Use ``sys(x)`` for a more user-friendly
+        formatted correctly. Use `sys(x)` for a more user-friendly
         interface.
 
         Parameters
@@ -860,7 +860,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         Evaluates `sys(x)` where `x` is `s` for continuous-time systems and `z`
         for discrete-time systems.
 
-        Expects inputs and outputs to be formatted correctly. Use ``sys(x)``
+        Expects inputs and outputs to be formatted correctly. Use `sys(x)`
         for a more user-friendly interface.
 
         Notes
@@ -924,8 +924,8 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         .. deprecated::0.9.0
             Method has been given the more pythonic name
-            :meth:`StateSpace.frequency_response`. Or use
-            :func:`freqresp` in the MATLAB compatibility module.
+            `StateSpace.frequency_response`. Or use
+            `freqresp` in the MATLAB compatibility module.
         """
         warn("StateSpace.freqresp(omega) will be removed in a "
              "future release of python-control; use "
@@ -1161,14 +1161,14 @@ class StateSpace(NonlinearIOSystem, LTI):
             return StateSpace(self)
 
     def returnScipySignalLTI(self, strict=True):
-        """Return a list of a list of :class:`scipy.signal.lti` objects.
+        """Return a list of a list of `scipy.signal.lti` objects.
 
         For instance,
 
         >>> out = ssobject.returnScipySignalLTI()               # doctest: +SKIP
         >>> out[3][5]                                           # doctest: +SKIP
 
-        is a :class:`scipy.signal.lti` object corresponding to the transfer
+        is a `scipy.signal.lti` object corresponding to the transfer
         function from the 6th input to the 4th output.
 
         Parameters
@@ -1179,13 +1179,13 @@ class StateSpace(NonlinearIOSystem, LTI):
                 be continuous (0) or discrete (True or > 0).
             False:
               If `ssobject.dt` is None, continuous time
-              :class:`scipy.signal.lti` objects are returned.
+              `scipy.signal.lti` objects are returned.
 
         Returns
         -------
-        out : list of list of :class:`scipy.signal.StateSpace`
-            Continuous time (inheriting from :class:`scipy.signal.lti`)
-            or discrete time (inheriting from :class:`scipy.signal.dlti`)
+        out : list of list of `scipy.signal.StateSpace`
+            Continuous time (inheriting from `scipy.signal.lti`)
+            or discrete time (inheriting from `scipy.signal.dlti`)
             SISO objects.
         """
         if strict and self.dt is None:
@@ -1309,7 +1309,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         ----------------
         inputs : int, list of str or None, optional
             Description of the system inputs.  If not specified, the origional
-            system inputs are used.  See :class:`InputOutputSystem` for more
+            system inputs are used.  See `InputOutputSystem` for more
             information.
         outputs : int, list of str or None, optional
             Description of the system outputs.  Same format as `inputs`.
@@ -1318,7 +1318,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         Notes
         -----
-        Uses :func:`scipy.signal.cont2discrete`
+        Uses `scipy.signal.cont2discrete`
 
         Examples
         --------
@@ -1398,10 +1398,10 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         The inputs `x` and `u` must be of the correct length for the system.
 
-        The first argument `t` is ignored because :class:`StateSpace` systems
+        The first argument `t` is ignored because `StateSpace` systems
         are time-invariant. It is included so that the dynamics can be passed
-        to numerical integrators, such as :func:`scipy.integrate.solve_ivp`
-        and for consistency with :class:`IOSystem` systems.
+        to numerical integrators, such as `scipy.integrate.solve_ivp`
+        and for consistency with `IOSystem` systems.
 
         Parameters
         ----------
@@ -1443,10 +1443,10 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         where A and B are the state-space matrices of the system.
 
-        The first argument `t` is ignored because :class:`StateSpace` systems
+        The first argument `t` is ignored because `StateSpace` systems
         are time-invariant. It is included so that the dynamics can be passed
         to most numerical integrators, such as scipy's `integrate.solve_ivp`
-        and for consistency with :class:`IOSystem` systems.
+        and for consistency with `IOSystem` systems.
 
         The inputs `x` and `u` must be of the correct length for the system.
 
@@ -1488,11 +1488,11 @@ class LinearICSystem(InterconnectedSystem, StateSpace):
 
     This class is used to implement a system that is an interconnection of
     linear input/output systems.  It has all of the structure of an
-    :class:`~control.InterconnectedSystem`, but also maintains the required
-    elements of the :class:`StateSpace` class structure, allowing it to be
-    passed to functions that expect a :class:`StateSpace` system.
+    `InterconnectedSystem`, but also maintains the required
+    elements of the `StateSpace` class structure, allowing it to be
+    passed to functions that expect a `StateSpace` system.
 
-    This class is generated using :func:`~control.interconnect` and
+    This class is generated using `interconnect` and
     not called directly.
 
     """
@@ -1570,11 +1570,11 @@ class LinearICSystem(InterconnectedSystem, StateSpace):
     # this entry to show up properly in sphinx doccumentation (not sure why,
     # but it was the only way to get it to work).
     #
-    #: Deprecated attribute; use :attr:`nstates` instead.
+    #: Deprecated attribute; use `nstates` instead.
     #:
-    #: The ``state`` attribute was used to store the number of states for : a
+    #: The `state` attribute was used to store the number of states for : a
     #: state space system.  It is no longer used.  If you need to access the
-    #: number of states, use :attr:`nstates`.
+    #: number of states, use `nstates`.
     states = property(StateSpace._get_states, StateSpace._set_states)
 
 
@@ -1586,11 +1586,11 @@ def ss(*args, **kwargs):
 
     The function accepts either 1, 4 or 5 positional parameters:
 
-    ``ss(sys)``
+    `ss(sys)`
         Convert a linear system into space system form. Always creates a
         new system, even if sys is already a state space system.
 
-    ``ss(A, B, C, D)``
+    `ss(A, B, C, D)`
         Create a state space system from the matrices of its state and
         output equations:
 
@@ -1599,7 +1599,7 @@ def ss(*args, **kwargs):
             dx/dt &= A x + B u \\
                 y &= C x + D  u
 
-    ``ss(A, B, C, D, dt)``
+    `ss(A, B, C, D, dt)`
         Create a discrete-time state space system from the matrices of
         its state and output equations:
 
@@ -1648,7 +1648,7 @@ def ss(*args, **kwargs):
         List of strings that name the individual signals.  If this parameter
         is not given or given as `None`, the signal names will be of the
         form `s[i]` (where `s` is one of `u`, `y`, or `x`). See
-        :class:`InputOutputSystem` for more information.
+        `InputOutputSystem` for more information.
     input_prefix, output_prefix, state_prefix : string, optional
         Set the prefix for input, output, and state signals.  Defaults =
         'u', 'y', 'x'.
@@ -1669,7 +1669,7 @@ def ss(*args, **kwargs):
     -----
     If a transfer function is passed as the sole positional argument, the
     system will be converted to state space form in the same way as calling
-    :func:`~control.tf2ss`.  The `method` keyword can be used to select the
+    `tf2ss`.  The `method` keyword can be used to select the
     method for conversion.
 
     Examples
@@ -1734,8 +1734,8 @@ def ss2io(*args, **kwargs):
         This function will be removed in a future version of python-control.
         The `ss` function can be used directly to produce an I/O system.
 
-    Create an :class:`~control.StateSpace` system with the given signal
-    and system names.  See :func:`~control.ss` for more details.
+    Create an `StateSpace` system with the given signal
+    and system names.  See `ss` for more details.
     """
     warn("ss2io() is deprecated; use ss()", FutureWarning)
     return StateSpace(*args, **kwargs)
@@ -1753,15 +1753,15 @@ def tf2io(*args, **kwargs):
 
     The function accepts either 1 or 2 parameters:
 
-    ``tf2io(sys)``
+    `tf2io(sys)`
         Convert a linear system into space space form. Always creates
         a new system, even if sys is already a StateSpace object.
 
-    ``tf2io(num, den)``
+    `tf2io(num, den)`
         Create a linear I/O system from its numerator and denominator
         polynomial coefficients.
 
-        For details see: :func:`tf`
+        For details see: `tf`
 
     Parameters
     ----------
@@ -1824,15 +1824,15 @@ def tf2ss(*args, **kwargs):
 
     The function accepts either 1 or 2 parameters:
 
-    ``tf2ss(sys)``
+    `tf2ss(sys)`
         Convert a transfer function into space space form.  Equivalent to
         `ss(sys)`.
 
-    ``tf2ss(num, den)``
+    `tf2ss(num, den)`
         Create a state space system from its numerator and denominator
         polynomial coefficients.
 
-        For details see: :func:`tf`
+        For details see: `tf`
 
     Parameters
     ----------
@@ -1879,10 +1879,10 @@ def tf2ss(*args, **kwargs):
 
     Notes
     -----
-    The ``slycot`` routine used to convert a transfer function into state
+    The `slycot` routine used to convert a transfer function into state
     space form appears to have a bug and in some (rare) instances may not
     return a system with the same poles as the input transfer function.
-    For SISO systems, setting ``method=scipy`` can be used as an alternative.
+    For SISO systems, setting `method=scipy` can be used as an alternative.
 
     Examples
     --------
@@ -2051,7 +2051,7 @@ def drss(*args, **kwargs):
     Create a stable, discrete-time, random state space system.
 
     Create a stable *discrete time* random state space object.  This
-    function calls :func:`rss` using either the `dt` keyword provided by
+    function calls `rss` using either the `dt` keyword provided by
     the user or `dt=True` if not specified.
 
     Examples
@@ -2095,7 +2095,7 @@ def summing_junction(
     This function creates a static input/output system that outputs the sum of
     the inputs, potentially with a change in sign for each individual input.
     The input/output system that is created by this function can be used as a
-    component in the :func:`~control.interconnect` function.
+    component in the `interconnect` function.
 
     Parameters
     ----------

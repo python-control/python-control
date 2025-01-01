@@ -123,7 +123,7 @@ class PoleZeroData:
     def plot(self, *args, **kwargs):
         """Plot the pole/zero data.
 
-        See :func:`~control.pole_zero_plot` for description of arguments
+        See `pole_zero_plot` for description of arguments
         and keywords.
 
         """
@@ -135,7 +135,7 @@ class PoleZeroList(list):
     def plot(self, *args, **kwargs):
         """Plot pole/zero data.
 
-        See :func:`~control.pole_zero_plot` for description of arguments
+        See `pole_zero_plot` for description of arguments
         and keywords.
 
         """
@@ -201,17 +201,17 @@ def pole_zero_plot(
         If `empty`, do not draw any additonal lines.  Default value is set
         by config.defaults['pzmap.grid'] or config.defaults['rlocus.grid'].
     plot : bool, optional
-        (legacy) If ``True`` a graph is generated with Matplotlib,
+        (legacy) If `True` a graph is generated with Matplotlib,
         otherwise the poles and zeros are only computed and returned.
         If this argument is present, the legacy value of poles and
         zeros is returned.
 
     Returns
     -------
-    cplt : :class:`ControlPlot` object
+    cplt : `ControlPlot` object
         Object containing the data that were plotted:
 
-          * cplt.lines: Array of :class:`matplotlib.lines.Line2D` objects
+          * cplt.lines: Array of `matplotlib.lines.Line2D` objects
             for each set of markers in the plot. The shape of the array is
             given by (`nsys`, 2) where `nsys` is the number of systems or
             responses passed to the function.  The second index specifies
@@ -220,13 +220,13 @@ def pole_zero_plot(
               - lines[idx, 0]: poles
               - lines[idx, 1]: zeros
 
-          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+          * cplt.axes: 2D array of `matplotlib.axes.Axes` for the plot.
 
-          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+          * cplt.figure: `matplotlib.figure.Figure` containing the plot.
 
           * cplt.legend: legend object(s) contained in the plot
 
-        See :class:`ControlPlot` for more detailed information.
+        See `ControlPlot` for more detailed information.
 
     poles, zeros : list of arrays
         (legacy) If the `plot` keyword is given, the system poles and zeros
@@ -264,9 +264,9 @@ def pole_zero_plot(
         Set the type of axis scaling.  Can be 'equal' (default), 'auto', or
         a list of the form [xmin, xmax, ymin, ymax].
     show_legend : bool, optional
-        Force legend to be shown if ``True`` or hidden if ``False``.  If
-        ``None``, then show legend when there is more than one line on the
-        plot or ``legend_loc`` has been specified.
+        Force legend to be shown if `True` or hidden if `False`.  If
+        `None`, then show legend when there is more than one line on the
+        plot or `legend_loc` has been specified.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
     xlim : list, optional
@@ -283,9 +283,9 @@ def pole_zero_plot(
     the desired values.
 
     Pole/zero plots that use the continuous time omega-damping grid do not
-    work with the ``ax`` keyword argument, due to the way that axes grids
-    are implemented.  The ``grid`` argument must be set to ``False`` or
-    ``'empty'`` when using the ``ax`` keyword argument.
+    work with the `ax` keyword argument, due to the way that axes grids
+    are implemented.  The `grid` argument must be set to `False` or
+    `'empty'` when using the `ax` keyword argument.
 
     The limits of the pole/zero plot are set based on the location features
     in the plot, including the location of poles, zeros, and local maxima

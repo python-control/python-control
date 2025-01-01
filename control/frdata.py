@@ -34,8 +34,8 @@ class FrequencyResponseData(LTI):
 
     The FrequencyResponseData (FRD) class is used to represent systems in
     frequency response data form.  It can be created manually using the
-    class constructor, using the :func:`~control.frd` factory function, or
-    via the :func:`~control.frequency_response` function.
+    class constructor, using the `frd` factory function, or
+    via the `frequency_response` function.
 
     Parameters
     ----------
@@ -48,10 +48,10 @@ class FrequencyResponseData(LTI):
     omega : iterable of real frequencies
         List of frequency points for which data are available.
     smooth : bool, optional
-        If ``True``, create an interpolation function that allows the
+        If `True`, create an interpolation function that allows the
         frequency response to be computed at any frequency within the range of
-        frequencies give in ``w``.  If ``False`` (default), frequency response
-        can only be obtained at the frequencies specified in ``w``.
+        frequencies give in `w`.  If `False` (default), frequency response
+        can only be obtained at the frequencies specified in `w`.
     dt : None, True or float, optional
         System timebase. 0 (default) indicates continuous time, True
         indicates discrete time with unspecified sampling time, positive
@@ -63,9 +63,9 @@ class FrequencyResponseData(LTI):
         frequency) and if a system is multi-input or multi-output, then the
         outputs are returned as a 2D array (indexed by output and
         frequency) or a 3D array (indexed by output, trace, and frequency).
-        If ``squeeze=True``, access to the output response will remove
+        If `squeeze=True`, access to the output response will remove
         single-dimensional entries from the shape of the inputs and outputs
-        even if the system is not SISO. If ``squeeze=False``, the output is
+        even if the system is not SISO. If `squeeze=False`, the output is
         returned as a 3D array (indexed by the output, input, and
         frequency) even if the system is SISO. The default value can be set
         using config.defaults['control.squeeze_frequency_response'].
@@ -87,7 +87,7 @@ class FrequencyResponseData(LTI):
         Names for the input and output signals.
     name : str
         System name.  For data generated using
-        :func:`~control.frequency_response`, stores the name of the
+        `frequency_response`, stores the name of the
         system that created the data.
     magnitude : array
         Magnitude of the frequency response, indexed by frequency.
@@ -97,17 +97,17 @@ class FrequencyResponseData(LTI):
     Other Parameters
     ----------------
     plot_type : str, optional
-        Set the type of plot to generate with ``plot()`` ('bode', 'nichols').
+        Set the type of plot to generate with `plot()` ('bode', 'nichols').
     title : str, optional
         Set the title to use when plotting.
     plot_magnitude, plot_phase : bool, optional
         If set to `False`, don't plot the magnitude or phase, respectively.
     return_magphase : bool, optional
         If True, then a frequency response data object will enumerate as a
-        tuple of the form (mag, phase, omega) where where ``mag`` is the
+        tuple of the form (mag, phase, omega) where where `mag` is the
         magnitude (absolute value, not dB or log10) of the system
-        frequency response, ``phase`` is the wrapped phase in radians of
-        the system frequency response, and ``omega`` is the (sorted)
+        frequency response, `phase` is the wrapped phase in radians of
+        the system frequency response, and `omega` is the (sorted)
         frequencies at which the response was evaluated.
 
     See Also
@@ -130,12 +130,12 @@ class FrequencyResponseData(LTI):
 
     A frequency response data object is callable and returns the value of the
     transfer function evaluated at a point in the complex plane (must be on
-    the imaginary axis).  See :meth:`~control.FrequencyResponseData.__call__`
+    the imaginary axis).  See `FrequencyResponseData.__call__`
     for a more detailed description.
 
     A state space system is callable and returns the value of the transfer
     function evaluated at a point in the complex plane.  See
-    :meth:`~control.StateSpace.__call__` for a more detailed description.
+    `StateSpace.__call__` for a more detailed description.
 
     Subsystem response corresponding to selected input/output pairs can be
     created by indexing the frequency response data object::
@@ -165,6 +165,23 @@ class FrequencyResponseData(LTI):
     #: :meta hide-value:
     noutputs = 1
 
+    #: Squeeze processing parameter.
+    #:
+    #: By default, if a system is single-input, single-output (SISO) then
+    #: the outputs (and inputs) are returned as a 1D array (indexed by
+    #: frequency) and if a system is multi-input or multi-output, then the
+    #: outputs are returned as a 2D array (indexed by output and frequency)
+    #: or a 3D array (indexed by output, trace, and frequency).  If
+    #: `squeeze=True`, access to the output response will remove
+    #: single-dimensional entries from the shape of the inputs and outputs
+    #: even if the system is not SISO. If `squeeze=False`, the output is
+    #: returned as a 3D array (indexed by the output, input, and frequency)
+    #: even if the system is SISO. The default value can be set using
+    #: config.defaults['control.squeeze_frequency_response'].
+    #:
+    #: :meta hide-value:
+    squeeze = None
+
     _epsw = 1e-8                #: Bound for exact frequency match
 
     def __init__(self, *args, **kwargs):
@@ -183,10 +200,10 @@ class FrequencyResponseData(LTI):
 
         To construct frequency response data for an existing LTI object,
         other than an FRD, call FrequencyResponseData(sys, omega).  This
-        functionality can also be obtained using :func:`frequency_response`
+        functionality can also be obtained using `frequency_response`
         (which has additional options available).
 
-        See :class:`FrequencyResponseData` and :func:`frd` for more
+        See `FrequencyResponseData` and `frd` for more
         information.
 
         """
@@ -334,7 +351,7 @@ class FrequencyResponseData(LTI):
         Magnitude of the frequency response, indexed by either the output
         and frequency (if only a single input is given) or the output,
         input, and frequency (for multi-input systems).  See
-        :attr:`FrequencyResponseData.squeeze` for a description of how this
+        `FrequencyResponseData.squeeze` for a description of how this
         can be modified using the `squeeze` keyword.
 
         Input and output signal names can be used to index the data in
@@ -353,7 +370,7 @@ class FrequencyResponseData(LTI):
         Phase of the frequency response in radians/sec, indexed by either
         the output and frequency (if only a single input is given) or the
         output, input, and frequency (for multi-input systems).  See
-        :attr:`FrequencyResponseData.squeeze` for a description of how this
+        `FrequencyResponseData.squeeze` for a description of how this
         can be modified using the `squeeze` keyword.
 
         Input and output signal names can be used to index the data in
@@ -381,7 +398,7 @@ class FrequencyResponseData(LTI):
         Value of the frequency response as a complex number, indexed by
         either the output and frequency (if only a single input is given)
         or the output, input, and frequency (for multi-input systems).  See
-        :attr:`FrequencyResponseData.squeeze` for a description of how this
+        `FrequencyResponseData.squeeze` for a description of how this
         can be modified using the `squeeze` keyword.
 
         Input and output signal names can be used to index the data in
@@ -601,7 +618,7 @@ class FrequencyResponseData(LTI):
 
     # Define the `eval` function to evaluate an FRD at a given (real)
     # frequency.  Note that we choose to use `eval` instead of `evalfr` to
-    # avoid confusion with :func:`evalfr`, which takes a complex number as its
+    # avoid confusion with `evalfr`, which takes a complex number as its
     # argument.  Similarly, we don't use `__call__` to avoid confusion between
     # G(s) for a transfer function and G(omega) for an FRD object.
     # update Sawyer B. Fuller 2020.08.14: __call__ added to provide a uniform
@@ -631,7 +648,7 @@ class FrequencyResponseData(LTI):
             squeeze is not True, the shape of the array matches the shape of
             omega.  If the system is not SISO or squeeze is False, the first
             two dimensions of the array are indices for the output and input
-            and the remaining dimensions match omega.  If ``squeeze`` is True
+            and the remaining dimensions match omega.  If `squeeze` is True
             then single-dimensional axes are removed.
 
         """
@@ -672,12 +689,12 @@ class FrequencyResponseData(LTI):
         outputs.
 
         To evaluate at a frequency omega in radians per second, enter
-        ``s = omega * 1j`` or use ``sys.eval(omega)``
+        `s = omega * 1j` or use `sys.eval(omega)`
 
         For a frequency response data object, the argument must be an
         imaginary number (since only the frequency response is defined).
 
-        If ``s`` is not given, this function creates a copy of a frequency
+        If `s` is not given, this function creates a copy of a frequency
         response data object with a different set of output settings.
 
         Parameters
@@ -685,7 +702,7 @@ class FrequencyResponseData(LTI):
         s : complex scalar or 1D array_like
             Complex frequencies.  If not specified, return a copy of the
             frequency response data object with updated settings for output
-            processing (``squeeze``, ``return_magphase``).
+            processing (`squeeze`, `return_magphase`).
 
         squeeze : bool, optional
             If squeeze=True, remove single-dimensional entries from the shape
@@ -696,10 +713,10 @@ class FrequencyResponseData(LTI):
 
         return_magphase : bool, optional
             If True, then a frequency response data object will enumerate as a
-            tuple of the form (mag, phase, omega) where where ``mag`` is the
+            tuple of the form (mag, phase, omega) where where `mag` is the
             magnitude (absolute value, not dB or log10) of the system
-            frequency response, ``phase`` is the wrapped phase in radians of
-            the system frequency response, and ``omega`` is the (sorted)
+            frequency response, `phase` is the wrapped phase in radians of
+            the system frequency response, and `omega` is the (sorted)
             frequencies at which the response was evaluated.
 
         Returns
@@ -709,14 +726,14 @@ class FrequencyResponseData(LTI):
             squeeze is not True, the shape of the array matches the shape of
             omega.  If the system is not SISO or squeeze is False, the first
             two dimensions of the array are indices for the output and input
-            and the remaining dimensions match omega.  If ``squeeze`` is True
+            and the remaining dimensions match omega.  If `squeeze` is True
             then single-dimensional axes are removed.
 
         Raises
         ------
         ValueError
             If `s` is not purely imaginary, because
-            :class:`FrequencyResponseData` systems are only defined at
+            `FrequencyResponseData` systems are only defined at
             imaginary values (corresponding to real frequencies).
 
         """
@@ -785,8 +802,8 @@ class FrequencyResponseData(LTI):
 
         .. deprecated::0.9.0
             Method has been given the more pythonic name
-            :meth:`FrequencyResponseData.frequency_response`. Or use
-            :func:`freqresp` in the MATLAB compatibility module.
+            `FrequencyResponseData.frequency_response`. Or use
+            `freqresp` in the MATLAB compatibility module.
 
         """
         warn("FrequencyResponseData.freqresp(omega) will be removed in a "
@@ -842,8 +859,8 @@ class FrequencyResponseData(LTI):
 
         Plot the frequency response using either a standard Bode plot
         (default) or using a singular values plot (by setting `plot_type`
-        to 'svplot').  See :func:`~control.bode_plot` and
-        :func:`~control.singular_values_plot` for more detailed
+        to 'svplot').  See `bode_plot` and
+        `singular_values_plot` for more detailed
         descriptions.
 
         """
@@ -974,13 +991,13 @@ def frd(*args, **kwargs):
     A frequency response data model stores the (measured) frequency response
     of a system.  This factory function can be called in different ways:
 
-    ``frd(response, omega)``
+    `frd(response, omega)`
         Create an frd model with the given response data, in the form of
-        complex response vector, at matching frequencies ``omega`` [in rad/s].
+        complex response vector, at matching frequencies `omega` [in rad/s].
 
-    ``frd(sys, omega)``
+    `frd(sys, omega)`
         Convert an LTI system into an frd model with data at frequencies
-        ``omega``.
+        `omega`.
 
     Parameters
     ----------
@@ -994,11 +1011,11 @@ def frd(*args, **kwargs):
     dt : float, True, or None
         System timebase.
     smooth : bool, optional
-        If ``True``, create an interpolation function that allows the
+        If `True`, create an interpolation function that allows the
         frequency response to be computed at any frequency within the range
-        of frequencies give in ``omega``.  If ``False`` (default),
+        of frequencies give in `omega`.  If `False` (default),
         frequency response can only be obtained at the frequencies
-        specified in ``omega``.
+        specified in `omega`.
 
     Returns
     -------

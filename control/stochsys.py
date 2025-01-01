@@ -60,10 +60,10 @@ def lqe(*args, **kwargs):
 
     The function can be called with either 3, 4, 5, or 6 arguments:
 
-    * ``L, P, E = lqe(sys, QN, RN)``
-    * ``L, P, E = lqe(sys, QN, RN, NN)``
-    * ``L, P, E = lqe(A, G, C, QN, RN)``
-    * ``L, P, E = lqe(A, G, C, QN, RN, NN)``
+    * `L, P, E = lqe(sys, QN, RN)`
+    * `L, P, E = lqe(sys, QN, RN, NN)`
+    * `L, P, E = lqe(A, G, C, QN, RN)`
+    * `L, P, E = lqe(A, G, C, QN, RN, NN)`
 
     where `sys` is an `LTI` object, and `A`, `G`, `C`, `QN`, `RN`, and `NN`
     are 2D arrays or matrices of appropriate dimension.
@@ -102,7 +102,7 @@ def lqe(*args, **kwargs):
     -----
     If the first argument is an LTI object, then this object will be used
     to define the dynamics, noise and output matrices.  Furthermore, if the
-    LTI object corresponds to a discrete time system, the ``dlqe()``
+    LTI object corresponds to a discrete time system, the `dlqe()`
     function will be called.
 
     Examples
@@ -399,21 +399,21 @@ def create_estimator_iosystem(
     measurement_labels, control_labels : str or list of str, optional
         Set the name of the measurement and control signal names (estimator
         inputs).  If a single string is specified, it should be a format
-        string using the variable ``i`` as an index.  Otherwise, a list of
+        string using the variable `i` as an index.  Otherwise, a list of
         strings matching the size of the system inputs and outputs should be
         used.  Default is the signal names for the system measurements and
         known control inputs. These settings can also be overriden using the
         `inputs` keyword.
     inputs, outputs, states : int or list of str, optional
         Set the names of the inputs, outputs, and states, as described in
-        :func:`~control.InputOutputSystem`.  Overrides signal labels.
+        `InputOutputSystem`.  Overrides signal labels.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
 
     Notes
     -----
-    This function can be used with the ``create_statefbk_iosystem()`` function
+    This function can be used with the `create_statefbk_iosystem()` function
     to create a closed loop, output-feedback, state space controller::
 
         K, _, _ = ct.lqr(sys, Q, R)
@@ -424,7 +424,7 @@ def create_estimator_iosystem(
 
         resp = ct.input_output_response(est, T, [Y, U], [X0, P0])
 
-    If desired, the ``correct`` parameter can be set to ``False`` to allow
+    If desired, the `correct` parameter can be set to `False` to allow
     prediction with no additional measurement information::
 
         resp = ct.input_output_response(

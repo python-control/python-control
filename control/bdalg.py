@@ -7,8 +7,8 @@
 
 """Block diagram algebra.
 
-The :mod:`control.bdalg` module contains some standard block diagram
-algebra, including series, parallel, and feedback functions.
+This module contains some standard block diagram algebra, including
+series, parallel, and feedback functions.
 
 """
 
@@ -33,12 +33,12 @@ def series(*sys, **kwargs):
 
     Parameters
     ----------
-    sys1, sys2, ..., sysn : scalar, array, or :class:`InputOutputSystem`
+    sys1, sys2, ..., sysn : scalar, array, or `InputOutputSystem`
         I/O systems to combine.
 
     Returns
     -------
-    out : scalar, array, or :class:`InputOutputSystem`
+    out : scalar, array, or `InputOutputSystem`
         Series interconnection of the systems.
 
     Other Parameters
@@ -46,7 +46,7 @@ def series(*sys, **kwargs):
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals.  If not given,
         signal names will be of the form `s[i]` (where `s` is one of `u`,
-        or `y`). See :class:`InputOutputSystem` for more information.
+        or `y`). See `InputOutputSystem` for more information.
     states : str, or list of str, optional
         List of names for system states.  If not given, state names will be
         of of the form `x[i]` for interconnections of linear systems or
@@ -68,10 +68,9 @@ def series(*sys, **kwargs):
     Notes
     -----
     This function is a wrapper for the __mul__ function in the appropriate
-    :class:`NonlinearIOSystem`, :class:`StateSpace`,
-    :class:`TransferFunction`, or other I/O system class.  The output type
-    is the type of `sys1` unless a more general type is required based on
-    type type of `sys2`.
+    `NonlinearIOSystem`, `StateSpace`, `TransferFunction`, or other I/O
+    system class.  The output type is the type of `sys1` unless a more
+    general type is required based on type type of `sys2`.
 
     If both systems have a defined timebase (dt = 0 for continuous time,
     dt > 0 for discrete time), then the timebase for both systems must
@@ -105,12 +104,12 @@ def parallel(*sys, **kwargs):
 
     Parameters
     ----------
-    sys1, sys2, ..., sysn : scalar, array, or :class:`InputOutputSystem`
+    sys1, sys2, ..., sysn : scalar, array, or `InputOutputSystem`
         I/O systems to combine.
 
     Returns
     -------
-    out : scalar, array, or :class:`InputOutputSystem`
+    out : scalar, array, or `InputOutputSystem`
         Parallel interconnection of the systems.
 
     Other Parameters
@@ -118,7 +117,7 @@ def parallel(*sys, **kwargs):
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals.  If not given,
         signal names will be of the form `s[i]` (where `s` is one of `u`,
-        or `y`). See :class:`InputOutputSystem` for more information.
+        or `y`). See `InputOutputSystem` for more information.
     states : str, or list of str, optional
         List of names for system states.  If not given, state names will be
         of the form `x[i]` for interconnections of linear systems or
@@ -173,12 +172,12 @@ def negate(sys, **kwargs):
 
     Parameters
     ----------
-    sys : scalar, array, or :class:`InputOutputSystem`
+    sys : scalar, array, or `InputOutputSystem`
         I/O systems to negate.
 
     Returns
     -------
-    out : scalar, array, or :class:`InputOutputSystem`
+    out : scalar, array, or `InputOutputSystem`
         Negated system.
 
     Other Parameters
@@ -186,7 +185,7 @@ def negate(sys, **kwargs):
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals.  If not given,
         signal names will be of the form `s[i]` (where `s` is one of `u`,
-        or `y`). See :class:`InputOutputSystem` for more information.
+        or `y`). See `InputOutputSystem` for more information.
     states : str, or list of str, optional
         List of names for system states.  If not given, state names will be
         of of the form `x[i]` for interconnections of linear systems or
@@ -225,7 +224,7 @@ def feedback(sys1, sys2=1, sign=-1, **kwargs):
 
     Parameters
     ----------
-    sys1, sys2 : scalar, array, or :class:`InputOutputSystem`
+    sys1, sys2 : scalar, array, or `InputOutputSystem`
         I/O systems to combine.
     sign : scalar
         The sign of feedback.  `sign` = -1 indicates negative feedback, and
@@ -234,7 +233,7 @@ def feedback(sys1, sys2=1, sign=-1, **kwargs):
 
     Returns
     -------
-    out : scalar, array, or :class:`InputOutputSystem`
+    out : scalar, array, or `InputOutputSystem`
         Feedback interconnection of the systems.
 
     Other Parameters
@@ -242,7 +241,7 @@ def feedback(sys1, sys2=1, sign=-1, **kwargs):
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals.  If not given,
         signal names will be of the form `s[i]` (where `s` is one of `u`,
-        or `y`). See :class:`InputOutputSystem` for more information.
+        or `y`). See `InputOutputSystem` for more information.
     states : str, or list of str, optional
         List of names for system states.  If not given, state names will be
         of of the form `x[i]` for interconnections of linear systems or
@@ -320,15 +319,22 @@ def append(*sys, **kwargs):
 
     Parameters
     ----------
-    sys1, sys2, ..., sysn : scalar, array, or :class:`LTI`
+    sys1, sys2, ..., sysn : scalar, array, or `LTI`
         I/O systems to combine.
+
+    Returns
+    -------
+    out : `LTI`
+        Combined system, with input/output vectors consisting of all
+        input/output vectors appended. Specific type returned is the type of
+        the first argument.
 
     Other Parameters
     ----------------
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals.  If not given,
         signal names will be of the form `s[i]` (where `s` is one of `u`,
-        or `y`). See :class:`InputOutputSystem` for more information.
+        or `y`). See `InputOutputSystem` for more information.
     states : str, or list of str, optional
         List of names for system states.  If not given, state names will be
         of of the form `x[i]` for interconnections of linear systems or
@@ -336,13 +342,6 @@ def append(*sys, **kwargs):
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
-
-    Returns
-    -------
-    out : :class:`LTI`
-        Combined system, with input/output vectors consisting of all
-        input/output vectors appended. Specific type returned is the type of
-        the first argument.
 
     See Also
     --------
@@ -374,7 +373,7 @@ def connect(sys, Q, inputv, outputv):
 
     .. deprecated:: 0.10.0
         `connect` will be removed in a future version of python-control.
-        Use :func:`interconnect` instead, which works with named signals.
+        Use `interconnect` instead, which works with named signals.
 
     The system `sys` is a system typically constructed with `append`, with
     multiple inputs and outputs.  The inputs and outputs are connected
@@ -387,7 +386,7 @@ def connect(sys, Q, inputv, outputv):
 
     Parameters
     ----------
-    sys : :class:`InputOutputSystem`
+    sys : `InputOutputSystem`
         System to be connected.
     Q : 2D array
         Interconnection matrix. First column gives the input to be connected.
@@ -403,7 +402,7 @@ def connect(sys, Q, inputv, outputv):
 
     Returns
     -------
-    out : :class:`InputOutputSystem`
+    out : `InputOutputSystem`
         Connected and trimmed I/O system.
 
     See Also
@@ -412,8 +411,7 @@ def connect(sys, Q, inputv, outputv):
 
     Notes
     -----
-    The :func:`~control.interconnect` function in the :ref:`input/output
-    systems <iosys-module>` module allows the use of named signals and
+    The `interconnect` function allows the use of named signals and
     provides an alternative method for interconnecting multiple systems.
 
     Examples
@@ -490,7 +488,7 @@ def combine_tf(tf_array, **kwargs):
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals.  If not given,
         signal names will be of the form `s[i]` (where `s` is one of `u`,
-        or `y`). See :class:`InputOutputSystem` for more information.
+        or `y`). See `InputOutputSystem` for more information.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
@@ -500,7 +498,7 @@ def combine_tf(tf_array, **kwargs):
     ValueError
         If timesteps of transfer functions do not match.
     ValueError
-        If ``tf_array`` has incorrect dimensions.
+        If `tf_array` has incorrect dimensions.
     ValueError
         If the transfer functions in a row have mismatched output or input
         dimensions.

@@ -83,28 +83,28 @@ def time_response_plot(
         signals are plotted from left to right, starting with the inputs
         (if plotted) and then the outputs.  Multi-trace responses are
         stacked vertically.
-    *fmt : :func:`matplotlib.pyplot.plot` format string, optional
+    *fmt : `matplotlib.pyplot.plot` format string, optional
         Passed to `matplotlib` as the format string for all lines in the plot.
-    **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
+    **kwargs : `matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
     Returns
     -------
-    cplt : :class:`ControlPlot` object
+    cplt : `ControlPlot` object
         Object containing the data that were plotted:
 
-          * cplt.lines: Array of :class:`matplotlib.lines.Line2D` objects
+          * cplt.lines: Array of `matplotlib.lines.Line2D` objects
             for each line in the plot.  The shape of the array matches the
             subplots shape and the value of the array is a list of Line2D
             objects in that subplot.
 
-          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+          * cplt.axes: 2D array of `matplotlib.axes.Axes` for the plot.
 
-          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+          * cplt.figure: `matplotlib.figure.Figure` containing the plot.
 
           * cplt.legend: legend object(s) contained in the plot
 
-        See :class:`ControlPlot` for more detailed information.
+        See `ControlPlot` for more detailed information.
 
     Other Parameters
     ----------------
@@ -129,7 +129,7 @@ def time_response_plot(
         Location of the legend for multi-axes plots.  Specifies an array
         of legend location strings matching the shape of the subplots, with
         each entry being either None (for no legend) or a legend location
-        string (see :func:`~matplotlib.pyplot.legend`).
+        string (see `~matplotlib.pyplot.legend`).
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'center right',
         with no legend for a single response.  Use False to suppress legend.
@@ -144,9 +144,9 @@ def time_response_plot(
         when new data are added.  If set to `False`, just plot new data on
         existing axes.
     show_legend : bool, optional
-        Force legend to be shown if ``True`` or hidden if ``False``.  If
-        ``None``, then show legend when there is more than one line on an
-        axis or ``legend_loc`` or ``legend_map`` has been specified.
+        Force legend to be shown if `True` or hidden if `False`.  If
+        `None`, then show legend when there is more than one line on an
+        axis or `legend_loc` or `legend_map` has been specified.
     time_label : str, optional
         Label to use for the time axis.
     title : str, optional
@@ -674,12 +674,12 @@ def time_response_plot(
 def combine_time_responses(response_list, trace_labels=None, title=None):
     """Combine individual time responses into multi-trace response.
 
-    This function combines multiple instances of :class:`TimeResponseData`
-    into a multi-trace :class:`TimeResponseData` object.
+    This function combines multiple instances of `TimeResponseData`
+    into a multi-trace `TimeResponseData` object.
 
     Parameters
     ----------
-    response_list : list of :class:`TimeResponseData` objects
+    response_list : list of `TimeResponseData` objects
         Reponses to be combined.
     trace_labels : list of str, optional
         List of labels for each trace.  If not specified, trace names are
@@ -690,7 +690,7 @@ def combine_time_responses(response_list, trace_labels=None, title=None):
 
     Returns
     -------
-    data : :class:`TimeResponseData`
+    data : `TimeResponseData`
         Multi-trace input/output data.
 
     """

@@ -4,7 +4,7 @@
 r"""1D Bezier curve basis functions.
 
 The :mod:`control.flatsys.bezier` module defines the
-:class:`BezierFamily` class, which implements a set of basis functions
+`BezierFamily` class, which implements a set of basis functions
 based on Bezier curves:
 
 .. math:: \phi_i(t) = \sum_{i=0}^n {n \choose i} (T - t)^{n-i} t^i

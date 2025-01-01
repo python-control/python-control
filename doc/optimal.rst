@@ -316,11 +316,12 @@ solutions do not seem close to optimal, here are a few things to try:
   `input_output_response` (as done above).
 
 * Use a smooth basis: as an alternative to parameterizing the optimal
-  control inputs using the value of the control at the listed time points,
-  you can specify a set of basis functions using the `basis` keyword in
-  :func:`solve_ocp` and then parameterize the controller by linear
-  combination of the basis functions.  The :mod:`!control.flatsys` module
-  defines several sets of basis functions that can be used.
+  control inputs using the value of the control at the listed time
+  points, you can specify a set of basis functions using the `basis`
+  keyword in :func:`solve_ocp` and then parameterize the controller by
+  linear combination of the basis functions.  The :ref:`flatsys
+  sub-package <flatsys-module>` defines several sets of basis
+  functions that can be used.
 
 * Tweak the optimizer: by using the `minimize_method`, `minimize_options`,
   and `minimize_kwargs` keywords in :func:`solve_ocp`, you can

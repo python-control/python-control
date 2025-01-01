@@ -151,7 +151,7 @@ def model_reduction(
 
     States, inputs, and outputs can be specified using integer offsets or
     using signal names.  Slices can also be specified, but must use the
-    Python ``slice()`` function.
+    Python `slice()` function.
 
     """
     if not isinstance(sys, StateSpace):
@@ -275,7 +275,7 @@ def balanced_reduction(sys, orders, method='truncate', alpha=None):
         Desired order of reduced order model (if a vector, returns a vector
         of systems).
     method : string
-        Method of removing states, either ``'truncate'`` or ``'matchdc'``..
+        Method of removing states, either `'truncate'` or `'matchdc'`..
     alpha : float
         Redefines the stability boundary for eigenvalues of the system
         matrix A.  By default for continuous-time systems, alpha <= 0
@@ -293,7 +293,7 @@ def balanced_reduction(sys, orders, method='truncate', alpha=None):
     Raises
     ------
     ValueError
-        If `method` is not ``'truncate'`` or ``'matchdc'``
+        If `method` is not `'truncate'` or `'matchdc'`
     ImportError
         if slycot routine ab09ad, ab09md, or ab09nd is not found
 
@@ -441,8 +441,8 @@ def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
 
     The function can be called with 2 arguments:
 
-    * ``sysd, S = eigensys_realization(data, r)``
-    * ``sysd, S = eigensys_realization(YY, r)``
+    * `sysd, S = eigensys_realization(data, r)`
+    * `sysd, S = eigensys_realization(YY, r)`
 
     where `data` is a `TimeResponseData` object, `YY` is a 1D or 3D
     array, and r is an integer.
@@ -554,10 +554,10 @@ def markov(*args, m=None, transpose=False, dt=None, truncate=False):
 
     The function can be called with either 1, 2 or 3 arguments:
 
-    * ``H = markov(data)``
-    * ``H = markov(data, m)``
-    * ``H = markov(Y, U)``
-    * ``H = markov(Y, U, m)``
+    * `H = markov(data)`
+    * `H = markov(data, m)`
+    * `H = markov(Y, U)`
+    * `H = markov(Y, U, m)`
 
     where `data` is a `TimeResponseData` object, `YY` is a 1D or 3D
     array, and r is an integer.

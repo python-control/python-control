@@ -45,7 +45,7 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
         the root locus and step response. If it is desired to see a different
         step response than feedback(K*sys,1), such as a disturbance response,
         sys can be provided as a two-input, two-output system (e.g. by using
-        :func:`bdgalg.connect' or :func:`iosys.interconnect`). For two-input,
+        `bdgalg.connect' or `iosys.interconnect`). For two-input,
         two-output system, sisotool inserts the negative of the selected gain
         K between the first output and first input and uses the second input
         and output for computing the step response. To see the disturbance
@@ -63,7 +63,7 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
         (see :doc:`matplotlib:api/axes_api`).
     ylim_rlocus : tuple or list, optional
         Control of y-axis range.
-    plotstr_rlocus : :func:`matplotlib.pyplot.plot` format string, optional
+    plotstr_rlocus : `matplotlib.pyplot.plot` format string, optional
         Plotting style for the root locus plot(color, linestyle, etc).
     rlocus_grid : boolean (default = False)
         If True plot s- or z-plane grid.
@@ -326,7 +326,7 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
 
     Parameters
     ----------
-    plant : :class:`LTI` (:class:`TransferFunction` or :class:`StateSpace` system)
+    plant : `LTI` (`TransferFunction` or `StateSpace` system)
         The dynamical system to be controlled.
     gain : string, optional
         Which gain to vary by `deltaK`. Must be one of `'P'`, `'I'`, or `'D'`
@@ -345,8 +345,8 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
         The time constant associated with the pole in the continuous-time
         derivative term. This is required to make the derivative transfer
         function proper.
-    C_ff : float or :class:`LTI` system, optional
-        Feedforward controller. If :class:`LTI`, must have timebase that is
+    C_ff : float or `LTI` system, optional
+        Feedforward controller. If `LTI`, must have timebase that is
         compatible with plant.
     derivative_in_feedback_path : bool, optional
         Whether to place the derivative term in feedback transfer function

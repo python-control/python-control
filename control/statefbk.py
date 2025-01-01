@@ -66,10 +66,10 @@ def place(A, B, p):
     Notes
     -----
     Algorithm
-        This is a wrapper function for :func:`scipy.signal.place_poles`, which
+        This is a wrapper function for `scipy.signal.place_poles`, which
         implements the Tits and Yang algorithm [1]_. It will handle SISO,
         MISO, and MIMO systems. If you want more control over the algorithm,
-        use :func:`scipy.signal.place_poles` directly.
+        use `scipy.signal.place_poles` directly.
 
     Limitations
         The algorithm will not place poles at the same location more
@@ -267,10 +267,10 @@ def lqr(*args, **kwargs):
 
     The function can be called with either 3, 4, or 5 arguments:
 
-    * ``K, S, E = lqr(sys, Q, R)``
-    * ``K, S, E = lqr(sys, Q, R, N)``
-    * ``K, S, E = lqr(A, B, Q, R)``
-    * ``K, S, E = lqr(A, B, Q, R, N)``
+    * `K, S, E = lqr(sys, Q, R)`
+    * `K, S, E = lqr(sys, Q, R, N)`
+    * `K, S, E = lqr(A, B, Q, R)`
+    * `K, S, E = lqr(A, B, Q, R, N)`
 
     where `sys` is an `LTI` object, and `A`, `B`, `Q`, `R`, and `N` are
     2D arrays or matrices of appropriate dimension.
@@ -315,7 +315,7 @@ def lqr(*args, **kwargs):
     -----
     If the first argument is an LTI object, then this object will be used
     to define the dynamics and input matrices.  Furthermore, if the LTI
-    object corresponds to a discrete time system, the ``dlqr()`` function
+    object corresponds to a discrete time system, the `dlqr()` function
     will be called.
 
     Examples
@@ -413,12 +413,12 @@ def dlqr(*args, **kwargs):
 
     The function can be called with either 3, 4, or 5 arguments:
 
-    * ``dlqr(dsys, Q, R)``
-    * ``dlqr(dsys, Q, R, N)``
-    * ``dlqr(A, B, Q, R)``
-    * ``dlqr(A, B, Q, R, N)``
+    * `dlqr(dsys, Q, R)`
+    * `dlqr(dsys, Q, R, N)`
+    * `dlqr(A, B, Q, R)`
+    * `dlqr(A, B, Q, R, N)`
 
-    where `dsys` is a discrete-time :class:`StateSpace` system, and `A`, `B`,
+    where `dsys` is a discrete-time `StateSpace` system, and `A`, `B`,
     `Q`, `R`, and `N` are 2d arrays of appropriate dimension (`dsys.dt` must
     not be 0.)
 
@@ -426,7 +426,7 @@ def dlqr(*args, **kwargs):
     ----------
     A, B : 2D array
         Dynamics and input matrices.
-    dsys : LTI :class:`StateSpace`
+    dsys : LTI `StateSpace`
         Discrete-time linear system.
     Q, R : 2D array
         State and input weight matrices.
@@ -639,14 +639,14 @@ def create_statefbk_iosystem(
     gainsched_method : str, optional
         The method to use for gain scheduling.  Possible values are 'linear'
         (default), 'nearest', and 'cubic'.  More information is available in
-        :func:`scipy.interpolate.griddata`. For points outside of the convex
+        `scipy.interpolate.griddata`. For points outside of the convex
         hull of the scheduling points, the gain at the nearest point is
         used.
 
     controller_type : 'linear' or 'nonlinear', optional
         Set the type of controller to create. The default for a linear gain
         is a linear controller implementing the LQR regulator. If the type
-        is 'nonlinear', a :class:NonlinearIOSystem is created instead, with
+        is 'nonlinear', a NonlinearIOSystem is created instead, with
         the gain `K` as a parameter (allowing modifications of the gain at
         runtime). If the gain parameter is a tuple, then a nonlinear,
         gain-scheduled controller is created.

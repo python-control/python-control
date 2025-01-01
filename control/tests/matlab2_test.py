@@ -87,7 +87,7 @@ class TestControlMatlab:
         Z, P, k = scipy.signal.tf2zpk(num[0][-1], den)
         sys_ss = ss(A, B, C, D)
 
-        #Compute the gain with ``dcgain``
+        #Compute the gain with `dcgain`
         gain_abcd = dcgain(A, B, C, D)
         gain_zpk = dcgain(Z, P, k)
         gain_numden = dcgain(np.squeeze(num), den)
@@ -109,7 +109,7 @@ class TestControlMatlab:
                                   decimal=6)
 
     def test_step(self, SISO_mats, MIMO_mats, mplcleanup):
-        """Test function ``step``."""
+        """Test function `step`."""
         figure(); plot_shape = (1, 3)
 
         #Test SISO system
@@ -320,12 +320,12 @@ class TestControlMatlab:
         #T is None; - special handling: Value error
         self.assertRaises(ValueError, lsim(sys, U=0, T=None, x0=0))
         #T="hello" : Wrong type
-        #TODO: better wording of error messages of ``lsim`` and
-        #      ``_check_convert_array``, when wrong type is given.
+        #TODO: better wording of error messages of `lsim` and
+        #      `_check_convert_array`, when wrong type is given.
         #      Current error message is too cryptic.
         self.assertRaises(TypeError, lsim(sys, U=0, T="hello", x0=0))
         #T=0; - T can not be zero dimensional, it determines the size of the
-        #       input vector ``U``
+        #       input vector `U`
         self.assertRaises(ValueError, lsim(sys, U=0, T=0, x0=0))
         #T is not monotonically increasing
         self.assertRaises(ValueError, lsim(sys, U=0, T=[0., 1., 2., 2., 3.], x0=0))
@@ -333,7 +333,7 @@ class TestControlMatlab:
 
     def assert_systems_behave_equal(self, sys1, sys2):
         '''
-        Test if the behavior of two LTI systems is equal. Raises ``AssertionError``
+        Test if the behavior of two LTI systems is equal. Raises `AssertionError`
         if the systems are not equal.
 
         Works only for SISO systems.
@@ -343,7 +343,7 @@ class TestControlMatlab:
         #gain of both systems must be the same
         assert_array_almost_equal(dcgain(sys1), dcgain(sys2))
 
-        #Results of ``step`` simulation must be the same too
+        #Results of `step` simulation must be the same too
         y1, t1 = step(sys1)
         y2, t2 = step(sys2, t1)
         assert_array_almost_equal(y1, y2)

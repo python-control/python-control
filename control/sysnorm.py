@@ -21,19 +21,19 @@ def _h2norm_slycot(sys, print_warning=True):
 
     See Also
     --------
-    ``slycot.ab13bd`` : the Slycot routine that does the calculation
-    https://github.com/python-control/Slycot/issues/199 : Post on issue with ``ab13bf``
+    `slycot.ab13bd` : the Slycot routine that does the calculation
+    https://github.com/python-control/Slycot/issues/199 : Post on issue with `ab13bf`
 
     """
     try:
         from slycot import ab13bd
     except ImportError:
-        ct.ControlSlycot("Can't find slycot module ``ab13bd``!")
+        ct.ControlSlycot("Can't find slycot module `ab13bd`!")
 
     try:
         from slycot.exceptions import SlycotArithmeticError
     except ImportError:
-        raise ct.ControlSlycot("Can't find slycot class ``SlycotArithmeticError``!")
+        raise ct.ControlSlycot("Can't find slycot class `SlycotArithmeticError`!")
 
     A, B, C, D = ct.ssdata(ct.ss(sys))
 
@@ -82,7 +82,7 @@ def system_norm(system, p=2, tol=1e-6, print_warning=True, method=None):
 
     Parameters
     ----------
-    system : LTI (:class:`StateSpace` or :class:`TransferFunction`)
+    system : LTI (`StateSpace` or `TransferFunction`)
         System in continuous or discrete time for which the norm should
         be computed.
     p : int or str

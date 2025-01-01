@@ -87,6 +87,9 @@ Module classes and functions
 .. autosummary::
    :template: custom-class-template.rst
 
+   describing_function
+   describing_function_response
+   describing_function_plot
    DescribingFunctionNonlinearity
    friction_backlash_nonlinearity
    relay_hysteresis_nonlinearity

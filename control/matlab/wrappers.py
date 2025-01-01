@@ -112,8 +112,8 @@ def nyquist(*args, plot=True, **kwargs):
         Set of frequencies to be evaluated, in rad/sec.
     omega_limits : array_like of two values
         Set limits for plotted frequency range. If Hz=True the limits are
-        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
-        elements is equivalent to providing ``omega_limits``.
+        in Hz otherwise in rad/s.  Specifying `omega` as a list of two
+        elements is equivalent to providing `omega_limits`.
     plot : bool
         If `False`, do not generate a plot.
 
@@ -243,7 +243,7 @@ def rlocus(*args, **kwargs):
 
     Notes
     -----
-    This function is a wrapper for :func:`~control.root_locus_plot`,
+    This function is a wrapper for `root_locus_plot`,
     with legacy return arguments.
 
     """
@@ -275,7 +275,7 @@ def pzmap(*args, **kwargs):
     sys : LTI (StateSpace or TransferFunction)
         Linear system for which poles and zeros are computed.
     plot : bool, optional
-        If ``True`` a graph is generated with Matplotlib,
+        If `True` a graph is generated with Matplotlib,
         otherwise the poles and zeros are only computed and returned.
     grid : boolean (default = False)
         If True plot omega-damping grid.
@@ -289,7 +289,7 @@ def pzmap(*args, **kwargs):
 
     Notes
     -----
-    This function is a wrapper for :func:`~control.pole_zero_plot`,
+    This function is a wrapper for `pole_zero_plot`,
     with legacy return arguments.
 
     """
@@ -351,7 +351,7 @@ def dcgain(*args):
     Notes
     -----
     This function is only useful for systems with invertible system
-    matrix ``A``.
+    matrix `A`.
 
     All systems are first converted to state space form. The function then
     computes:
@@ -373,7 +373,7 @@ def dcgain(*args):
         sys, = args
         return sys.dcgain()
     else:
-        raise ValueError("Function ``dcgain`` needs either 1, 2, 3 or 4 "
+        raise ValueError("Function `dcgain` needs either 1, 2, 3 or 4 "
                          "arguments.")
 
 
@@ -394,7 +394,7 @@ def connect(*args):
 
     Parameters
     ----------
-    sys : :class:`InputOutputSystem`
+    sys : `InputOutputSystem`
         System to be connected.
     Q : 2D array
         Interconnection matrix. First column gives the input to be connected.
@@ -410,7 +410,7 @@ def connect(*args):
 
     Returns
     -------
-    out : :class:`InputOutputSystem`
+    out : `InputOutputSystem`
         Connected and trimmed I/O system.
 
     See Also

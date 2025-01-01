@@ -99,13 +99,13 @@ def bode_plot(
     Parameters
     ----------
     data : list of `FrequencyResponseData` or `LTI`
-        List of LTI systems or :class:`FrequencyResponseData` objects.  A
+        List of LTI systems or `FrequencyResponseData` objects.  A
         single system or frequency response can also be passed.
     omega : array_like, optoinal
         Set of frequencies in rad/sec to plot over.  If not specified, this
         will be determined from the proporties of the systems.  Ignored if
         `data` is not a list of systems.
-    *fmt : :func:`matplotlib.pyplot.plot` format string, optional
+    *fmt : `matplotlib.pyplot.plot` format string, optional
         Passed to `matplotlib` as the format string for all lines in the plot.
         The `omega` parameter must be present (use omega=None if needed).
     dB : bool
@@ -121,26 +121,26 @@ def bode_plot(
         graphs and display the margins at the top of the graph.  If set to
         'overlay', the values for the gain and phase margin are placed on
         the graph.  Setting display_margins turns off the axes grid.
-    **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
+    **kwargs : `matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
     Returns
     -------
-    cplt : :class:`ControlPlot` object
+    cplt : `ControlPlot` object
         Object containing the data that were plotted:
 
-          * cplt.lines: Array of :class:`matplotlib.lines.Line2D` objects
+          * cplt.lines: Array of `matplotlib.lines.Line2D` objects
             for each line in the plot.  The shape of the array matches the
             subplots shape and the value of the array is a list of Line2D
             objects in that subplot.
 
-          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+          * cplt.axes: 2D array of `matplotlib.axes.Axes` for the plot.
 
-          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+          * cplt.figure: `matplotlib.figure.Figure` containing the plot.
 
           * cplt.legend: legend object(s) contained in the plot
 
-        See :class:`ControlPlot` for more detailed information.
+        See `ControlPlot` for more detailed information.
 
     Other Parameters
     ----------------
@@ -170,16 +170,16 @@ def bode_plot(
         Location of the legend for multi-axes plots.  Specifies an array
         of legend location strings matching the shape of the subplots, with
         each entry being either None (for no legend) or a legend location
-        string (see :func:`~matplotlib.pyplot.legend`).
+        string (see `~matplotlib.pyplot.legend`).
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'center right',
         with no legend for a single response.  Use False to suppress legend.
     margins_method : str, optional
-        Method to use in computing margins (see :func:`stability_margins`).
+        Method to use in computing margins (see `stability_margins`).
     omega_limits : array_like of two values
         Set limits for plotted frequency range. If Hz=True the limits are
-        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
-        elements is equivalent to providing ``omega_limits``. Ignored if
+        in Hz otherwise in rad/s.  Specifying `omega` as a list of two
+        elements is equivalent to providing `omega_limits`. Ignored if
         data is not a list of systems.
     omega_num : int
         Number of samples to use for the frequeny range.  Defaults to
@@ -208,9 +208,9 @@ def bode_plot(
         'col', for `share_frequency`, and can be set using
         config.defaults['freqplot.share_<axis>'].
     show_legend : bool, optional
-        Force legend to be shown if ``True`` or hidden if ``False``.  If
-        ``None``, then show legend when there is more than one line on an
-        axis or ``legend_loc`` or ``legend_map`` has been specified.
+        Force legend to be shown if `True` or hidden if `False`.  If
+        `None`, then show legend when there is more than one line on an
+        axis or `legend_loc` or `legend_map` has been specified.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
     title_frame : str, optional
@@ -235,17 +235,17 @@ def bode_plot(
     Notes
     -----
     Starting with python-control version 0.10, `bode_plot` returns a
-    :class:`ControlPlot` object instead of magnitude, phase, and
+    `ControlPlot` object instead of magnitude, phase, and
     frequency. To recover the old behavior, call `bode_plot` with
     `plot=True`, which will force the legacy values (mag, phase, omega) to
     be returned (with a warning).  To obtain just the frequency response of
     a system (or list of systems) without plotting, use the
-    :func:`~control.frequency_response` command.
+    `frequency_response` command.
 
     If a discrete time model is given, the frequency response is plotted
-    along the upper branch of the unit circle, using the mapping ``z =
-    exp(1j * omega * dt)`` where `omega` ranges from 0 to `pi/dt` and `dt`
-    is the discrete timebase.  If timebase not specified (``dt=True``),
+    along the upper branch of the unit circle, using the mapping `z =
+    exp(1j * omega * dt)` where `omega` ranges from 0 to `pi/dt` and `dt`
+    is the discrete timebase.  If timebase not specified (`dt=True`),
     `dt` is set to 1.
 
     The default values for Bode plot configuration parameters can be reset
@@ -1102,7 +1102,7 @@ class NyquistResponseData:
     Nyquist contour analysis allows the stability and robustness of a
     closed loop linear system to be evaluated using the open loop response
     of the loop transfer function.  The NyquistResponseData class is used
-    by the :func:`~control.nyquist_response` function to return the
+    by the `nyquist_response` function to return the
     response of a linear system along the Nyquist 'D' contour.  The
     response object can be used to obtain information about the Nyquist
     response or to generate a Nyquist plot.
@@ -1186,7 +1186,7 @@ def nyquist_response(
 
     Returns
     -------
-    responses : list of :class:`~control.NyquistResponseData`
+    responses : list of `NyquistResponseData`
         For each system, a Nyquist response data object is returned.  If
         `sysdata` is a single system, a single elemeent is returned (not a
         list).  For each response, the following information is available:
@@ -1218,8 +1218,8 @@ def nyquist_response(
         config.defaults['nyquist.indent_radius'].
     omega_limits : array_like of two values
         Set limits for plotted frequency range. If Hz=True the limits are
-        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
-        elements is equivalent to providing ``omega_limits``.
+        in Hz otherwise in rad/s.  Specifying `omega` as a list of two
+        elements is equivalent to providing `omega_limits`.
     omega_num : int, optional
         Number of samples to use for the frequeny range.  Defaults to
         config.defaults['freqplot.number_of_samples'].
@@ -1232,9 +1232,9 @@ def nyquist_response(
     Notes
     -----
     1. If a discrete time model is given, the frequency response is computed
-       along the upper branch of the unit circle, using the mapping ``z =
-       exp(1j * omega * dt)`` where `omega` ranges from 0 to `pi/dt` and `dt`
-       is the discrete timebase.  If timebase not specified (``dt=True``),
+       along the upper branch of the unit circle, using the mapping `z =
+       exp(1j * omega * dt)` where `omega` ranges from 0 to `pi/dt` and `dt`
+       is the discrete timebase.  If timebase not specified (`dt=True`),
        `dt` is set to 1.
 
     2. If a continuous-time system contains poles on or near the imaginary
@@ -1540,14 +1540,14 @@ def nyquist_plot(
     ----------
     data : list of LTI or NyquistResponseData
         List of linear input/output systems (single system is OK) or
-        Nyquist ersponses (computed using :func:`~control.nyquist_response`).
+        Nyquist ersponses (computed using `nyquist_response`).
         Nyquist curves for each system are plotted on the same graph.
     omega : array_like, optional
         Set of frequencies to be evaluated, in rad/sec. Specifying
-        ``omega`` as a list of two elements is equivalent to providing
-        ``omega_limits``.
+        `omega` as a list of two elements is equivalent to providing
+        `omega_limits`.
     unit_circle : bool, optional
-        If ``True``, display the unit circle, to read gain crossover
+        If `True`, display the unit circle, to read gain crossover
         frequency.  The circle style is determined by
         config.defaults['nyquist.circle_style'].
     mt_circles : array_like, optional
@@ -1555,15 +1555,15 @@ def nyquist_plot(
     ms_circles : array_like, optional
         Draw circles corresponding to the given magnitudes of complementary
         sensitivity.
-    **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
+    **kwargs : `matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
     Returns
     -------
-    cplt : :class:`ControlPlot` object
+    cplt : `ControlPlot` object
         Object containing the data that were plotted:
 
-          * cplt.lines: 2D array of :class:`matplotlib.lines.Line2D`
+          * cplt.lines: 2D array of `matplotlib.lines.Line2D`
             objects for each line in the plot.  The shape of the array is
             given by (nsys, 4) where nsys is the number of systems or
             Nyquist responses passed to the function.  The second index
@@ -1574,13 +1574,13 @@ def nyquist_plot(
               - lines[idx, 2]: unscaled portion of the mirror curve
               - lines[idx, 3]: scaled portion of the mirror curve
 
-          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+          * cplt.axes: 2D array of `matplotlib.axes.Axes` for the plot.
 
-          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+          * cplt.figure: `matplotlib.figure.Figure` containing the plot.
 
           * cplt.legend: legend object(s) contained in the plot
 
-        See :class:`ControlPlot` for more detailed information.
+        See `ControlPlot` for more detailed information.
 
     Other Parameters
     ----------------
@@ -1646,8 +1646,8 @@ def nyquist_plot(
         determined by config.defaults['nyquist.mirror_style'].
     omega_limits : array_like of two values
         Set limits for plotted frequency range. If Hz=True the limits are
-        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
-        elements is equivalent to providing ``omega_limits``.
+        in Hz otherwise in rad/s.  Specifying `omega` as a list of two
+        elements is equivalent to providing `omega_limits`.
     omega_num : int, optional
         Number of samples to use for the frequeny range.  Defaults to
         config.defaults['freqplot.number_of_samples'].  Ignored if data is
@@ -1668,9 +1668,9 @@ def nyquist_plot(
         (legacy) If 'True', return the encirclement count and Nyquist
         contour used to generate the Nyquist plot.
     show_legend : bool, optional
-        Force legend to be shown if ``True`` or hidden if ``False``.  If
-        ``None``, then show legend when there is more than one line on the
-        plot or ``legend_loc`` has been specified.
+        Force legend to be shown if `True` or hidden if `False`.  If
+        `None`, then show legend when there is more than one line on the
+        plot or `legend_loc` has been specified.
     start_marker : str, optional
         Matplotlib marker to use to mark the starting point of the Nyquist
         plot.  Defaults value is 'o' and can be set using
@@ -1698,9 +1698,9 @@ def nyquist_plot(
     Notes
     -----
     1. If a discrete time model is given, the frequency response is computed
-       along the upper branch of the unit circle, using the mapping ``z =
-       exp(1j * omega * dt)`` where `omega` ranges from 0 to `pi/dt` and `dt`
-       is the discrete timebase.  If timebase not specified (``dt=True``),
+       along the upper branch of the unit circle, using the mapping `z =
+       exp(1j * omega * dt)` where `omega` ranges from 0 to `pi/dt` and `dt`
+       is the discrete timebase.  If timebase not specified (`dt=True`),
        `dt` is set to 1.
 
     2. If a continuous-time system contains poles on or near the imaginary
@@ -2120,8 +2120,8 @@ def gangof4_response(
         Range of frequencies (list or bounds) in rad/sec.
     omega_limits : array_like of two values
         Set limits for plotted frequency range. If Hz=True the limits are
-        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
-        elements is equivalent to providing ``omega_limits``. Ignored if
+        in Hz otherwise in rad/s.  Specifying `omega` as a list of two
+        elements is equivalent to providing `omega_limits`. Ignored if
         data is not a list of systems.
     omega_num : int
         Number of samples to use for the frequeny range.  Defaults to
@@ -2133,7 +2133,7 @@ def gangof4_response(
 
     Returns
     -------
-    response : :class:`~control.FrequencyResponseData`
+    response : `FrequencyResponseData`
         Frequency response with inputs 'r' and 'd' and outputs 'y', and 'u'
         representing the 2x2 matrix of transfer functions in the Gang of 4.
 
@@ -2207,8 +2207,8 @@ def gangof4_plot(
         Range of frequencies (list or bounds) in rad/sec.
     omega_limits : array_like of two values
         Set limits for plotted frequency range. If Hz=True the limits are
-        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
-        elements is equivalent to providing ``omega_limits``. Ignored if
+        in Hz otherwise in rad/s.  Specifying `omega` as a list of two
+        elements is equivalent to providing `omega_limits`. Ignored if
         data is not a list of systems.
     omega_num : int
         Number of samples to use for the frequeny range.  Defaults to
@@ -2220,20 +2220,20 @@ def gangof4_plot(
 
     Returns
     -------
-    cplt : :class:`ControlPlot` object
+    cplt : `ControlPlot` object
         Object containing the data that were plotted:
 
-          * cplt.lines: 2x2 array of :class:`matplotlib.lines.Line2D`
+          * cplt.lines: 2x2 array of `matplotlib.lines.Line2D`
             objects for each line in the plot.  The value of each array
             entry is a list of Line2D objects in that subplot.
 
-          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+          * cplt.axes: 2D array of `matplotlib.axes.Axes` for the plot.
 
-          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+          * cplt.figure: `matplotlib.figure.Figure` containing the plot.
 
           * cplt.legend: legend object(s) contained in the plot
 
-        See :class:`ControlPlot` for more detailed information.
+        See `ControlPlot` for more detailed information.
 
     """
     if len(args) == 1 and isinstance(args[0], FrequencyResponseData):
@@ -2284,8 +2284,8 @@ def singular_values_response(
     ----------------
     omega_limits : array_like of two values
         Set limits for plotted frequency range. If Hz=True the limits are
-        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
-        elements is equivalent to providing ``omega_limits``.
+        in Hz otherwise in rad/s.  Specifying `omega` as a list of two
+        elements is equivalent to providing `omega_limits`.
     omega_num : int, optional
         Number of samples to use for the frequeny range.  Defaults to
         config.defaults['freqplot.number_of_samples'].
@@ -2349,11 +2349,11 @@ def singular_values_plot(
     Parameters
     ----------
     data : list of `FrequencyResponseData`
-        List of :class:`FrequencyResponseData` objects.  For backward
+        List of `FrequencyResponseData` objects.  For backward
         compatibility, a list of LTI systems can also be given.
     omega : array_like
         List of frequencies in rad/sec over to plot over.
-    *fmt : :func:`matplotlib.pyplot.plot` format string, optional
+    *fmt : `matplotlib.pyplot.plot` format string, optional
         Passed to `matplotlib` as the format string for all lines in the plot.
         The `omega` parameter must be present (use omega=None if needed).
     dB : bool
@@ -2361,25 +2361,25 @@ def singular_values_plot(
     Hz : bool
         If True, plot frequency in Hz (omega must be provided in rad/sec).
         Default value (False) set by config.defaults['freqplot.Hz'].
-    **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
+    **kwargs : `matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
     Returns
     -------
-    cplt : :class:`ControlPlot` object
+    cplt : `ControlPlot` object
         Object containing the data that were plotted:
 
-          * cplt.lines: 1-D array of :class:`matplotlib.lines.Line2D` objects.
+          * cplt.lines: 1-D array of `matplotlib.lines.Line2D` objects.
             The size of the array matches the number of systems and the
             value of the array is a list of Line2D objects for that system.
 
-          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
+          * cplt.axes: 2D array of `matplotlib.axes.Axes` for the plot.
 
-          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
+          * cplt.figure: `matplotlib.figure.Figure` containing the plot.
 
           * cplt.legend: legend object(s) contained in the plot
 
-        See :class:`ControlPlot` for more detailed information.
+        See `ControlPlot` for more detailed information.
 
     Other Parameters
     ----------------
@@ -2401,8 +2401,8 @@ def singular_values_plot(
         with no legend for a single response.  Use False to suppress legend.
     omega_limits : array_like of two values
         Set limits for plotted frequency range. If Hz=True the limits are
-        in Hz otherwise in rad/s.  Specifying ``omega`` as a list of two
-        elements is equivalent to providing ``omega_limits``.
+        in Hz otherwise in rad/s.  Specifying `omega` as a list of two
+        elements is equivalent to providing `omega_limits`.
     omega_num : int, optional
         Number of samples to use for the frequeny range.  Defaults to
         config.defaults['freqplot.number_of_samples'].  Ignored if data is
@@ -2415,9 +2415,9 @@ def singular_values_plot(
         Override the default parameters used for generating plots.
         Default is set up config.defaults['ctrlplot.rcParams'].
     show_legend : bool, optional
-        Force legend to be shown if ``True`` or hidden if ``False``.  If
-        ``None``, then show legend when there is more than one line on an
-        axis or ``legend_loc`` or ``legend_map`` has been specified.
+        Force legend to be shown if `True` or hidden if `False`.  If
+        `None`, then show legend when there is more than one line on an
+        axis or `legend_loc` or `legend_map` has been specified.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
     title_frame : str, optional
@@ -2700,12 +2700,12 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
         scale in Hz otherwise in rad/s. Omega is always returned in rad/sec.
     number_of_samples : int, optional
         Number of samples to generate.  The default value is read from
-        ``config.defaults['freqplot.number_of_samples'].  If None, then the
+        `config.defaults['freqplot.number_of_samples'].  If None, then the
         default from `numpy.logspace` is used.
     feature_periphery_decades : float, optional
         Defines how many decades shall be included in the frequency range on
         both sides of features (poles, zeros).  The default value is read from
-        ``config.defaults['freqplot.feature_periphery_decades']``.
+        `config.defaults['freqplot.feature_periphery_decades']`.
 
     Returns
     -------

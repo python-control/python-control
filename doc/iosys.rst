@@ -233,7 +233,7 @@ The input to the controller is `u`, consisting of the vector of hare and lynx
 populations followed by the desired lynx population.
 
 To connect the controller to the predatory-prey model, we use the
-:func:`~control.interconnect` function:
+:func:`interconnect` function:
 
 .. code-block:: python
 
@@ -298,8 +298,8 @@ is done:
   given vector is non-zero, a warning is issued.)
 
 Similar processing is done for input time series, used for the
-:func:`~control.input_output_response` and
-:func:`~control.forced_response` commands, with the following
+:func:`input_output_response` and
+:func:`forced_response` commands, with the following
 additional feature:
 
 * Time series elements are broadcast to match the number of time points
@@ -355,7 +355,7 @@ the number of time points.
 Summing junction
 ----------------
 
-The :func:`~control.summing_junction` function can be used to create an
+The :func:`summing_junction` function can be used to create an
 input/output system that takes the sum of an arbitrary number of inputs.  For
 example, to create an input/output system that takes the sum of three inputs,
 use the command
@@ -392,14 +392,14 @@ will produce an input/output block that implements `e[0] = r[0] - y[0]` and
 Automatic connections using signal names
 ----------------------------------------
 
-The :func:`~control.interconnect` function allows the interconnection of
+The :func:`interconnect` function allows the interconnection of
 multiple systems by using signal names of the form `sys.signal`.  In many
 situations, it can be cumbersome to explicitly connect all of the appropriate
 inputs and outputs.  As an alternative, if the `connections` keyword is
-omitted, the :func:`~control.interconnect` function will connect all signals
+omitted, the :func:`interconnect` function will connect all signals
 of the same name to each other.  This can allow for simplified methods of
 interconnecting systems, especially when combined with the
-:func:`~control.summing_junction` function.  For example, the following code
+:func:`summing_junction` function.  For example, the following code
 will create a unity gain, negative feedback system::
 
   P = ct.tf([1], [1, 0], inputs='u', outputs='y')
@@ -410,7 +410,7 @@ will create a unity gain, negative feedback system::
 If a signal name appears in multiple outputs then that signal will be summed
 when it is interconnected.  Similarly, if a signal name appears in multiple
 inputs then all systems using that signal name will receive the same input.
-The :func:`~control.interconnect` function will generate an error if a signal
+The :func:`interconnect` function will generate an error if a signal
 listed in `inplist` or `outlist` (corresponding to the inputs and outputs
 of the interconnected system) is not found, but inputs and outputs of
 individual systems that are not connected to other systems are left
@@ -422,7 +422,7 @@ Advanced specification of signal names
 
 In addition to manual specification of signal names and automatic
 connection of signals with the same name, the
-:func:`~control.interconnect` has a variety of other mechanisms
+:func:`interconnect` has a variety of other mechanisms
 available for specifying signal names.  The following forms are
 recognized for the `connections`, `inplist`, and `outlist`
 parameters::
@@ -517,7 +517,7 @@ of an individual system are used in a given specification::
   )
 
 And finally, since we have named the signals throughout the system in a
-consistent way, we could let :func:`~control.interconnect` do all of the
+consistent way, we could let :func:`interconnect` do all of the
 work::
 
   clsys5 = ct.interconnect(
@@ -526,7 +526,7 @@ work::
 
 Various other simplifications are possible, but it can sometimes be
 complicated to debug error message when things go wrong.  Setting
-`debug=True` when calling :func:`~control.interconnect` prints out
+`debug=True` when calling :func:`interconnect` prints out
 information about how the arguments are processed that may be helpful
 in understanding what is going wrong.
 
@@ -534,7 +534,7 @@ in understanding what is going wrong.
 Automated creation of state feedback systems
 --------------------------------------------
 
-The :func:`~control.create_statefbk_iosystem` function can be used to
+The :func:`create_statefbk_iosystem` function can be used to
 create an I/O system consisting of a state feedback gain (with
 optional integral action and gain scheduling) and an estimator.  A
 basic state feedback controller of the form

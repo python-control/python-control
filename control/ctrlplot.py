@@ -4,8 +4,8 @@
 
 """Utility functions for plotting.
 
-The :mod:`control.ctrlplot` module contains a collection of functions
-that are used by various plotting functions.
+This module contains a collection of functions that are used by
+various plotting functions.
 
 """
 
@@ -129,24 +129,24 @@ class ControlPlot(object):
     that the user might want to adjust, as well as providing methods to
     modify some of the properties of the plot.
 
-    A control figure consists of a :class:`matplotlib.figure.Figure` with
-    an array of :class:`matplotlib.axes.Axes`.  Each axes in the figure has
+    A control figure consists of a `matplotlib.figure.Figure` with
+    an array of `matplotlib.axes.Axes`.  Each axes in the figure has
     a number of lines that represent the data for the plot.  There may also
     be a legend present in one or more of the axes.
 
     Attributes
     ----------
-    lines : array of list of :class:`matplotlib:Line2D`
+    lines : array of list of `matplotlib:Line2D`
         Array of Line2D objects for each line in the plot.  Generally, the
         shape of the array matches the subplots shape and the value of the
         array is a list of Line2D objects in that subplot.  Some plotting
         functions will return variants of this structure, as described in
         the individual documentation for the functions.
-    axes : 2D array of :class:`matplotlib:Axes`
+    axes : 2D array of `matplotlib:Axes`
         Array of Axes objects for each subplot in the plot.
-    figure : :class:`matplotlib:Figure`
+    figure : `matplotlib:Figure`
         Figure on which the Axes are drawn.
-    legend : :class:`matplotlib:.legend.Legend` (instance or ndarray)
+    legend : `matplotlib:.legend.Legend` (instance or ndarray)
         Legend object(s) for the plot.  If more than one legend is
         included, this will be an array with each entry being either None
         (for no legend) or a legend object.
@@ -182,7 +182,7 @@ class ControlPlot(object):
         """Set the title for a control plot.
 
         This is a wrapper for the matplotlib `suptitle` function, but by
-        setting ``frame`` to 'axes' (default) then the title is centered on
+        setting `frame` to 'axes' (default) then the title is centered on
         the midpoint of the axes in the figure, rather than the center of
         the figure.  This usually looks better (particularly with
         multi-panel plots), though it takes longer to render.
@@ -195,7 +195,7 @@ class ControlPlot(object):
             Matplotlib figure.  Defaults to current figure.
         frame : str, optional
             Coordinate frame to use for centering: 'axes' (default) or 'figure'.
-        **kwargs : :func:`matplotlib.pyplot.suptitle` keywords, optional
+        **kwargs : `matplotlib.pyplot.suptitle` keywords, optional
             Additional keywords (passed to matplotlib).
 
         """
@@ -214,7 +214,7 @@ def suptitle(
     """Add a centered title to a figure.
 
     .. deprecated:: 0.10.1
-        Use :func:`ControlPlot.set_plot_title`.
+        Use `ControlPlot.set_plot_title`.
 
     """
     warnings.warn(
@@ -229,7 +229,7 @@ def get_plot_axes(line_array):
 
     .. deprecated:: 0.10.1
         This function will be removed in a future version of python-control.
-        Use `cplt.axes` to obtain axes for an instance of :class:`ControlPlot`.
+        Use `cplt.axes` to obtain axes for an instance of `ControlPlot`.
 
     This function can be used to return the set of axes corresponding
     to the line array that is returned by `time_response_plot`.  This
@@ -278,11 +278,11 @@ def pole_zero_subplots(
         Timebase for each subplot (or a list of timebases).
     scaling : 'auto', 'equal', or None
         Scaling to apply to the subplots.
-    fig : :class:`matplotlib.figure.Figure`
+    fig : `matplotlib.figure.Figure`
         Figure to use for creating subplots.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set up config.default['ctrlplot.rcParams'].
+        Default is set by config.defaults['ctrlplot.rcParams'].
 
     Returns
     -------

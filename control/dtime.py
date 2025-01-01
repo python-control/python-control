@@ -16,7 +16,7 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
 
     Parameters
     ----------
-    sysc : LTI (:class:`StateSpace` or :class:`TransferFunction`)
+    sysc : LTI (`StateSpace` or `TransferFunction`)
         Continuous time system to be converted.
     Ts : float > 0
         Sampling period.
@@ -25,7 +25,7 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
     alpha : float within [0, 1]
         The generalized bilinear transformation weighting parameter, which
         should only be specified with method="gbt", and is ignored
-        otherwise. See :func:`scipy.signal.cont2discrete`.
+        otherwise. See `scipy.signal.cont2discrete`.
     prewarp_frequency : float within [0, infinity)
         The frequency [rad/s] at which to match with the input continuous-
         time system's magnitude and phase (only valid for method='bilinear',
@@ -40,13 +40,13 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
     ----------------
     inputs : int, list of str or None, optional
         Description of the system inputs.  If not specified, the original
-        system inputs are used.  See :class:`InputOutputSystem` for more
+        system inputs are used.  See `InputOutputSystem` for more
         information.
     outputs : int, list of str or None, optional
         Description of the system outputs.  Same format as `inputs`.
     states : int, list of str, or None, optional
         Description of the system states.  Same format as `inputs`. Only
-        available if the system is :class:`StateSpace`.
+        available if the system is `StateSpace`.
     name : string, optional
         Set the name of the sampled system.  If not specified and
         if `copy_names` is `False`, a generic name <sys[id]> is generated
@@ -61,8 +61,8 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
 
     Notes
     -----
-    See :meth:`StateSpace.sample` or :meth:`TransferFunction.sample` for
-    further details.
+    See `StateSpace.sample` or `TransferFunction.sample` for further
+    details.
 
     Examples
     --------

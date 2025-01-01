@@ -4,8 +4,8 @@
 # Creation date: 24 May 2009
 # Use `git shortlog -n -s` for full list of contributors
 
-"""The Python Control Systems Library :mod:`control` provides common functions
-for analyzing and designing feedback control systems.
+"""The Python Control Systems Library (python-control) provides common
+functions for analyzing and designing feedback control systems.
 
 The initial goal for the package is to implement all of the
 functionality required to work through the examples in the textbook
