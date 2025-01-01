@@ -1,5 +1,7 @@
-"""
-Wrappers for the MATLAB compatibility module
+# wrappers.py - Wrappers for the MATLAB compatibility module.
+
+"""Wrappers for the MATLAB compatibility module.
+
 """
 
 import numpy as np

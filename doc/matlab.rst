@@ -21,6 +21,7 @@ Creating linear models
    tf
    ss
    frd
+   zpk
 
 Utility functions and conversions
 =================================
@@ -140,8 +141,8 @@ Additional functions
    gangof4
    unwrap
 
-Functions imported from other modules
-=====================================
+Functions imported from other packages
+======================================
 .. autosummary::
 
    ~numpy.linspace

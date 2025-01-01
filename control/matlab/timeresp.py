@@ -1,7 +1,10 @@
-"""
-Time response routines in the Matlab compatibility package
+# timeresp.py - time response routines in the MATLAB compatibility package
 
-Note that the return arguments are different than in the standard control package.
+"""Time response routines in the MATLAB compatibility package.
+
+Note that the return arguments are different than in the standard
+control package..
+
 """
 
 __all__ = ['step', 'stepinfo', 'impulse', 'initial', 'lsim']
