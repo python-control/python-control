@@ -1,12 +1,13 @@
 # timeplot.py - time plotting functions
 # RMM, 20 Jun 2023
-#
-# This file contains routines for plotting out time responses.  These
-# functions can be called either as standalone functions or access from the
-# TimeDataResponse class.
-#
-# Note: It might eventually make sense to put the functions here
-# directly into timeresp.py.
+
+"""Time plotting functions.
+
+This module contains routines for plotting out time responses.  These
+functions can be called either as standalone functions or access from
+the TimeDataResponse class.
+
+"""
 
 import itertools
 from warnings import warn

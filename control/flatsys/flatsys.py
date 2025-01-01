@@ -1,6 +1,10 @@
 # flatsys.py - trajectory generation for differentially flat systems
 # RMM, 10 Nov 2012
 
+"""Trajectory generation for differentially flat systems.
+
+"""
+
 import itertools
 import warnings
 

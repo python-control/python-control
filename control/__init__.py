@@ -1,7 +1,8 @@
 # __init__.py - initialization for control systems toolbox
 #
-# Author: Richard M. Murray
-# Date: 24 May 2009
+# Initial author: Richard M. Murray
+# Creation date: 24 May 2009
+# Use `git shortlog -n -s` for full list of contributors
 
 """The Python Control Systems Library :mod:`control` provides common functions
 for analyzing and designing feedback control systems.
@@ -20,7 +21,7 @@ Documentation is available in two forms: docstrings provided with the code,
 and the python-control User Guide, available from the `python-control
 homepage <https://www.python-control.org>`_.
 
-The docstring examples assume that the following import commands::
+The docstring examples assume the following import commands::
 
   >>> import numpy as np
   >>> import control as ct
@@ -30,13 +31,16 @@ Available subpackages
 
 The main control package includes the most common functions used in
 analysis, design, and simulation of feedback control systems.  Several
-additional subpackages are available that provide more specialized
-functionality:
+additional subpackages and modules are available that provide more
+specialized functionality:
 
 * :mod:`~control.flatsys`: Differentially flat systems
 * :mod:`~control.matlab`: MATLAB compatibility module
 * :mod:`~control.optimal`: Optimization-based control
 * :mod:`~control.phaseplot`: 2D phase plane diagrams
+
+These subpackages and modules are described in more detail in the
+subpackage and module docstrings and in the User Guide.
 
 """
 

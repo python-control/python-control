@@ -1,9 +1,13 @@
 # grid.py - code to add gridlines to root locus and pole-zero diagrams
-#
-# This code generates grids for pole-zero diagrams (including root locus
-# diagrams).  Rather than just draw a grid in place, it uses the AxisArtist
-# package to generate a custom grid that will scale with the figure.
-#
+
+"""Functions to add gridlines to root locus and pole-zero diagrams.
+
+This code generates grids for pole-zero diagrams (including root locus
+diagrams).  Rather than just draw a grid in place, it uses the
+AxisArtist package to generate a custom grid that will scale with the
+figure.
+
+"""
 
 import matplotlib.pyplot as plt
 import mpl_toolkits.axisartist.angle_helper as angle_helper

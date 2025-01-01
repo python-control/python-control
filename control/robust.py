@@ -1,11 +1,9 @@
 # robust.py - tools for robust control
 #
-# Original authors: Steve Brunton, Kevin Chen, Lauren Padilla
+# Initial authors: Steve Brunton, Kevin Chen, Lauren Padilla
 # Creation date: 24 Dec 2010
 
-"""
-This file contains routines for obtaining reduced order models.
-"""
+"""Robust control synthesis algorithms."""
 
 import warnings
 

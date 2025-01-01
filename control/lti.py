@@ -1,7 +1,10 @@
-"""lti.py
+# lti.py - LTI class and functions for linear systems
 
-The lti module contains the LTI parent class to the child classes StateSpace
-and TransferFunction.  It is designed for use in the python-control library.
+"""LTI class and functions for linear systems.
+
+This module contains the LTI parent class to the child classes
+StateSpace and TransferFunction.
+
 """
 
 import math

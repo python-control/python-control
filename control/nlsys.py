@@ -1,13 +1,11 @@
 # nlsys.py - input/output system module
 # RMM, 28 April 2019
 #
-# Additional features to add
+# Additional features to add:
 #   * Allow constant inputs for MIMO input_output_response (w/out ones)
-#   * Add support for constants/matrices as part of operators (1 + P)
 #   * Add unit tests (and example?) for time-varying systems
 #   * Allow time vector for discrete time simulations to be multiples of dt
 #   * Check the way initial outputs for discrete time systems are handled
-#
 
 """The :mod:`~control.nlsys` module contains the
 :class:`~control.NonlinearIOSystem` class that represents (possibly nonlinear)

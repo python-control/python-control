@@ -1,12 +1,9 @@
-# passivity.py
+# passivity.py - functions for passive control
 #
-# Original author: Mark Yeatman
+# Initial author: Mark Yeatman
 # Creation date: July 17, 2022
 
-"""
-Functions for passive control.
-
-"""
+"""Functions for passive control."""
 
 import numpy as np
 

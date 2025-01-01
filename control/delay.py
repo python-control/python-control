@@ -1,10 +1,9 @@
-# -*-coding: utf-8-*-
-#! TODO: add module docstring
 # delay.py - functions involving time delays
 #
-# Author: Sawyer Fuller
-# Date: 26 Aug 2010
-#
+# Initial author: Sawyer Fuller
+# Creation date: 26 Aug 2010
+
+"""Functions to implement time delays (pade)."""
 
 __all__ = ['pade']
 

@@ -1,8 +1,12 @@
 # ctrlplot.py - utility functions for plotting
-# Richard M. Murray, 14 Jun 2024
+# RMM, 14 Jun 2024
 #
-"""
-Collection of functions that are used by various plotting functions.
+
+"""Utility functions for plotting.
+
+The :mod:`control.ctrlplot` module contains a collection of functions
+that are used by various plotting functions.
+
 """
 
 # Code pattern for control system plotting functions:

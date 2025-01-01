@@ -1,29 +1,25 @@
 # phaseplot.py - generate 2D phase portraits
 #
-# Author: Richard M. Murray
-# Date:   23 Mar 2024 (legacy version information below)
-#
-# TODO
-# * Allow multiple timepoints (and change timespec name to T?)
-# * Update linestyles (color -> linestyle?)
-# * Check for keyword compatibility with other plot routines
-# * Set up configuration parameters (nyquist --> phaseplot)
+# Initial author: Richard M. Murray
+# Creation date: 24 July 2011, converted from MATLAB version (2002);
+# based on an original version by Kristi Morgansen
 
-"""Module for generating 2D phase plane plots.
+"""Generate 2D phase portraits.
 
-The :mod:`control.phaseplot` module contains functions for generating 2D
-phase plots. The base function for creating phase plane portraits is
-:func:`~control.phase_plane_plot`, which generates a phase plane portrait
-for a 2 state I/O system (with no inputs).  In addition, several other
-functions are available to create customized phase plane plots:
+This module contains functions for generating 2D phase plots. The base
+function for creating phase plane portraits is
+:func:`~control.phase_plane_plot`, which generates a phase plane
+portrait for a 2 state I/O system (with no inputs).  In addition,
+several other functions are available to create customized phase plane
+plots:
 
-* boxgrid: Generate a list of points along the edge of a box
-* circlegrid: Generate list of points around a circle
-* equilpoints: Plot equilibrium points in the phase plane
-* meshgrid: Generate a list of points forming a mesh
-* separatrices: Plot separatrices in the phase plane
-* streamlines: Plot stream lines in the phase plane
-* vectorfield: Plot a vector field in the phase plane
+* `phaseplot.boxgrid`: Generate a list of points along the edge of a box
+* `phaseplot.circlegrid`: Generate list of points around a circle
+* `phaseplot.equilpoints`: Plot equilibrium points in the phase plane
+* `phaseplot.meshgrid`: Generate a list of points forming a mesh
+* `phaseplot.separatrices`: Plot separatrices in the phase plane
+* `phaseplot.streamlines`: Plot stream lines in the phase plane
+* `phaseplot.vectorfield`: Plot a vector field in the phase plane
 
 """
 

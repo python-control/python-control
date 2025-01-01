@@ -1,10 +1,13 @@
 # bspline.py - B-spline basis functions
 # RMM, 2 Aug 2022
-#
-# This class implements a set of B-spline basis functions that implement a
-# piecewise polynomial at a set of breakpoints t0, ..., tn with given orders
-# and smoothness.
-#
+
+"""B-spline basis functions.
+
+This module implements a set of B-spline basis functions that
+implement a piecewise polynomial at a set of breakpoints t0, ..., tn
+with given orders and smoothness.
+
+"""
 
 import numpy as np
 from scipy.interpolate import BSpline

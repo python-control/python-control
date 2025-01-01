@@ -1,19 +1,16 @@
 # rlocus.py - code for computing a root locus plot
-# Code contributed by Ryan Krauss, 2010
+#
+# Initial author: Ryan Krauss
+# Creation date: 2010
 #
 # RMM, 17 June 2010: modified to be a standalone piece of code
-#   * Added BSD copyright info to file (per Ryan)
-#   * Added code to convert (num, den) to poly1d's if they aren't already.
-#     This allows Ryan's code to run on a standard signal.ltisys object
-#     or a control.TransferFunction object.
-#   * Added some comments to make sure I understand the code
 #
 # RMM, 2 April 2011: modified to work with new LTI structure (see ChangeLog)
-#   * Not tested: should still work on signal.ltisys objects
 #
 # Sawyer B. Fuller (minster@uw.edu) 21 May 2020:
 #   * added compatibility with discrete-time systems.
-#
+
+"""Code for computing a root locus plot."""
 
 import warnings
 

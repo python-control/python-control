@@ -1,17 +1,8 @@
 # nichols.py - Nichols plot
 #
-# Contributed by Allan McInnes <Allan.McInnes@canterbury.ac.nz>
-#
+# Initial author: Allan McInnes <Allan.McInnes@canterbury.ac.nz>
 
-"""nichols.py
-
-Functions for plotting Black-Nichols charts.
-
-Routines in this module:
-
-nichols.nichols_plot aliased as nichols.nichols
-nichols.nichols_grid
-"""
+"""Functions for plotting Black-Nichols charts."""
 
 import matplotlib.pyplot as plt
 import matplotlib.transforms

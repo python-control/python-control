@@ -1,15 +1,14 @@
 # xferfcn.py - transfer function class and related functions
 #
-# Original author: Richard M. Murray
+# Initial author: Richard M. Murray
 # Creation date: 24 May 2009
 # Pre-2014 revisions: Kevin K. Chen, Dec 2010
 # Use `git shortlog -n -s xferfcn.py` for full list of contributors
 
-"""Transfer function representation and functions.
+"""Transfer function class and related functions.
 
-This module contains the TransferFunction class and also functions that
-operate on transfer functions.  This is the primary representation for the
-python-control library.
+This module contains the :class:`TransferFunction` class and also
+functions that operate on transfer functions.
 
 """
 

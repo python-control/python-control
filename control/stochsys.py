@@ -1,14 +1,11 @@
 # stochsys.py - stochastic systems module
 # RMM, 16 Mar 2022
-#
-# This module contains functions that are intended to be used for analysis
-# and design of stochastic control systems, mainly involving Kalman
-# filtering and its variants.
-#
 
-"""The :mod:`~control.stochsys` module contains functions for analyzing and
-designing stochastic (control) systems, including white noise processes and
-Kalman filtering.
+"""Stochastic systems module.
+
+This module contains functions for analyzing and designing stochastic
+(control) systems, including white noise processes and Kalman
+filtering.
 
 """
 

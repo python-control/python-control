@@ -1,10 +1,12 @@
 # modelsimp.py - tools for model simplification
 #
-# Original authors: Steve Brunton, Kevin Chen, Lauren Padilla
+# Initial authors: Steve Brunton, Kevin Chen, Lauren Padilla
 # Creation date: 30 Nov 2010
 
-"""The :mod:`modelsimp` module contains routines for obtaining reduced
-order models for state space systems.
+"""Tools for model simplification.
+
+This module contains routines for obtaining reduced order models for state
+space systems.
 
 """
 

@@ -1,12 +1,15 @@
 # config.py - package defaults
 # RMM, 4 Nov 2012
 #
-# This file contains default values and utility functions for setting
-# variables that control the behavior of the control package.
-# Eventually it will be possible to read and write configuration
-# files.  For now, you can just choose between MATLAB and FBS default
-# values + tweak a few other things.
+# TODO: add ability to read/write configuration files (ala Matplotlib)
 
+"""Functions to access default parameter values.
+
+The :mod:`control.config` module contains default values and utility
+functions for setting parameters that control the behavior of the
+control package.
+
+"""
 
 import collections
 import warnings

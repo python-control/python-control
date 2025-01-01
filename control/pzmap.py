@@ -1,13 +1,16 @@
 # pzmap.py - computations involving poles and zeros
 #
-# Original author: Richard M. Murray
-# Date: 7 Sep 2009
-#
-# This file contains functions that compute poles, zeros and related
-# quantities for a linear system, as well as the main functions for
-# storing and plotting pole/zero and root locus diagrams.  (The actual
-# computation of root locus diagrams is in rlocus.py.)
-#
+# Initial author: Richard M. Murray
+# Creation date: 7 Sep 2009
+
+"""Computations involving poles and zeros.
+
+This module contains functions that compute poles, zeros and related
+quantities for a linear system, as well as the main functions for
+storing and plotting pole/zero and root locus diagrams.  (The actual
+computation of root locus diagrams is in rlocus.py.)
+
+"""
 
 import itertools
 import warnings

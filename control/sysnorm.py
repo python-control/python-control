@@ -1,15 +1,9 @@
-# -*- coding: utf-8 -*-
-"""sysnorm.py
+# sysnorm.py - functions for computing system norms
+#
+# Initial author: Henrik Sandberg
+# Creation date: 21 Dec 2023
 
-Functions for computing system norms.
-
-Routine in this module:
-
-norm
-
-Created on Thu Dec 21 08:06:12 2023
-Author: Henrik Sandberg
-"""
+"""Functions for computing system norms."""
 
 import warnings
 

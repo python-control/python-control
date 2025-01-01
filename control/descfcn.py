@@ -1,10 +1,5 @@
 # descfcn.py - describing function analysis
-#
 # RMM, 23 Jan 2021
-#
-# This module adds functions for carrying out analysis of systems with
-# memoryless nonlinear feedback functions using describing functions.
-#
 
 """The :mod:~control.descfcn` module contains function for performing
 closed loop analysis of systems with memoryless nonlinearities using

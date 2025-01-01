@@ -1,11 +1,11 @@
 # frdata.py - frequency response data representation and functions
 #
-# Author: M.M. (Rene) van Paassen (using xferfcn.py as basis)
-# Date: 02 Oct 12
+# Initial author: M.M. (Rene) van Paassen (using xferfcn.py as basis)
+# Creation date: 02 Oct 2012
 
 """Frequency response data representation and functions.
 
-This module contains the FrequencyResponseData (FRD) class and also
+This module contains the `FrequencyResponseData` (FRD) class and also
 functions that operate on FRD data.
 
 """

@@ -1,6 +1,10 @@
 # canonical.py - functions for converting systems to canonical forms
 # RMM, 10 Nov 2012
 
+"""Functions for converting systems to canonical forms.
+
+"""
+
 import numpy as np
 from numpy import poly, transpose, zeros_like
 from numpy.linalg import matrix_rank, solve
@@ -210,6 +214,9 @@ def similarity_transform(xsys, T, timescale=1, inverse=False):
     zsys : StateSpace object
         System in transformed coordinates, with state 'z'.
 
+    See Also
+    --------
+    canonical_form
 
     Examples
     --------

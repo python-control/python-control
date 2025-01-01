@@ -1,6 +1,6 @@
 # ctrlutil.py - control system utility functions
 #
-# Original author: Richard M. Murray
+# Initial author: Richard M. Murray
 # Creation date: 24 May 2009
 # Use `git shortlog -n -s ctrlutil.py` for full list of contributors
 

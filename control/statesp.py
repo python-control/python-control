@@ -1,15 +1,14 @@
 # statesp.py - state space class and related functions
 #
-# Original author: Richard M. Murray
+# Initial author: Richard M. Murray
 # Creation date: 24 May 2009
-# Pre-2014 revisions: Kevin K. Chen, Dec 10
+# Pre-2014 revisions: Kevin K. Chen, Dec 2010
 # Use `git shortlog -n -s statesp.py` for full list of contributors
 
-"""State space representation and functions.
+"""State space class and related functions.
 
-This module contains the StateSpace class, which is used to represent
-linear systems in state space.  This is the primary representation for the
-python-control library.
+This module contains the `StateSpace class`, which is used to
+represent linear systems in state space.
 
 """
 

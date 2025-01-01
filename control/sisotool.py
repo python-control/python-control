@@ -1,3 +1,7 @@
+# sisotool.py - interactive tool for SISO control design
+
+"""Interactive tool for SISO control design."""
+
 __all__ = ['sisotool', 'rootlocus_pid_designer']
 
 import warnings

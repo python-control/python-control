@@ -1,10 +1,15 @@
 # iosys.py - I/O system class and helper functions
 # RMM, 13 Mar 2022
-#
-# This file implements the InputOutputSystem class, which is used as a
-# parent class for StateSpace, TransferFunction, NonlinearIOSystem, LTI,
-# FrequencyResponseData, InterconnectedSystem and other similar classes
-# that allow naming of signals.
+
+"""I/O system class and helper functions.
+
+Theis module implements the :class:`InputOutputSystem` class, which is used
+as a parent class for :class`LTI`, :class:`StateSpace`,
+:class:`TransferFunction`, :class:`NonlinearIOSystem`,
+class:`FrequencyResponseData`, :class:`InterconnectedSystem` and other
+similar classes that allow naming of signals.
+
+"""
 
 import re
 from copy import deepcopy

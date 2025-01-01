@@ -1,12 +1,16 @@
 # freqplot.py - frequency domain plots for control systems
 #
 # Initial author: Richard M. Murray
-# Date: 24 May 09
-#
-# This file contains some standard control system plots: Bode plots,
-# Nyquist plots and other frequency response plots.  The code for Nichols
-# charts is in nichols.py.  The code for pole-zero diagrams is in pzmap.py
-# and rlocus.py.
+# Creation date: 24 May 2009
+
+"""Frequency domain plots for control systems.
+
+This module contains some standard control system plots: Bode plots,
+Nyquist plots and other frequency response plots.  The code for
+Nichols charts is in nichols.py.  The code for pole-zero diagrams is
+in pzmap.py and rlocus.py.
+
+"""
 
 import itertools
 import math

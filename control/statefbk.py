@@ -1,12 +1,9 @@
 # statefbk.py - tools for state feedback control
 #
-# Author: Richard M. Murray, Roberto Bucher
-# Date: 31 May 2010
-#
-"""The statefbk module contains routines for designing state space
-controllers.
+# Initial authors: Richard M. Murray, Roberto Bucher
+# Creation date: 31 May 2010
 
-"""
+"""Routines for designing state space controllers."""
 
 import warnings
 
