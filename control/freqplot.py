@@ -196,7 +196,7 @@ def bode_plot(
         If set to `False`, don't plot the magnitude or phase, respectively.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['ctrlplot.rcParams'].
+        Default is set by config.defaults['ctrlplot.rcParams'].
     share_frequency, share_magnitude, share_phase : str or bool, optional
         Determine whether and how axis limits are shared between the
         indicated variables.  Can be set set to 'row' to share across all
@@ -1663,7 +1663,7 @@ def nyquist_plot(
         determined by config.defaults['nyquist.mirror_style'].
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['ctrlplot.rcParams'].
+        Default is set by config.defaults['ctrlplot.rcParams'].
     return_contour : bool, optional
         (legacy) If 'True', return the encirclement count and Nyquist
         contour used to generate the Nyquist plot.
@@ -2413,7 +2413,7 @@ def singular_values_plot(
         the values with no plot.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set up config.default['ctrlplot.rcParams'].
+        Default is set up config.defaults['ctrlplot.rcParams'].
     show_legend : bool, optional
         Force legend to be shown if ``True`` or hidden if ``False``.  If
         ``None``, then show legend when there is more than one line on an

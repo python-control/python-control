@@ -119,7 +119,7 @@ def root_locus_plot(
         If `True` plot omega-damping grid, if `False` show imaginary axis
         for continuous time systems, unit circle for discrete time systems.
         If `empty`, do not draw any additonal lines.  Default value is set
-        by config.default['rlocus.grid'].
+        by config.defaults['rlocus.grid'].
     initial_gain : float, optional
         Mark the point on the root locus diagram corresponding to the
         given gain.

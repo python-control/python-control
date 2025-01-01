@@ -1,7 +1,7 @@
 # bezier.m - 1D Bezier curve basis functions
 # RMM, 24 Feb 2021
 
-"""1D Bezier curve basis functions.
+r"""1D Bezier curve basis functions.
 
 The :mod:`control.flatsys.bezier` module defines the
 :class:`BezierFamily` class, which implements a set of basis functions

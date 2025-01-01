@@ -31,6 +31,12 @@ parameters based on standard configurations:
    use_matlab_defaults
    use_legacy_defaults
 
+.. Set the current module to be control.config.defaults so that each of
+   the parameters gets a link of the form control.config.defaults.<param>.
+   This can be linked from the documentation using a the construct
+   `config.defaults['param'] <control.config.defaults.param>`.
+
+.. currentmodule:: control.config.defaults
 
 System creation parameters
 --------------------------
@@ -329,8 +335,8 @@ Plotting parameters
 
     If wrap_phase is `False`, then the phase will be unwrapped so that it
     is continuously increasing or decreasing.  If wrap_phase is `True` the
-    phase will be restricted to the range [-180, 180) (or [:math:`-\\pi`,
-    :math:`\\pi`) radians). If `wrap_phase` is specified as a float, the
+    phase will be restricted to the range [-180, 180) (or [:math:`-\pi`,
+    :math:`\pi`) radians). If `wrap_phase` is specified as a float, the
     phase will be offset by 360 degrees if it falls below the specified
     value.
 

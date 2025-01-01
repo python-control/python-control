@@ -138,7 +138,7 @@ def time_response_plot(
         default values are set by config.defaults['timeplot.output_props'].
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['ctrlplot.rcParams'].
+        Default is set by config.defaults['ctrlplot.rcParams'].
     relabel : bool, optional
         (deprecated) By default, existing figures and axes are relabeled
         when new data are added.  If set to `False`, just plot new data on

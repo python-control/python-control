@@ -81,7 +81,7 @@ def nichols_plot(
         with no legend for a single response.  Use False to suppress legend.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['ctrlplot.rcParams'].
+        Default is set by config.defaults['ctrlplot.rcParams'].
     show_legend : bool, optional
         Force legend to be shown if ``True`` or hidden if ``False``.  If
         ``None``, then show legend when there is more than one line on the

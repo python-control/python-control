@@ -199,7 +199,7 @@ def pole_zero_plot(
         If `True` plot omega-damping grid, if `False` show imaginary axis
         for continuous time systems, unit circle for discrete time systems.
         If `empty`, do not draw any additonal lines.  Default value is set
-        by config.default['pzmap.grid'] or config.default['rlocus.grid'].
+        by config.defaults['pzmap.grid'] or config.defaults['rlocus.grid'].
     plot : bool, optional
         (legacy) If ``True`` a graph is generated with Matplotlib,
         otherwise the poles and zeros are only computed and returned.
@@ -259,7 +259,7 @@ def pole_zero_plot(
         Set the line width of the markers used for poles and zeros.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['ctrlplot.rcParams'].
+        Default is set by config.defaults['ctrlplot.rcParams'].
     scaling : str or list, optional
         Set the type of axis scaling.  Can be 'equal' (default), 'auto', or
         a list of the form [xmin, xmax, ymin, ymax].

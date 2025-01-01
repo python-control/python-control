@@ -149,7 +149,7 @@ def phase_plane_plot(
         in the dict as keywords to :func:`~control.phaseplot.separatrices`.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['ctrlplot.rcParams'].
+        Default is set by config.defaults['ctrlplot.rcParams'].
     suppress_warnings : bool, optional
         If set to `True`, suppress warning messages in generating trajectories.
     title : str, optional
@@ -290,7 +290,7 @@ def vectorfield(
     ----------------
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['ctrlplot.rcParams'].
+        Default is set by config.defaults['ctrlplot.rcParams'].
     suppress_warnings : bool, optional
         If set to `True`, suppress warning messages in generating trajectories.
 
@@ -400,7 +400,7 @@ def streamlines(
         value can be set in config.defaults['phaseplot.arrow_style'].
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['ctrlplot.rcParams'].
+        Default is set by config.defaults['ctrlplot.rcParams'].
     suppress_warnings : bool, optional
         If set to `True`, suppress warning messages in generating trajectories.
 
@@ -512,7 +512,7 @@ def equilpoints(
     ----------------
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['ctrlplot.rcParams'].
+        Default is set by config.defaults['ctrlplot.rcParams'].
 
     """
     # Process keywords
@@ -604,7 +604,7 @@ def separatrices(
     ----------------
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['ctrlplot.rcParams'].
+        Default is set by config.defaults['ctrlplot.rcParams'].
     suppress_warnings : bool, optional
         If set to `True`, suppress warning messages in generating trajectories.
 
