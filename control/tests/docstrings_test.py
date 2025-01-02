@@ -112,6 +112,11 @@ def test_parameter_docs(module, prefix):
         if inspect.isclass(obj):
             _info(f"Checking class {name}", 1)
             _check_numpydoc_style(obj, doc)
+
+            # Make sure there is no Returns section
+            if doc["Returns"] != []:
+                _fail(f"Class {name} should not have Returns section")
+
             # Check member functions within the class
             test_parameter_docs(obj, prefix + name + '.')
             continue
@@ -316,7 +321,7 @@ class_factory_function = {
 #
 # These are the minimal arguments needed to initialize the class.  Optional
 # arguments should be documented in the factory functions and do not need
-# to be duplicated in the class documentation.
+# to be duplicated in the class documentation (=> don't list here).
 #
 class_args = {
     fs.FlatSystem: ['forward', 'reverse'],
@@ -325,6 +330,8 @@ class_args = {
         'updfcn', 'outfcn', 'inputs', 'outputs', 'states', 'params', 'dt'],
     ct.StateSpace: ['A', 'B', 'C', 'D', 'dt'],
     ct.TransferFunction: ['num', 'den', 'dt'],
+    ct.InterconnectedSystem: [
+        'syslist', 'connections', 'inplist', 'outlist', 'params']
 }
 
 #
@@ -350,6 +357,10 @@ class_attributes = {
     ct.NonlinearIOSystem: ['nstates', 'state_labels'],
     ct.StateSpace: ['nstates', 'state_labels'],
     ct.TransferFunction: [],
+    ct.InterconnectedSystem: [
+        'connect_map', 'input_map', 'output_map',
+        'input_offset', 'output_offset', 'state_offset', 'syslist_index',
+        'nstates', 'state_labels' ]
 }
 
 # List of attributes defined in a parent class (no need to warn)
@@ -376,6 +387,7 @@ factory_args = {
     ct.nlsys: ['state_prefix'],
     ct.ss: ['sys', 'states', 'state_prefix'],
     ct.tf: ['sys'],
+    ct.interconnect: ['dt']
 }
 
 
@@ -400,8 +412,23 @@ def test_iosys_primary_classes(cls, fcn, args):
             r"[\s]+factory[\s]+function", "\n".join(doc["Extended Summary"]),
             re.DOTALL) is None:
         _fail(
-            f"{cls.__name__} does not reference factory function "
+            f"{cls.__name__} summary does not reference factory function "
             f"{fcn.__name__}")
+
+    if doc["See Also"] == []:
+        _fail(
+            f'{cls.__name__} does not have "See Also" section; '
+            f"must include and reference {fcn.__name__}")
+    else:
+        found_factory_function = False
+        for name, _ in doc["See Also"][0][0]:
+            if name == f"{fcn.__name__}":
+                found_factory_function = True
+                break;
+        if not found_factory_function:
+            _fail(
+                f'{cls.__name__} "See Also" section does not reference '
+                f"factory function {fcn.__name__}")
 
     # Make sure we don't reference parameters from the factory function
     for argname in factory_args[fcn]:
@@ -425,6 +452,9 @@ def test_iosys_attribute_lists(cls, ignore_future_warning):
         case ct.frd:
             sys = ct.frd(sys, [0.1, 1, 10])
             ignore_args = ['state_labels']
+        case ct.interconnect:
+            sys = ct.nlsys(sys, name='sys')
+            sys = ct.interconnect([sys], inplist='sys.u', outlist='sys.y')
         case ct.nlsys:
             sys = ct.nlsys(sys)
         case fs.flatsys:
@@ -495,7 +525,7 @@ def test_iosys_container_classes(cls):
                 break
 
 
-@pytest.mark.parametrize("cls", [ct.InterconnectedSystem, ct.LinearICSystem])
+@pytest.mark.parametrize("cls", [ct.LTI, ct.LinearICSystem])
 def test_iosys_intermediate_classes(cls):
     docstring = inspect.getdoc(cls)
     with warnings.catch_warnings():

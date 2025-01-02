@@ -92,7 +92,7 @@ class NonlinearIOSystem(InputOutputSystem):
 
     See Also
     --------
-    InputOutputSystem : Input/output system class.
+    nlsys, InputOutputSystem
 
     Notes
     -----
@@ -570,6 +570,52 @@ class InterconnectedSystem(NonlinearIOSystem):
     The `interconnect` factory function should be used to create an
     interconnected I/O system since it performs additional argument
     processing and checking.
+
+    Parameters
+    ----------
+    syslist : list of NonlinearIOsystem
+        List of state space systems to interconnect.
+    connections : list of connections
+        Description of the internal connections between the subsystem.  See
+        `interconnect` for details.
+    inplist, outlist : list of input and output connections
+        Description of the inputs and outputs for the overall system.  See
+        `interconnect` for details.
+    inputs, outputs, states : int, list of str or None, optional
+        Description of the system inputs, outputs, and states.  See
+        `control.nlsys` for more details.
+    params : dict, optional
+        Parameter values for the systems.  Passed to the evaluation functions
+        for the system as default values, overriding internal defaults.
+    connection_type : str
+        Type of connection: 'explicit' (or `None`) for explicitly listed
+        set of connections, 'implicit' for connections made via signal names.
+
+    Attributes
+    ----------
+    ninputs, noutputs, nstates : int
+        Number of input, output and state variables.
+    shape : tuple
+        2-tuple of I/O system dimension, (noutputs, ninputs).
+    name : string, optional
+        System name.
+    connect_map : 2D array
+        Mapping of subsystem outputs to subsystem inputs.
+    input_map : 2D array
+        Mapping of system inputs to subsystem inputs.
+    output_map : 2D array
+        Mapping of (stacked) subsystem outputs and inputs to system outputs.
+    input_labels, output_labels, state_labels : list of str
+        Names for the input, output, and state variables.
+    input_offset, output_offset, state_offset : list of int
+        Offset to the subsystem inputs, outputs, and states in the overal
+        system input, output, and state arrays.
+    syslist_index : dict
+        Index of the subsytem with key given by the name of the subsystem.
+
+    See Also
+    --------
+    interconnect, NonlinearIOSystem, LinearICSystem
 
     """
     def __init__(self, syslist, connections=None, inplist=None, outlist=None,
@@ -1764,7 +1810,7 @@ class OperatingPoint():
     `find_operating_point` function and as an input to the
     `linearize` function.
 
-    Attributes
+    Parameters
     ----------
     states : array
         State vector at the operating point.
@@ -1774,6 +1820,16 @@ class OperatingPoint():
         Output vector at the operating point.
     result : `scipy.optimize.OptimizeResult`, optional
         Result from the `scipy.optimize.root` function, if available.
+    return_outputs, return_result : bool, optional
+            If set to `True`, then when accessed a tuple the output values
+        and/or result of the root finding function will be returned.
+
+    Notes
+    -----
+    In addition to accessing the elements of the operating point as
+    attributes, if accessed as a list then the object will return `(x0,
+    u0[, y0, res])`, where `y0` and `res` are returned depending on the
+    `return_outputs` and `return_result` parameters.
 
     """
     def __init__(
@@ -2226,8 +2282,8 @@ def interconnect(
 
     Parameters
     ----------
-    syslist : list of InputOutputSystems
-        The list of input/output systems to be connected.
+    syslist : list of NonlinearIOSystems
+        The list of (state-based) input/output systems to be connected.
 
     connections : list of connections, optional
         Description of the internal connections between the subsystems:
@@ -2342,6 +2398,17 @@ def interconnect(
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
 
+    Returns
+    -------
+    sys : InterconnectedSystem
+        `NonlinearIOSystem` consisting of the interconnected subsystems.
+
+    Other Parameters
+    ----------------
+    input_prefix, output_prefix, state_prefix : string, optional
+        Set the prefix for input, output, and state signals.  Defaults =
+        'u', 'y', 'x'.
+
     check_unused : bool, optional
         If True, check for unused sub-system signals.  This check is
         not done if connections is False, and neither input nor output
@@ -2380,7 +2447,6 @@ def interconnect(
     debug : bool, default=False
         Print out information about how signals are being processed that
         may be useful in understanding why something is not working.
-
 
     Examples
     --------

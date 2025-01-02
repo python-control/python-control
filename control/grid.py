@@ -22,7 +22,7 @@ from numpy import cos, exp, linspace, pi, sin, sqrt
 from .iosys import isdtime
 
 
-class FormatterDMS(object):
+class FormatterDMS():
     '''Transforms angle ticks to damping ratios'''
     def __call__(self, direction, factor, values):
         angles_deg = np.asarray(values)/factor

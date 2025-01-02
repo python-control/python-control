@@ -121,7 +121,7 @@ _ctrlplot_defaults = {'ctrlplot.rcParams': _ctrlplot_rcParams}
 # Control figure
 #
 
-class ControlPlot(object):
+class ControlPlot():
     """A class for representing control figures.
 
     This class is used as the return type for control plotting functions.
@@ -134,7 +134,7 @@ class ControlPlot(object):
     a number of lines that represent the data for the plot.  There may also
     be a legend present in one or more of the axes.
 
-    Attributes
+    Parameters
     ----------
     lines : array of list of `matplotlib:Line2D`
         Array of Line2D objects for each line in the plot.  Generally, the

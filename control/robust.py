@@ -201,6 +201,7 @@ def _size_as_needed(w, wname, n):
     See Also
     --------
     augw
+
     """
     from . import append, ss
     if w is not None:
@@ -252,6 +253,7 @@ def augw(g, w1=None, w2=None, w3=None):
     See Also
     --------
     h2syn, hinfsyn, mixsyn
+
     """
 
     from . import append, connect, ss

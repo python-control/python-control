@@ -79,6 +79,46 @@ class TimeResponseData:
     single-input, single-output systems will have the output and input
     indices suppressed.  This behavior is set using the `squeeze` parameter.
 
+    Parameters
+    ----------
+    time : 1D array
+        Time values of the output.  Ignored if None.
+    outputs : ndarray
+        Output response of the system.  This can either be a 1D array
+        indexed by time (for SISO systems or MISO systems with a specified
+        input), a 2D array indexed by output and time (for MIMO systems
+        with no input indexing, such as initial_response or forced
+        response) or trace and time (for SISO systems with multiple
+        traces), or a 3D array indexed by output, trace, and time (for
+        multi-trace input/output responses).
+    states : array, optional
+        Individual response of each state variable. This should be a 2D
+        array indexed by the state index and time (for single trace
+        systems) or a 3D array indexed by state, trace, and time.
+    inputs : array, optional
+        Inputs used to generate the output.  This can either be a 1D array
+        indexed by time (for SISO systems or MISO/MIMO systems with a
+        specified input), a 2D array indexed either by input and time (for
+        a multi-input system) or trace and time (for a single-input,
+        multi-trace response), or a 3D array indexed by input, trace, and
+        time.
+    title : str, optonal
+        Title of the data set (used as figure title in plotting).
+    squeeze : bool, optional
+        By default, if a system is single-input, single-output (SISO) then
+        the inputs and outputs are returned as a 1D array (indexed by time)
+        and if a system is multi-input or multi-output, then the inputs are
+        returned as a 2D array (indexed by input and time) and the outputs
+        are returned as either a 2D array (indexed by output and time) or a
+        3D array (indexed by output, trace, and time).  If squeeze=True,
+        access to the output response will remove single-dimensional
+        entries from the shape of the inputs and outputs even if the system
+        is not SISO. If squeeze=False, keep the input as a 2D or 3D array
+        (indexed by the input (if multi-input), trace (if single input) and
+        time) and the output as a 3D array (indexed by the output, trace,
+        and time) even if the system is SISO. The default value can be set
+        using config.defaults['control.squeeze_time_response'].
+
     Attributes
     ----------
     t : 1D array
@@ -104,68 +144,73 @@ class TimeResponseData:
         responses).  If no input data are present, value is `None`.  These
         data are normally accessed via the `inputs` property, which
         performs squeeze processing.
-
-    squeeze : bool, optional
-        By default, if a system is single-input, single-output (SISO)
-        then the outputs (and inputs) are returned as a 1D array
-        (indexed by time) and if a system is multi-input or
-        multi-output, then the outputs are returned as a 2D array
-        (indexed by output and time) or a 3D array (indexed by output,
-        trace, and time).  If `squeeze=True`, access to the output
-        response will remove single-dimensional entries from the shape
-        of the inputs and outputs even if the system is not SISO. If
-        `squeeze=False`, the output is returned as a 2D or 3D array
-        (indexed by the output [if multi-input], trace [if multi-trace]
-        and time) even if the system is SISO. The default value can be
-        set using config.defaults['control.squeeze_time_response'].
-
     transpose : bool, optional
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and `scipy.signal.lsim`).  Default
         value is False.
-
     issiso : bool, optional
         Set to `True` if the system generating the data is single-input,
         single-output.  If passed as `None` (default), the input data
         will be used to set the value.
-
     ninputs, noutputs, nstates : int
         Number of inputs, outputs, and states of the underlying system.
-
     input_labels, output_labels, state_labels : array of str
         Names for the input, output, and state variables.
-
     success : bool, optional
         If `False`, result may not be valid (see
         `input_output_response`).  Defaults to `True`.
-
     message : str, optional
         Informational message if `success` is `False`.
-
     sysname : str, optional
         Name of the system that created the data.
-
     params : dict, optional
         If system is a nonlinear I/O system, set parameter values.
-
     plot_inputs : bool, optional
         Whether or not to plot the inputs by default (can be overridden in
         the plot() method)
-
     ntraces : int, optional
         Number of independent traces represented in the input/output
         response.  If ntraces is 0 (default) then the data represents a
         single trace with the trace index surpressed in the data.
-
     title : str, optional
         Set the title to use when plotting.
-
     trace_labels : array of string, optional
         Labels to use for traces (set to sysname it ntraces is 0)
-
     trace_types : array of string, optional
         Type of trace.  Currently only 'step' is supported, which controls
         the way in which the signal is plotted.
+
+    Other Parameters
+    ----------------
+    input_labels, output_labels, state_labels: array of str, optional
+        Optional labels for the inputs, outputs, and states, given as a
+        list of strings matching the appropriate signal dimension.
+    sysname : str, optional
+        Name of the system that created the data.
+    transpose : bool, optional
+        If True, transpose all input and output arrays (for backward
+        compatibility with MATLAB and `scipy.signal.lsim`).  Default value
+        is False.
+    return_x : bool, optional
+        If True, return the state vector when enumerating result by
+        assigning to a tuple (default = False).
+    plot_inputs : bool, optional
+        Whether or not to plot the inputs by default (can be overridden
+        in the plot() method)
+    multi_trace : bool, optional
+        If `True`, then 2D input array represents multiple traces.  For
+        a MIMO system, the `input` attribute should then be set to
+        indicate which trace is being specified.  Default is `False`.
+    success : bool, optional
+        If `False`, result may not be valid (see
+        `input_output_response`).
+    message : str, optional
+        Informational message if `success` is `False`.
+
+    See Also
+    --------
+    input_output_response, forced_response, impulse_response, \
+    initial_response, step_response, FrequencyResponseData
 
     Notes
     -----
@@ -248,85 +293,12 @@ class TimeResponseData:
     ):
         """Create an input/output time response object.
 
-        Parameters
-        ----------
-        time : 1D array
-            Time values of the output.  Ignored if None.
+        This function is used by the various time response functions, such
+        as `input_output_response` and `step_response` to store the
+        response of a simulation.  It can be passed to `plot_time_response`
+        to plot the data, or the `~TimeResponseData.plot` method can be used.
 
-        outputs : ndarray
-            Output response of the system.  This can either be a 1D array
-            indexed by time (for SISO systems or MISO systems with a specified
-            input), a 2D array indexed by output and time (for MIMO systems
-            with no input indexing, such as initial_response or forced
-            response) or trace and time (for SISO systems with multiple
-            traces), or a 3D array indexed by output, trace, and time (for
-            multi-trace input/output responses).
-
-        states : array, optional
-            Individual response of each state variable. This should be a 2D
-            array indexed by the state index and time (for single trace
-            systems) or a 3D array indexed by state, trace, and time.
-
-        inputs : array, optional
-            Inputs used to generate the output.  This can either be a 1D
-            array indexed by time (for SISO systems or MISO/MIMO systems
-            with a specified input), a 2D array indexed either by input and
-            time (for a multi-input system) or trace and time (for a
-            single-input, multi-trace response), or a 3D array indexed by
-            input, trace, and time.
-
-        title : str, optonal
-            Title of the data set (used as figure title in plotting).
-
-        squeeze : bool, optional
-            By default, if a system is single-input, single-output (SISO)
-            then the inputs and outputs are returned as a 1D array (indexed
-            by time) and if a system is multi-input or multi-output, then
-            the inputs are returned as a 2D array (indexed by input and
-            time) and the outputs are returned as either a 2D array (indexed
-            by output and time) or a 3D array (indexed by output, trace, and
-            time).  If squeeze=True, access to the output response will
-            remove single-dimensional entries from the shape of the inputs
-            and outputs even if the system is not SISO. If squeeze=False,
-            keep the input as a 2D or 3D array (indexed by the input (if
-            multi-input), trace (if single input) and time) and the output
-            as a 3D array (indexed by the output, trace, and time) even if
-            the system is SISO. The default value can be set using
-            config.defaults['control.squeeze_time_response'].
-
-        Other Parameters
-        ----------------
-        input_labels, output_labels, state_labels: array of str, optional
-            Optional labels for the inputs, outputs, and states, given as a
-            list of strings matching the appropriate signal dimension.
-
-        sysname : str, optional
-            Name of the system that created the data.
-
-        transpose : bool, optional
-            If True, transpose all input and output arrays (for backward
-            compatibility with MATLAB and `scipy.signal.lsim`).
-            Default value is False.
-
-        return_x : bool, optional
-            If True, return the state vector when enumerating result by
-            assigning to a tuple (default = False).
-
-        plot_inputs : bool, optional
-            Whether or not to plot the inputs by default (can be overridden
-            in the plot() method)
-
-        multi_trace : bool, optional
-            If `True`, then 2D input array represents multiple traces.  For
-            a MIMO system, the `input` attribute should then be set to
-            indicate which trace is being specified.  Default is `False`.
-
-        success : bool, optional
-            If `False`, result may not be valid (see
-            `input_output_response`).
-
-        message : str, optional
-            Informational message if `success` is `False`.
+        See `TimeResponseData` for more information on parameters.
 
         """
         #
@@ -1586,7 +1558,7 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
 
     See Also
     --------
-    step, lsim, initial, impulse
+    step_response, forced_response, initial_response, impulse_response
 
     Examples
     --------

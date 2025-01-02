@@ -24,7 +24,7 @@ class BasisFamily:
     each flat output (nvars = None) or a different variable for different
     flat outputs (nvars > 0).
 
-    Attributes
+    Parameters
     ----------
     N : int
         Order of the basis set.

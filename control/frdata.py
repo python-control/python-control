@@ -112,7 +112,7 @@ class FrequencyResponseData(LTI):
 
     See Also
     --------
-    frd
+    frd, InputOutputSystem, TransferFunction, TimeResponseData
 
     Notes
     -----
@@ -189,17 +189,17 @@ class FrequencyResponseData(LTI):
 
         Construct a frequency response data (FRD) object.
 
-        The default constructor is FrequencyResponseData(d, w), where w is
-        an iterable of frequency points, and d is the matching frequency
-        data.  If d is a single list, 1D array, or tuple, a SISO system
-        description is assumed. d can also be a 2D array, in which case a
-        MIMO response is created.  To call the copy constructor, call
-        FrequencyResponseData(sys), where sys is a FRD object.  The
-        timebase for the frequency response can be provided using an
-        optional third argument or the 'dt' keyword.
+        The default constructor is `FrequencyResponseData(d, w)`, where `w`
+        is an iterable of frequency points and `d` is the matching
+        frequency data.  If `d` is a single list, 1D array, or tuple, a
+        SISO system description is assumed. `d` can also be a 2D array, in
+        which case a MIMO response is created.  To call the copy
+        constructor, call `FrequencyResponseData(sys)`, where `sys` is a
+        FRD object.  The timebase for the frequency response can be
+        provided using an optional third argument or the `dt` keyword.
 
         To construct frequency response data for an existing LTI object,
-        other than an FRD, call FrequencyResponseData(sys, omega).  This
+        other than an FRD, call `FrequencyResponseData(sys, omega)`.  This
         functionality can also be obtained using `frequency_response`
         (which has additional options available).
 

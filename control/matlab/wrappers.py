@@ -415,7 +415,7 @@ def connect(*args):
 
     See Also
     --------
-    append, feedback, interconnect, negate, parallel, series
+    append, feedback, connect, negate, parallel, series
 
     Examples
     --------

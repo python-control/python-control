@@ -87,11 +87,13 @@ class OptimalControlProblem():
         Use :py`logging.basicConfig` to enable logging output
         (e.g., to a file).
 
-    Returns
-    -------
-    ocp : OptimalControlProblem
-        Optimal control problem object, to be used in computing optimal
-        controllers.
+    Attributes
+    ----------
+    constraint: list of SciPy constraint objects
+        List of `~scipy.optimize.LinearConstraint` or
+        `~scipy.optimize.NonlinearConstraint` objects.
+    constraint_lb, constrain_ub, eqconst_value : list of float
+        List of constraint bounds.
 
     Other Parameters
     ----------------
@@ -902,7 +904,7 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
     This class is a subclass of `scipy.optimize.OptimizeResult` with
     additional attributes associated with solving optimal control problems.
 
-    Attributes
+    Parameters
     ----------
     inputs : ndarray
         The optimal inputs associated with the optimal control problem.
@@ -919,7 +921,7 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
         Number of system simulations and evaluations of the cost function,
         (inequality) constraint function, and equality constraint function
         performed during the optimzation.
-    {cost, constraint, eqconst}_process_time : float
+    cost_process_time, constraint_process_time, eqconst_process_time : float
         If logging was enabled, the amount of time spent evaluating the cost
         and constraint functions.
 
@@ -1280,11 +1282,13 @@ class OptimalEstimationProblem():
         specified, defaults to the complement of the control indicies (see
         also notes below).
 
-    Returns
-    -------
-    oep : OptimalEstimationProblem
-        Optimal estimation problem object, to be used in computing optimal
-        estimates.
+    Attributes
+    ----------
+    constraint: list of SciPy constraint objects
+        List of `~scipy.optimize.LinearConstraint` or
+        `~scipy.optimize.NonlinearConstraint` objects.
+    constraint_lb, constrain_ub, eqconst_value : list of float
+        List of constraint bounds.
 
     Other Parameters
     ----------------
@@ -1892,7 +1896,7 @@ class OptimalEstimationResult(sp.optimize.OptimizeResult):
     additional attributes associated with solving optimal estimation
     problems.
 
-    Attributes
+    Parameters
     ----------
     states : ndarray
         Estimated state trajectory.
@@ -1910,7 +1914,7 @@ class OptimalEstimationResult(sp.optimize.OptimizeResult):
         Number of system simulations and evaluations of the cost function,
         (inequality) constraint function, and equality constraint function
         performed during the optimzation.
-    {cost, constraint, eqconst}_process_time : float
+    cost_process_time, constraint_process_time, eqconst_process_time : float
         If logging was enabled, the amount of time spent evaluating the cost
         and constraint functions.
 

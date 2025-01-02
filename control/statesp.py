@@ -96,6 +96,10 @@ class StateSpace(NonlinearIOSystem, LTI):
     name : string, optional
         System name.
 
+    See Also
+    --------
+    ss, InputOutputSystem, NonlinearIOSystem
+
     Notes
     -----
     The main data members in the `StateSpace` class are the A, B, C, and D
@@ -1798,8 +1802,7 @@ def tf2io(*args, **kwargs):
 
     See Also
     --------
-    ss2io
-    tf2ss
+    ss2io, tf2ss
 
     Examples
     --------
@@ -1873,9 +1876,7 @@ def tf2ss(*args, **kwargs):
 
     See Also
     --------
-    ss
-    tf
-    ss2tf
+    ss, tf, ss2tf
 
     Notes
     -----
@@ -1951,7 +1952,8 @@ def linfnorm(sys, tol=1e-10):
 
     See Also
     --------
-    slycot.ab13dd : the Slycot routine linfnorm that does the calculation
+    slycot.ab13dd
+
     """
     if ab13dd is None:
         raise ControlSlycot("Can't find slycot module 'ab13dd'")

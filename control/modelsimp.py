@@ -138,8 +138,7 @@ def model_reduction(
 
     See Also
     --------
-    balanced_reduction : Eliminate states using Hankel singular values.
-    minimal_realization : Eliminate unreachable or unobservable states.
+    balanced_reduction, minimal_realization
 
     Notes
     -----

@@ -1107,7 +1107,7 @@ class NyquistResponseData:
     response object can be used to obtain information about the Nyquist
     response or to generate a Nyquist plot.
 
-    Attributes
+    Parameters
     ----------
     count : integer
         Number of encirclements of the -1 point by the Nyquist curve for

@@ -103,7 +103,7 @@ class NamedSignal(np.ndarray):
         return super().__getitem__(self._parse_key(key))
 
 
-class InputOutputSystem(object):
+class InputOutputSystem():
     """A class for representing input/output systems.
 
     The InputOutputSystem class allows (possibly nonlinear) input/output

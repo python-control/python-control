@@ -224,7 +224,7 @@ class DescribingFunctionResponse:
     response of the linear systems and the describing function for the
     nonlinear element.
 
-    Attributes
+    Parameters
     ----------
     response : `FrequencyResponseData`
         Frequency response of the linear system component of the system.

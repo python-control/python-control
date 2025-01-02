@@ -65,7 +65,7 @@ class PoleZeroData:
     system poles and zeros, as well as the gains and loci for root locus
     diagrams.
 
-    Attributes
+    Parameters
     ----------
     poles : ndarray
         1D array of system poles.
@@ -73,11 +73,11 @@ class PoleZeroData:
         1D array of system zeros.
     gains : ndarray, optional
         1D array of gains for root locus plots.
-    loci : ndarray, optiona
+    loci : ndarray, optional
         2D array of poles, with each row corresponding to a gain.
     sysname : str, optional
         System name.
-    sys : StateSpace or TransferFunction
+    sys : `StateSpace` or `TransferFunction`, optional
         System corresponding to the data.
     sort_loci : bool, optional
         Set to False to turn off sorting of loci into unique branches.
@@ -86,24 +86,6 @@ class PoleZeroData:
     def __init__(
             self, poles, zeros, gains=None, loci=None, dt=None, sysname=None,
             sys=None, sort_loci=True):
-        """Create a pole/zero map object.
-
-        Parameters
-        ----------
-        poles : ndarray
-            1D array of system poles.
-        zeros : ndarray
-            1D array of system zeros.
-        gains : ndarray, optional
-            1D array of gains for root locus plots.
-        loci : ndarray, optiona
-            2D array of poles, with each row corresponding to a gain.
-        sysname : str, optional
-            System name.
-        sys : StateSpace or TransferFunction
-            System corresponding to the data.
-
-        """
         from .rlocus import _RLSortRoots
         self.poles = poles
         self.zeros = zeros
