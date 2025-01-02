@@ -20,6 +20,7 @@ from numpy import absolute, angle, array, empty, eye, imag, linalg, ones, \
 from scipy.interpolate import splev, splprep
 
 from . import config
+from . import bdalg
 from .exception import pandas_check
 from .iosys import InputOutputSystem, NamedSignal, _process_iosys_keywords, \
     _process_subsys_index, common_timebase
@@ -405,6 +406,12 @@ class FrequencyResponseData(LTI):
         else:
             other = _convert_to_frd(other, omega=self.omega)
 
+        # Promote SISO object to compatible dimension
+        if self.issiso() and not other.issiso():
+            self = np.ones((other.noutputs, other.ninputs)) * self
+        elif not self.issiso() and other.issiso():
+            other = np.ones((self.noutputs, self.ninputs)) * other
+
         # Check that the input-output sizes are consistent.
         if self.ninputs != other.ninputs:
             raise ValueError(
@@ -442,6 +449,12 @@ class FrequencyResponseData(LTI):
         else:
             other = _convert_to_frd(other, omega=self.omega)
 
+        # Promote SISO object to compatible dimension
+        if self.issiso() and not other.issiso():
+            self = bdalg.append(*([self] * other.noutputs))
+        elif not self.issiso() and other.issiso():
+            other = bdalg.append(*([other] * self.ninputs))
+
         # Check that the input-output sizes are consistent.
         if self.ninputs != other.noutputs:
             raise ValueError(
@@ -468,6 +481,12 @@ class FrequencyResponseData(LTI):
                        smooth=(self.ifunc is not None))
         else:
             other = _convert_to_frd(other, omega=self.omega)
+
+        # Promote SISO object to compatible dimension
+        if self.issiso() and not other.issiso():
+            self = bdalg.append(*([self] * other.ninputs))
+        elif not self.issiso() and other.issiso():
+            other = bdalg.append(*([other] * self.noutputs))
 
         # Check that the input-output sizes are consistent.
         if self.noutputs != other.ninputs:
@@ -497,11 +516,9 @@ class FrequencyResponseData(LTI):
         else:
             other = _convert_to_frd(other, omega=self.omega)
 
-        if (self.ninputs > 1 or self.noutputs > 1 or
-            other.ninputs > 1 or other.noutputs > 1):
-            raise NotImplementedError(
-                "FRD.__truediv__ is currently only implemented for SISO "
-                "systems.")
+        if (other.ninputs > 1 or other.noutputs > 1):
+            # FRD.__truediv__ is currently only implemented for SISO systems
+            return NotImplemented
 
         return FRD(self.fresp/other.fresp, self.omega,
                    smooth=(self.ifunc is not None) and
@@ -516,11 +533,9 @@ class FrequencyResponseData(LTI):
         else:
             other = _convert_to_frd(other, omega=self.omega)
 
-        if (self.ninputs > 1 or self.noutputs > 1 or
-            other.ninputs > 1 or other.noutputs > 1):
-            raise NotImplementedError(
-                "FRD.__rtruediv__ is currently only implemented for "
-                "SISO systems.")
+        if (self.ninputs > 1 or self.noutputs > 1):
+            # FRD.__rtruediv__ is currently only implemented for SISO systems
+            return NotImplemented
 
         return other / self
 
@@ -752,6 +767,35 @@ class FrequencyResponseData(LTI):
         fresp = np.moveaxis(resfresp, 0, 2)
 
         return FRD(fresp, other.omega, smooth=(self.ifunc is not None))
+
+    def append(self, other):
+        """Append a second model to the present model.
+
+        The second model is converted to FRD if necessary, inputs and
+        outputs are appended and their order is preserved"""
+        other = _convert_to_frd(other, omega=self.omega, inputs=other.ninputs,
+                                outputs=other.noutputs)
+
+        # TODO: handle omega re-mapping
+
+        new_fresp = np.zeros(
+            (
+                self.noutputs + other.noutputs,
+                self.ninputs + other.ninputs,
+                self.omega.shape[-1],
+            ),
+            dtype=complex,
+        )
+        new_fresp[:self.noutputs, :self.ninputs, :] = np.reshape(
+            self.fresp,
+            (self.noutputs, self.ninputs, -1),
+        )
+        new_fresp[self.noutputs:, self.ninputs:, :] = np.reshape(
+            other.fresp,
+            (other.noutputs, other.ninputs, -1),
+        )
+
+        return FRD(new_fresp, self.omega, smooth=(self.ifunc is not None))
 
     # Plotting interface
     def plot(self, plot_type=None, *args, **kwargs):

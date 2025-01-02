@@ -8,7 +8,7 @@ from numpy import sort
 import pytest
 
 import control as ctrl
-from control.xferfcn import TransferFunction
+from control.xferfcn import TransferFunction, _tf_close_coeff
 from control.statesp import StateSpace
 from control.bdalg import feedback, append, connect
 from control.lti import zeros, poles
@@ -870,50 +870,3 @@ class TestTfCombineSplit:
         """Test error cases."""
         with pytest.raises(exception):
             ctrl.combine_tf(tf_array)
-
-
-def _tf_close_coeff(tf_a, tf_b, rtol=1e-5, atol=1e-8):
-    """Check if two transfer functions have close coefficients.
-
-    Parameters
-    ----------
-    tf_a : TransferFunction
-        First transfer function.
-    tf_b : TransferFunction
-        Second transfer function.
-    rtol : float
-        Relative tolerance for ``np.allclose``.
-    atol : float
-        Absolute tolerance for ``np.allclose``.
-
-    Returns
-    -------
-    bool
-        True if transfer function cofficients are all close.
-    """
-    # Check number of outputs and inputs
-    if tf_a.noutputs != tf_b.noutputs:
-        return False
-    if tf_a.ninputs != tf_b.ninputs:
-        return False
-    # Check timestep
-    if tf_a.dt != tf_b.dt:
-        return False
-    # Check coefficient arrays
-    for i in range(tf_a.noutputs):
-        for j in range(tf_a.ninputs):
-            if not np.allclose(
-                tf_a.num[i][j],
-                tf_b.num[i][j],
-                rtol=rtol,
-                atol=atol,
-            ):
-                return False
-            if not np.allclose(
-                tf_a.den[i][j],
-                tf_b.den[i][j],
-                rtol=rtol,
-                atol=atol,
-            ):
-                return False
-    return True
