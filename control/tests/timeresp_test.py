@@ -1279,6 +1279,8 @@ def test_to_pandas():
     np.testing.assert_equal(
         df[df['trace'] == 'From u0']['time'], res.time)
     np.testing.assert_equal(
+        df[df['trace'] == 'From u0']['u0'], res.inputs['u0', 0])
+    np.testing.assert_equal(
         df[df['trace'] == 'From u0']['y1'], res.outputs['y1', 0])
 
     res = ct.step_response(model, T=T, X0=X0)           # all traces
@@ -1287,7 +1289,9 @@ def test_to_pandas():
         np.testing.assert_equal(
             df[df['trace'] == label]['time'], res.time)
         np.testing.assert_equal(
-            df[df['trace'] == label]['u0'], res.inputs['u0', i])
+            df[df['trace'] == label]['u1'], res.inputs['u1', i])
+        np.testing.assert_equal(
+            df[df['trace'] == label]['y0'], res.outputs['y0', i])
 
 
 @pytest.mark.skipif(pandas_check(), reason="pandas installed")
