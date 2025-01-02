@@ -1247,13 +1247,14 @@ def test_to_pandas():
     np.testing.assert_equal(df['x[1]'], resp.states[1])
 
     # Change the time points
-    sys = ct.rss(2, 1, 1)
+    sys = ct.rss(2, 1, 2)
     T = np.linspace(0, timepts[-1]/2, timepts.size * 2)
-    resp = ct.input_output_response(sys, timepts, np.sin(timepts), t_eval=T)
+    resp = ct.input_output_response(
+        sys, timepts, [np.sin(timepts), 0], t_eval=T)
     df = resp.to_pandas()
     np.testing.assert_equal(df['time'], resp.time)
-    np.testing.assert_equal(df['u[0]'], resp.inputs)
-    np.testing.assert_equal(df['y[0]'], resp.outputs)
+    np.testing.assert_equal(df['u[0]'], resp.inputs[0])
+    np.testing.assert_equal(df['y[0]'], resp.outputs[0])
     np.testing.assert_equal(df['x[0]'], resp.states[0])
     np.testing.assert_equal(df['x[1]'], resp.states[1])
 
@@ -1264,6 +1265,33 @@ def test_to_pandas():
     np.testing.assert_equal(df['time'], resp.time)
     np.testing.assert_equal(df['u[0]'], resp.inputs)
     np.testing.assert_equal(df['y[0]'], resp.inputs * 5)
+
+    # Multi-trace data
+    # https://github.com/python-control/python-control/issues/1087
+    model = ct.rss(
+        states=['x0', 'x1'], outputs=['y0', 'y1'],
+        inputs=['u0', 'u1'], name='My Model')
+    T = np.linspace(0, 10, 100, endpoint=False)
+    X0 = np.zeros(model.nstates)
+
+    res = ct.step_response(model, T=T, X0=X0, input=0)  # extract single trace
+    df = res.to_pandas()
+    np.testing.assert_equal(
+        df[df['trace'] == 'From u0']['time'], res.time)
+    np.testing.assert_equal(
+        df[df['trace'] == 'From u0']['u0'], res.inputs['u0', 0])
+    np.testing.assert_equal(
+        df[df['trace'] == 'From u0']['y1'], res.outputs['y1', 0])
+
+    res = ct.step_response(model, T=T, X0=X0)           # all traces
+    df = res.to_pandas()
+    for i, label in enumerate(res.trace_labels):
+        np.testing.assert_equal(
+            df[df['trace'] == label]['time'], res.time)
+        np.testing.assert_equal(
+            df[df['trace'] == label]['u1'], res.inputs['u1', i])
+        np.testing.assert_equal(
+            df[df['trace'] == label]['y0'], res.outputs['y0', i])
 
 
 @pytest.mark.skipif(pandas_check(), reason="pandas installed")
