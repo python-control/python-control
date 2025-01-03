@@ -376,15 +376,37 @@ def use_legacy_defaults(version):
     return (major, minor, patch)
 
 
-#
-# Utility function for processing legacy keywords
-#
-# Use this function to handle a legacy keyword that has been renamed.  This
-# function pops the old keyword off of the kwargs dictionary and issues a
-# warning.  If both the old and new keyword are present, a ControlArgument
-# exception is raised.
-#
 def _process_legacy_keyword(kwargs, oldkey, newkey, newval, warn_oldkey=True):
+    """Utility function for processing legacy keywords.
+
+    Use this function to handle a legacy keyword that has been renamed.
+    This function pops the old keyword off of the kwargs dictionary and
+    issues a warning.  If both the old and new keyword are present, a
+    ControlArgument exception is raised.
+
+    Parameters
+    ----------
+    kwargs : dict
+        Dictionary of keword arguments (from function call).
+    oldkey : str
+        Old (legacy) parameter name.
+    newkey : str
+        Current name of the parameter.
+    newval : object
+        Value of the current parameter (from the function signature).
+    warn_oldkey : bool
+        If set to `False`, suppress generation of a warning about using a
+        legacy keyword.  This is useful if you have two versions of a
+        keyword and you want to allow either to be used (see the `cost` and
+        `trajectory_cost` keywords in `flatsys.point_to_point` for an
+        example of this).
+
+    Returns
+    -------
+    val : object
+        Value of the (new) keyword.
+
+    """
     if oldkey in kwargs:
         if warn_oldkey:
             warnings.warn(

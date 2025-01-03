@@ -1480,29 +1480,32 @@ def _convert_to_transfer_function(
         sys, inputs=1, outputs=1, use_prefix_suffix=False):
     """Convert a system to transfer function form (if needed).
 
-    If sys is already a transfer function, then it is returned.  If sys is a
-    state space object, then it is converted to a transfer function and
-    returned.  If sys is a scalar, then the number of inputs and outputs can be
-    specified manually, as in:
+    If `sys` is already a transfer function, then it is returned.  If `sys`
+    is a state space object, then it is converted to a transfer function
+    and returned.  If `sys` is a scalar, then the number of inputs and
+    outputs can be specified manually, as in::
 
     >>> from control.xferfcn import _convert_to_transfer_function
     >>> sys = _convert_to_transfer_function(3.) # Assumes inputs = outputs = 1
     >>> sys = _convert_to_transfer_function(1., inputs=3, outputs=2)
 
-    In the latter example, sys's matrix transfer function is [[1., 1., 1.]
-                                                              [1., 1., 1.]].
+    In the latter example, the matrix transfer function for `sys` is::
 
-    If sys is an array-like type, then it is converted to a constant-gain
+      [[1., 1., 1.]
+       [1., 1., 1.]].
+
+    If `sys` is an array-like type, then it is converted to a constant-gain
     transfer function.
 
     Note: no renaming of inputs and outputs is performed; this should be done
     by the calling function.
 
-    >>> sys = _convert_to_transfer_function([[1., 0.], [2., 3.]])
+    Arrays can also be passed as an argument.  For example::
 
-    In this example, the numerator matrix will be
-       [[[1.0], [0.0]], [[2.0], [3.0]]]
-    and the denominator matrix [[[1.0], [1.0]], [[1.0], [1.0]]]
+      sys = _convert_to_transfer_function([[1., 0.], [2., 3.]])
+
+    will give a system with numerator matrix `[[[1.0], [0.0]], [[2.0],
+    [3.0]]]` and denominator matrix `[[[1.0], [1.0]], [[1.0], [1.0]]]`.
 
     """
     from .statesp import StateSpace
