@@ -458,7 +458,7 @@ def frequency_response(
     Examples
     --------
     >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
-    >>> mag, phase, omega = ct.freqresp(G, [0.1, 1., 10.])
+    >>> mag, phase, omega = ct.frequency_response(G, [0.1, 1., 10.])
 
     .. todo::
         Add example with MIMO system
@@ -490,8 +490,8 @@ def frequency_response(
 
     responses = []
     for sys_ in syslist:
-        if isinstance(sys_, FrequencyResponseData) and sys_.ifunc is None and \
-           not omega_range_given:
+        if isinstance(sys_, FrequencyResponseData) and sys_._ifunc is None \
+           and not omega_range_given:
             omega_sys = sys_.omega              # use system properties
         else:
             omega_sys = omega_syslist.copy()    # use common omega vector

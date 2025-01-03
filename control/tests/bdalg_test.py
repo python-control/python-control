@@ -903,15 +903,15 @@ def _tf_close_coeff(tf_a, tf_b, rtol=1e-5, atol=1e-8):
     for i in range(tf_a.noutputs):
         for j in range(tf_a.ninputs):
             if not np.allclose(
-                tf_a.num[i][j],
-                tf_b.num[i][j],
+                tf_a.num_array[i, j],
+                tf_b.num_array[i, j],
                 rtol=rtol,
                 atol=atol,
             ):
                 return False
             if not np.allclose(
-                tf_a.den[i][j],
-                tf_b.den[i][j],
+                tf_a.den_array[i, j],
+                tf_b.den_array[i, j],
                 rtol=rtol,
                 atol=atol,
             ):

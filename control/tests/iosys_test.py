@@ -17,7 +17,8 @@ import pytest
 import scipy
 
 import control as ct
-
+import control.flatsys as fs
+from control.tests.conftest import slycotonly
 
 class TestIOSys:
 
@@ -930,6 +931,8 @@ class TestIOSys:
         ios_secord_update = ct.NonlinearIOSystem(
             secord_update, secord_output, inputs=1, outputs=1, states=2,
             params={'omega0':2, 'zeta':0})
+        lin_secord_update = ct.linearize(ios_secord_update, [0, 0], [0])
+        w_update, v_update = np.linalg.eig(lin_secord_update.A)
 
         # Make sure the default parameters haven't changed
         lin_secord_check = ct.linearize(ios_secord_default, [0, 0], [0])
@@ -959,7 +962,7 @@ class TestIOSys:
             ios_series_default_local, [0, 0, 0, 0], [0])
         w, v = np.linalg.eig(lin_series_default_local.A)
         np.testing.assert_array_almost_equal(
-            np.sort(w), np.sort(np.concatenate((w_default, [2j, -2j]))))
+             w, np.concatenate([w_update, w_update]))
 
         # Show that we can change the parameters at linearization
         lin_series_override = ct.linearize(
@@ -2284,3 +2287,55 @@ def test_signal_indexing():
     with pytest.raises(IndexError, match=r"signal name\(s\) not valid"):
         resp.outputs['y[0]', 'u[0]']
 
+@pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd, ct.nlsys, fs.flatsys])
+def test_relabeling(fcn):
+    sys = ct.rss(1, 1, 1, name="sys")
+
+    # Rename the inputs, outputs, (states,) system
+    match fcn:
+        case ct.tf:
+            sys = fcn(sys, inputs='u', outputs='y', name='new')
+        case ct.frd:
+            sys = fcn(sys, [0.1, 1, 10], inputs='u', outputs='y', name='new')
+        case _:
+            sys = fcn(sys, inputs='u', outputs='y', states='x', name='new')
+
+    assert sys.input_labels == ['u']
+    assert sys.output_labels == ['y']
+    if sys.nstates:
+        assert sys.state_labels == ['x']
+    assert sys.name == 'new'
+
+
+@pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd, ct.nlsys, fs.flatsys])
+def test_signal_prefixing(fcn):
+    sys = ct.rss(2, 1, 1)
+
+    # Recreate the system in different forms, with non-standard prefixes
+    match fcn:
+        case ct.ss:
+            sys = ct.ss(
+                sys.A, sys.B, sys.C, sys.D, state_prefix='xx',
+                input_prefix='uu', output_prefix='yy')
+        case ct.tf:
+            sys = ct.tf(sys)
+            sys = fcn(sys.num, sys.den, input_prefix='uu', output_prefix='yy')
+        case ct.frd:
+            freq = [0.1, 1, 10]
+            data = [sys(w * 1j) for w in freq]
+            sys = fcn(data, freq, input_prefix='uu', output_prefix='yy')
+        case ct.nlsys:
+            sys = ct.nlsys(sys)
+            sys = fcn(
+                sys.updfcn, sys.outfcn, inputs=1, outputs=1, states=2,
+                state_prefix='xx', input_prefix='uu', output_prefix='yy')
+        case fs.flatsys:
+            sys = fs.flatsys(sys)
+            sys = fcn(
+                sys.forward, sys.reverse, inputs=1, outputs=1, states=2,
+                state_prefix='xx', input_prefix='uu', output_prefix='yy')
+
+    assert sys.input_labels == ['uu[0]']
+    assert sys.output_labels == ['yy[0]']
+    if sys.nstates:
+        assert sys.state_labels == ['xx[0]', 'xx[1]']

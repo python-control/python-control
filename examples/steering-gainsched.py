@@ -46,10 +46,10 @@ def vehicle_output(t, x, u, params):
     return x                            # return x, y, theta (full state)
 
 # Define the vehicle steering dynamics as an input/output system
-vehicle = ct.NonlinearIOSystem(
+vehicle = ct.nlsys(
     vehicle_update, vehicle_output, states=3, name='vehicle',
-    inputs=('v', 'phi'),
-    outputs=('x', 'y', 'theta'))
+    inputs=('v', 'phi'), outputs=('x', 'y', 'theta'),
+    params={'wheelbase': 3, 'maxsteer': 0.5})
 
 #
 # Gain scheduled controller
@@ -89,10 +89,12 @@ def control_output(t, x, u, params):
     return  np.array([v, phi])
 
 # Define the controller as an input/output system
-controller = ct.NonlinearIOSystem(
+controller = ct.nlsys(
     None, control_output, name='controller',        # static system
     inputs=('ex', 'ey', 'etheta', 'vd', 'phid'),    # system inputs
-    outputs=('v', 'phi')                            # system outputs
+    outputs=('v', 'phi'),                           # system outputs
+    params={'longpole': -2, 'latpole1': -1/2 + sqrt(-7)/2,
+            'latpole2': -1/2 - sqrt(-7)/2, 'wheelbase': 3}
 )
 
 #
@@ -113,7 +115,7 @@ def trajgen_output(t, x, u, params):
     return np.array([vref * t, yref, 0, vref, 0])
 
 # Define the trajectory generator as an input/output system
-trajgen = ct.NonlinearIOSystem(
+trajgen = ct.nlsys(
     None, trajgen_output, name='trajgen',
     inputs=('vref', 'yref'),
     outputs=('xd', 'yd', 'thetad', 'vd', 'phid'))
@@ -156,10 +158,13 @@ steering = ct.interconnect(
     inplist=['trajgen.vref', 'trajgen.yref'],
     inputs=['yref', 'vref'],
 
-    #  System outputs
+    # System outputs
     outlist=['vehicle.x', 'vehicle.y', 'vehicle.theta', 'controller.v',
              'controller.phi'],
-    outputs=['x', 'y', 'theta', 'v', 'phi']
+    outputs=['x', 'y', 'theta', 'v', 'phi'],
+
+    # Parameters
+    params=trajgen.params | vehicle.params | controller.params,
 )
 
 # Set up the simulation conditions
@@ -220,7 +225,8 @@ gains = [np.array(ct.lqr(vehicle.linearize(
 # Create the gain scheduled system
 controller, _ = ct.create_statefbk_iosystem(
     vehicle, (gains, points), name='controller', ud_labels=['vd', 'phid'],
-    gainsched_indices=['vd', 'theta'], gainsched_method='linear')
+    gainsched_indices=['vd', 'theta'], gainsched_method='linear',
+    params=vehicle.params | controller.params)
 
 # Connect everything together (note that controller inputs are different)
 steering = ct.interconnect(
@@ -245,10 +251,13 @@ steering = ct.interconnect(
     inplist=['trajgen.vref', 'trajgen.yref'],
     inputs=['yref', 'vref'],
 
-    #  System outputs
+    # System outputs
     outlist=['vehicle.x', 'vehicle.y', 'vehicle.theta', 'controller.v',
              'controller.phi'],
-    outputs=['x', 'y', 'theta', 'v', 'phi']
+    outputs=['x', 'y', 'theta', 'v', 'phi'],
+
+    # Parameters
+    params=steering.params
 )
 
 # Plot the results to compare to the previous case

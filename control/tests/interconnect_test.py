@@ -666,15 +666,29 @@ def test_interconnect_params():
     # Create a nominally unstable system
     sys1 = ct.nlsys(
         lambda t, x, u, params: params['a'] * x[0] + u[0],
-        states=1, inputs='u', outputs='y', params={'a': 1})
+        states=1, inputs='u', outputs='y', params={'a': 2, 'c':2})
 
     # Simple system for serial interconnection
     sys2 = ct.nlsys(
         None, lambda t, x, u, params: u[0],
-        inputs='r', outputs='u')
+        inputs='r', outputs='u', params={'a': 4, 'b': 3})
 
-    # Create a series interconnection
+    # Make sure default parameters get set as expected
     sys = ct.interconnect([sys1, sys2], inputs='r', outputs='y')
+    assert sys.params == {'a': 4, 'c': 2, 'b': 3}
+    assert sys.dynamics(0, [1], [0]).item() == 4
+
+    # Make sure we can override the parameters
+    sys = ct.interconnect(
+        [sys1, sys2], inputs='r', outputs='y', params={'b': 1})
+    assert sys.params == {'b': 1}
+    assert sys.dynamics(0, [1], [0]).item() == 2
+    assert sys.dynamics(0, [1], [0], params={'a': 5}).item() == 5
+
+    # Create final series interconnection, with proper parameter values
+    sys = ct.interconnect(
+        [sys1, sys2], inputs='r', outputs='y', params={'a': 1})
+    assert sys.params == {'a': 1}
 
     # Make sure we can call the update function
     sys.updfcn(0, [0], [0], {})
