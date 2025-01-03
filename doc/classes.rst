@@ -48,7 +48,6 @@ These classes are used as the outputs of `_response`, `_map`, and
    :nosignatures:
 
    ControlPlot
-   FrequencyResponseData
    TimeResponseData
    NyquistResponseData
    PoleZeroData

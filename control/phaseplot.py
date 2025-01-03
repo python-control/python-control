@@ -1080,7 +1080,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     timepts : array-like, optional
         Draw arrows at the given list times [t1, t2, ...]
     tfirst : bool, optional
-        If True, call `func` with signature `func(t, x, ...)`.
+        If `True`, call `func` with signature `func(t, x, ...)`.
     params: tuple, optional
         List of parameters to pass to vector field: `func(x, t, *params)`
 

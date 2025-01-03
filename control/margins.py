@@ -221,7 +221,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
         Alternatively, a three tuple of the form (mag, phase, omega)
         providing the frequency response can be passed.
     returnall : bool, optional
-        If true, return all margins found. If False (default), return only the
+        If true, return all margins found. If `False` (default), return only the
         minimum stability margins. For frequency data or FRD systems, only
         margins in the given frequency region can be found and returned.
     epsw : float, optional

@@ -56,7 +56,7 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
         config.defaults['iosys.sampled_system_name_suffix'], with the
         default being to add the suffix '$sampled'.
     copy_names : bool, Optional
-        If True, copy the names of the input signals, output
+        If `True`, copy the names of the input signals, output
         signals, and states to the sampled system.
 
     Notes

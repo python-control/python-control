@@ -106,7 +106,7 @@ class NamedSignal(np.ndarray):
 class InputOutputSystem():
     """A class for representing input/output systems.
 
-    The InputOutputSystem class allows (possibly nonlinear) input/output
+    The `InputOutputSystem` class allows (possibly nonlinear) input/output
     systems to be represented in Python.  It is used as a parent class for
     a set of subclasses that are used to implement specific structures and
     operations for different types of input/output dynamical systems.
@@ -115,10 +115,10 @@ class InputOutputSystem():
     is operating in continuous or discrete time. It can have the following
     values:
 
-      * dt = None       No timebase specified
+      * dt = `None`     No timebase specified
       * dt = 0          Continuous time system
       * dt > 0          Discrete time system with sampling time dt
-      * dt = True       Discrete time system with unspecified sampling time
+      * dt = `True`     Discrete time system with unspecified sampling time
 
     Parameters
     ----------
@@ -137,9 +137,9 @@ class InputOutputSystem():
         Description of the system states.  Same format as `inputs`, with
         the prefix given by state_prefix (defaults to 'x').
     dt : None, True or float, optional
-        System timebase. 0 (default) indicates continuous time, True
+        System timebase. 0 (default) indicates continuous time, `True`
         indicates discrete time with unspecified sampling time, positive
-        number is discrete time with specified sampling time, None indicates
+        number is discrete time with specified sampling time, `None` indicates
         unspecified timebase (either continuous or discrete time).
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
@@ -426,7 +426,7 @@ class InputOutputSystem():
 
         A copy of the system is made, with a new name.  The `name` keyword
         can be used to specify a specific name for the system.  If no name
-        is given and `use_prefix_suffix` is True, the name is constructed
+        is given and `use_prefix_suffix` is `True`, the name is constructed
         by prepending config.defaults['iosys.duplicate_system_name_prefix']
         and appending config.defaults['iosys.duplicate_system_name_suffix'].
         Otherwise, a generic system name of the form `sys[<id>]` is used,
@@ -610,7 +610,7 @@ class InputOutputSystem():
         sys : Named I/O system
             System to be checked.
         strict : bool, optional
-            If strict is True, make sure that timebase is not None.  Default
+            If strict is `True`, make sure that timebase is not None.  Default
             is False.
         """
         # If no timebase is given, answer depends on strict flag
@@ -625,7 +625,7 @@ class InputOutputSystem():
         Parameters
         ----------
         strict : bool, optional
-            If strict is True, make sure that timebase is not None.  Default
+            If strict is `True`, make sure that timebase is not None.  Default
             is False.
         """
 
@@ -655,7 +655,7 @@ def issiso(sys, strict=False):
     sys : I/O or LTI system
         System to be checked.
     strict : bool (default = False)
-        If strict is True, do not treat scalars as SISO.
+        If strict is `True`, do not treat scalars as SISO.
     """
     if isinstance(sys, (int, float, complex, np.number)) and not strict:
         return True
@@ -672,7 +672,7 @@ def timebase(sys, strict=True):
     dt = timebase(sys)
 
     returns the timebase for a system 'sys'.  If the strict option is
-    set to `True`, dt = True will be returned as 1.
+    set to `True`, dt = `True` will be returned as 1.
 
     Parameters
     ----------
@@ -764,7 +764,7 @@ def isdtime(sys=None, strict=False, dt=None):
     dt : None or number, optional
         Timebase to be checked.
     strict : bool, default=False
-        If strict is True, make sure that timebase is not None.
+        If strict is `True`, make sure that timebase is not None.
     """
 
     # See if we were passed a timebase instead of a system
@@ -796,7 +796,7 @@ def isctime(sys=None, dt=None, strict=False):
     dt : None or number, optional
         Timebase to be checked.
     strict : bool (default = False)
-        If strict is True, make sure that timebase is not None.
+        If strict is `True`, make sure that timebase is not None.
     """
 
     # See if we were passed a timebase instead of a system
@@ -868,7 +868,7 @@ def _process_iosys_keywords(
     `default` dictionary can also be set to an InputOutputSystem object,
     which is useful for copy constructors that change system/signal names.
 
-    If `end` is True, then generate an error if there are any remaining
+    If `end` is `True`, then generate an error if there are any remaining
     keywords.
 
     """

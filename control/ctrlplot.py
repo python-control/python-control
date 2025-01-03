@@ -148,7 +148,7 @@ class ControlPlot():
         Figure on which the Axes are drawn.
     legend : `matplotlib:.legend.Legend` (instance or ndarray)
         Legend object(s) for the plot.  If more than one legend is
-        included, this will be an array with each entry being either None
+        included, this will be an array with each entry being either` None`
         (for no legend) or a legend object.
 
     """
@@ -350,7 +350,7 @@ def _process_ax_keyword(
     created with axes of the desired shape.
 
     If `create_axes` is False and a new/empty figure is returned, then axs
-    is an array of the proper shape but None for each element.  This allows
+    is an array of the proper shape but `None` for each element.  This allows
     the calling function to do the actual axis creation (needed for
     curvilinear grids that use the AxisArtist module).
 
@@ -735,7 +735,7 @@ def _get_color(
     Returns
     -------
     color : matplotlib color spec
-        Color to use for this line (or None for matplotlib default).
+        Color to use for this line (or `None` for matplotlib default).
 
     """
     # See if the color was explicitly specified by the user

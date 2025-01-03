@@ -28,7 +28,7 @@ __all__ = ['FrequencyResponseData', 'FRD', 'frd']
 
 
 class FrequencyResponseData(LTI):
-    """FrequencyResponseData(d, w[, smooth])
+    """FrequencyResponseData(response, omega[, smooth])
 
     A class for models defined by frequency response data (FRD).
 
@@ -53,9 +53,9 @@ class FrequencyResponseData(LTI):
         frequencies give in `w`.  If `False` (default), frequency response
         can only be obtained at the frequencies specified in `w`.
     dt : None, True or float, optional
-        System timebase. 0 (default) indicates continuous time, True
+        System timebase. 0 (default) indicates continuous time, `True`
         indicates discrete time with unspecified sampling time, positive
-        number is discrete time with specified sampling time, None
+        number is discrete time with specified sampling time, `None`
         indicates unspecified timebase (either continuous or discrete time).
     squeeze : bool
         By default, if a system is single-input, single-output (SISO) then
@@ -103,7 +103,7 @@ class FrequencyResponseData(LTI):
     plot_magnitude, plot_phase : bool, optional
         If set to `False`, don't plot the magnitude or phase, respectively.
     return_magphase : bool, optional
-        If True, then a frequency response data object will enumerate as a
+        If `True`, then a frequency response data object will enumerate as a
         tuple of the form (mag, phase, omega) where where `mag` is the
         magnitude (absolute value, not dB or log10) of the system
         frequency response, `phase` is the wrapped phase in radians of
@@ -635,8 +635,8 @@ class FrequencyResponseData(LTI):
         omega : float or 1D array_like
             Frequencies in radians per second.
         squeeze : bool, optional
-            If squeeze=True, remove single-dimensional entries from the shape
-            of the output even if the system is not SISO. If squeeze=False,
+            If `squeeze=True`, remove single-dimensional entries from the shape
+            of the output even if the system is not SISO. If `squeeze=False`,
             keep all indices (output, input and, if omega is array_like,
             frequency) even if the system is SISO. The default value can be
             set using config.defaults['control.squeeze_frequency_response'].
@@ -644,12 +644,12 @@ class FrequencyResponseData(LTI):
         Returns
         -------
         fresp : complex ndarray
-            The frequency response of the system.  If the system is SISO and
-            squeeze is not True, the shape of the array matches the shape of
-            omega.  If the system is not SISO or squeeze is False, the first
-            two dimensions of the array are indices for the output and input
-            and the remaining dimensions match omega.  If `squeeze` is True
-            then single-dimensional axes are removed.
+            The frequency response of the system.  If the system is SISO
+            and `squeeze` is not `True`, the shape of the array matches the
+            shape of omega.  If the system is not SISO or `squeeze` is
+            `False`, the first two dimensions of the array are indices for
+            the output and input and the remaining dimensions match omega.
+            If `squeeze` is `True` then single-dimensional axes are removed.
 
         """
         omega_array = np.array(omega, ndmin=1)  # array-like version of omega
@@ -705,14 +705,14 @@ class FrequencyResponseData(LTI):
             processing (`squeeze`, `return_magphase`).
 
         squeeze : bool, optional
-            If squeeze=True, remove single-dimensional entries from the shape
-            of the output even if the system is not SISO. If squeeze=False,
+            If squeeze=`True`, remove single-dimensional entries from the shape
+            of the output even if the system is not SISO. If squeeze=`False`,
             keep all indices (output, input and, if omega is array_like,
             frequency) even if the system is SISO. The default value can be
             set using config.defaults['control.squeeze_frequency_response'].
 
         return_magphase : bool, optional
-            If True, then a frequency response data object will enumerate as a
+            If `True`, then a frequency response data object will enumerate as a
             tuple of the form (mag, phase, omega) where where `mag` is the
             magnitude (absolute value, not dB or log10) of the system
             frequency response, `phase` is the wrapped phase in radians of
@@ -723,8 +723,8 @@ class FrequencyResponseData(LTI):
         -------
         fresp : complex ndarray
             The frequency response of the system.  If the system is SISO and
-            squeeze is not True, the shape of the array matches the shape of
-            omega.  If the system is not SISO or squeeze is False, the first
+            squeeze is not `True`, the shape of the array matches the shape of
+            omega.  If the system is not SISO or squeeze is `False`, the first
             two dimensions of the array are indices for the output and input
             and the remaining dimensions match omega.  If `squeeze` is True
             then single-dimensional axes are removed.

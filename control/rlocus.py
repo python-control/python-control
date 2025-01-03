@@ -114,7 +114,7 @@ def root_locus_plot(
         (see :doc:`matplotlib:api/axes_api`).
     plot : bool, optional
         (legacy) If given, `root_locus_plot` returns the legacy return values
-        of roots and gains.  If False, just return the values with no plot.
+        of roots and gains.  If `False`, just return the values with no plot.
     grid : bool or str, optional
         If `True` plot omega-damping grid, if `False` show imaginary axis
         for continuous time systems, unit circle for discrete time systems.
@@ -164,7 +164,7 @@ def root_locus_plot(
         system.
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'center right',
-        with no legend for a single response.  Use False to suppress legend.
+        with no legend for a single response.  Use `False` to suppress legend.
     show_legend : bool, optional
         Force legend to be shown if `True` or hidden if `False`.  If
         `None`, then show legend when there is more than one line on the

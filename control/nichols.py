@@ -42,8 +42,8 @@ def nichols_plot(
         Passed to `matplotlib` as the format string for all lines in the plot.
         The `omega` parameter must be present (use omega=None if needed).
     grid : boolean, optional
-        True if the plot should include a Nichols-chart grid. Default is
-        True and can be set using config.defaults['nichols.grid'].
+        `True` if the plot should include a Nichols-chart grid. Default is
+        `True` and can be set using config.defaults['nichols.grid'].
     **kwargs : `matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
@@ -78,7 +78,7 @@ def nichols_plot(
         system.
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'upper left',
-        with no legend for a single response.  Use False to suppress legend.
+        with no legend for a single response.  Use `False` to suppress legend.
     rcParams : dict
         Override the default parameters used for generating plots.
         Default is set by config.defaults['ctrlplot.rcParams'].
@@ -196,7 +196,7 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
     ax : matplotlib.axes.Axes, optional
         Axes to add grid to.  If `None`, use `matplotlib.pyplot.gca()`.
     label_cl_phases : bool, optional
-        If True, closed-loop phase lines will be labelled.
+        If `True`, closed-loop phase lines will be labelled.
 
     Returns
     -------

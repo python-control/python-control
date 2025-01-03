@@ -30,7 +30,7 @@ def step(sys, T=None, input=0, output=None, return_x=False):
     output : int
         If given, index of the output that is returned by this simulation.
     return_x : bool, optional
-        If True, return the state vector in addition to outputs.
+        If `True`, return the state vector in addition to outputs.
 
     Returns
     -------
@@ -156,7 +156,7 @@ def impulse(sys, T=None, input=0, output=None, return_x=False):
     output : int
         Index of the output that will be used in this simulation.
     return_x : bool, optional
-        If True, return the state vector in addition to outputs.
+        If `True`, return the state vector in addition to outputs.
 
     Returns
     -------
@@ -208,7 +208,7 @@ def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
     output : int
         If given, index of the output that is returned by this simulation.
     return_x : bool, optional
-        If True, return the state vector in addition to outputs.
+        If `True`, return the state vector in addition to outputs.
 
     Returns
     -------

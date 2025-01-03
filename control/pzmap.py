@@ -79,8 +79,10 @@ class PoleZeroData:
         System name.
     sys : `StateSpace` or `TransferFunction`, optional
         System corresponding to the data.
+    dt : None, True or float, optional
+        System timebase (used for showing stability boundary).
     sort_loci : bool, optional
-        Set to False to turn off sorting of loci into unique branches.
+        Set to `False` to turn off sorting of loci into unique branches.
 
     """
     def __init__(
@@ -169,7 +171,7 @@ def pole_zero_plot(
     system is plotted.  When the root locus for a single system is plotted,
     clicking on a location on the root locus will mark the gain on all
     branches of the diagram and show the system gain and damping for the
-    given pole in the axes title.  Set to False to turn off this behavior.
+    given pole in the axes title.  Set to `False` to turn off this behavior.
 
     Parameters
     ----------
@@ -232,7 +234,7 @@ def pole_zero_plot(
         system.
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'upper right',
-        with no legend for a single response.  Use False to suppress legend.
+        with no legend for a single response.  Use `False` to suppress legend.
     marker_color : str, optional
         Set the color of the markers used for poles and zeros.
     marker_size : int, optional

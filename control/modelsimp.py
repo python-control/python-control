@@ -460,10 +460,10 @@ def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
     n : integer, optional
         Number of columns in Hankel matrix. Default is 2*r.
     dt : True or float, optional
-        True indicates discrete time with unspecified sampling time and a
+        `True` indicates discrete time with unspecified sampling time and a
         positive float is discrete time with the specified sampling time.
         It can be used to scale the StateSpace model in order to match the
-        unit-area impulse response of python-control. Default is True.
+        unit-area impulse response of python-control. Default is `True`.
     transpose : bool, optional
         Assume that input data is transposed relative to the standard
         :ref:`time-series-convention`. For TimeResponseData this parameter
@@ -565,7 +565,7 @@ def markov(*args, m=None, transpose=False, dt=None, truncate=False):
     ----------
     Y : array_like
         Output data. If the array is 1D, the system is assumed to be
-        single input. If the array is 2D and transpose=False, the columns
+        single input. If the array is 2D and transpose=`False`, the columns
         of `Y` are taken as time points, otherwise the rows of `Y` are
         taken as time points.
     U : array_like
@@ -576,10 +576,10 @@ def markov(*args, m=None, transpose=False, dt=None, truncate=False):
     m : int, optional
         Number of Markov parameters to output. Defaults to len(U).
     dt : True of float, optional
-        True indicates discrete time with unspecified sampling time and a
+        `True` indicates discrete time with unspecified sampling time and a
         positive float is discrete time with the specified sampling time.
         It can be used to scale the Markov parameters in order to match
-        the unit-area impulse response of python-control. Default is True
+        the unit-area impulse response of python-control. Default is `True`
         for array_like and dt=data.time[1]-data.time[0] for
         TimeResponseData as input.
     truncate : bool, optional

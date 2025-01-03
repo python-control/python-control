@@ -173,8 +173,8 @@ class NonlinearIOSystem(InputOutputSystem):
             Parameter values for the system. Passed to the evaluation function
             for the system as default values, overriding internal defaults.
         squeeze : bool, optional
-            If True and if the system has a single output, return the system
-            output as a 1D array rather than a 2D array.  If False, return the
+            If `True` and if the system has a single output, return the system
+            output as a 1D array rather than a 2D array.  If `False`, return the
             system output as a 2D array even if the system is SISO.  Default
             value set by config.defaults['control.squeeze_time_response'].
 
@@ -1112,10 +1112,10 @@ class InterconnectedSystem(NonlinearIOSystem):
         Parameters
         ----------
         show_names : bool, optional
-            Instead of printing out the system number, print out the name of
-            each system. Default is False because system name is not usually
-            specified when performing implicit interconnection using
-            `interconnect`.
+            Instead of printing out the system number, print out the name
+            of each system. Default is `False` because system name is not
+            usually specified when performing implicit interconnection
+            using `interconnect`.
         column_width : int, optional
             Character width of printed columns.
 
@@ -1130,6 +1130,7 @@ class InterconnectedSystem(NonlinearIOSystem):
         e         | input                         | C
         u         | C                             | P
         y         | P                             | output
+
         """
 
         print('signal'.ljust(10) + '| source'.ljust(column_width) + \
@@ -1210,8 +1211,8 @@ class InterconnectedSystem(NonlinearIOSystem):
         """Check for unused subsystem inputs and outputs.
 
         Check to see if there are any unused signals and return a list of
-        unused input and output signal descriptions.  If `warning` is True
-        and any unused inputs or outputs are found, emit a warning.
+        unused input and output signal descriptions.  If `warning` is
+        `True` and any unused inputs or outputs are found, emit a warning.
 
         Parameters
         ----------
@@ -1472,15 +1473,15 @@ def input_output_response(
         List of times at which the time response should be computed.
         Defaults to `T`.
     return_x : bool, optional
-        If True, return the state vector when assigning to a tuple (default =
+        If `True`, return the state vector when assigning to a tuple (default =
         False).  See `forced_response` for more details.
-        If True, return the values of the state at each time (default = False).
+        If `True`, return the values of the state at each time (default = False).
     params : dict, optional
         Parameter values for the system.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
     squeeze : bool, optional
-        If True and if the system has a single output, return the system
-        output as a 1D array rather than a 2D array.  If False, return the
+        If `True` and if the system has a single output, return the system
+        output as a 1D array rather than a 2D array.  If `False`, return the
         system output as a 2D array even if the system is SISO.  Default value
         set by config.defaults['control.squeeze_time_response'].
 
@@ -1493,8 +1494,8 @@ def input_output_response(
         * time (array): Time values of the output.
 
         * outputs (array): Response of the system.  If the system is SISO and
-          `squeeze` is not True, the array is 1D (indexed by time).  If the
-          system is not SISO or `squeeze` is False, the array is 2D (indexed
+          `squeeze` is not `True`, the array is 1D (indexed by time).  If the
+          system is not SISO or `squeeze` is `False`, the array is 2D (indexed
           by output and time).
 
         * states (array): Time evolution of the state vector, represented as
@@ -1523,7 +1524,7 @@ def input_output_response(
     solve_ivp_kwargs : dict, optional
         Pass additional keywords to `scipy.integrate.solve_ivp`.
     transpose : bool, default=False
-        If True, transpose all input and output arrays (for backward
+        If `True`, transpose all input and output arrays (for backward
         compatibility with MATLAB and `scipy.signal.lsim`).
 
     Raises
@@ -1821,7 +1822,7 @@ class OperatingPoint():
     result : `scipy.optimize.OptimizeResult`, optional
         Result from the `scipy.optimize.root` function, if available.
     return_outputs, return_result : bool, optional
-            If set to `True`, then when accessed a tuple the output values
+        If set to `True`, then when accessed a tuple the output values
         and/or result of the root finding function will be returned.
 
     Notes
@@ -1945,9 +1946,9 @@ def find_operating_point(
     root_kwargs : dict, optional
         Additional keyword arguments to pass `scipy.optimize.root`.
     return_outputs : bool, optional
-        If True, return the value of outputs at the operating point.
+        If `True`, return the value of outputs at the operating point.
     return_result : bool, optional
-        If True, return the `result` option from the
+        If `True`, return the `result` option from the
         `scipy.optimize.root` function used to compute the
         operating point.
 
@@ -2219,7 +2220,7 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
         config.defaults['iosys.linearized_system_name_suffix'], with the
         default being to add the suffix '$linearized'.
     copy_names : bool, Optional
-        If True, Copy the names of the input signals, output signals, and
+        If `True`, Copy the names of the input signals, output signals, and
         states to the linearized system.
 
     Returns
@@ -2410,12 +2411,12 @@ def interconnect(
         'u', 'y', 'x'.
 
     check_unused : bool, optional
-        If True, check for unused sub-system signals.  This check is
-        not done if connections is False, and neither input nor output
+        If `True`, check for unused sub-system signals.  This check is
+        not done if connections is `False`, and neither input nor output
         mappings are specified.
 
     add_unused : bool, optional
-        If True, subsystem signals that are not connected to other components
+        If `True`, subsystem signals that are not connected to other components
         are added as inputs and outputs of the interconnected system.
 
     ignore_inputs : list of input-spec, optional
@@ -2859,7 +2860,7 @@ def _process_vector_argument(arg, name, size):
     name : string
         Name of the argument being processed.  Used in errors/warnings.
     size : int or None
-        Size of the element.  If None, size is determined by arg.
+        Size of the element.  If `None`, size is determined by arg.
 
     Returns
     -------
@@ -2930,7 +2931,7 @@ def connection_table(sys, show_names=False, column_width=32):
         Interconnected system object.
     show_names : bool, optional
         Instead of printing out the system number, print out the name of
-        each system. Default is False because system name is not usually
+        each system. Default is `False` because system name is not usually
         specified when performing implicit interconnection using
         `interconnect`.
     column_width : int, optional
@@ -2947,6 +2948,7 @@ def connection_table(sys, show_names=False, column_width=32):
     e         | input                   | C
     u         | C                       | P
     y         | P                       | output
+
     """
     assert isinstance(sys, InterconnectedSystem), "system must be"\
         "an InterconnectedSystem."

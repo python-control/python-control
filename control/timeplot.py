@@ -61,12 +61,12 @@ def time_response_plot(
             * 'overlay`: plot inputs overlaid with outputs
             * True: plot the inputs on their own axes
     plot_outputs : bool, optional
-        If False, suppress plotting of the outputs.
+        If `False`, suppress plotting of the outputs.
     overlay_traces : bool, optional
-        If set to True, combine all traces onto a single row instead of
+        If set to `True`, combine all traces onto a single row instead of
         plotting a separate row for each trace.
     overlay_signals : bool, optional
-        If set to True, combine all input and output signals onto a single
+        If set to `True`, combine all input and output signals onto a single
         plot (for each).
     sharex, sharey : str or bool, optional
         Determine whether and how x- and y-axis limits are shared between
@@ -77,9 +77,9 @@ def time_response_plot(
         can be set using config.defaults['timeplot.sharex'] and
         config.defaults['timeplot.sharey'].
     transpose : bool, optional
-        If transpose is False (default), signals are plotted from top to
+        If transpose is `False` (default), signals are plotted from top to
         bottom, starting with outputs (if plotted) and then inputs.
-        Multi-trace plots are stacked horizontally.  If transpose is True,
+        Multi-trace plots are stacked horizontally.  If transpose is `True`,
         signals are plotted from left to right, starting with the inputs
         (if plotted) and then the outputs.  Multi-trace responses are
         stacked vertically.
@@ -110,7 +110,7 @@ def time_response_plot(
     ----------------
     add_initial_zero : bool
         Add an initial point of zero at the first time point for all
-        inputs with type 'step'.  Default is True.
+        inputs with type 'step'.  Default is `True`.
     ax : array of matplotlib.axes.Axes, optional
         The matplotlib axes to draw the figure on.  If not specified, the
         axes for the current figure are used or, if there is no current
@@ -128,11 +128,11 @@ def time_response_plot(
     legend_map : array of str, optional
         Location of the legend for multi-axes plots.  Specifies an array
         of legend location strings matching the shape of the subplots, with
-        each entry being either None (for no legend) or a legend location
+        each entry being either `None` (for no legend) or a legend location
         string (see `~matplotlib.pyplot.legend`).
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'center right',
-        with no legend for a single response.  Use False to suppress legend.
+        with no legend for a single response.  Use `False` to suppress legend.
     output_props : array of dicts, optional
         List of line properties to use when plotting combined outputs.  The
         default values are set by config.defaults['timeplot.output_props'].

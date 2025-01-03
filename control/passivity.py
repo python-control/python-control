@@ -23,13 +23,14 @@ __all__ = ["get_output_fb_index", "get_input_ff_index",  "ispassive",
 def solve_passivity_LMI(sys, rho=None, nu=None):
     """Compute passivity indices and/or solves feasiblity via a LMI.
 
-    Constructs a linear matrix inequality (LMI) such that if a solution exists
-    and the last element of the solution is positive, the system `sys` is
-    passive. Inputs of None for `rho` or `nu` indicate that the function should
-    solve for that index (they are mutually exclusive, they can't both be
-    None, otherwise you're trying to solve a nonconvex bilinear matrix
-    inequality.) The last element of the output `solution` is either the output or input
-    passivity index, for `rho` = None and `nu` = None respectively.
+    Constructs a linear matrix inequality (LMI) such that if a solution
+    exists and the last element of the solution is positive, the system
+    `sys` is passive. Inputs of `None` for `rho` or `nu` indicate that the
+    function should solve for that index (they are mutually exclusive, they
+    can't both be `None`, otherwise you're trying to solve a nonconvex
+    bilinear matrix inequality.) The last element of the output `solution`
+    is either the output or input passivity index, for `rho` = `None` and
+    `nu` = `None` respectively.
 
     The sources for the algorithm are:
 
@@ -54,6 +55,7 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
     -------
     solution : ndarray
         The LMI solution.
+
     """
     if cvx is None:
         raise ModuleNotFoundError("cvxopt required for passivity module")
@@ -280,11 +282,11 @@ def ispassive(sys, ofp_index=0, ifp_index=0):
 
     .. math:: V(x) >= 0 \land \dot{V}(x) <= y^T u
 
-    is equivalent to the default case of `ofp_index` = 0 and `ifp_index` = 0.
-    Note that computing the `ofp_index` and `ifp_index` for a system, then
-    using both values simultaneously as inputs to this function is not
-    guaranteed to have an output of True (the system might not be passive with
-    both indices at the same time).
+    is equivalent to the default case of `ofp_index` = 0 and `ifp_index` =
+    0.  Note that computing the `ofp_index` and `ifp_index` for a system,
+    then using both values simultaneously as inputs to this function is not
+    guaranteed to have an output of `True` (the system might not be passive
+    with both indices at the same time).
 
     For more details, see [1]_.
 
@@ -293,5 +295,6 @@ def ispassive(sys, ofp_index=0, ifp_index=0):
     .. [1] McCourt, Michael J., and Panos J. Antsaklis
           "Demonstrating passivity and dissipativity using computational
           methods."
+
     """
     return solve_passivity_LMI(sys, rho=ofp_index, nu=ifp_index) is not None

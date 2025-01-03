@@ -173,7 +173,10 @@ class FlatSystem(NonlinearIOSystem):
 
 
 def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
-    """Create a differentially flat I/O system.
+    """flatsys(forward, reverse[, updfcn, outfcn]) \
+    flatsys(linsys)
+
+    Create a differentially flat I/O system.
 
     The flatsys() function is used to create an input/output system object
     that also represents a differentially flat system.  It can be used in a
@@ -231,7 +234,7 @@ def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
         Description of the system states.  Same format as `inputs`.
 
     dt : None, True or float, optional
-        System timebase.  None (default) indicates continuous time, True
+        System timebase.  `None` (default) indicates continuous time, `True`
         indicates discrete time with undefined sampling time, positive
         number is discrete time with specified sampling time.
 
@@ -741,7 +744,7 @@ def solve_flat_ocp(
     2. The return data structure includes the following additional attributes:
            * success : bool indicating whether the optimization succeeded
            * cost : computed cost of the returned trajectory
-           * message : message returned by optimization if success if False
+           * message : message returned by optimization if success if `False`
 
     3. A common failure in solving optimal control problem is that the
        default initial guess violates the constraints and the optimizer

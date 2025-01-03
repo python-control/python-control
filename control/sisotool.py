@@ -66,16 +66,16 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
     plotstr_rlocus : `matplotlib.pyplot.plot` format string, optional
         Plotting style for the root locus plot(color, linestyle, etc).
     rlocus_grid : boolean (default = False)
-        If True plot s- or z-plane grid.
+        If `True`, plot s- or z-plane grid.
     omega : array_like
         List of frequencies in rad/sec to be used for bode plot.
     dB : boolean
-        If True, plot result in dB for the bode plot.
+        If `True`, plot result in dB for the bode plot.
     Hz : boolean
-        If True, plot frequency in Hz for the bode plot (omega must be
+        If `True`, plot frequency in Hz for the bode plot (omega must be
         provided in rad/sec).
     deg : boolean
-        If True, plot phase in degrees for the bode plot (else radians).
+        If `True`, plot phase in degrees for the bode plot (else radians).
     omega_limits : array_like of two values
         Limits of the to generate frequency vector.  If Hz=True the limits
         are in Hz otherwise in rad/s. Ignored if omega is provided, and
@@ -84,7 +84,7 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
         Number of samples to plot.  Defaults to
         config.defaults['freqplot.number_of_samples'].
     margins_bode : boolean
-        If True, plot gain and phase margin in the bode plot.
+        If `True`, plot gain and phase margin in the bode plot.
     tvect : list or ndarray, optional
         List of timesteps to use for closed loop step response.
 

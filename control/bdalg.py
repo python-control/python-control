@@ -666,10 +666,10 @@ def _ensure_tf(arraylike_or_tf, dt=None):
         Array-like or transfer function.
     dt : None, True or float, optional
         System timebase. 0 (default) indicates continuous
-        time, True indicates discrete time with unspecified sampling
+        time, `True` indicates discrete time with unspecified sampling
         time, positive number is discrete time with specified
-        sampling time, None indicates unspecified timebase (either
-        continuous or discrete time). If None, timestep is not validated.
+        sampling time, `None` indicates unspecified timebase (either
+        continuous or discrete time). If `None`, timestep is not validated.
 
     Returns
     -------

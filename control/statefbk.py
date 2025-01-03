@@ -120,8 +120,8 @@ def place_varga(A, B, p, dtime=False, alpha=None):
     p : 1D array_like
         Desired eigenvalue locations.
     dtime : bool, optional
-        False for continuous time pole placement or True for discrete time.
-        The default is dtime=False.
+        `False` (default) for continuous time pole placement or `True`
+        for discrete time. 
     alpha : float, optional
         If `dtime` is false then place_varga will leave the eigenvalues with
         real part less than alpha untouched.  If `dtime` is true then
@@ -295,8 +295,8 @@ def lqr(*args, **kwargs):
         additional rows and columns in the `Q` matrix.
     method : str, optional
         Set the method used for computing the result.  Current methods are
-        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
-        and then 'scipy'.
+        'slycot' and 'scipy'.  If set to `None` (default), try 'slycot'
+        first and then 'scipy'.
 
     Returns
     -------
@@ -442,8 +442,8 @@ def dlqr(*args, **kwargs):
         additional rows and columns in the `Q` matrix.
     method : str, optional
         Set the method used for computing the result.  Current methods are
-        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
-        and then 'scipy'.
+        'slycot' and 'scipy'.  If set to `None` (default), try 'slycot'
+        first and then 'scipy'.
 
     Returns
     -------

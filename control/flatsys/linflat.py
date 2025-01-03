@@ -22,7 +22,7 @@ class LinearFlatSystem(FlatSystem, StateSpace):
     Parameters
     ----------
     linsys : StateSpace
-        LTI StateSpace system to be converted
+        LTI StateSpace system to be converted.
     inputs : int, list of str or None, optional
         Description of the system inputs.  This can be given as an integer
         count or as a list of strings that name the individual signals.
@@ -36,8 +36,8 @@ class LinearFlatSystem(FlatSystem, StateSpace):
     states : int, list of str, or None, optional
         Description of the system states.  Same format as `inputs`.
     dt : None, True or float, optional
-        System timebase.  None (default) indicates continuous
-        time, True indicates discrete time with undefined sampling
+        System timebase.  `None` (default) indicates continuous
+        time, `True` indicates discrete time with undefined sampling
         time, positive number is discrete time with specified
         sampling time.
     params : dict, optional
@@ -45,7 +45,7 @@ class LinearFlatSystem(FlatSystem, StateSpace):
         functions for the system as default values, overriding internal
         defaults.
     name : string, optional
-        System name (used for specifying signals)
+        System name (used for specifying signals).
 
     """
 

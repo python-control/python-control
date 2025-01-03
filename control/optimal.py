@@ -151,7 +151,7 @@ class OptimalControlProblem():
     def __init__(
             self, sys, timepts, integral_cost, trajectory_constraints=None,
             terminal_cost=None, terminal_constraints=None, initial_guess=None,
-            trajectory_method=None, basis=None, log=False, kwargs_check=True,
+            trajectory_method=None, basis=None, log=False, _kwargs_check=True,
             **kwargs):
         """Set up an optimal control problem."""
         # Save the basic information for use later
@@ -195,7 +195,7 @@ class OptimalControlProblem():
                     " discrete time systems")
 
         # Make sure there were no extraneous keywords
-        if kwargs_check and kwargs:
+        if _kwargs_check and kwargs:
             raise TypeError("unrecognized keyword(s): ", str(kwargs))
 
         self.trajectory_constraints = _process_constraints(
@@ -771,14 +771,14 @@ class OptimalControlProblem():
             2D vector of shape (ninputs, ntimepts) or a 1D input of shape
             (ninputs,) that will be broadcast by extension of the time axis.
         return_states : bool, optional
-            If True (default), return the values of the state at each time.
+            If `True` (default), return the values of the state at each time.
         squeeze : bool, optional
-            If True and if the system has a single output, return the system
-            output as a 1D array rather than a 2D array.  If False, return the
+            If `True` and if the system has a single output, return the system
+            output as a 1D array rather than a 2D array.  If `False`, return the
             system output as a 2D array even if the system is SISO.  Default
             value set by config.defaults['control.squeeze_time_response'].
         transpose : bool, optional
-            If True, assume that 2D input arrays are transposed from the
+            If `True`, assume that 2D input arrays are transposed from the
             standard format.  Used to convert MATLAB-style inputs to our
             format.
         print_summary : bool, optional
@@ -795,8 +795,8 @@ class OptimalControlProblem():
             Time values of the input.
         res.inputs : array
             Optimal inputs for the system.  If the system is SISO and squeeze
-            is not True, the array is 1D (indexed by time).  If the system is
-            not SISO or squeeze is False, the array is 2D (indexed by the
+            is not `True`, the array is 1D (indexed by time).  If the system is
+            not SISO or squeeze is `False`, the array is 2D (indexed by the
             output number and time).
         res.states : array
             Time evolution of the state vector (if return_states=True).
@@ -837,8 +837,8 @@ class OptimalControlProblem():
         x : array-like or number, optional
             Initial state for the system.
         squeeze : bool, optional
-            If True and if the system has a single output, return the system
-            output as a 1D array rather than a 2D array.  If False, return the
+            If `True` and if the system has a single output, return the system
+            output as a 1D array rather than a 2D array.  If `False`, return the
             system output as a 2D array even if the system is SISO.  Default
             value set by config.defaults['control.squeeze_time_response'].
 
@@ -846,8 +846,8 @@ class OptimalControlProblem():
         -------
         input : array
             Optimal input for the system at the current time.  If the system
-            is SISO and squeeze is not True, the array is 1D (indexed by
-            time).  If the system is not SISO or squeeze is False, the array
+            is SISO and squeeze is not `True`, the array is 1D (indexed by
+            time).  If the system is not SISO or squeeze is `False`, the array
             is 2D (indexed by the output number and time).  Set to `None`
             if the optimization failed.
 
@@ -906,6 +906,20 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
 
     Parameters
     ----------
+    ocp : OptimalControlProblem
+        Optimal control problem that generated this solution.
+    res : scipy.minimize.OptimizeResult
+        Result of optimization.
+    print_summary : bool, optional
+        If `True` (default), print a short summary of the computation.
+    squeeze : bool, optional
+        If `True` and if the system has a single output, return the system
+        output as a 1D array rather than a 2D array.  If `False`, return the
+        system output as a 2D array even if the system is SISO.  Default value
+        set by config.defaults['control.squeeze_time_response'].
+
+    Attributes
+    ----------
     inputs : ndarray
         The optimal inputs associated with the optimal control problem.
     states : ndarray
@@ -913,11 +927,10 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
         associated with the optimal input.
     success : bool
         Whether or not the optimizer exited successful.
-    problem : OptimalControlProblem
-        Optimal control problem that generated this solution.
     cost : float
         Final cost of the return solution.
-    system_simulations, {cost, constraint, eqconst}_evaluations : int
+    system_simulations, cost_evaluations, constraint_evaluations, \
+    eqconst_evaluations : int
         Number of system simulations and evaluations of the cost function,
         (inequality) constraint function, and equality constraint function
         performed during the optimzation.
@@ -1055,16 +1068,16 @@ def solve_ocp(
         If `True` (default), print a short summary of the computation.
 
     return_states : bool, optional
-        If True, return the values of the state at each time (default = True).
+        If `True`, return the values of the state at each time (default = True).
 
     squeeze : bool, optional
-        If True and if the system has a single output, return the system
-        output as a 1D array rather than a 2D array.  If False, return the
+        If `True` and if the system has a single output, return the system
+        output as a 1D array rather than a 2D array.  If `False`, return the
         system output as a 2D array even if the system is SISO.  Default value
         set by config.defaults['control.squeeze_time_response'].
 
     transpose : bool, optional
-        If True, assume that 2D input arrays are transposed from the standard
+        If `True`, assume that 2D input arrays are transposed from the standard
         format.  Used to convert MATLAB-style inputs to our format.
 
     Returns
@@ -1080,8 +1093,8 @@ def solve_ocp(
 
     res.inputs : array
         Optimal inputs for the system.  If the system is SISO and squeeze is
-        not True, the array is 1D (indexed by time).  If the system is not
-        SISO or squeeze is False, the array is 2D (indexed by the output
+        not `True`, the array is 1D (indexed by time).  If the system is not
+        SISO or squeeze is `False`, the array is 2D (indexed by the output
         number and time).
 
     res.states : array
@@ -1247,7 +1260,7 @@ class OptimalEstimationProblem():
     ----------
     sys : InputOutputSystem
         I/O system for which the optimal input will be computed.
-    timepts: 1D array
+    timepts : 1D array
             Set up time points at which the inputs and outputs are given.
     integral_cost : callable
         Function that returns the integral cost given the estimated state,
@@ -1692,9 +1705,9 @@ class OptimalEstimationProblem():
             A 2-tuple consisting of the estimated states and disturbance
             values to use as a guess for the optimal estimated trajectory.
         squeeze : bool, optional
-            If True and if the system has a single disturbance input and
+            If `True` and if the system has a single disturbance input and
             single measured output, return the system input and output as a
-            1D array rather than a 2D array.  If False, return the system
+            1D array rather than a 2D array.  If `False`, return the system
             output as a 2D array even if the system is SISO.  Default value
             set by config.defaults['control.squeeze_time_response'].
         print_summary : bool, optional
@@ -1898,6 +1911,20 @@ class OptimalEstimationResult(sp.optimize.OptimizeResult):
 
     Parameters
     ----------
+    oep : OptimalEstimationProblem
+        Optimal estimation problem that generated this solution.
+    res : scipy.minimize.OptimizeResult
+        Result of optimization.
+    print_summary : bool, optional
+        If `True` (default), print a short summary of the computation.
+    squeeze : bool, optional
+        If `True` and if the system has a single output, return the system
+        output as a 1D array rather than a 2D array.  If `False`, return the
+        system output as a 2D array even if the system is SISO.  Default value
+        set by config.defaults['control.squeeze_time_response'].
+
+    Attributes
+    ----------
     states : ndarray
         Estimated state trajectory.
     inputs : ndarray
@@ -2001,8 +2028,8 @@ def solve_oep(
     print_summary : bool, optional
         If `True` (default), print a short summary of the computation.
     squeeze : bool, optional
-        If True and if the system has a single output, return the system
-        output as a 1D array rather than a 2D array.  If False, return the
+        If `True` and if the system has a single output, return the system
+        output as a 1D array rather than a 2D array.  If `False`, return the
         system output as a 2D array even if the system is SISO.  Default value
         set by config.defaults['control.squeeze_time_response'].
 
@@ -2016,15 +2043,15 @@ def solve_oep(
         Time values of the input.
     res.inputs : array
         Disturbance values corresponding to the estimated state.  If the
-        system is SISO and squeeze is not True, the array is 1D (indexed by
-        time).  If the system is not SISO or squeeze is False, the array is
+        system is SISO and squeeze is not `True`, the array is 1D (indexed by
+        time).  If the system is not SISO or squeeze is `False`, the array is
         2D (indexed by the output number and time).
     res.states : array
         Estimated state vector over the given time points.
     res.outputs : array
         Noise values corresponding to the estimated state.  If the system
-        is SISO and squeeze is not True, the array is 1D (indexed by time).
-        If the system is not SISO or squeeze is False, the array is 2D
+        is SISO and squeeze is not `True`, the array is 1D (indexed by time).
+        If the system is not SISO or squeeze is `False`, the array is 2D
         (indexed by the output number and time).
 
     Notes

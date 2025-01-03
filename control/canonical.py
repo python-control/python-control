@@ -206,7 +206,7 @@ def similarity_transform(xsys, T, timescale=1, inverse=False):
     timescale : float, optional
         If present, also rescale the time unit to tau = timescale * t.
     inverse : bool, optional
-        If False (default), transform so z = T x.  If True, transform
+        If `False` (default), transform so z = T x.  If `True`, transform
         so x = T z.
 
     Returns
@@ -270,7 +270,7 @@ def _bdschur_defective(blksizes, eigvals):
 
     Returns
     -------
-    True iff Schur blocks are defective.
+    `True` iff Schur blocks are defective.
 
     blksizes, eigvals are the 3rd and 4th results returned by mb03rd.
     """
@@ -404,7 +404,7 @@ def bdschur(a, condmax=None, sort=None):
     a : (M, M) array_like
         Real matrix to decompose.
     condmax : None or float, optional
-        If None (default), use 1/sqrt(eps), which is approximately 1e8.
+        If `None` (default), use 1/sqrt(eps), which is approximately 1e8.
     sort : {None, 'continuous', 'discrete'}
         Block sorting; see below.
 
@@ -419,7 +419,7 @@ def bdschur(a, condmax=None, sort=None):
 
     Notes
     -----
-    If `sort` is None, the blocks are not sorted.
+    If `sort` is `None`, the blocks are not sorted.
 
     If `sort` is 'continuous', the blocks are sorted according to
     associated eigenvalues.  The ordering is first by real part of
@@ -493,10 +493,10 @@ def modal_form(xsys, condmax=None, sort=False):
     xsys : StateSpace object
         System to be transformed, with state `x`.
     condmax : None or float, optional
-        An upper bound on individual transformations.  If None, use
+        An upper bound on individual transformations.  If `None`, use
         `bdschur` default.
     sort : bool, optional
-        If False (default), Schur blocks will not be sorted.  See `bdschur`
+        If `False` (default), Schur blocks will not be sorted.  See `bdschur`
         for sort order.
 
     Returns

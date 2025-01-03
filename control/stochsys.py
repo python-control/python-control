@@ -81,7 +81,7 @@ def lqe(*args, **kwargs):
         Cross covariance matrix.  Not currently implemented.
     method : str, optional
         Set the method used for computing the result.  Current methods are
-        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
+        'slycot' and 'scipy'.  If set to `None` (default), try 'slycot' first
         and then 'scipy'.
 
     Returns
@@ -218,8 +218,8 @@ def dlqe(*args, **kwargs):
         Cross covariance matrix (not yet supported).
     method : str, optional
         Set the method used for computing the result.  Current methods are
-        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
-        and then 'scipy'.
+        'slycot' and 'scipy'.  If set to `None` (default), try 'slycot'
+        first and then 'scipy'.
 
     Returns
     -------
@@ -675,7 +675,7 @@ def correlation(T, X, Y=None, squeeze=True):
         If present, the signal with which to compute the correlation.
         Defaults to X.
     squeeze : bool, optional
-        If True, squeeze Rtau to remove extra dimensions (useful if the
+        If `True`, squeeze Rtau to remove extra dimensions (useful if the
         signals are scalars).
 
     Returns

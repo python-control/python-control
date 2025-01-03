@@ -34,6 +34,8 @@ class SystemTrajectory:
         For each flat output, the number of derivatives of the flat
         output used to define the trajectory.  Defaults to an empty
         list.
+    params : dict, optional
+        Parameter values used for the trajectory.
 
     """
 
@@ -109,19 +111,19 @@ class SystemTrajectory:
             List of times to evaluate the trajectory.
 
         transpose : bool, optional
-            If True, transpose all input and output arrays (for backward
+            If `True`, transpose all input and output arrays (for backward
             compatibility with MATLAB and `scipy.signal.lsim`).
             Default value is False.
 
         return_x : bool, optional
-            If True, return the state vector when assigning to a tuple
+            If `True`, return the state vector when assigning to a tuple
             (default = False).  See `forced_response` for more details.
 
         squeeze : bool, optional
             By default, if a system is single-input, single-output (SISO) then
             the output response is returned as a 1D array (indexed by time).
-            If squeeze=True, remove single-dimensional entries from the shape
-            of the output even if the system is not SISO. If squeeze=False,
+            If squeeze=`True`, remove single-dimensional entries from the shape
+            of the output even if the system is not SISO. If squeeze=`False`,
             keep the output as a 3D array (indexed by the output, input, and
             time) even if the system is SISO. The default value can be set
             using config.defaults['control.squeeze_time_response'].
@@ -135,8 +137,8 @@ class SystemTrajectory:
             * time (array): Time values of the output.
 
             * outputs (array): Response of the system.  If the system is SISO
-              and squeeze is not True, the array is 1D (indexed by time).  If
-              the system is not SISO or `squeeze` is False, the array is 3D
+              and squeeze is not `True`, the array is 1D (indexed by time).  If
+              the system is not SISO or `squeeze` is `False`, the array is 3D
               (indexed by the output, trace, and time).
 
             * states (array): Time evolution of the state vector, represented

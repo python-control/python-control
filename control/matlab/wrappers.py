@@ -34,13 +34,13 @@ def bode(*args, **kwargs):
     omega : array
         Range of frequencies in rad/s.
     dB : boolean
-        If True, plot result in dB.
+        If `True`, plot result in dB.
     Hz : boolean
-        If True, plot frequency in Hz (omega must be provided in rad/sec).
+        If `True`, plot frequency in Hz (omega must be provided in rad/sec).
     deg : boolean
-        If True, return phase in degrees (else radians).
+        If `True`, return phase in degrees (else radians).
     plot : boolean
-        If True, plot magnitude and phase.
+        If `True`, plot magnitude and phase.
 
     Returns
     -------
@@ -278,7 +278,7 @@ def pzmap(*args, **kwargs):
         If `True` a graph is generated with Matplotlib,
         otherwise the poles and zeros are only computed and returned.
     grid : boolean (default = False)
-        If True plot omega-damping grid.
+        If `True`, plot omega-damping grid.
 
     Returns
     -------

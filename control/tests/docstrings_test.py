@@ -32,10 +32,14 @@ function_skiplist = [
     control.ControlPlot.reshape,                # needed for legacy interface
     control.phase_plot,                         # legacy function
     control.drss,                               # documention in rss
-    control.flatsys.flatsys,                    # tested separately below
-    control.frd,                                # tested separately below
-    control.ss,                                 # tested separately below
-    control.tf,                                 # tested separately below
+    control.LinearICSystem,                     # intermediate I/O class
+    control.LTI,                                # intermediate I/O class
+    control.NamedSignal,                        # internal I/O class
+    control.TimeResponseList,                   # internal response class
+    control.FrequencyResponseList,              # internal response class
+    control.FrequencyResponseData,              # check separately (iosys)
+    control.InterconnectedSystem,               # check separately (iosys)
+    control.flatsys.FlatSystem,                 # check separately (iosys)
 ]
 
 # List of keywords that we can skip testing (special cases)
@@ -58,9 +62,19 @@ keyword_skiplist = {
     control.flatsys.solve_flat_ocp: [
         'method', 'options',                                # minimize_kwargs
     ],
+    control.optimal.OptimalControlProblem: [
+        'method', 'options'     # solve_ivp_kwargs, minimize_kwargs
+    ],
+    control.optimal.OptimalControlResult: [
+        'return_x', 'return_states', 'transpose'],          # legacy
     control.optimal.OptimalControlProblem.compute_trajectory: [
         'return_x',                                         # legacy
     ],
+    control.optimal.OptimalEstimationProblem: [
+        'method', 'options'     # solve_ivp_kwargs, minimize_kwargs
+    ],
+    control.optimal.OptimalEstimationResult: [
+        'return_x', 'return_states', 'transpose'],          # legacy
     control.optimal.OptimalEstimationProblem.create_mhe_iosystem: [
         'inputs', 'outputs', 'states',                      # doc'd elsewhere
     ],
@@ -104,29 +118,26 @@ def test_parameter_docs(module, prefix):
         # Skip non-top-level functions without parameter lists
         if prefix != "" and inspect.getmodule(obj) != module and \
            doc is not None and doc["Parameters"] == []:
-            _info(f"skipping {prefix}.{name}", 2)
+            _info(f"skipping {objname} [no doc or no Paramaters]", 2)
             continue
 
         # If this is a class, recurse through methods
         # TODO: check top level documenation here (__init__, attributes?)
         if inspect.isclass(obj):
-            _info(f"Checking class {name}", 1)
-            _check_numpydoc_style(obj, doc)
-
-            # Make sure there is no Returns section
-            if doc["Returns"] != []:
-                _fail(f"Class {name} should not have Returns section")
-
+            _info(f"Checking class {objname}", 1)
+            
             # Check member functions within the class
             test_parameter_docs(obj, prefix + name + '.')
-            continue
+
+            # Drop through and continue checks as a function
 
         # Skip anything that is inherited, hidden, or already checked
-        if not inspect.isfunction(obj) or \
+        if not (inspect.isfunction(obj) or inspect.isclass(obj) and
+                not issubclass(obj, Exception)) or \
            inspect.isclass(module) and name not in module.__dict__ \
            or name.startswith('_') or obj in function_skiplist \
            or obj in checked:
-            _info(f"skipping {prefix}.{name}", 6)
+            _info(f"skipping {objname} [inherited, hidden, or checked]", 4)
             continue
 
         # Skip non-top-level functions without parameter lists
@@ -136,20 +147,27 @@ def test_parameter_docs(module, prefix):
             _info(f"skipping {prefix}{name} (not top-level, no params)", 2)
             continue
 
+        _info(f"Checking function {objname} against numpydoc", 2)
         _check_numpydoc_style(obj, doc)
 
         # Add this to the list of functions we have checked
         checked.add(obj)
 
         # Get the docstring (skip w/ warning if there isn't one)
-        _info(f"Checking function {name}", 2)
+        _info(f"Checking function {objname} against python-control", 2)
         if obj.__doc__ is None:
             _warn(f"{objname} is missing docstring", 2)
             continue
         elif doc is None:
             _fail(f"{objname} docstring not parseable", 2)
+            continue
         else:
             docstring = inspect.getdoc(obj)
+
+        if inspect.isclass(obj):
+            # Just check __init__()
+            source = inspect.getsource(obj.__init__)
+        else:
             source = inspect.getsource(obj)
 
         # Skip deprecated functions (and check for proper annotation)
@@ -199,7 +217,8 @@ def test_parameter_docs(module, prefix):
                 for _, kwargname in re.findall(
                         argname + r"(\[|\.pop\(|\.get\()'([\w]+)'", source):
                     _info(f"Found direct keyword argument {kwargname}", 2)
-                    kwargnames.add(kwargname)
+                    if not kwargname.startswith('_'):
+                        kwargnames.add(kwargname)
 
                 # Look for kwargs accessed via _get_param
                 for kwargname in re.findall(
@@ -639,45 +658,69 @@ def _check_numpydoc_style(obj, doc):
     if len(summary) > max_summary_len:
         _warn(f"{name} summary is longer than {max_summary_len} characters")
 
+    # Look for Python objects that are not marked properly
+    python_objects = ['True', 'False', 'None']
+    for pyobj in python_objects:
+        for section in ["Extended Summary", "Notes"]:
+            text = "\n".join(doc[section])
+            if re.search(f"[\\s]{pyobj}([\\s]|$)", text) is not None:
+                _warn(f"{pyobj} appears in {section} for {name} "
+                      "without backticks")
+
     if inspect.isclass(obj):
         # Specialized checks for classes
-        pass
+        if doc["Returns"] != []:
+            _fail(f'Class {name} should not have "Returns" section')
+
     elif inspect.isfunction(obj):
         # Specialized checks for functions
-        def _check_param(param, empty_ok=False, noname_ok=False, section="??"):
-            param_desc = "\n".join(param.desc)
-            param_name = f"{name} '{param.name}'"
+        if doc["Returns"] == [] and obj.__doc__ and 'return' in obj.__doc__:
+            _fail(f'Class {name} does not have a "Returns" section')
 
-            # Check for empty section
-            if param.name == "" and param.type == '':
-                _fail(f"Empty {section} section in {name}")
-
-            # Make sure we have a name and description
-            if param.name == "" and not noname_ok:
-                _fail(f"{param_name} has improperly formatted parameter")
-                return
-            elif param_desc == "":
-                if not empty_ok:
-                    _warn(f"{param_name} isn't documented")
-                return
-
-            # Description should end in a period (colon also allowed)
-            if re.search(r"\.$|\.[\s]|:$", param_desc, re.MULTILINE) is None:
-                _warn(f"{param_name} description doesn't contain period")
-
-            if param_desc[0:1].islower():
-                _warn(f"{param_name} description starts with lower case letter")
-
-        for param in doc["Parameters"] + doc["Other Parameters"]:
-            _check_param(param, section="Parameters")
-        for param in doc["Returns"]:
-            _check_param(
-                param, empty_ok=True, noname_ok=True, section="Returns")
-        for param in doc["Yields"]:
-            _check_param(
-                param, empty_ok=True, noname_ok=True, section="Yields")
     else:
         raise TypeError("unknown object type for {obj}")
+
+    for param in doc["Parameters"] + doc["Other Parameters"]:
+        _check_numpydoc_param(name, param, section="Parameters")
+    for param in doc["Returns"]:
+        _check_numpydoc_param(
+            name, param, empty_ok=True, noname_ok=True, section="Returns")
+    for param in doc["Yields"]:
+        _check_numpydoc_param(
+            name, param, empty_ok=True, noname_ok=True, section="Yields")
+
+
+# Utility function for checking NumPyDoc parametres
+def _check_numpydoc_param(
+        name, param, empty_ok=False, noname_ok=False, section="??"):
+    param_desc = "\n".join(param.desc)
+    param_name = f"{name} '{param.name}'"
+
+    # Check for empty section
+    if param.name == "" and param.type == '':
+        _fail(f"Empty {section} section in {name}")
+
+    # Make sure we have a name and description
+    if param.name == "" and not noname_ok:
+        _fail(f"{param_name} has improperly formatted parameter")
+        return
+    elif param_desc == "":
+        if not empty_ok:
+            _warn(f"{param_name} isn't documented")
+        return
+
+    # Description should end in a period (colon also allowed)
+    if re.search(r"\.$|\.[\s]|:$", param_desc, re.MULTILINE) is None:
+        _warn(f"{param_name} description doesn't contain period")
+    if param_desc[0:1].islower():
+        _warn(f"{param_name} description starts with lower case letter")
+
+    # Look for Python objects that are not marked properly
+    python_objects = ['True', 'False', 'None']
+    for pyobj in python_objects:
+        if re.search(f"[\\s]{pyobj}([\\s]|$)", param_desc) is not None:
+            _warn(f"{pyobj} appears in {param_name} description "
+                  "without backticks")
 
 
 # Utility function to replace positional signature with docstring signature
@@ -833,7 +876,7 @@ if __name__ == "__main__":
         _info(f"--- test_iosys_container_classes(): {cls.__name__} ----", 0)
         test_iosys_container_classes(cls)
 
-    for cls in [ct.InterconnectedSystem, ct.LinearICSystem]:
+    for cls in [ct.LTI, ct.LinearICSystem]:
         _info(f"--- test_iosys_intermediate_classes(): {cls.__name__} ----", 0)
         test_iosys_intermediate_classes(cls)
 

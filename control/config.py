@@ -217,12 +217,12 @@ def _get_param(module, param, argval=None, defval=None, pop=False, last=False):
         `module.param` is used to determine the default value.  Defaults to
         None.
     pop : bool, optional
-        If True and if argval is a dict, then pop the remove the parameter
+        If `True` and if argval is a dict, then pop the remove the parameter
         entry from the argval dict after retreiving it.  This allows the use
         of a keyword argument list to be passed through to other functions
         internal to the function being called.
     last : bool, optional
-        If True, check to make sure dictionary is empy after processing.
+        If `True`, check to make sure dictionary is empy after processing.
 
     """
 

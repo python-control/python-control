@@ -80,9 +80,9 @@ class StateSpace(NonlinearIOSystem, LTI):
     A, B, C, D : array_like
         System matrices of the appropriate dimensions.
     dt : None, True or float, optional
-        System timebase. 0 (default) indicates continuous time, True
+        System timebase. 0 (default) indicates continuous time, `True`
         indicates discrete time with unspecified sampling time, positive
-        number is discrete time with specified sampling time, None
+        number is discrete time with specified sampling time, `None`
         indicates unspecified timebase (either continuous or discrete time).
 
     Attributes
@@ -777,8 +777,8 @@ class StateSpace(NonlinearIOSystem, LTI):
         x : complex or complex 1D array_like
             Complex frequencies
         squeeze : bool, optional
-            If squeeze=True, remove single-dimensional entries from the shape
-            of the output even if the system is not SISO. If squeeze=False,
+            If squeeze=`True`, remove single-dimensional entries from the shape
+            of the output even if the system is not SISO. If squeeze=`False`,
             keep all indices (output, input and, if omega is array_like,
             frequency) even if the system is SISO. The default value can be
             set using config.defaults['control.squeeze_frequency_response'].
@@ -789,8 +789,8 @@ class StateSpace(NonlinearIOSystem, LTI):
         -------
         fresp : complex ndarray
             The frequency response of the system.  If the system is SISO and
-            squeeze is not True, the shape of the array matches the shape of
-            omega.  If the system is not SISO or squeeze is False, the first
+            squeeze is not `True`, the shape of the array matches the shape of
+            omega.  If the system is not SISO or squeeze is `False`, the first
             two dimensions of the array are indices for the output and input
             and the remaining dimensions match omega.  If `squeeze` is True
             then single-dimensional axes are removed.
@@ -1301,7 +1301,7 @@ class StateSpace(NonlinearIOSystem, LTI):
             config.defaults['iosys.sampled_system_name_suffix'], with the
             default being to add the suffix '$sampled'.
         copy_names : bool, Optional
-            If True, copy the names of the input signals, output
+            If `True`, copy the names of the input signals, output
             signals, and states to the sampled system.
 
         Returns
@@ -1617,7 +1617,7 @@ def ss(*args, **kwargs):
         as a scalar.
 
 
-    ``ss(*args, inputs=['u1', ..., 'up'], outputs=['y1', ..., 'yq'], states=['x1', ..., 'xn'])``
+    `ss(*args, inputs=['u1', ..., 'up'], outputs=['y1', ..., 'yq'], states=['x1', ..., 'xn'])`
         Create a system with named input, output, and state signals.
 
     Parameters
@@ -1627,11 +1627,10 @@ def ss(*args, **kwargs):
     A, B, C, D : array_like or string
         System, control, output, and feed forward matrices.
     dt : None, True or float, optional
-        System timebase. 0 (default) indicates continuous
-        time, True indicates discrete time with unspecified sampling
-        time, positive number is discrete time with specified
-        sampling time, None indicates unspecified timebase (either
-        continuous or discrete time).
+        System timebase. 0 (default) indicates continuous time, `True`
+        indicates discrete time with unspecified sampling time, positive
+        number is discrete time with specified sampling time, `None`
+        indicates unspecified timebase (either continuous or discrete time).
     remove_useless_states : bool, optional
         If `True`, remove states that have no effect on the input/output
         dynamics.  If not specified, the value is read from
@@ -1639,7 +1638,7 @@ def ss(*args, **kwargs):
     method : str, optional
         Set the method used for converting a transfer function to a state
         space system.  Current methods are 'slycot' and 'scipy'.  If set to
-        None (default), try 'slycot' first and then 'scipy' (SISO only).
+        `None` (default), try 'slycot' first and then 'scipy' (SISO only).
 
     Returns
     -------
@@ -1862,8 +1861,8 @@ def tf2ss(*args, **kwargs):
         with a unique integer id.
     method : str, optional
         Set the method used for computing the result.  Current methods are
-        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
-        and then 'scipy' (SISO only).
+        'slycot' and 'scipy'.  If set to `None` (default), try 'slycot'
+        first and then 'scipy' (SISO only).
 
     Raises
     ------
@@ -1998,13 +1997,12 @@ def rss(states=1, outputs=1, inputs=1, strictly_proper=False, **kwargs):
         the signal will be of the form 's[i]' (where 's' is one of 'x',
         'y', or 'u').
     strictly_proper : bool, optional
-        If set to 'True', returns a proper system (no direct term).
+        If set to `True`, returns a proper system (no direct term).
     dt : None, True or float, optional
-        System timebase. 0 (default) indicates continuous
-        time, True indicates discrete time with unspecified sampling
-        time, positive number is discrete time with specified
-        sampling time, None indicates unspecified timebase (either
-        continuous or discrete time).
+        System timebase. 0 (default) indicates continuous time, `True`
+        indicates discrete time with unspecified sampling time, positive
+        number is discrete time with specified sampling time, `None`
+        indicates unspecified timebase (either continuous or discrete time).
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
@@ -2023,8 +2021,8 @@ def rss(states=1, outputs=1, inputs=1, strictly_proper=False, **kwargs):
     -----
     If the number of states, inputs, or outputs is not specified, then the
     missing numbers are assumed to be 1.  If dt is not specified or is given
-    as 0 or None, the poles of the returned system will always have a
-    negative real part.  If dt is True or a postive float, the poles of the
+    as 0 or `None`, the poles of the returned system will always have a
+    negative real part.  If dt is `True` or a postive float, the poles of the
     returned system will have magnitude less than 1.
 
     """

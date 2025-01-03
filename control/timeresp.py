@@ -110,10 +110,10 @@ class TimeResponseData:
         and if a system is multi-input or multi-output, then the inputs are
         returned as a 2D array (indexed by input and time) and the outputs
         are returned as either a 2D array (indexed by output and time) or a
-        3D array (indexed by output, trace, and time).  If squeeze=True,
+        3D array (indexed by output, trace, and time).  If squeeze=`True`,
         access to the output response will remove single-dimensional
         entries from the shape of the inputs and outputs even if the system
-        is not SISO. If squeeze=False, keep the input as a 2D or 3D array
+        is not SISO. If squeeze=`False`, keep the input as a 2D or 3D array
         (indexed by the input (if multi-input), trace (if single input) and
         time) and the output as a 3D array (indexed by the output, trace,
         and time) even if the system is SISO. The default value can be set
@@ -124,56 +124,35 @@ class TimeResponseData:
     t : 1D array
         Time values of the input/output response(s).  This attribute is
         normally accessed via the `time` property.
-
     y : 2D or 3D array
         Output response data, indexed either by output index and time (for
         single trace responses) or output, trace, and time (for multi-trace
         responses).  These data are normally accessed via the `outputs`
         property, which performs squeeze processing.
-
     x : 2D or 3D array, or None
         State space data, indexed either by output number and time (for single
         trace responses) or output, trace, and time (for multi-trace
         responses).  If no state data are present, value is `None`. These
         data are normally accessed via the `states` property, which
         performs squeeze processing.
-
     u : 2D or 3D array, or None
         Input signal data, indexed either by input index and time (for single
         trace responses) or input, trace, and time (for multi-trace
         responses).  If no input data are present, value is `None`.  These
         data are normally accessed via the `inputs` property, which
         performs squeeze processing.
-    transpose : bool, optional
-        If True, transpose all input and output arrays (for backward
-        compatibility with MATLAB and `scipy.signal.lsim`).  Default
-        value is False.
     issiso : bool, optional
         Set to `True` if the system generating the data is single-input,
         single-output.  If passed as `None` (default), the input data
         will be used to set the value.
     ninputs, noutputs, nstates : int
         Number of inputs, outputs, and states of the underlying system.
-    input_labels, output_labels, state_labels : array of str
-        Names for the input, output, and state variables.
-    success : bool, optional
-        If `False`, result may not be valid (see
-        `input_output_response`).  Defaults to `True`.
-    message : str, optional
-        Informational message if `success` is `False`.
-    sysname : str, optional
-        Name of the system that created the data.
     params : dict, optional
         If system is a nonlinear I/O system, set parameter values.
-    plot_inputs : bool, optional
-        Whether or not to plot the inputs by default (can be overridden in
-        the plot() method)
     ntraces : int, optional
         Number of independent traces represented in the input/output
         response.  If ntraces is 0 (default) then the data represents a
         single trace with the trace index surpressed in the data.
-    title : str, optional
-        Set the title to use when plotting.
     trace_labels : array of string, optional
         Labels to use for traces (set to sysname it ntraces is 0)
     trace_types : array of string, optional
@@ -182,28 +161,27 @@ class TimeResponseData:
 
     Other Parameters
     ----------------
-    input_labels, output_labels, state_labels: array of str, optional
+    input_labels, output_labels, state_labels : array of str, optional
         Optional labels for the inputs, outputs, and states, given as a
         list of strings matching the appropriate signal dimension.
     sysname : str, optional
         Name of the system that created the data.
     transpose : bool, optional
-        If True, transpose all input and output arrays (for backward
+        If `True`, transpose all input and output arrays (for backward
         compatibility with MATLAB and `scipy.signal.lsim`).  Default value
         is False.
     return_x : bool, optional
-        If True, return the state vector when enumerating result by
+        If `True`, return the state vector when enumerating result by
         assigning to a tuple (default = False).
     plot_inputs : bool, optional
         Whether or not to plot the inputs by default (can be overridden
-        in the plot() method)
+        in the plot() method).
     multi_trace : bool, optional
         If `True`, then 2D input array represents multiple traces.  For
         a MIMO system, the `input` attribute should then be set to
         indicate which trace is being specified.  Default is `False`.
     success : bool, optional
-        If `False`, result may not be valid (see
-        `input_output_response`).
+        If `False`, result may not be valid (see `input_output_response`).
     message : str, optional
         Informational message if `success` is `False`.
 
@@ -467,21 +445,21 @@ class TimeResponseData:
         Parameters
         ----------
         squeeze : bool, optional
-            If squeeze=True, access to the output response will remove
+            If squeeze=`True`, access to the output response will remove
             single-dimensional entries from the shape of the inputs, outputs,
-            and states even if the system is not SISO. If squeeze=False, keep
+            and states even if the system is not SISO. If squeeze=`False`, keep
             the input as a 2D or 3D array (indexed by the input (if
             multi-input), trace (if single input) and time) and the output and
             states as a 3D array (indexed by the output/state, trace, and
             time) even if the system is SISO.
 
         transpose : bool, optional
-            If True, transpose all input and output arrays (for backward
+            If `True`, transpose all input and output arrays (for backward
             compatibility with MATLAB and `scipy.signal.lsim`).
             Default value is False.
 
         return_x : bool, optional
-            If True, return the state vector when enumerating result by
+            If `True`, return the state vector when enumerating result by
             assigning to a tuple (default = False).
 
         input_labels, output_labels, state_labels: array of str
@@ -841,14 +819,14 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
         is currently checked.
 
     squeeze : bool
-        If True, all dimensions with only one element are removed from the
-        array. If False the array's shape is unmodified.
+        If `True`, all dimensions with only one element are removed from the
+        array. If `False` the array's shape is unmodified.
 
         For example:
         `array([[1,2,3]])` is converted to `array([1, 2, 3])`
 
     transpose : bool, optional
-        If True, assume that 2D input arrays are transposed from the standard
+        If `True`, assume that 2D input arrays are transposed from the standard
         format.  Used to convert MATLAB-style inputs to our format.
 
     Returns
@@ -934,18 +912,17 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
         I/O system(s) for which forced response is computed.
 
     T : array_like, optional for discrete LTI `sys`
-        Time steps at which the input is defined; values must be evenly spaced.
-
-        If None, `U` must be given and `len(U)` time steps of sys.dt are
-        simulated. If sys.dt is None or True (undetermined time step), a time
-        step of 1.0 is assumed.
+        Time steps at which the input is defined; values must be evenly
+        spaced.  If `None`, `U` must be given and `len(U)` time steps of
+        sys.dt are simulated. If sys.dt is `None` or `True` (undetermined
+        time step), a time step of 1.0 is assumed.
 
     U : array_like or float, optional
-        Input array giving input at each time `T`.
-        If `U` is None or 0, `T` must be given, even for discrete
-        time systems. In this case, for continuous time systems, a direct
-        calculation of the matrix exponential is used, which is faster than the
-        general interpolating algorithm used otherwise.
+        Input array giving input at each time `T`.  If `U` is `None` or 0,
+        `T` must be given, even for discrete time systems. In this case,
+        for continuous time systems, a direct calculation of the matrix
+        exponential is used, which is faster than the general interpolating
+        algorithm used otherwise.
 
     X0 : array_like or float, default=0.
         Initial condition.
@@ -954,11 +931,11 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
         If system is a nonlinear I/O system, set parameter values.
 
     transpose : bool, default=False
-        If True, transpose all input and output arrays (for backward
+        If `True`, transpose all input and output arrays (for backward
         compatibility with MATLAB and `scipy.signal.lsim`).
 
     interpolate : bool, default=False
-        If True and system is a discrete time system, the input will
+        If `True` and system is a discrete time system, the input will
         be interpolated between the given time steps and the output
         will be given at system sampling rate.  Otherwise, only return
         the output at the times given in `T`.  No effect on continuous
@@ -967,19 +944,19 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
     return_x : bool, default=None
         Used if the time response data is assigned to a tuple:
 
-        * If False, return only the time and output vectors.
+        * If `False`, return only the time and output vectors.
 
-        * If True, also return the the state vector.
+        * If `True`, also return the the state vector.
 
-        * If None, determine the returned variables by
-          config.defaults['forced_response.return_x'], which was True
-          before version 0.9 and is False since then.
+        * If `None`, determine the returned variables by
+          config.defaults['forced_response.return_x'], which was `True`
+          before version 0.9 and is `False` since then.
 
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then
         the output response is returned as a 1D array (indexed by time).  If
-        `squeeze` is True, remove single-dimensional entries from the shape of
-        the output even if the system is not SISO. If `squeeze` is False, keep
+        `squeeze` is `True`, remove single-dimensional entries from the shape of
+        the output even if the system is not SISO. If `squeeze` is `False`, keep
         the output as a 2D array (indexed by the output number and time)
         even if the system is SISO. The default behavior can be overridden by
         config.defaults['control.squeeze_time_response'].
@@ -994,8 +971,8 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
         * time (array): Time values of the output.
 
         * outputs (array): Response of the system.  If the system is SISO and
-          `squeeze` is not True, the array is 1D (indexed by time).  If the
-          system is not SISO or `squeeze` is False, the array is 2D (indexed
+          `squeeze` is not `True`, the array is 1D (indexed by time).  If the
+          system is not SISO or `squeeze` is `False`, the array is 2D (indexed
           by output and time).
 
         * states (array): Time evolution of the state vector, represented as
@@ -1276,14 +1253,14 @@ def _process_time_response(
         Default is `False`.
 
     transpose : bool, optional
-        If True, transpose data (for backward compatibility with MATLAB and
+        If `True`, transpose data (for backward compatibility with MATLAB and
         `scipy.signal.lsim`).  Default value is False.
 
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then the
         signals are returned as a 1D array (indexed by time).  If
-        squeeze=True, remove single-dimensional entries from the shape of the
-        signal even if the system is not SISO. If squeeze=False, keep the
+        squeeze=`True`, remove single-dimensional entries from the shape of the
+        signal even if the system is not SISO. If squeeze=`False`, keep the
         signal as a 3D array (indexed by the output, input, and time) even if
         the system is SISO. The default value can be set using
         config.defaults['control.squeeze_time_response'].
@@ -1291,9 +1268,9 @@ def _process_time_response(
     Returns
     -------
     output : ndarray
-        Processed signal.  If the system is SISO and squeeze is not True,
+        Processed signal.  If the system is SISO and squeeze is not `True`,
         the array is 1D (indexed by time).  If the system is not SISO or
-        squeeze is False, the array is either 2D (indexed by output and
+        squeeze is `False`, the array is either 2D (indexed by output and
         time) or 3D (indexed by input, output, and time).
 
     """
@@ -1376,19 +1353,19 @@ def step_response(
         array (autocomputed if not given); ignored if sys is discrete-time.
 
     transpose : bool, optional
-        If True, transpose all input and output arrays (for backward
+        If `True`, transpose all input and output arrays (for backward
         compatibility with MATLAB and `scipy.signal.lsim`).  Default
         value is False.
 
     return_x : bool, optional
-        If True, return the state vector when assigning to a tuple (default =
+        If `True`, return the state vector when assigning to a tuple (default =
         False).  See `forced_response` for more details.
 
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then the
         output response is returned as a 1D array (indexed by time).  If
-        squeeze=True, remove single-dimensional entries from the shape of the
-        output even if the system is not SISO. If squeeze=False, keep the
+        squeeze=`True`, remove single-dimensional entries from the shape of the
+        output even if the system is not SISO. If squeeze=`False`, keep the
         output as a 3D array (indexed by the output, input, and time) even if
         the system is SISO. The default value can be set using
         config.defaults['control.squeeze_time_response'].
@@ -1753,8 +1730,8 @@ def initial_response(
         arrays with the correct shape.
 
     output : int
-        Index of the output that will be used in this simulation. Set to None
-        to not trim outputs.
+        Index of the output that will be used in this simulation. Set
+        to `None` to not trim outputs.
 
     T_num : int, optional
         Number of time steps to use in simulation if T is not provided as an
@@ -1764,19 +1741,19 @@ def initial_response(
         If system is a nonlinear I/O system, set parameter values.
 
     transpose : bool, optional
-        If True, transpose all input and output arrays (for backward
+        If `True`, transpose all input and output arrays (for backward
         compatibility with MATLAB and `scipy.signal.lsim`).  Default
         value is False.
 
     return_x : bool, optional
-        If True, return the state vector when assigning to a tuple (default =
+        If `True`, return the state vector when assigning to a tuple (default =
         False).  See `forced_response` for more details.
 
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then the
         output response is returned as a 1D array (indexed by time).  If
-        squeeze=True, remove single-dimensional entries from the shape of the
-        output even if the system is not SISO. If squeeze=False, keep the
+        squeeze=`True`, remove single-dimensional entries from the shape of the
+        output even if the system is not SISO. If squeeze=`False`, keep the
         output as a 2D array (indexed by the output number and time) even if
         the system is SISO. The default value can be set using
         config.defaults['control.squeeze_time_response'].
@@ -1879,19 +1856,19 @@ def impulse_response(
         array (autocomputed if not given); ignored if sys is discrete-time.
 
     transpose : bool, optional
-        If True, transpose all input and output arrays (for backward
+        If `True`, transpose all input and output arrays (for backward
         compatibility with MATLAB and `scipy.signal.lsim`).  Default
         value is False.
 
     return_x : bool, optional
-        If True, return the state vector when assigning to a tuple (default =
-        False).  See `forced_response` for more details.
+        If `True`, return the state vector when assigning to a tuple
+        (default = `False`).  See `forced_response` for more details.
 
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then the
         output response is returned as a 1D array (indexed by time).  If
-        squeeze=True, remove single-dimensional entries from the shape of the
-        output even if the system is not SISO. If squeeze=False, keep the
+        squeeze=`True`, remove single-dimensional entries from the shape of the
+        output even if the system is not SISO. If squeeze=`False`, keep the
         output as a 2D array (indexed by the output number and time) even if
         the system is SISO. The default value can be set using
         config.defaults['control.squeeze_time_response'].
@@ -2035,7 +2012,7 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         Scales the dc value by the magnitude of the nonzero mode since
         integrating the impulse response gives
         :math:`\\int e^{-\\lambda t} = -e^{-\\lambda t}/ \\lambda`
-        Default is True.
+        Default is `True`.
 
     Returns
     -------
