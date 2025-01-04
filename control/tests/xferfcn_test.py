@@ -30,14 +30,6 @@ class TestXferFcn:
 
     def test_constructor_bad_input_type(self):
         """Give the constructor invalid input types."""
-        # MIMO requires lists of lists of vectors (not lists of vectors)
-        # 13 Dec 2024: This now works correctly: creates static array (as tf)
-        # with pytest.raises(TypeError):
-        #     TransferFunction([[0., 1.], [2., 3.]], [[5., 2.], [3., 0.]])
-        # good input
-        TransferFunction([[[0., 1.], [2., 3.]]],
-                         [[[5., 2.], [3., 0.]]])
-
         # Single argument of the wrong type
         with pytest.raises(TypeError):
             TransferFunction([1])

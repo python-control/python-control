@@ -325,7 +325,6 @@ class_attributes = {
 # List of attributes defined in a parent class (no need to warn)
 iosys_parent_attributes = [
     'input_index', 'output_index', 'state_index',       # rarely used
-    'repr_format',                                      # rarely used
     'states', 'nstates', 'state_labels',                # not need in TF, FRD
     'params', 'outfcn', 'updfcn'                        # NL I/O, SS overlap
 ]

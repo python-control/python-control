@@ -151,8 +151,6 @@ class InputOutputSystem(object):
         the index of the corresponding array.
     input_labels, output_labels, state_labels : list of str
         List of signal names for inputs, outputs, and states.
-    repr_format : str
-        String representation format ('iosys' or 'loadable').
     shape : tuple
         2-tuple of I/O system dimension, (noutputs, ninputs).
 

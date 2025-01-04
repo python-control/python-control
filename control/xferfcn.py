@@ -223,6 +223,9 @@ class TransferFunction(LTI):
             for poly in np.nditer(arr, flags=['refs_ok']):
                 if poly.item().size > 1:
                     static = False
+                    break
+            if not static:
+                break
 
         defaults = args[0] if len(args) == 1 else \
             {'inputs': num.shape[1], 'outputs': num.shape[0]}
