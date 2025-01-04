@@ -3,11 +3,11 @@
 # Author: M.M. (Rene) van Paassen (using xferfcn.py as basis)
 # Date: 02 Oct 12
 
-"""
-Frequency response data representation and functions.
+"""Frequency response data representation and functions.
 
-This module contains the FRD class and also functions that operate on
-FRD data.
+This module contains the FrequencyResponseData (FRD) class and also
+functions that operate on FRD data.
+
 """
 
 from collections.abc import Iterable
@@ -21,8 +21,8 @@ from scipy.interpolate import splev, splprep
 
 from . import config
 from .exception import pandas_check
-from .iosys import InputOutputSystem, NamedSignal, _process_iosys_keywords, \
-    _process_subsys_index, common_timebase
+from .iosys import InputOutputSystem, NamedSignal, _extended_system_name, \
+    _process_iosys_keywords, _process_subsys_index, common_timebase
 from .lti import LTI, _process_frequency_response
 
 __all__ = ['FrequencyResponseData', 'FRD', 'frd']
@@ -35,38 +35,29 @@ class FrequencyResponseData(LTI):
 
     The FrequencyResponseData (FRD) class is used to represent systems in
     frequency response data form.  It can be created manually using the
-    class constructor, using the :func:`~control.frd` factory function or
+    class constructor, using the :func:`~control.frd` factory function, or
     via the :func:`~control.frequency_response` function.
 
     Parameters
     ----------
-    d : 1D or 3D complex array_like
+    response : 1D or 3D complex array_like
         The frequency response at each frequency point.  If 1D, the system is
         assumed to be SISO.  If 3D, the system is MIMO, with the first
         dimension corresponding to the output index of the FRD, the second
         dimension corresponding to the input index, and the 3rd dimension
         corresponding to the frequency points in omega
-    w : iterable of real frequencies
+    omega : iterable of real frequencies
         List of frequency points for which data are available.
-    sysname : str or None
-        Name of the system that generated the data.
     smooth : bool, optional
         If ``True``, create an interpolation function that allows the
         frequency response to be computed at any frequency within the range of
         frequencies give in ``w``.  If ``False`` (default), frequency response
         can only be obtained at the frequencies specified in ``w``.
-
-    Attributes
-    ----------
-    ninputs, noutputs : int
-        Number of input and output variables.
-    omega : 1D array
-        Frequency points of the response.
-    fresp : 3D array
-        Frequency response, indexed by output index, input index, and
-        frequency point.
-    dt : float, True, or None
-        System timebase.
+    dt : None, True or float, optional
+        System timebase. 0 (default) indicates continuous time, True
+        indicates discrete time with unspecified sampling time, positive
+        number is discrete time with specified sampling time, None
+        indicates unspecified timebase (either continuous or discrete time).
     squeeze : bool
         By default, if a system is single-input, single-output (SISO) then
         the outputs (and inputs) are returned as a 1D array (indexed by
@@ -79,16 +70,46 @@ class FrequencyResponseData(LTI):
         returned as a 3D array (indexed by the output, input, and
         frequency) even if the system is SISO. The default value can be set
         using config.defaults['control.squeeze_frequency_response'].
-    ninputs, noutputs, nstates : int
-        Number of inputs, outputs, and states of the underlying system.
+    sysname : str or None
+        Name of the system that generated the data.
+
+    Attributes
+    ----------
+    fresp : 3D array
+        Frequency response, indexed by output index, input index, and
+        frequency point.
+    frequency : 1D array
+        Array of frequency points for which data are available.
+    ninputs, noutputs : int
+        Number of input and output signals.
+    shape : tuple
+        2-tuple of I/O system dimension, (noutputs, ninputs).
     input_labels, output_labels : array of str
-        Names for the input and output variables.
-    sysname : str, optional
-        Name of the system.  For data generated using
-        :func:`~control.frequency_response`, stores the name of the system
-        that created the data.
+        Names for the input and output signals.
+    name : str
+        System name.  For data generated using
+        :func:`~control.frequency_response`, stores the name of the
+        system that created the data.
+    magnitude : array
+        Magnitude of the frequency response, indexed by frequency.
+    phase : array
+        Phase of the frequency response, indexed by frequency.
+
+    Other Parameters
+    ----------------
+    plot_type : str, optional
+        Set the type of plot to generate with ``plot()`` ('bode', 'nichols').
     title : str, optional
         Set the title to use when plotting.
+    plot_magnitude, plot_phase : bool, optional
+        If set to `False`, don't plot the magnitude or phase, respectively.
+    return_magphase : bool, optional
+        If True, then a frequency response data object will enumerate as a
+        tuple of the form (mag, phase, omega) where where ``mag`` is the
+        magnitude (absolute value, not dB or log10) of the system
+        frequency response, ``phase`` is the wrapped phase in radians of
+        the system frequency response, and ``omega`` is the (sorted)
+        frequencies at which the response was evaluated.
 
     See Also
     --------
@@ -148,22 +169,26 @@ class FrequencyResponseData(LTI):
     _epsw = 1e-8                #: Bound for exact frequency match
 
     def __init__(self, *args, **kwargs):
-        """Construct an FRD object.
+        """FrequencyResponseData(d, w[, dt])
 
-        The default constructor is FRD(d, w), where w is an iterable of
-        frequency points, and d is the matching frequency data.
+        Construct a frequency response data (FRD) object.
 
-        If d is a single list, 1D array, or tuple, a SISO system description
-        is assumed. d can also be
-
-        To call the copy constructor, call FRD(sys), where sys is a
-        FRD object.
-
-        To construct frequency response data for an existing LTI
-        object, other than an FRD, call FRD(sys, omega).
-
-        The timebase for the frequency response can be provided using an
+        The default constructor is FrequencyResponseData(d, w), where w is
+        an iterable of frequency points, and d is the matching frequency
+        data.  If d is a single list, 1D array, or tuple, a SISO system
+        description is assumed. d can also be a 2D array, in which case a
+        MIMO response is created.  To call the copy constructor, call
+        FrequencyResponseData(sys), where sys is a FRD object.  The
+        timebase for the frequency response can be provided using an
         optional third argument or the 'dt' keyword.
+
+        To construct frequency response data for an existing LTI object,
+        other than an FRD, call FrequencyResponseData(sys, omega).  This
+        functionality can also be obtained using :func:`frequency_response`
+        (which has additional options available).
+
+        See :class:`FrequencyResponseData` and :func:`frd` for more
+        information.
 
         """
         smooth = kwargs.pop('smooth', False)
@@ -182,11 +207,12 @@ class FrequencyResponseData(LTI):
 
         if len(args) == 2:
             if not isinstance(args[0], FRD) and isinstance(args[0], LTI):
-                # not an FRD, but still a system, second argument should be
-                # the frequency range
+                # not an FRD, but still an LTI system, second argument
+                # should be the frequency range
                 otherlti = args[0]
                 self.omega = sort(np.asarray(args[1], dtype=float))
-                # calculate frequency response at my points
+
+                # calculate frequency response at specified points
                 if otherlti.isctime():
                     s = 1j * self.omega
                     self.fresp = otherlti(s, squeeze=False)
@@ -194,6 +220,14 @@ class FrequencyResponseData(LTI):
                     z = np.exp(1j * self.omega * otherlti.dt)
                     self.fresp = otherlti(z, squeeze=False)
                 arg_dt = otherlti.dt
+
+                # Copy over signal and system names, if not specified
+                kwargs['inputs'] = kwargs.get('inputs', otherlti.input_labels)
+                kwargs['outputs'] = kwargs.get(
+                    'outputs', otherlti.output_labels)
+                if not otherlti._generic_name_check():
+                    kwargs['name'] = kwargs.get('name', _extended_system_name(
+                        otherlti.name, prefix_suffix_name='sampled'))
 
             else:
                 # The user provided a response and a freq vector
@@ -218,6 +252,10 @@ class FrequencyResponseData(LTI):
             self.omega = args[0].omega
             self.fresp = args[0].fresp
             arg_dt = args[0].dt
+
+            # Copy over signal and system names, if not specified
+            kwargs['inputs'] = kwargs.get('inputs', args[0].input_labels)
+            kwargs['outputs'] = kwargs.get('outputs', args[0].output_labels)
 
         else:
             raise ValueError(
@@ -249,15 +287,21 @@ class FrequencyResponseData(LTI):
 
         # Process iosys keywords
         defaults = {
-            'inputs': self.fresp.shape[1], 'outputs': self.fresp.shape[0]}
+            'inputs': self.fresp.shape[1] if not getattr(
+                self, 'input_index', None) else self.input_labels,
+            'outputs': self.fresp.shape[0] if not getattr(
+                self, 'output_index', None) else self.output_labels,
+            'name': getattr(self, 'name', None)}
         if arg_dt is not None:
-            defaults['dt'] = arg_dt             # choose compatible timebase
-        name, inputs, outputs, states, dt = _process_iosys_keywords(
-                kwargs, defaults, end=True)
+            if isinstance(args[0], LTI):
+                arg_dt = common_timebase(args[0].dt, arg_dt)
+            kwargs['dt'] = arg_dt
 
         # Process signal names
+        name, inputs, outputs, states, dt = _process_iosys_keywords(
+                kwargs, defaults)
         InputOutputSystem.__init__(
-            self, name=name, inputs=inputs, outputs=outputs, dt=dt)
+            self, name=name, inputs=inputs, outputs=outputs, dt=dt, **kwargs)
 
         # create interpolation functions
         if smooth:
@@ -266,17 +310,17 @@ class FrequencyResponseData(LTI):
                 raise ValueError("can't smooth with only 1 frequency")
             degree = 3 if self.omega.size > 3 else self.omega.size - 1
 
-            self.ifunc = empty((self.fresp.shape[0], self.fresp.shape[1]),
+            self._ifunc = empty((self.fresp.shape[0], self.fresp.shape[1]),
                                dtype=tuple)
             for i in range(self.fresp.shape[0]):
                 for j in range(self.fresp.shape[1]):
-                    self.ifunc[i, j], u = splprep(
+                    self._ifunc[i, j], u = splprep(
                         u=self.omega, x=[real(self.fresp[i, j, :]),
                                          imag(self.fresp[i, j, :])],
                         w=1.0/(absolute(self.fresp[i, j, :]) + 0.001),
                         s=0.0, k=degree)
         else:
-            self.ifunc = None
+            self._ifunc = None
 
     #
     # Frequency response properties
@@ -379,7 +423,7 @@ class FrequencyResponseData(LTI):
         """
         return "FrequencyResponseData({d}, {w}{smooth})".format(
             d=repr(self.fresp), w=repr(self.omega),
-            smooth=(self.ifunc and ", smooth=True") or "")
+            smooth=(self._ifunc and ", smooth=True") or "")
 
     def __neg__(self):
         """Negate a transfer function."""
@@ -438,7 +482,7 @@ class FrequencyResponseData(LTI):
         # Convert the second argument to a transfer function.
         if isinstance(other, (int, float, complex, np.number)):
             return FRD(self.fresp * other, self.omega,
-                       smooth=(self.ifunc is not None))
+                       smooth=(self._ifunc is not None))
         else:
             other = _convert_to_frd(other, omega=self.omega)
 
@@ -456,8 +500,8 @@ class FrequencyResponseData(LTI):
         for i in range(len(self.omega)):
             fresp[:, :, i] = self.fresp[:, :, i] @ other.fresp[:, :, i]
         return FRD(fresp, self.omega,
-                   smooth=(self.ifunc is not None) and
-                          (other.ifunc is not None))
+                   smooth=(self._ifunc is not None) and
+                          (other._ifunc is not None))
 
     def __rmul__(self, other):
         """Right Multiply two LTI objects (serial connection)."""
@@ -465,7 +509,7 @@ class FrequencyResponseData(LTI):
         # Convert the second argument to an frd function.
         if isinstance(other, (int, float, complex, np.number)):
             return FRD(self.fresp * other, self.omega,
-                       smooth=(self.ifunc is not None))
+                       smooth=(self._ifunc is not None))
         else:
             other = _convert_to_frd(other, omega=self.omega)
 
@@ -484,8 +528,8 @@ class FrequencyResponseData(LTI):
         for i in range(len(self.omega)):
             fresp[:, :, i] = other.fresp[:, :, i] @ self.fresp[:, :, i]
         return FRD(fresp, self.omega,
-                   smooth=(self.ifunc is not None) and
-                          (other.ifunc is not None))
+                   smooth=(self._ifunc is not None) and
+                          (other._ifunc is not None))
 
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __truediv__(self, other):
@@ -493,7 +537,7 @@ class FrequencyResponseData(LTI):
 
         if isinstance(other, (int, float, complex, np.number)):
             return FRD(self.fresp * (1/other), self.omega,
-                       smooth=(self.ifunc is not None))
+                       smooth=(self._ifunc is not None))
         else:
             other = _convert_to_frd(other, omega=self.omega)
 
@@ -504,15 +548,15 @@ class FrequencyResponseData(LTI):
                 "systems.")
 
         return FRD(self.fresp/other.fresp, self.omega,
-                   smooth=(self.ifunc is not None) and
-                          (other.ifunc is not None))
+                   smooth=(self._ifunc is not None) and
+                          (other._ifunc is not None))
 
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __rtruediv__(self, other):
         """Right divide two LTI objects."""
         if isinstance(other, (int, float, complex, np.number)):
             return FRD(other / self.fresp, self.omega,
-                       smooth=(self.ifunc is not None))
+                       smooth=(self._ifunc is not None))
         else:
             other = _convert_to_frd(other, omega=self.omega)
 
@@ -529,7 +573,7 @@ class FrequencyResponseData(LTI):
             raise ValueError("Exponent must be an integer")
         if other == 0:
             return FRD(ones(self.fresp.shape), self.omega,
-                       smooth=(self.ifunc is not None))  # unity
+                       smooth=(self._ifunc is not None))  # unity
         if other > 0:
             return self * (self**(other-1))
         if other < 0:
@@ -582,7 +626,7 @@ class FrequencyResponseData(LTI):
         if any(omega_array.imag > 0):
             raise ValueError("FRD.eval can only accept real-valued omega")
 
-        if self.ifunc is None:
+        if self._ifunc is None:
             elements = np.isin(self.omega, omega)  # binary array
             if sum(elements) < len(omega_array):
                 raise ValueError(
@@ -596,7 +640,7 @@ class FrequencyResponseData(LTI):
             for i in range(self.noutputs):
                 for j in range(self.ninputs):
                     for k, w in enumerate(omega_array):
-                        frraw = splev(w, self.ifunc[i, j], der=0)
+                        frraw = splev(w, self._ifunc[i, j], der=0)
                         out[i, j, k] = frraw[0] + 1.0j * frraw[1]
 
         return _process_frequency_response(self, omega, out, squeeze=squeeze)
@@ -751,7 +795,7 @@ class FrequencyResponseData(LTI):
         resfresp = (myfresp @ linalg.inv(I_AB))
         fresp = np.moveaxis(resfresp, 0, 2)
 
-        return FRD(fresp, other.omega, smooth=(self.ifunc is not None))
+        return FRD(fresp, other.omega, smooth=(self._ifunc is not None))
 
     # Plotting interface
     def plot(self, plot_type=None, *args, **kwargs):
@@ -901,6 +945,8 @@ def frd(*args, **kwargs):
 
     Parameters
     ----------
+    sys : LTI (StateSpace or TransferFunction)
+        A linear system that will be evaluated for frequency response data.
     response : array_like or LTI system
         Complex vector with the system response or an LTI system that can
         be used to copmute the frequency response at a list of frequencies.
@@ -917,7 +963,7 @@ def frd(*args, **kwargs):
 
     Returns
     -------
-    sys : :class:`FrequencyResponseData`
+    sys : FrequencyResponseData
         New frequency response data system.
 
     Other Parameters
@@ -926,6 +972,8 @@ def frd(*args, **kwargs):
         List of strings that name the individual signals of the transformed
         system.  If not given, the inputs and outputs are the same as the
         original system.
+    input_prefix, output_prefix : string, optional
+        Set the prefix for input and output signals.  Defaults = 'u', 'y'.
     name : string, optional
         System name. If unspecified, a generic name <sys[id]> is generated
         with a unique integer id.

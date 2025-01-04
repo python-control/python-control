@@ -1305,7 +1305,7 @@ def nyquist_response(
                 "Nyquist plot currently only supports SISO systems.")
 
         # Figure out the frequency range
-        if isinstance(sys, FrequencyResponseData) and sys.ifunc is None \
+        if isinstance(sys, FrequencyResponseData) and sys._ifunc is None \
            and not omega_range_given:
             omega_sys = sys.omega               # use system frequencies
         else:

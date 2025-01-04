@@ -39,10 +39,11 @@ __all__ = ['NonlinearIOSystem', 'InterconnectedSystem', 'nlsys',
 class NonlinearIOSystem(InputOutputSystem):
     """Nonlinear I/O system.
 
-    Creates an :class:`~control.InputOutputSystem` for a nonlinear system by
-    specifying a state update function and an output function.  The new system
-    can be a continuous or discrete time system (Note: discrete-time systems
-    are not yet supported by most functions.)
+    Creates an :class:`~control.InputOutputSystem` for a nonlinear system
+    by specifying a state update function and an output function.  The new
+    system can be a continuous or discrete time system. Nonlinear I/O
+    systems are usually created with the :func:`~control.nlsys` factory
+    function.
 
     Parameters
     ----------
@@ -63,20 +64,13 @@ class NonlinearIOSystem(InputOutputSystem):
 
         where the arguments are the same as for `upfcn`.
 
-    inputs : int, list of str or None, optional
-        Description of the system inputs.  This can be given as an integer
-        count or as a list of strings that name the individual signals.
-        If an integer count is specified, the names of the signal will be
-        of the form 's[i]' (where 's' is one of 'u', 'y', or 'x').  If
-        this parameter is not given or given as `None`, the relevant
-        quantity will be determined when possible based on other
-        information provided to functions using the system.
+    inputs, outputs, states : int, list of str or None, optional
+        Description of the system inputs, outputs, and states.  See
+        :func:`control.nlsys` for more details.
 
-    outputs : int, list of str or None, optional
-        Description of the system outputs.  Same format as `inputs`.
-
-    states : int, list of str, or None, optional
-        Description of the system states.  Same format as `inputs`.
+    params : dict, optional
+        Parameter values for the systems.  Passed to the evaluation functions
+        for the system as default values, overriding internal defaults.
 
     dt : timebase, optional
         The timebase for the system, used to specify whether the system is
@@ -88,13 +82,16 @@ class NonlinearIOSystem(InputOutputSystem):
         * dt = True: discrete time with unspecified sampling period
         * dt = None: no timebase specified
 
+    Attributes
+    ----------
+    ninputs, noutputs, nstates : int
+        Number of input, output and state variables.
+    shape : tuple
+        2-tuple of I/O system dimension, (noutputs, ninputs).
+    input_labels, output_labels, state_labels : list of str
+        Names for the input, output, and state variables.
     name : string, optional
-        System name (used for specifying signals). If unspecified, a
-        generic name <sys[id]> is generated with a unique integer id.
-
-    params : dict, optional
-        Parameter values for the system.  Passed to the evaluation functions
-        for the system as default values, overriding internal defaults.
+        System name.
 
     See Also
     --------
@@ -713,6 +710,11 @@ class InterconnectedSystem(NonlinearIOSystem):
         if outputs is None and outlist is not None:
             outputs = len(outlist)
 
+        if params is None:
+            params = {}
+            for sys in self.syslist:
+                params = params | sys.params
+
         # Create updfcn and outfcn
         def updfcn(t, x, u, params):
             self._update_params(params)
@@ -1220,8 +1222,7 @@ class InterconnectedSystem(NonlinearIOSystem):
         return dropped_inputs, dropped_outputs
 
 
-def nlsys(
-        updfcn, outfcn=None, inputs=None, outputs=None, states=None, **kwargs):
+def nlsys(updfcn, outfcn=None, **kwargs):
     """Create a nonlinear input/output system.
 
     Creates an :class:`~control.InputOutputSystem` for a nonlinear system by
@@ -1230,7 +1231,7 @@ def nlsys(
 
     Parameters
     ----------
-    updfcn : callable
+    updfcn : callable (or StateSpace)
         Function returning the state update function
 
             `updfcn(t, x, u, params) -> array`
@@ -1239,6 +1240,10 @@ def nlsys(
         with shape (ninputs,), `t` is a float representing the currrent
         time, and `params` is a dict containing the values of parameters
         used by the function.
+
+        If a :class:`StateSpace` system is passed as the update function,
+        then a nonlinear I/O system is created that implements the linear
+        dynamics of the state space system.
 
     outfcn : callable
         Function returning the output at the given state
@@ -1285,6 +1290,12 @@ def nlsys(
     sys : :class:`NonlinearIOSystem`
         Nonlinear input/output system.
 
+    Other Parameters
+    ----------------
+    input_prefix, output_prefix, state_prefix : string, optional
+        Set the prefix for input, output, and state signals.  Defaults =
+        'u', 'y', 'x'.
+
     See Also
     --------
     ss, tf
@@ -1308,9 +1319,34 @@ def nlsys(
     >>> timepts = np.linspace(0, 10)
     >>> response = ct.input_output_response(
     ...     kincar, timepts, [10, 0.05 * np.sin(timepts)])
+
     """
-    return NonlinearIOSystem(
-        updfcn, outfcn, inputs=inputs, outputs=outputs, states=states, **kwargs)
+    from .statesp import StateSpace
+    from .iosys import _extended_system_name
+
+    if isinstance(updfcn, StateSpace):
+        sys_ss = updfcn
+        kwargs['inputs'] = kwargs.get('inputs', sys_ss.input_labels)
+        kwargs['outputs'] = kwargs.get('outputs', sys_ss.output_labels)
+        kwargs['states'] = kwargs.get('states', sys_ss.state_labels)
+        kwargs['name'] = kwargs.get('name', _extended_system_name(
+            sys_ss.name, prefix_suffix_name='converted'))
+
+        sys_nl = NonlinearIOSystem(
+            lambda t, x, u, params:
+                sys_ss.A @ np.atleast_1d(x) + sys_ss.B @ np.atleast_1d(u),
+            lambda t, x, u, params:
+                sys_ss.C @ np.atleast_1d(x) + sys_ss.D @ np.atleast_1d(u),
+            **kwargs)
+
+        if sys_nl.nstates != sys_ss.nstates or sys_nl.shape != sys_ss.shape:
+            raise ValueError(
+                "new input, output, or state specification "
+                "doesn't match system size")
+
+        return sys_nl
+    else:
+        return NonlinearIOSystem(updfcn, outfcn, **kwargs)
 
 
 def input_output_response(
@@ -2240,7 +2276,8 @@ def interconnect(
 
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions
-        for the system as default values, overriding internal defaults.
+        for the system as default values, overriding internal defaults.  If
+        not specified, defaults to parameters from subsystems.
 
     dt : timebase, optional
         The timebase for the system, used to specify whether the system is

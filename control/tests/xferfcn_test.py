@@ -30,13 +30,6 @@ class TestXferFcn:
 
     def test_constructor_bad_input_type(self):
         """Give the constructor invalid input types."""
-        # MIMO requires lists of lists of vectors (not lists of vectors)
-        with pytest.raises(TypeError):
-            TransferFunction([[0., 1.], [2., 3.]], [[5., 2.], [3., 0.]])
-        # good input
-        TransferFunction([[[0., 1.], [2., 3.]]],
-                         [[[5., 2.], [3., 0.]]])
-
         # Single argument of the wrong type
         with pytest.raises(TypeError):
             TransferFunction([1])
@@ -190,8 +183,10 @@ class TestXferFcn:
 
         for i in range(sys3.noutputs):
             for j in range(sys3.ninputs):
-                np.testing.assert_allclose(sys2.num[i][j], sys3.num[i][j])
-                np.testing.assert_allclose(sys2.den[i][j], sys3.den[i][j])
+                np.testing.assert_allclose(
+                    sys2.num_array[i, j], sys3.num_array[i, j])
+                np.testing.assert_allclose(
+                    sys2.den_array[i, j], sys3.den_array[i, j])
 
     # Tests for TransferFunction.__add__
 
@@ -236,8 +231,8 @@ class TestXferFcn:
 
         for i in range(sys3.noutputs):
             for j in range(sys3.ninputs):
-                np.testing.assert_allclose(sys3.num[i][j], num3[i][j])
-                np.testing.assert_allclose(sys3.den[i][j], den3[i][j])
+                np.testing.assert_allclose(sys3.num_array[i, j], num3[i][j])
+                np.testing.assert_allclose(sys3.den_array[i, j], den3[i][j])
 
     # Tests for TransferFunction.__sub__
 
@@ -284,8 +279,8 @@ class TestXferFcn:
 
         for i in range(sys3.noutputs):
             for j in range(sys3.ninputs):
-                np.testing.assert_allclose(sys3.num[i][j], num3[i][j])
-                np.testing.assert_allclose(sys3.den[i][j], den3[i][j])
+                np.testing.assert_allclose(sys3.num_array[i, j], num3[i][j])
+                np.testing.assert_allclose(sys3.den_array[i, j], den3[i][j])
 
     # Tests for TransferFunction.__mul__
 
@@ -340,8 +335,8 @@ class TestXferFcn:
 
         for i in range(sys3.noutputs):
             for j in range(sys3.ninputs):
-                np.testing.assert_allclose(sys3.num[i][j], num3[i][j])
-                np.testing.assert_allclose(sys3.den[i][j], den3[i][j])
+                np.testing.assert_allclose(sys3.num_array[i, j], num3[i][j])
+                np.testing.assert_allclose(sys3.den_array[i, j], den3[i][j])
 
     # Tests for TransferFunction.__div__
 
@@ -662,10 +657,10 @@ class TestXferFcn:
 
         for i in range(sys.noutputs):
             for j in range(sys.ninputs):
-                np.testing.assert_array_almost_equal(tfsys.num[i][j],
-                                                     num[i][j])
-                np.testing.assert_array_almost_equal(tfsys.den[i][j],
-                                                     den[i][j])
+                np.testing.assert_array_almost_equal(
+                    tfsys.num_array[i, j], num[i][j])
+                np.testing.assert_array_almost_equal(
+                    tfsys.den_array[i, j], den[i][j])
 
     def test_minreal(self):
         """Try the minreal function, and also test easy entry by creation
@@ -1121,8 +1116,10 @@ class TestXferFcn:
         H2 = eval(H.__repr__())
         for p in range(len(H.num)):
             for m in range(len(H.num[0])):
-                np.testing.assert_array_almost_equal(H.num[p][m], H2.num[p][m])
-                np.testing.assert_array_almost_equal(H.den[p][m], H2.den[p][m])
+                np.testing.assert_array_almost_equal(
+                    H.num_array[p, m], H2.num_array[p, m])
+                np.testing.assert_array_almost_equal(
+                    H.den_array[p, m], H2.den_array[p, m])
             assert H.dt == H2.dt
 
     def test_sample_named_signals(self):
@@ -1180,8 +1177,10 @@ class TestLTIConverter:
         sslti = mimotf.returnScipySignalLTI(strict=False)
         for i in range(2):
             for j in range(3):
-                np.testing.assert_allclose(sslti[i][j].num, mimotf.num[i][j])
-                np.testing.assert_allclose(sslti[i][j].den, mimotf.den[i][j])
+                np.testing.assert_allclose(
+                    sslti[i][j].num, mimotf.num_array[i, j])
+                np.testing.assert_allclose(
+                    sslti[i][j].den, mimotf.den_array[i, j])
                 if mimotf.dt == 0:
                     assert sslti[i][j].dt is None
                 else:
@@ -1286,3 +1285,35 @@ def test_copy_names(create, args, kwargs, convert):
     cpy = convert(sys, inputs='myin', outputs='myout')
     assert cpy.input_labels == ['myin']
     assert cpy.output_labels == ['myout']
+
+s = ct.TransferFunction.s
+@pytest.mark.parametrize("args, num, den", [
+    (('s', ), [[[1, 0]]], [[[1]]]),                     # ctime
+    (('z', ), [[[1, 0]]], [[[1]]]),                     # dtime
+    ((1, 1), [[[1]]], [[[1]]]),                         # scalars as scalars
+    (([[1]], [[1]]), [[[1]]], [[[1]]]),                 # scalars as lists
+    (([[[1, 2]]], [[[3, 4]]]), [[[1, 2]]], [[[3, 4]]]), # SISO as lists
+    (([[np.array([1, 2])]], [[np.array([3, 4])]]),      # SISO as arrays
+     [[[1, 2]]], [[[3, 4]]]),
+    (([[    [1],    [2] ], [[1, 1],      [1, 0] ]],     # MIMO
+      [[ [1, 0], [1, 0] ], [[1, 2],         [1] ]]),
+     [[    [1],    [2] ], [[1, 1],      [1, 0] ]],
+     [[ [1, 0], [1, 0] ], [[1, 2],         [1] ]]),
+    (([[[1, 2], [3, 4]]], [[[5, 6]]]),                  # common denominator
+     [[[1, 2], [3, 4]]], [[[5, 6], [5, 6]]]),
+    (([   [1/s,   2/s],   [(s+1)/(s+2),     s]], ),     # 2x2 from SISO
+     [[    [1],    [2] ], [[1, 1],      [1, 0] ]],      # num
+     [[ [1, 0], [1, 0] ], [[1, 2],         [1] ]]),     # den
+    (([[1, 2], [3, 4]], [[[1, 0], [1, 0]]]), ValueError,
+     r"numerator has 2 output\(s\), but the denominator has 1 output"),
+])
+def test_tf_args(args, num, den):
+    if isinstance(num, type):
+        exception, match = num, den
+        with pytest.raises(exception, match=match):
+            sys = ct.tf(*args)
+    else:
+        sys = ct.tf(*args)
+        chk = ct.tf(num, den)
+        np.testing.assert_equal(sys.num, chk.num)
+        np.testing.assert_equal(sys.den, chk.den)

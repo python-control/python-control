@@ -586,7 +586,8 @@ def create_statefbk_iosystem(
         controller_type=None, xd_labels=None, ud_labels=None, ref_labels=None,
         feedfwd_pattern='trajgen', gainsched_indices=None,
         gainsched_method='linear', control_indices=None, state_indices=None,
-        name=None, inputs=None, outputs=None, states=None, **kwargs):
+        name=None, inputs=None, outputs=None, states=None, params=None,
+        **kwargs):
     r"""Create an I/O system using a (full) state feedback controller.
 
     This function creates an input/output system that implements a
@@ -751,6 +752,10 @@ def create_statefbk_iosystem(
         System name. If unspecified, a generic name <sys[id]> is generated
         with a unique integer id.
 
+    params : dict, optional
+        System parameter values.  By default, these will be copied from
+        `sys` and `ctrl`, but can be overridden with this keyword.
+
     Examples
     --------
     >>> import control as ct
@@ -773,7 +778,8 @@ def create_statefbk_iosystem(
     if not isinstance(sys, NonlinearIOSystem):
         raise ControlArgument("Input system must be I/O system")
 
-    # Process (legacy) keywords
+    # Process keywords
+    params = sys.params if params is None else params
     controller_type = _process_legacy_keyword(
         kwargs, 'type', 'controller_type', controller_type)
     if kwargs:
@@ -970,10 +976,10 @@ def create_statefbk_iosystem(
 
             return u
 
-        params = {} if gainsched else {'K': K}
+        ctrl_params = {} if gainsched else {'K': K}
         ctrl = NonlinearIOSystem(
             _control_update, _control_output, name=name, inputs=inputs,
-            outputs=outputs, states=states, params=params)
+            outputs=outputs, states=states, params=ctrl_params)
 
     elif controller_type == 'iosystem' and feedfwd_pattern == 'trajgen':
         # Use the passed system to compute feedback compensation
@@ -1061,7 +1067,8 @@ def create_statefbk_iosystem(
         [sys, ctrl] if estimator == sys else [sys, ctrl, estimator],
         name=sys.name + "_" + ctrl.name, add_unused=True,
         inplist=inplist, inputs=input_labels,
-        outlist=outlist, outputs=output_labels
+        outlist=outlist, outputs=output_labels,
+        params= ctrl.params | params
     )
     return ctrl, closed
 

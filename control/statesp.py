@@ -1,50 +1,16 @@
-"""statesp.py
+# statesp.py - state space class and related functions
+#
+# Original author: Richard M. Murray
+# Creation date: 24 May 2009
+# Pre-2014 revisions: Kevin K. Chen, Dec 10
+# Use `git shortlog -n -s statesp.py` for full list of contributors
 
-State space representation and functions.
+"""State space representation and functions.
 
-This file contains the StateSpace class, which is used to represent linear
-systems in state space.  This is the primary representation for the
+This module contains the StateSpace class, which is used to represent
+linear systems in state space.  This is the primary representation for the
 python-control library.
 
-"""
-
-"""Copyright (c) 2010 by California Institute of Technology
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-1. Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
-
-3. Neither the name of the California Institute of Technology nor
-   the names of its contributors may be used to endorse or promote
-   products derived from this software without specific prior
-   written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
-OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-SUCH DAMAGE.
-
-Author: Richard M. Murray
-Date: 24 May 09
-Revised: Kevin K. Chen, Dec 10
-
-$Id$
 """
 
 import math
@@ -101,30 +67,30 @@ class StateSpace(NonlinearIOSystem, LTI):
           dx/dt &= A x + B u \\
               y &= C x + D u
 
-    where `u` is the input, `y` is the output, and `x` is the state.
+    where `u` is the input, `y` is the output, and `x` is the state.  State
+    space systems are usually created with the :func:`~control.ss` factory
+    function.
 
     Parameters
     ----------
-    A, B, C, D: array_like
+    A, B, C, D : array_like
         System matrices of the appropriate dimensions.
     dt : None, True or float, optional
-        System timebase. 0 (default) indicates continuous
-        time, True indicates discrete time with unspecified sampling
-        time, positive number is discrete time with specified
-        sampling time, None indicates unspecified timebase (either
-        continuous or discrete time).
+        System timebase. 0 (default) indicates continuous time, True
+        indicates discrete time with unspecified sampling time, positive
+        number is discrete time with specified sampling time, None
+        indicates unspecified timebase (either continuous or discrete time).
 
     Attributes
     ----------
     ninputs, noutputs, nstates : int
         Number of input, output and state variables.
-    A, B, C, D : 2D arrays
-        System matrices defining the input/output dynamics.
-    dt : None, True or float
-        System timebase. 0 (default) indicates continuous time, True indicates
-        discrete time with unspecified sampling time, positive number is
-        discrete time with specified sampling time, None indicates unspecified
-        timebase (either continuous or discrete time).
+    shape : tuple
+        2-tuple of I/O system dimension, (noutputs, ninputs).
+    input_labels, output_labels, state_labels : list of str
+        Names for the input, output, and state variables.
+    name : string, optional
+        System name.
 
     Notes
     -----
@@ -164,13 +130,12 @@ class StateSpace(NonlinearIOSystem, LTI):
     signal offsets.  The subsystem is created by truncating the inputs and
     outputs, but leaving the full set of system states.
 
-    StateSpace instances have support for IPython LaTeX output,
-    intended for pretty-printing in Jupyter notebooks.  The LaTeX
-    output can be configured using
-    `control.config.defaults['statesp.latex_num_format']` and
-    `control.config.defaults['statesp.latex_repr_type']`.  The LaTeX output is
-    tailored for MathJax, as used in Jupyter, and may look odd when
-    typeset by non-MathJax LaTeX systems.
+    StateSpace instances have support for IPython LaTeX output, intended
+    for pretty-printing in Jupyter notebooks.  The LaTeX output can be
+    configured using `control.config.defaults['statesp.latex_num_format']`
+    and `control.config.defaults['statesp.latex_repr_type']`.  The LaTeX
+    output is tailored for MathJax, as used in Jupyter, and may look odd
+    when typeset by non-MathJax LaTeX systems.
 
     `control.config.defaults['statesp.latex_num_format']` is a format string
     fragment, specifically the part of the format string after `'{:'`
@@ -194,12 +159,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         True for unspecified sampling time).  To call the copy constructor,
         call StateSpace(sys), where sys is a StateSpace object.
 
-        The `remove_useless_states` keyword can be used to scan the A, B, and
-        C matrices for rows or columns of zeros.  If the zeros are such that a
-        particular state has no effect on the input-output dynamics, then that
-        state is removed from the A, B, and C matrices.  If not specified, the
-        value is read from `config.defaults['statesp.remove_useless_states']`
-        (default = False).
+        See :class:`StateSpace` and :func:`ss` for more information.
 
         """
         #
@@ -1541,7 +1501,7 @@ def ss(*args, **kwargs):
 
     Create a state space system.
 
-    The function accepts either 1, 2, 4 or 5 parameters:
+    The function accepts either 1, 4 or 5 positional parameters:
 
     ``ss(sys)``
         Convert a linear system into space system form. Always creates a
@@ -1565,11 +1525,11 @@ def ss(*args, **kwargs):
             x[k+1] &= A x[k] + B u[k] \\
               y[k] &= C x[k] + D u[k]
 
-        The matrices can be given as *array like* data types or strings.
-        Everything that the constructor of :class:`numpy.matrix` accepts is
-        permissible here too.
+        The matrices can be given as 2D array-like data types.  For SISO
+        systems, `B` and `C` can be given as 1D arrays and D can be given
+        as a scalar.
 
-    ``ss(args, inputs=['u1', ..., 'up'], outputs=['y1', ..., 'yq'], states=['x1', ..., 'xn'])``
+    ``ss(*args, inputs=['u1', ..., 'up'], outputs=['y1', ..., 'yq'], states=['x1', ..., 'xn'])``
         Create a system with named input, output, and state signals.
 
     Parameters
@@ -1584,23 +1544,33 @@ def ss(*args, **kwargs):
         time, positive number is discrete time with specified
         sampling time, None indicates unspecified timebase (either
         continuous or discrete time).
+    remove_useless_states : bool, optional
+        If `True`, remove states that have no effect on the input/output
+        dynamics.  If not specified, the value is read from
+        `config.defaults['statesp.remove_useless_states']` (default = False).
+    method : str, optional
+        Set the method used for converting a transfer function to a state
+        space system.  Current methods are 'slycot' and 'scipy'.  If set to
+        None (default), try 'slycot' first and then 'scipy' (SISO only).
+
+    Returns
+    -------
+    out : StateSpace
+        Linear input/output system.
+
+    Other Parameters
+    ----------------
     inputs, outputs, states : str, or list of str, optional
         List of strings that name the individual signals.  If this parameter
         is not given or given as `None`, the signal names will be of the
         form `s[i]` (where `s` is one of `u`, `y`, or `x`). See
         :class:`InputOutputSystem` for more information.
+    input_prefix, output_prefix, state_prefix : string, optional
+        Set the prefix for input, output, and state signals.  Defaults =
+        'u', 'y', 'x'.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
-    method : str, optional
-        Set the method used for computing the result.  Current methods are
-        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
-        and then 'scipy' (SISO only).
-
-    Returns
-    -------
-    out: :class:`StateSpace`
-        Linear input/output system.
 
     Raises
     ------
@@ -1609,7 +1579,7 @@ def ss(*args, **kwargs):
 
     See Also
     --------
-    tf, ss2tf, tf2ss
+    tf, ss2tf, tf2ss, zpk
 
     Notes
     -----
@@ -2291,7 +2261,7 @@ def _convert_to_statespace(sys, use_prefix_suffix=False, method=None):
                 D = empty((sys.noutputs, sys.ninputs), dtype=float)
                 for i, j in itertools.product(range(sys.noutputs),
                                               range(sys.ninputs)):
-                    D[i, j] = sys.num[i][j][0] / sys.den[i][j][0]
+                    D[i, j] = sys.num_array[i, j][0] / sys.den_array[i, j][0]
                 newsys = StateSpace([], [], [], D, sys.dt)
             else:
                 if not issiso(sys):

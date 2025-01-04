@@ -1203,7 +1203,7 @@ def create_mpc_iosystem(
 
     # Grab the keyword arguments known by this function
     iosys_kwargs = {}
-    for kw in InputOutputSystem.kwargs_list:
+    for kw in InputOutputSystem._kwargs_list:
         if kw in kwargs:
             iosys_kwargs[kw] = kwargs.pop(kw)
 
