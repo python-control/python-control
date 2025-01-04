@@ -1529,8 +1529,7 @@ def ss(*args, **kwargs):
         systems, `B` and `C` can be given as 1D arrays and D can be given
         as a scalar.
 
-    ``ss(*args, inputs=['u1', ..., 'up'], outputs=['y1', ..., 'yq'],
-    states=['x1', ..., 'xn'])``
+    ``ss(*args, inputs=['u1', ..., 'up'], outputs=['y1', ..., 'yq'], states=['x1', ..., 'xn'])``
         Create a system with named input, output, and state signals.
 
     Parameters

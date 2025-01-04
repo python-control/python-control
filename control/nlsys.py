@@ -1333,8 +1333,11 @@ def nlsys(updfcn, outfcn=None, **kwargs):
             sys_ss.name, prefix_suffix_name='converted'))
 
         sys_nl = NonlinearIOSystem(
-            lambda t, x, u, params: sys.A @ x + sys.B @ u,
-            lambda t, x, u, params: sys.C @ x + sys.D @ u, **kwargs)
+            lambda t, x, u, params:
+                sys_ss.A @ np.atleast_1d(x) + sys_ss.B @ np.atleast_1d(u),
+            lambda t, x, u, params:
+                sys_ss.C @ np.atleast_1d(x) + sys_ss.D @ np.atleast_1d(u),
+            **kwargs)
 
         if sys_nl.nstates != sys_ss.nstates or sys_nl.shape != sys_ss.shape:
             raise ValueError(

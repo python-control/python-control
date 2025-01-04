@@ -754,7 +754,7 @@ def create_statefbk_iosystem(
 
     params : dict, optional
         System parameter values.  By default, these will be copied from
-        `sys` and `ctrl`, but can be overriden with this keyword.
+        `sys` and `ctrl`, but can be overridden with this keyword.
 
     Examples
     --------

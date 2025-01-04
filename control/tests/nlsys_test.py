@@ -169,6 +169,9 @@ def test_ss2io():
     for attr in ['nstates', 'ninputs', 'noutputs']:
         assert getattr(nlsys, attr) == getattr(sys, attr)
     assert nlsys.name == 'sys$converted'
+    np.testing.assert_allclose(
+        nlsys.dynamics(0, [1, 2, 3, 4], [0, 0], {}),
+        sys.A @ np.array([1, 2, 3, 4]))
 
     # Put names back to defaults
     nlsys = ct.nlsys(
