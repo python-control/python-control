@@ -557,7 +557,12 @@ def combine_tf(tf_array, **kwargs):
     ...      [s / (s + 2)]],
     ...     name='G'
     ... )
-    <TransferFunction G: ['u[0]'] -> ['y[0]', 'y[1]']>
+    TransferFunction(
+    [[array([1])],
+     [array([1, 0])]],
+    [[array([1, 1])],
+     [array([1, 2])]],
+    name='G', outputs=2, inputs=1)
 
     Combine NumPy arrays with transfer functions
 
@@ -566,7 +571,14 @@ def combine_tf(tf_array, **kwargs):
     ...      [np.zeros((1, 2)), ct.tf([1], [1, 0])]],
     ...     name='G'
     ... )
-    <TransferFunction G: ['u[0]', 'u[1]', 'u[2]'] -> ['y[0]', 'y[1]', 'y[2]']>
+    TransferFunction(
+    [[array([1.]), array([0.]), array([0.])],
+     [array([0.]), array([1.]), array([0.])],
+     [array([0.]), array([0.]), array([1])]],
+    [[array([1.]), array([1.]), array([1.])],
+     [array([1.]), array([1.]), array([1.])],
+     [array([1.]), array([1.]), array([1, 0])]],
+    name='G', outputs=3, inputs=3)
     """
     # Find common timebase or raise error
     dt_list = []
@@ -653,10 +665,21 @@ def split_tf(transfer_function):
     ...     name='G'
     ... )
     >>> ct.split_tf(G)
-    array([[<TransferFunction G: ['u[0]'] -> ['y[0]']>,
-            <TransferFunction G: ['u[1]'] -> ['y[0]']>],
-           [<TransferFunction G: ['u[0]'] -> ['y[1]']>,
-            <TransferFunction G: ['u[1]'] -> ['y[1]']>]], dtype=object)
+    array([[TransferFunction(
+            array([87.8]),
+            array([1, 1]),
+            name='G', outputs=1, inputs=1), TransferFunction(
+                                            array([-86.4]),
+                                            array([1, 1]),
+                                            name='G', outputs=1, inputs=1)],
+           [TransferFunction(
+            array([108.2]),
+            array([1, 1]),
+            name='G', outputs=1, inputs=1), TransferFunction(
+                                            array([-109.6]),
+                                            array([1, 1]),
+                                            name='G', outputs=1, inputs=1)]],
+          dtype=object)
     """
     tf_split_lst = []
     for i_out in range(transfer_function.noutputs):

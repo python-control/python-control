@@ -50,8 +50,10 @@ def nl_update(t, x, u, params):
 def nl_output(t, x, u, params):
     return sys_ss.C @ x + sys_ss.D @ u
 
+nl_params = {'a': 0, 'b': 1}
+
 sys_nl = ct.nlsys(
-    nl_update, nl_output, name='sys_nl',
+    nl_update, nl_output, name='sys_nl', params=nl_params,
     states=sys_ss.nstates, inputs=sys_ss.ninputs, outputs=sys_ss.noutputs)
 
 # Nonlinear system (with linear dynamics), discrete time
