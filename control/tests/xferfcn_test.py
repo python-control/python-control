@@ -1087,19 +1087,22 @@ Input 2 to output 2:
         [(([-1., 4.], [1., 3., 5.]),
           "TransferFunction(\n"
           "array([-1.,  4.]),\n"
-          "array([1., 3., 5.]))"),
+          "array([1., 3., 5.]),\n"
+          "outputs=1, inputs=1)"),
          (([2., 3., 0.], [1., -3., 4., 0], 2.0),
           "TransferFunction(\n"
           "array([2., 3., 0.]),\n"
           "array([ 1., -3.,  4.,  0.]),\n"
-          "dt=2.0)"),
+          "dt=2.0,\n"
+          "outputs=1, inputs=1)"),
          (([[[0, 1], [2, 3]], [[4, 5], [6, 7]]],
            [[[6, 7], [4, 5]], [[2, 3], [0, 1]]]),
           "TransferFunction(\n"
           "[[array([1]), array([2, 3])],\n"
           " [array([4, 5]), array([6, 7])]],\n"
           "[[array([6, 7]), array([4, 5])],\n"
-          " [array([2, 3]), array([1])]])"),
+          " [array([2, 3]), array([1])]],\n"
+          "outputs=2, inputs=2)"),
          (([[[0, 1], [2, 3]], [[4, 5], [6, 7]]],
            [[[6, 7], [4, 5]], [[2, 3], [0, 1]]],
            0.5),
@@ -1108,7 +1111,8 @@ Input 2 to output 2:
           " [array([4, 5]), array([6, 7])]],\n"
           "[[array([6, 7]), array([4, 5])],\n"
           " [array([2, 3]), array([1])]],\n"
-          "dt=0.5)"),
+          "dt=0.5,\n"
+          "outputs=2, inputs=2)"),
          ])
     def test_loadable_repr(self, Hargs, ref):
         """Test __repr__ printout."""

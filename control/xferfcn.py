@@ -509,7 +509,7 @@ class TransferFunction(LTI):
                 out += "],\n[" if entry is self.num_array else "]"
 
         out += super()._dt_repr(separator=",\n", space="")
-        if len(labels := self._label_repr(show_count=False)) > 0:
+        if len(labels := self._label_repr()) > 0:
             out += ",\n" + labels
 
         out += ")"

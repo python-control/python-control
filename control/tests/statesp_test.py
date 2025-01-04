@@ -746,7 +746,7 @@ array([[ 4.,  2., -3.],
        [ 1.,  4.,  3.]]),
 array([[-2.,  4.],
        [ 0.,  1.]]),
-name='sys322'{dt})"""
+name='sys322'{dt}, states=3, outputs=2, inputs=2)"""
         assert ct.iosys_repr(sys322, format='eval') == ref322.format(dt='')
         sysd = StateSpace(sys322.A, sys322.B,
                           sys322.C, sys322.D, 0.4)

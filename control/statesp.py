@@ -395,7 +395,7 @@ class StateSpace(NonlinearIOSystem, LTI):
             C=self.C.__repr__(), D=self.D.__repr__())
 
         out += super()._dt_repr(separator=",\n", space="")
-        if len(labels := super()._label_repr(show_count=False)) > 0:
+        if len(labels := super()._label_repr()) > 0:
             out += ",\n" + labels
 
         out += ")"

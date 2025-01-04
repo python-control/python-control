@@ -21,7 +21,7 @@ syslist = []
 # State space (continuous and discrete time)
 sys_ss = ct.ss([[0, 1], [-4, -5]], [0, 1], [-1, 1], 0, name='sys_ss')
 sys_dss = sys_ss.sample(0.1, name='sys_dss')
-sys_ss0 = ct.ss([], [], [], np.eye(2), name='stateless')
+sys_ss0 = ct.ss([], [], [], np.eye(2), name='stateless', inputs=['u0', 'u1'])
 syslist += [sys_ss, sys_dss, sys_ss0]
 
 # Transfer function (continuous and discrete time)
@@ -121,7 +121,6 @@ def display_representations(
             print(fcn(sys))
             print("----\n")
 
-
 # Default formats
 display_representations("Default repr", repr)
 display_representations("Default str (print)", str)
@@ -130,20 +129,26 @@ display_representations("Default str (print)", str)
 if getattr(ct.InputOutputSystem, '_repr_info_', None) and \
    ct.config.defaults.get('iosys.repr_format', None) and \
    ct.config.defaults['iosys.repr_format'] != 'info':
-    ct.set_defaults('iosys', repr_format='info')
-    display_representations("repr_format='info'", repr)
-ct.reset_defaults()
+    with ct.config.defaults({'iosys.repr_format': 'info'}):
+        display_representations("repr_format='info'", repr)
 
 # 'eval' format (if it exists and hasn't already been displayed)
 if getattr(ct.InputOutputSystem, '_repr_eval_', None) and \
    ct.config.defaults.get('iosys.repr_format', None) and \
    ct.config.defaults['iosys.repr_format'] != 'eval':
-    ct.set_defaults('iosys', repr_format='eval')
-    display_representations("repr_format='eval'", repr)
-ct.reset_defaults()
+    with ct.config.defaults({'iosys.repr_format': 'eval'}):
+        display_representations("repr_format='eval'", repr)
 
-ct.set_defaults('xferfcn', display_format='zpk')
-display_representations(
-    "xferfcn.display_format=zpk, str (print)", str,
-    class_list=[ct.TransferFunction])
-ct.reset_defaults()
+# Change the way counts are displayed
+with ct.config.defaults(
+        {'iosys.repr_show_count':
+         not ct.config.defaults['iosys.repr_show_count']}):
+    display_representations(
+        f"iosys.repr_show_count={ct.config.defaults['iosys.repr_show_count']}",
+        repr, class_list=[ct.StateSpace])
+
+# ZPK format for transfer functions
+with ct.config.defaults({'xferfcn.display_format': 'zpk'}):
+    display_representations(
+        "xferfcn.display_format=zpk, str (print)", str,
+        class_list=[ct.TransferFunction])

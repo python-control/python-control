@@ -32,6 +32,7 @@ _iosys_defaults = {
     'iosys.converted_system_name_prefix': '',
     'iosys.converted_system_name_suffix': '$converted',
     'iosys.repr_format': 'eval',
+    'iosys.repr_show_count': True,
 }
 
 
@@ -313,7 +314,9 @@ class InputOutputSystem(object):
     def repr_format(self, value):
         self._repr_format = value
 
-    def _label_repr(self, show_count=True):
+    def _label_repr(self, show_count=None):
+        show_count = config._get_param(
+            'iosys', 'repr_show_count', show_count, True)
         out, count = "", 0
 
         # Include the system name if not generic

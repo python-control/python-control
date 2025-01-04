@@ -425,7 +425,7 @@ class FrequencyResponseData(LTI):
             smooth=(self._ifunc and ", smooth=True") or "")
 
         out += self._dt_repr()
-        if len(labels := self._label_repr(show_count=False)) > 0:
+        if len(labels := self._label_repr()) > 0:
             out += ",\n" + labels
 
         out += ")"
