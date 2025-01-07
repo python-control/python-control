@@ -11,6 +11,8 @@ from numpy import real, angle, abs
 from warnings import warn
 from . import config
 from .iosys import InputOutputSystem
+import control
+from typing import Callable
 
 __all__ = ['poles', 'zeros', 'damp', 'evalfr', 'frequency_response',
            'freqresp', 'dcgain', 'bandwidth', 'LTI']
@@ -202,6 +204,26 @@ class LTI(InputOutputSystem):
         # importing here prevents circular dependancy
         from control.passivity import ispassive
         return ispassive(self)
+
+    # convenience aliases
+    # most function are only forward declaraed and patched in the __init__.py to avoid circular imports
+
+    # conversions
+    to_ss: Callable
+    to_tf: Callable
+
+    # system interconnections
+    feedback: Callable
+
+    # freq domain plotting
+    bode_plot: Callable
+    nyquist_plot: Callable
+    nichols_plot: Callable
+
+    # time domain simulation
+    forced_response = control.timeresp.forced_response
+    impulse_response = control.timeresp.impulse_response
+    step_response = control.timeresp.step_response
 
 
 def poles(sys):
