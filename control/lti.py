@@ -78,9 +78,10 @@ class LTI(InputOutputSystem):
 
         Parameters
         ----------
-        omega : float or 1D array_like
+        omega : float or 1D array_like, optional
             A list, tuple, array, or scalar value of frequencies in
-            radians/sec at which the system will be evaluated.
+            radians/sec at which the system will be evaluated.  If None (default),
+            a set of frequencies is computed based on the system dynamics.
         squeeze : bool, optional
             If squeeze=True, remove single-dimensional entries from the shape
             of the output even if the system is not SISO. If squeeze=False,
@@ -108,6 +109,11 @@ class LTI(InputOutputSystem):
 
         """
         from .frdata import FrequencyResponseData
+
+        if omega is None:
+            # Use default frequency range
+            from .freqplot import _default_frequency_range
+            omega = _default_frequency_range(self)
 
         omega = np.sort(np.array(omega, ndmin=1))
         if self.isdtime(strict=True):
