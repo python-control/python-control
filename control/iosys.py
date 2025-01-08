@@ -267,6 +267,7 @@ class InputOutputSystem(object):
 
         if html:
             # Replace symbols that might be interpreted by HTML processing
+            # TODO: replace -> with right arrow (later)
             escape_chars = {
                 '$': r'\$',
                 '<': '&lt;',
@@ -820,7 +821,7 @@ def iosys_repr(sys, format=None):
 
     Notes
     -----
-    By default, the representation for an input/output is set to 'info'.
+    By default, the representation for an input/output is set to 'eval'.
     Set config.defaults['iosys.repr_format'] to change for all I/O systems
     or use the `repr_format` parameter for a single system.
 

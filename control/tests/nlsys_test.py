@@ -19,7 +19,7 @@ import control as ct
 # Basic test of nlsys()
 def test_nlsys_basic():
     def kincar_update(t, x, u, params):
-        l = params['l']             # wheelbase
+        l = params['l']              # wheelbase
         return np.array([
             np.cos(x[2]) * u[0],     # x velocity
             np.sin(x[2]) * u[0],     # y velocity
@@ -248,3 +248,20 @@ def test_ICsystem_str():
         r"D = \[\[.*\]\]"
 
     assert re.match(ref, str(sys), re.DOTALL)
+
+
+# Make sure nlsys str() works as expected
+@pytest.mark.parametrize("params, expected", [
+    ({}, r"States \(1\): \['x\[0\]'\]" + "\n\n"),
+    ({'a': 1}, r"States \(1\): \['x\[0\]'\]" + "\n" +
+     r"Parameters: \['a'\]" + "\n\n"),
+    ({'a': 1, 'b': 1}, r"States \(1\): \['x\[0\]'\]" + "\n" +
+     r"Parameters: \['a', 'b'\]" + "\n\n"),
+])
+def test_nlsys_params_str(params, expected):
+    sys = ct.nlsys(
+            lambda t, x, u, params: -x, inputs=1, outputs=1, states=1,
+            params=params)
+    out = str(sys)
+
+    assert re.search(expected, out) is not None

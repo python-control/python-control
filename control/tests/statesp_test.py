@@ -1314,3 +1314,17 @@ def test_convenience_aliases():
     assert isinstance(sys.impulse_response(), (ct.TimeResponseData, ct.TimeResponseList))
     assert isinstance(sys.step_response(), (ct.TimeResponseData, ct.TimeResponseList))
     assert isinstance(sys.initial_response(X0=1), (ct.TimeResponseData, ct.TimeResponseList))
+
+# Test LinearICSystem __call__
+def test_linearic_call():
+    import cmath
+
+    sys1 = ct.rss(2, 1, 1, strictly_proper=True, name='sys1')
+    sys2 = ct.rss(2, 1, 1, strictly_proper=True, name='sys2')
+
+    sys_ic = ct.interconnect(
+        [sys1, sys2], connections=['sys1.u', 'sys2.y'],
+        inplist='sys2.u', outlist='sys1.y')
+
+    for s in [0, 1, 1j]:
+        assert cmath.isclose(sys_ic(s), (sys1 * sys2)(s))

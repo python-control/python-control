@@ -5,7 +5,7 @@
 # of representations (__repr__, __str__) for those systems that can be
 # used to compare different versions of python-control.  It is mainly
 # intended for uses by developers to make sure there are no unexpected
-# changes in representation formats, but also has some interest
+# changes in representation formats, but also has some interesting
 # examples of different choices in system representation.
 
 import numpy as np
@@ -30,14 +30,14 @@ sys_dtf = ct.tf(sys_dss, name='sys_dss_poly', display_format='poly')
 sys_gtf = ct.tf([1], [1, 0])
 syslist += [sys_tf, sys_dtf, sys_gtf]
 
-# MIMO transfer function (continous time only)
+# MIMO transfer function (continuous time only)
 sys_mtf = ct.tf(
     [[sys_tf.num[0][0].tolist(), [0]], [[1, 0], [1, 0]  ]],
     [[sys_tf.den[0][0].tolist(), [1]], [[1],    [1, 2, 1]]],
     name='sys_mtf_zpk', display_format='zpk')
 syslist += [sys_mtf]
 
-# Frequency response data (FRD) system (continous and discrete time)
+# Frequency response data (FRD) system (continuous and discrete time)
 sys_frd = ct.frd(sys_tf, np.logspace(-1, 1, 5))
 sys_dfrd = ct.frd(sys_dtf, np.logspace(-1, 1, 5))
 sys_mfrd = ct.frd(sys_mtf, np.logspace(-1, 1, 5))

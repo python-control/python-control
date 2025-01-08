@@ -155,7 +155,7 @@ class NonlinearIOSystem(InputOutputSystem):
 
     def __str__(self):
         out = f"{InputOutputSystem.__str__(self)}"
-        if len(self.params) > 1:
+        if len(self.params) > 0:
             out += f"\nParameters: {[p for p in self.params.keys()]}"
         out += "\n\n" + \
             f"Update: {self.updfcn}\n" + \
