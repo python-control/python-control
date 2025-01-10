@@ -24,7 +24,7 @@ def unwrap(angle, period=2*math.pi):
     angle : array_like
         Array of angles to be unwrapped.
     period : float, optional
-        Period (defaults to `2*pi`).
+        Period (defaults to ``2*pi``).
 
     Returns
     -------

@@ -95,7 +95,7 @@ def lyap(A, Q, C=None, E=None, method=None):
         If present, solve the generalized Lyapunov equation.
     method : str, optional
         Set the method used for computing the result.  Current methods are
-        'slycot' and 'scipy'.  If set to `None` (default), try 'slycot' first
+        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
         and then 'scipy'.
 
     Returns
@@ -221,7 +221,7 @@ def dlyap(A, Q, C=None, E=None, method=None):
         If present, solve the generalized Lyapunov equation.
     method : str, optional
         Set the method used for computing the result.  Current methods are
-        'slycot' and 'scipy'.  If set to `None` (default), try 'slycot' first
+        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
         and then 'scipy'.
 
     Returns
@@ -347,11 +347,11 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
         Input matrices for generalized Riccati equation.
     method : str, optional
         Set the method used for computing the result.  Current methods are
-        'slycot' and 'scipy'.  If set to `None` (default), try 'slycot' first
+        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
         and then 'scipy'.
     stabilizing : bool, optional
         If `method` is 'slycot', unstabilized eigenvalues will be returned
-        in the initial elements of `L`.  Not supported for 'scipy'.
+        in the initial elements of ``L``.  Not supported for 'scipy'.
 
     Returns
     -------
@@ -503,7 +503,7 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
         Input matrices for generalized Riccati equation.
     method : str, optional
         Set the method used for computing the result.  Current methods are
-        'slycot' and 'scipy'.  If set to `None` (default), try 'slycot' first
+        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
         and then 'scipy'.
     stabilizing : bool, optional
         If `method` is 'slycot', unstabilized eigenvalues will be returned

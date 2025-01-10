@@ -54,7 +54,7 @@ amplitude and frequency of any points of intersection::
     response.intersections	# frequency, amplitude pairs
 
 A Nyquist plot showing the describing function and the intersections
-with the Nyquist curve can be generated using `response.plot()`, which
+with the Nyquist curve can be generated using ``response.plot()``, which
 calls the :func:`describing_function_plot` function.
 
 

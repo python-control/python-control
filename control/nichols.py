@@ -42,8 +42,8 @@ def nichols_plot(
         Passed to `matplotlib` as the format string for all lines in the plot.
         The `omega` parameter must be present (use omega=None if needed).
     grid : boolean, optional
-        `True` if the plot should include a Nichols-chart grid. Default is
-        `True` and can be set using config.defaults['nichols.grid'].
+        True if the plot should include a Nichols-chart grid. Default is
+        True and can be set using `config.defaults['nichols.grid']`.
     **kwargs : `matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
@@ -78,13 +78,13 @@ def nichols_plot(
         system.
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'upper left',
-        with no legend for a single response.  Use `False` to suppress legend.
+        with no legend for a single response.  Use False to suppress legend.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.defaults['ctrlplot.rcParams'].
+        Default is set by `config.defaults['ctrlplot.rcParams']`.
     show_legend : bool, optional
-        Force legend to be shown if `True` or hidden if `False`.  If
-        `None`, then show legend when there is more than one line on the
+        Force legend to be shown if True or hidden if False.  If
+        None, then show legend when there is more than one line on the
         plot or `legend_loc` has been specified.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
@@ -194,9 +194,9 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
         :doc:`Matplotlib linestyle \
             <matplotlib:gallery/lines_bars_and_markers/linestyles>`.
     ax : matplotlib.axes.Axes, optional
-        Axes to add grid to.  If `None`, use `matplotlib.pyplot.gca()`.
+        Axes to add grid to.  If None, use `matplotlib.pyplot.gca()`.
     label_cl_phases : bool, optional
-        If `True`, closed-loop phase lines will be labelled.
+        If True, closed-loop phase lines will be labelled.
 
     Returns
     -------
@@ -205,11 +205,12 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
     cl_phase_lines : list of `matplotlib.line.Line2D`
       The constant closed-loop phase contours.
     cl_mag_labels : list of `matplotlib.text.Text`
-      Magnitude contour labels; each entry corresponds to the respective entry.
-      in `cl_mag_lines`.
+      Magnitude contour labels; each entry corresponds to the respective
+      entry in `cl_mag_lines`.
     cl_phase_labels : list of `matplotlib.text.Text`
       Phase contour labels; each entry corresponds to the respective entry
       in `cl_phase_lines`.
+
     """
     if ax is None:
         ax = plt.gca()

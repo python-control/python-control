@@ -6,9 +6,10 @@
 Examples
 ********
 
-The source code for the examples below are available in the `examples/`
-subdirectory of the source code distribution. They can also be accessed online
-via the `python-control GitHub repository <https://github.com/python-control/python-control/tree/master/examples>`_.
+The source code for the examples below are available in the
+`examples/` subdirectory of the source code distribution. They can
+also be accessed online via the `python-control GitHub repository
+<https://github.com/python-control/python-control/tree/master/examples>`_.
 
 
 Python scripts

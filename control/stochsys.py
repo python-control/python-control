@@ -60,10 +60,10 @@ def lqe(*args, **kwargs):
 
     The function can be called with either 3, 4, 5, or 6 arguments:
 
-    * `L, P, E = lqe(sys, QN, RN)`
-    * `L, P, E = lqe(sys, QN, RN, NN)`
-    * `L, P, E = lqe(A, G, C, QN, RN)`
-    * `L, P, E = lqe(A, G, C, QN, RN, NN)`
+    * ``L, P, E = lqe(sys, QN, RN)``
+    * ``L, P, E = lqe(sys, QN, RN, NN)``
+    * ``L, P, E = lqe(A, G, C, QN, RN)``
+    * ``L, P, E = lqe(A, G, C, QN, RN, NN)``
 
     where `sys` is an `LTI` object, and `A`, `G`, `C`, `QN`, `RN`, and `NN`
     are 2D arrays or matrices of appropriate dimension.
@@ -81,7 +81,7 @@ def lqe(*args, **kwargs):
         Cross covariance matrix.  Not currently implemented.
     method : str, optional
         Set the method used for computing the result.  Current methods are
-        'slycot' and 'scipy'.  If set to `None` (default), try 'slycot' first
+        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
         and then 'scipy'.
 
     Returns
@@ -102,7 +102,7 @@ def lqe(*args, **kwargs):
     -----
     If the first argument is an LTI object, then this object will be used
     to define the dynamics, noise and output matrices.  Furthermore, if the
-    LTI object corresponds to a discrete time system, the `dlqe()`
+    LTI object corresponds to a discrete time system, the `dlqe`
     function will be called.
 
     Examples
@@ -204,9 +204,9 @@ def dlqe(*args, **kwargs):
 
     .. math:: x_e[n+1] = A x_e[n] + B u[n] + L(y[n] - C x_e[n] - D u[n])
 
-    produces a state estimate x_e[n] that minimizes the expected squared error
-    using the sensor measurements y. The noise cross-correlation `NN` is
-    set to zero when omitted.
+    produces a state estimate x_e[n] that minimizes the expected squared
+    error using the sensor measurements y. The noise cross-correlation `NN`
+    is set to zero when omitted.
 
     Parameters
     ----------
@@ -218,7 +218,7 @@ def dlqe(*args, **kwargs):
         Cross covariance matrix (not yet supported).
     method : str, optional
         Set the method used for computing the result.  Current methods are
-        'slycot' and 'scipy'.  If set to `None` (default), try 'slycot'
+        'slycot' and 'scipy'.  If set to None (default), try 'slycot'
         first and then 'scipy'.
 
     Returns
@@ -413,7 +413,7 @@ def create_estimator_iosystem(
 
     Notes
     -----
-    This function can be used with the `create_statefbk_iosystem()` function
+    This function can be used with the `create_statefbk_iosystem` function
     to create a closed loop, output-feedback, state space controller::
 
         K, _, _ = ct.lqr(sys, Q, R)
@@ -424,7 +424,7 @@ def create_estimator_iosystem(
 
         resp = ct.input_output_response(est, T, [Y, U], [X0, P0])
 
-    If desired, the `correct` parameter can be set to `False` to allow
+    If desired, the `correct` parameter can be set to False to allow
     prediction with no additional measurement information::
 
         resp = ct.input_output_response(
@@ -618,7 +618,7 @@ def white_noise(T, Q, dt=0):
     Returns
     -------
     V : array
-        Noise signal indexed as `V[i, j]` where `i` is the signal index and
+        Noise signal indexed as ``V[i, j]`` where `i` is the signal index and
         `j` is the time index.
 
     """
@@ -654,9 +654,9 @@ def white_noise(T, Q, dt=0):
 def correlation(T, X, Y=None, squeeze=True):
     """Compute the correlation of time signals.
 
-    For a time series X(t) (and optionally Y(t)), the correlation() function
-    computes the correlation matrix E(X'(t+tau) X(t)) or the cross-correlation
-    matrix E(X'(t+tau) Y(t)]:
+    For a time series X(t) (and optionally Y(t)), the correlation()
+    function computes the correlation matrix E(X'(t+tau) X(t)) or the
+    cross-correlation matrix E(X'(t+tau) Y(t)]:
 
       tau, Rtau = correlation(T, X[, Y])
 
@@ -675,7 +675,7 @@ def correlation(T, X, Y=None, squeeze=True):
         If present, the signal with which to compute the correlation.
         Defaults to X.
     squeeze : bool, optional
-        If `True`, squeeze Rtau to remove extra dimensions (useful if the
+        If True, squeeze Rtau to remove extra dimensions (useful if the
         signals are scalars).
 
     Returns

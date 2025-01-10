@@ -221,7 +221,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
         Alternatively, a three tuple of the form (mag, phase, omega)
         providing the frequency response can be passed.
     returnall : bool, optional
-        If true, return all margins found. If `False` (default), return only the
+        If true, return all margins found. If False (default), return only the
         minimum stability margins. For frequency data or FRD systems, only
         margins in the given frequency region can be found and returned.
     epsw : float, optional
@@ -387,9 +387,8 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
         # find all stab margins?
         widx, = np.where(np.diff(np.sign(np.diff(_dstab(sys.omega)))) > 0)
         wstab = np.array(
-            [sp.optimize.minimize_scalar(_dstab,
-                                         bracket=(sys.omega[i], sys.omega[i+1])
-                                         ).x
+            [sp.optimize.minimize_scalar(
+                _dstab, bracket=(sys.omega[i], sys.omega[i+1])).x
              for i in widx])
         wstab = wstab[(wstab >= sys.omega[0]) * (wstab <= sys.omega[-1])]
         ws_resp = sys(1j * wstab)
@@ -472,8 +471,8 @@ def margin(*args):
 
     Gain and phase margins and associated crossover frequencies.
 
-    Can be called as `margin(sys)` where `sys` is a SISO LTI system or
-    `margin(mag, phase, omega)`.
+    Can be called as ``margin(sys)`` where `sys` is a SISO LTI system or
+    ``margin(mag, phase, omega)``.
 
     Parameters
     ----------

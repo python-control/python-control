@@ -129,11 +129,11 @@ The `sys` parameter should be an :class:`InputOutputSystem` and the
 `timepts` parameter should represent a time vector that gives the list of
 times at which the cost and constraints should be evaluated.
 
-The `cost` function has call signature `cost(t, x, u)` and should return the
-(incremental) cost at the given time, state, and input.  It will be
-evaluated at each point in the `timepts` vector.  The `terminal_cost`
-parameter can be used to specify a cost function for the final point in the
-trajectory.
+The `cost` function has call signature ``cost(t, x, u)`` and should
+return the (incremental) cost at the given time, state, and input.  It
+will be evaluated at each point in the `timepts` vector.  The
+`terminal_cost` parameter can be used to specify a cost function for
+the final point in the trajectory.
 
 The `constraints` parameter is a list of constraints similar to that used by
 the :func:`scipy.optimize.minimize` function.  Each constraint is specified
@@ -165,9 +165,9 @@ trajectory.
 The return value for :func:`optimal.solve_ocp` is a bundle object
 that has the following elements:
 
-  * `res.success`: `True` if the optimization was successfully solved
+  * `res.success`: True if the optimization was successfully solved
   * `res.inputs`: optimal input
-  * `res.states`: state trajectory (if `return_x` was `True`)
+  * `res.states`: state trajectory (if `return_x` was True)
   * `res.time`: copy of the time timepts vector
 
 In addition, the results from :func:`scipy.optimize.minimize` are also

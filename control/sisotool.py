@@ -57,7 +57,7 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
         system with a gain in the feedback.
     initial_gain : float, optional
         Initial gain to use for plotting root locus. Defaults to 1
-        (config.defaults['sisotool.initial_gain']).
+        (`config.defaults['sisotool.initial_gain']`).
     xlim_rlocus : tuple or list, optional
         Control of x-axis range, normally with tuple
         (see :doc:`matplotlib:api/axes_api`).
@@ -66,25 +66,25 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
     plotstr_rlocus : `matplotlib.pyplot.plot` format string, optional
         Plotting style for the root locus plot(color, linestyle, etc).
     rlocus_grid : boolean (default = False)
-        If `True`, plot s- or z-plane grid.
+        If True, plot s- or z-plane grid.
     omega : array_like
         List of frequencies in rad/sec to be used for bode plot.
     dB : boolean
-        If `True`, plot result in dB for the bode plot.
+        If True, plot result in dB for the bode plot.
     Hz : boolean
-        If `True`, plot frequency in Hz for the bode plot (omega must be
+        If True, plot frequency in Hz for the bode plot (omega must be
         provided in rad/sec).
     deg : boolean
-        If `True`, plot phase in degrees for the bode plot (else radians).
+        If True, plot phase in degrees for the bode plot (else radians).
     omega_limits : array_like of two values
         Limits of the to generate frequency vector.  If Hz=True the limits
         are in Hz otherwise in rad/s. Ignored if omega is provided, and
         auto-generated if omitted.
     omega_num : int
         Number of samples to plot.  Defaults to
-        config.defaults['freqplot.number_of_samples'].
+        `config.defaults['freqplot.number_of_samples']`.
     margins_bode : boolean
-        If `True`, plot gain and phase margin in the bode plot.
+        If True, plot gain and phase margin in the bode plot.
     tvect : list or ndarray, optional
         List of timesteps to use for closed loop step response.
 
@@ -260,32 +260,32 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     """Manual PID controller design based on root locus using Sisotool.
 
     Uses `sisotool` to investigate the effect of adding or subtracting an
-    amount `deltaK` to the proportional, integral, or derivative (PID) gains of
-    a controller. One of the PID gains, `Kp`, `Ki`, or `Kd`, respectively, can
-    be modified at a time. `Sisotool` plots the step response, frequency
+    amount `deltaK` to the proportional, integral, or derivative (PID) gains
+    of a controller. One of the PID gains, `Kp`, `Ki`, or `Kd`, respectively,
+    can be modified at a time. `sisotool` plots the step response, frequency
     response, and root locus of the closed-loop system controlling the
     dynamical system specified by `plant`. Can be used with either non-
     interactive plots (e.g. in a Jupyter Notebook), or interactive plots.
 
     To use non-interactively, choose starting-point PID gains `Kp0`, `Ki0`,
-    and `Kd0` (you might want to start with all zeros to begin with), select
-    which gain you would like to vary (e.g. gain=`'P'`, `'I'`, or `'D'`), and
-    choose a value of `deltaK` (default 0.001) to specify by how much you
-    would like to change that gain. Repeatedly run `rootlocus_pid_designer`
-    with different values of `deltaK` until you are satisfied with the
-    performance for that gain. Then, to tune a different gain, e.g. `'I'`,
-    make sure to add your chosen `deltaK` to the previous gain you you were
-    tuning.
+    and `Kd0` (you might want to start with all zeros to begin with),
+    select which gain you would like to vary (e.g. ``gain='P'``, ``'I'``,
+    or ``'D'``), and choose a value of `deltaK` (default 0.001) to specify
+    by how much you would like to change that gain. Repeatedly run
+    `rootlocus_pid_designer` with different values of `deltaK` until you
+    are satisfied with the performance for that gain. Then, to tune a
+    different gain, e.g. 'I', make sure to add your chosen `deltaK` to
+    the previous gain you you were tuning.
 
     Example: to examine the effect of varying `Kp` starting from an intial
-    value of 10, use the arguments `gain='P', Kp0=10` and try varying values
+    value of 10, use the arguments ``gain='P', Kp0=10`` and try varying values
     of `deltaK`. Suppose a `deltaK` of 5 gives satisfactory performance. Then,
     to tune the derivative gain, add your selected `deltaK` to `Kp0` in the
-    next call using the arguments `gain='D', Kp0=15`, to see how adding
+    next call using the arguments ``gain='D', Kp0=15``, to see how adding
     different values of `deltaK` to your derivative gain affects performance.
 
     To use with interactive plots, you will need to enable interactive mode
-    if you are in a Jupyter Notebook, e.g. using `%matplotlib`. See
+    if you are in a Jupyter Notebook, e.g. using ``%matplotlib``. See
     `Interactive Plots <https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.ion.html>`_
     for more information. Click on a branch of the root locus plot to try
     different values of `deltaK`. Each click updates plots and prints the
@@ -293,11 +293,11 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     glass on the plot to get more locations to click. Just make sure to
     deactivate magnification mode when you are done by clicking the magnifying
     glass. Otherwise you will not be able to be able to choose a gain on the
-    root locus plot. When you are done, `%matplotlib inline` returns to inline,
-    non-interactive ploting.
+    root locus plot. When you are done, ``%matplotlib inline`` returns to
+    inline, non-interactive ploting.
 
-    By default, all three PID terms are in the forward path C_f in the diagram
-    shown below, that is,
+    By default, all three PID terms are in the forward path C_f in the
+    diagram shown below, that is,
 
     C_f = Kp + Ki/s + Kd*s/(tau*s + 1).
 
@@ -312,12 +312,12 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
               |             ----- C_b <-------|
               ---------------------------------
 
-    If `plant` is a discrete-time system, then the proportional, integral, and
-    derivative terms are given instead by Kp, Ki*dt/2*(z+1)/(z-1), and
+    If `plant` is a discrete-time system, then the proportional, integral,
+    and derivative terms are given instead by Kp, Ki*dt/2*(z+1)/(z-1), and
     Kd/dt*(z-1)/z, respectively.
 
     It is also possible to move the derivative term into the feedback path
-    `C_b` using `derivative_in_feedback_path=True`. This may be desired to
+    `C_b` using ``derivative_in_feedback_path=True``. This may be desired to
     avoid that the plant is subject to an impulse function when the reference
     `r` is a step input. `C_b` is otherwise set to zero.
 
@@ -329,13 +329,13 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     plant : `LTI` (`TransferFunction` or `StateSpace` system)
         The dynamical system to be controlled.
     gain : string, optional
-        Which gain to vary by `deltaK`. Must be one of `'P'`, `'I'`, or `'D'`
-        (proportional, integral, or derative).
+        Which gain to vary by `deltaK`. Must be one of 'P', 'I', or 'D'
+        (proportional, integral, or derivative).
     sign : int, optional
         The sign of deltaK gain perturbation.
     input_signal : string, optional
-        The input used for the step response; must be `'r'` (reference) or
-        `'d'` (disturbance) (see figure above).
+        The input used for the step response; must be 'r' (reference) or
+        'd' (disturbance) (see figure above).
     Kp0, Ki0, Kd0 : float, optional
         Initial values for proportional, integral, and derivative gains,
         respectively.
@@ -356,12 +356,12 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
 
     Returns
     -------
-    closedloop : class:`StateSpace` system
+    closedloop : `StateSpace` system
         The closed-loop system using initial gains.
 
     Notes
     -----
-    When running using iPython or Jupyter, use `%matplotlib` to configure
+    When running using iPython or Jupyter, use ``%matplotlib`` to configure
     the session for interactive support.
 
     """

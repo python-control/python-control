@@ -25,12 +25,12 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
 
     Constructs a linear matrix inequality (LMI) such that if a solution
     exists and the last element of the solution is positive, the system
-    `sys` is passive. Inputs of `None` for `rho` or `nu` indicate that the
+    `sys` is passive. Inputs of None for `rho` or `nu` indicate that the
     function should solve for that index (they are mutually exclusive, they
-    can't both be `None`, otherwise you're trying to solve a nonconvex
+    can't both be None, otherwise you're trying to solve a nonconvex
     bilinear matrix inequality.) The last element of the output `solution`
-    is either the output or input passivity index, for `rho` = `None` and
-    `nu` = `None` respectively.
+    is either the output or input passivity index, for ``rho = None`` and
+    ``nu = None`` respectively.
 
     The sources for the algorithm are:
 
@@ -101,8 +101,9 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
         """Make list of matrix constraints for passivity LMI.
 
         Utility function to make basis matrices for a LMI from a
-        symmetric matrix P of size n by n representing a parametrized symbolic
-        matrix
+        symmetric matrix P of size n by n representing a parametrized
+        symbolic matrix.
+
         """
         matrix_list = []
         for i in range(0, n):
@@ -178,10 +179,10 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
         return sol["x"]
 
     except ZeroDivisionError as e:
-        raise ValueError("The system is probably ill conditioned. "
-                         "Consider perturbing the system matrices by a small amount."
+        raise ValueError(
+            "The system is probably ill conditioned. Consider perturbing "
+            "the system matrices by a small amount."
         ) from e
-
 
 
 def get_output_fb_index(sys):
@@ -259,8 +260,8 @@ def get_directional_index(sys):
 def ispassive(sys, ofp_index=0, ifp_index=0):
     r"""Indicate if a linear time invariant (LTI) system is passive.
 
-    Checks if system is passive with the given output feedback (OFP) and input
-    feedforward (IFP) passivity indices.
+    Checks if system is passive with the given output feedback (OFP)
+    and input feedforward (IFP) passivity indices.
 
     Parameters
     ----------
@@ -282,10 +283,10 @@ def ispassive(sys, ofp_index=0, ifp_index=0):
 
     .. math:: V(x) >= 0 \land \dot{V}(x) <= y^T u
 
-    is equivalent to the default case of `ofp_index` = 0 and `ifp_index` =
-    0.  Note that computing the `ofp_index` and `ifp_index` for a system,
+    is equivalent to the default case of ``ofp_index = 0`` and ``ifp_index` =
+    0``.  Note that computing the `ofp_index` and `ifp_index` for a system,
     then using both values simultaneously as inputs to this function is not
-    guaranteed to have an output of `True` (the system might not be passive
+    guaranteed to have an output of True (the system might not be passive
     with both indices at the same time).
 
     For more details, see [1]_.

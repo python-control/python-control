@@ -40,7 +40,7 @@ class BSplineFamily(BasisFamily):
         derivatives that should match).
 
     vars : None or int, optional
-        The number of spline variables.  If specified as `None` (default),
+        The number of spline variables.  If specified as None (default),
         then the spline basis describes a single variable, with no indexing.
         If the number of spine variables is > 0, then the spline basis is
         index using the `var` keyword.

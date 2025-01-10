@@ -226,7 +226,7 @@ def augw(g, w1=None, w2=None, w3=None):
     one weighting must not be None.
 
     If a weighting w is scalar, it will be replaced by I*w, where I is
-    ny-by-ny for w1 and w3, and nu-by-nu for w2.
+    ny-by-ny for `w1` and `w3`, and nu-by-nu for `w2`.
 
     Parameters
     ----------
@@ -242,8 +242,8 @@ def augw(g, w1=None, w2=None, w3=None):
     Returns
     -------
     p : StateSpace
-        Plant augmented with weightings, suitable for submission to hinfsyn or
-        h2syn.
+        Plant augmented with weightings, suitable for submission to
+        `hinfsyn` or `h2syn`.
 
     Raises
     ------
@@ -305,12 +305,12 @@ def augw(g, w1=None, w2=None, w3=None):
                                        1 + now1 + now2 + now3 + 2 * ny + niw2)
 
     # y -> w3
-    q[niw1 + niw2:niw1 + niw2 + niw3, 1] = np.arange(1 + now1 + now2 + now3 + ny,
-                                                     1 + now1 + now2 + now3 + ny + niw3)
+    q[niw1 + niw2:niw1 + niw2 + niw3, 1] = np.arange(
+        1 + now1 + now2 + now3 + ny, 1 + now1 + now2 + now3 + ny + niw3)
 
     # -y -> Iy; note the leading -
-    q[niw1 + niw2 + niw3:niw1 + niw2 + niw3 + ny, 1] = -np.arange(1 + now1 + now2 + now3 + ny,
-                                                                  1 + now1 + now2 + now3 + 2 * ny)
+    q[niw1 + niw2 + niw3:niw1 + niw2 + niw3 + ny, 1] = -np.arange(
+        1 + now1 + now2 + now3 + ny, 1 + now1 + now2 + now3 + 2 * ny)
 
     # Iu -> G
     q[niw1 + niw2 + niw3 + ny:niw1 + niw2 + niw3 + ny + nu, 1] = np.arange(
@@ -364,10 +364,10 @@ def mixsyn(g, w1=None, w2=None, w3=None):
             [z] = [p11 p12] [w]
             [y]   [p21   g] [u]
 
-        then cl is the system from w->z with `u = -k*y`.
+        then cl is the system from w->z with ``u = -k*y``.
 
     info : tuple
-        Two-tuple `(gamma, rcond)` containing additional information:
+        Two-tuple ``(gamma, rcond)`` containing additional information:
 
         * gamma (scalar): H-infinity norm of cl.
         * rcond (array): Estimates of reciprocal condition numbers computed
@@ -379,7 +379,7 @@ def mixsyn(g, w1=None, w2=None, w3=None):
 
     Notes
     -----
-    If a weighting `w` is scalar, it will be replaced by `I*w`, where `I` is
+    If a weighting w is scalar, it will be replaced by I*w, where I is
     ny-by-ny for `w1` and `w3`, and nu-by-nu for `w2`.
 
     """

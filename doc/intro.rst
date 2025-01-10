@@ -59,7 +59,7 @@ correctly by running the command::
 
   python -c "import slycot"
 
-and verifying that no error message appears. More information on the 
+and verifying that no error message appears. More information on the
 Slycot package can be obtained from the `Slycot project page
 <https://github.com/python-control/Slycot>`_.
 
@@ -108,8 +108,8 @@ The python-control package makes use of a few naming and calling conventions:
   systems and multi-input, multi-output (MIMO) systems, including
   time and frequency responses.  By default, SISO systems will
   typically generate objects that have the input and output dimensions
-  suppressed (using the NumPy :func:`~numpy.squeeze` function).  The
-  `squeeze` keyword can be set to `False` to force functions to return
+  suppressed (using the NumPy :func:`numpy.squeeze` function).  The
+  `squeeze` keyword can be set to False to force functions to return
   objects that include the input and output dimensions.
 
 
@@ -134,7 +134,7 @@ some things to keep in mind:
   [1, 2, 3] and matrices are written using 2D nested lists, e.g., [[1,
   2], [3, 4]].
 * Functions that in MATLAB would return variable numbers of values
-  will have a parameter of the form `return_<val>` that is used to
+  will have a parameter of the form ``return_<val>`` that is used to
   return additional data.  (These functions usually return an object of
   a class that has attributes that can be used to access the
   information and this is the preferred usage pattern.)

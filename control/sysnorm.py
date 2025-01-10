@@ -22,7 +22,7 @@ def _h2norm_slycot(sys, print_warning=True):
     See Also
     --------
     slycot.ab13bd
-    
+
     """
     # See: https://github.com/python-control/Slycot/issues/199
     try:
@@ -33,7 +33,8 @@ def _h2norm_slycot(sys, print_warning=True):
     try:
         from slycot.exceptions import SlycotArithmeticError
     except ImportError:
-        raise ct.ControlSlycot("Can't find slycot class `SlycotArithmeticError`!")
+        raise ct.ControlSlycot(
+            "Can't find slycot class `SlycotArithmeticError`!")
 
     A, B, C, D = ct.ssdata(ct.ss(sys))
 
@@ -49,7 +50,8 @@ def _h2norm_slycot(sys, print_warning=True):
         if dico == 'C':
             if any(D.flat != 0):
                 if print_warning:
-                    warnings.warn("System has a direct feedthrough term!", UserWarning)
+                    warnings.warn(
+                        "System has a direct feedthrough term!", UserWarning)
                 return float("inf")
             else:
                 return 0.0
@@ -61,11 +63,14 @@ def _h2norm_slycot(sys, print_warning=True):
     except SlycotArithmeticError as e:
         if e.info == 3:
             if print_warning:
-                warnings.warn("System has pole(s) on the stability boundary!", UserWarning)
+                warnings.warn(
+                    "System has pole(s) on the stability boundary!",
+                    UserWarning)
             return float("inf")
         elif e.info == 5:
             if print_warning:
-                warnings.warn("System has a direct feedthrough term!", UserWarning)
+                warnings.warn(
+                    "System has a direct feedthrough term!", UserWarning)
             return float("inf")
         elif e.info == 6:
             if print_warning:
@@ -86,16 +91,16 @@ def system_norm(system, p=2, tol=1e-6, print_warning=True, method=None):
         System in continuous or discrete time for which the norm should
         be computed.
     p : int or str
-        Type of norm to be computed. `p=2` gives the H2 norm, and
-        `p='inf'` gives the L-infinity norm.
+        Type of norm to be computed. ``p=2`` gives the H2 norm, and
+        ``p='inf'`` gives the L-infinity norm.
     tol : float
-        Relative tolerance for accuracy of L-infinity norm computation. Ignored
-        unless `p='inf'`.
+        Relative tolerance for accuracy of L-infinity norm
+        computation. Ignored unless ``p='inf'``.
     print_warning : bool
         Print warning message in case norm value may be uncertain.
     method : str, optional
         Set the method used for computing the result.  Current methods are
-        'slycot' and 'scipy'. If set to `None` (default), try 'slycot' first
+        'slycot' and 'scipy'. If set to None (default), try 'slycot' first
         and then 'scipy'.
 
     Returns
@@ -105,7 +110,8 @@ def system_norm(system, p=2, tol=1e-6, print_warning=True, method=None):
 
     Notes
     -----
-    Does not yet compute the L-infinity norm for discrete time systems with pole(s) in z=0 unless Slycot is used.
+    Does not yet compute the L-infinity norm for discrete time systems
+    with pole(s) in ``z=0`` unless Slycot is used.
 
     Examples
     --------
@@ -142,7 +148,9 @@ def system_norm(system, p=2, tol=1e-6, print_warning=True, method=None):
             poles_real_part = G.poles().real
             if any(np.isclose(poles_real_part, 0.0)):  # Poles on imaginary axis
                 if print_warning:
-                    warnings.warn("Poles close to, or on, the imaginary axis. Norm value may be uncertain.", UserWarning)
+                    warnings.warn(
+                        "Poles close to, or on, the imaginary axis. "
+                        "Norm value may be uncertain.", UserWarning)
                 return float('inf')
             elif any(poles_real_part > 0.0):  # System unstable
                 if print_warning:
@@ -150,7 +158,8 @@ def system_norm(system, p=2, tol=1e-6, print_warning=True, method=None):
                 return float('inf')
             elif any(D.flat != 0):  # System has direct feedthrough
                 if print_warning:
-                    warnings.warn("System has a direct feedthrough term!", UserWarning)
+                    warnings.warn(
+                        "System has a direct feedthrough term!", UserWarning)
                 return float('inf')
 
             else:
@@ -160,18 +169,25 @@ def system_norm(system, p=2, tol=1e-6, print_warning=True, method=None):
 
                 # Else use scipy
                 else:
-                    P = ct.lyap(A, B@B.T, method=method)  # Solve for controllability Gramian
+                    # Solve for controllability Gramian
+                    P = ct.lyap(A, B@B.T, method=method)
 
-                    # System is stable to reach this point, and P should be positive semi-definite.
-                    # Test next is a precaution in case the Lyapunov equation is ill conditioned.
+                    # System is stable to reach this point, and P should be
+                    # positive semi-definite.  Test next is a precaution in
+                    # case the Lyapunov equation is ill conditioned.
                     if any(la.eigvals(P).real < 0.0):
                         if print_warning:
-                            warnings.warn("There appears to be poles close to the imaginary axis. Norm value may be uncertain.", UserWarning)
+                            warnings.warn(
+                                "There appears to be poles close to the "
+                                "imaginary axis. Norm value may be uncertain.",
+                                UserWarning)
                         return float('inf')
                     else:
-                        norm_value = np.sqrt(np.trace(C@P@C.T))  # Argument in sqrt should be non-negative
+                        # Argument in sqrt should be non-negative
+                        norm_value = np.sqrt(np.trace(C@P@C.T))
                         if np.isnan(norm_value):
-                            raise ct.ControlArgument("Norm computation resulted in NaN.")
+                            raise ct.ControlArgument(
+                                "Norm computation resulted in NaN.")
                         else:
                             return norm_value
 
@@ -184,7 +200,9 @@ def system_norm(system, p=2, tol=1e-6, print_warning=True, method=None):
             poles_abs = abs(G.poles())
             if any(np.isclose(poles_abs, 1.0)):  # Poles on imaginary axis
                 if print_warning:
-                    warnings.warn("Poles close to, or on, the complex unit circle. Norm value may be uncertain.", UserWarning)
+                    warnings.warn(
+                        "Poles close to, or on, the complex unit circle. "
+                        "Norm value may be uncertain.", UserWarning)
                 return float('inf')
             elif any(poles_abs > 1.0):  # System unstable
                 if print_warning:
@@ -199,16 +217,22 @@ def system_norm(system, p=2, tol=1e-6, print_warning=True, method=None):
                 else:
                     P = ct.dlyap(A, B@B.T, method=method)
 
-                # System is stable to reach this point, and P should be positive semi-definite.
-                # Test next is a precaution in case the Lyapunov equation is ill conditioned.
+                # System is stable to reach this point, and P should be
+                # positive semi-definite.  Test next is a precaution in
+                # case the Lyapunov equation is ill conditioned.
                 if any(la.eigvals(P).real < 0.0):
                     if print_warning:
-                        warnings.warn("Warning: There appears to be poles close to the complex unit circle. Norm value may be uncertain.", UserWarning)
+                        warnings.warn(
+                            "There appears to be poles close to the complex "
+                            "unit circle. Norm value may be uncertain.",
+                            UserWarning)
                     return float('inf')
                 else:
-                    norm_value = np.sqrt(np.trace(C@P@C.T + D@D.T))  # Argument in sqrt should be non-negative
+                    # Argument in sqrt should be non-negative
+                    norm_value = np.sqrt(np.trace(C@P@C.T + D@D.T))
                     if np.isnan(norm_value):
-                        raise ct.ControlArgument("Norm computation resulted in NaN.")
+                        raise ct.ControlArgument(
+                            "Norm computation resulted in NaN.")
                     else:
                         return norm_value
 
@@ -222,12 +246,16 @@ def system_norm(system, p=2, tol=1e-6, print_warning=True, method=None):
         if G.isdtime():  # Discrete time
             if any(np.isclose(abs(poles), 1.0)):  # Poles on unit circle
                 if print_warning:
-                    warnings.warn("Poles close to, or on, the complex unit circle. Norm value may be uncertain.", UserWarning)
+                    warnings.warn(
+                        "Poles close to, or on, the complex unit circle. "
+                        "Norm value may be uncertain.", UserWarning)
                 return float('inf')
         else:  # Continuous time
             if any(np.isclose(poles.real, 0.0)):  # Poles on imaginary axis
                 if print_warning:
-                    warnings.warn("Poles close to, or on, the imaginary axis. Norm value may be uncertain.", UserWarning)
+                    warnings.warn(
+                        "Poles close to, or on, the imaginary axis. "
+                        "Norm value may be uncertain.", UserWarning)
                 return float('inf')
 
         # Use slycot, if available, to compute (finite) norm
@@ -240,15 +268,19 @@ def system_norm(system, p=2, tol=1e-6, print_warning=True, method=None):
             # ------------------
             # Discrete time case
             # ------------------
-            # Use inverse bilinear transformation of discrete time system to s-plane if no poles on |z|=1 or z=0.
-            # Allows us to use test for continuous time systems next.
+            # Use inverse bilinear transformation of discrete time system
+            # to s-plane if no poles on |z|=1 or z=0.  Allows us to use
+            # test for continuous time systems next.
             if G.isdtime():
                 Ad = A
                 Bd = B
                 Cd = C
                 Dd = D
                 if any(np.isclose(la.eigvals(Ad), 0.0)):
-                    raise ct.ControlArgument("L-infinity norm computation for discrete time system with pole(s) in z=0 currently not supported unless Slycot installed.")
+                    raise ct.ControlArgument(
+                        "L-infinity norm computation for discrete time "
+                        "system with pole(s) in z=0 currently not supported "
+                        "unless Slycot installed.")
 
                 # Inverse bilinear transformation
                 In = np.eye(len(Ad))
@@ -265,13 +297,17 @@ def system_norm(system, p=2, tol=1e-6, print_warning=True, method=None):
                 """Constructs Hamiltonian matrix. For internal use."""
                 R = Ip*gamma**2 - D.T@D
                 invR = la.inv(R)
-                return np.block([[A+B@invR@D.T@C, B@invR@B.T], [-C.T@(Ip+D@invR@D.T)@C, -(A+B@invR@D.T@C).T]])
+                return np.block([
+                    [A+B@invR@D.T@C, B@invR@B.T],
+                    [-C.T@(Ip+D@invR@D.T)@C, -(A+B@invR@D.T@C).T]])
 
             gaml = la.norm(D,ord=2)    # Lower bound
             gamu = max(1.0, 2.0*gaml)  # Candidate upper bound
             Ip = np.eye(len(D))
 
-            while any(np.isclose(la.eigvals(_Hamilton_matrix(gamu)).real, 0.0)):  # Find actual upper bound
+            while any(np.isclose(
+                    la.eigvals(_Hamilton_matrix(gamu)).real, 0.0)):
+                # Find actual upper bound
                 gamu *= 2.0
 
             while (gamu-gaml)/gamu > tol:
@@ -286,7 +322,8 @@ def system_norm(system, p=2, tol=1e-6, print_warning=True, method=None):
     # Other norm computation
     # ----------------------
     else:
-        raise ct.ControlArgument(f"Norm computation for p={p} currently not supported.")
+        raise ct.ControlArgument(
+            f"Norm computation for p={p} currently not supported.")
 
 
 norm = system_norm

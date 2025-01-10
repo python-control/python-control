@@ -45,11 +45,11 @@ def series(*sys, **kwargs):
     ----------------
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals.  If not given,
-        signal names will be of the form `s[i]` (where `s` is one of `u`,
-        or `y`). See `InputOutputSystem` for more information.
+        signal names will be of the form 's[i]' (where 's' is one of 'u,
+        or 'y'). See `InputOutputSystem` for more information.
     states : str, or list of str, optional
         List of names for system states.  If not given, state names will be
-        of of the form `x[i]` for interconnections of linear systems or
+        of the form 'x[i]' for interconnections of linear systems or
         '<subsys_name>.<state_name>' for interconnected nonlinear systems.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
@@ -58,8 +58,8 @@ def series(*sys, **kwargs):
     Raises
     ------
     ValueError
-        if `sys2.ninputs` does not equal `sys1.noutputs`
-        if `sys1.dt` is not compatible with `sys2.dt`
+        if ``sys2.ninputs`` does not equal ``sys1.noutputs``
+        if ``sys1.dt`` is not compatible with ``sys2.dt``
 
     See Also
     --------
@@ -116,11 +116,11 @@ def parallel(*sys, **kwargs):
     ----------------
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals.  If not given,
-        signal names will be of the form `s[i]` (where `s` is one of `u`,
-        or `y`). See `InputOutputSystem` for more information.
+        signal names will be of the form 's[i'` (where 's' is one of 'u',
+        or 'y'). See `InputOutputSystem` for more information.
     states : str, or list of str, optional
         List of names for system states.  If not given, state names will be
-        of the form `x[i]` for interconnections of linear systems or
+        of the form 'x[i]' for interconnections of linear systems or
         '<subsys_name>.<state_name>' for interconnected nonlinear systems.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
@@ -129,7 +129,8 @@ def parallel(*sys, **kwargs):
     Raises
     ------
     ValueError
-        if `sys1` and `sys2` do not have the same numbers of inputs and outputs
+        If `sys1` and `sys2` do not have the same numbers of inputs and
+        outputs.
 
     See Also
     --------
@@ -184,11 +185,11 @@ def negate(sys, **kwargs):
     ----------------
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals.  If not given,
-        signal names will be of the form `s[i]` (where `s` is one of `u`,
-        or `y`). See `InputOutputSystem` for more information.
+        signal names will be of the form 's[i]' (where 's' is one of 'u',
+        or 'y'). See `InputOutputSystem` for more information.
     states : str, or list of str, optional
         List of names for system states.  If not given, state names will be
-        of of the form `x[i]` for interconnections of linear systems or
+        of of the form 'x[i]' for interconnections of linear systems or
         '<subsys_name>.<state_name>' for interconnected nonlinear systems.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
@@ -226,10 +227,9 @@ def feedback(sys1, sys2=1, sign=-1, **kwargs):
     ----------
     sys1, sys2 : scalar, array, or `InputOutputSystem`
         I/O systems to combine.
-    sign : scalar
-        The sign of feedback.  `sign` = -1 indicates negative feedback, and
-        `sign` = 1 indicates positive feedback.  `sign` is an optional
-        argument; it assumes a value of -1 if not specified.
+    sign : scalar, optional
+        The sign of feedback.  `sign=-1` indicates negative feedback
+        (default), and `sign=1` indicates positive feedback.
 
     Returns
     -------
@@ -240,11 +240,11 @@ def feedback(sys1, sys2=1, sign=-1, **kwargs):
     ----------------
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals.  If not given,
-        signal names will be of the form `s[i]` (where `s` is one of `u`,
-        or `y`). See `InputOutputSystem` for more information.
+        signal names will be of the form 's[i]' (where 's' is one of 'u',
+        or 'y'). See `InputOutputSystem` for more information.
     states : str, or list of str, optional
         List of names for system states.  If not given, state names will be
-        of of the form `x[i]` for interconnections of linear systems or
+        of of the form 'x[i]' for interconnections of linear systems or
         '<subsys_name>.<state_name>' for interconnected nonlinear systems.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
@@ -333,11 +333,11 @@ def append(*sys, **kwargs):
     ----------------
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals.  If not given,
-        signal names will be of the form `s[i]` (where `s` is one of `u`,
-        or `y`). See `InputOutputSystem` for more information.
+        signal names will be of the form 's[i]' (where 's' is one of 'u',
+        or 'y'). See `InputOutputSystem` for more information.
     states : str, or list of str, optional
         List of names for system states.  If not given, state names will be
-        of of the form `x[i]` for interconnections of linear systems or
+        of of the form 'x[i]' for interconnections of linear systems or
         '<subsys_name>.<state_name>' for interconnected nonlinear systems.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
@@ -473,10 +473,10 @@ def combine_tf(tf_array, **kwargs):
     Parameters
     ----------
     tf_array : list of list of TransferFunction or array_like
-        Transfer matrix represented as a two-dimensional array or list-of-lists
-        containing TransferFunction objects. The TransferFunction objects can
-        have multiple outputs and inputs, as long as the dimensions are
-        compatible.
+        Transfer matrix represented as a two-dimensional array or
+        list-of-lists containing TransferFunction objects. The
+        `TransferFunction` objects can have multiple outputs and inputs, as
+        long as the dimensions are compatible.
 
     Returns
     -------
@@ -487,8 +487,8 @@ def combine_tf(tf_array, **kwargs):
     ----------------
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals.  If not given,
-        signal names will be of the form `s[i]` (where `s` is one of `u`,
-        or `y`). See `InputOutputSystem` for more information.
+        signal names will be of the form 's[i]' (where 's' is one of 'u',
+        or 'y'). See `InputOutputSystem` for more information.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
@@ -535,7 +535,7 @@ def combine_tf(tf_array, **kwargs):
      [array([1.]), array([1.]), array([1.])],
      [array([1.]), array([1.]), array([1, 0])]],
     name='G', outputs=3, inputs=3)
-    
+
     """
     # Find common timebase or raise error
     dt_list = []
@@ -666,10 +666,10 @@ def _ensure_tf(arraylike_or_tf, dt=None):
         Array-like or transfer function.
     dt : None, True or float, optional
         System timebase. 0 (default) indicates continuous
-        time, `True` indicates discrete time with unspecified sampling
+        time, True indicates discrete time with unspecified sampling
         time, positive number is discrete time with specified
-        sampling time, `None` indicates unspecified timebase (either
-        continuous or discrete time). If `None`, timestep is not validated.
+        sampling time, None indicates unspecified timebase (either
+        continuous or discrete time). If None, timestep is not validated.
 
     Returns
     -------

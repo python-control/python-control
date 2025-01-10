@@ -46,9 +46,9 @@ System creation parameters
    :value: 0
 
    Default value of `dt` when constructing new I/O systems.  If `dt`
-   is not specified explicitly this value will be used.  Set to `None`
+   is not specified explicitly this value will be used.  Set to None
    to leave the timebase unspecified, 0 for continuous time systems,
-   `True` for discrete time systems.
+   True for discrete time systems.
 
 .. py:data:: iosys.converted_system_name_prefix
    :type: str
@@ -63,6 +63,9 @@ System creation parameters
 
    Suffix to add to system name when converting a system from one
    representation to another.
+
+
+.. _config.defaults['iosys.duplicate_system_name_prefix']:
 
 .. py:data:: iosys.duplicate_system_name_prefix
    :type: str
@@ -155,7 +158,7 @@ System display parameters
    :type: bool
    :value: True
 
-   If `True`, show the input, output, and state count when using
+   If True, show the input, output, and state count when using
    `iosys_repr()` and the 'eval' format.  Otherwise, the input,
    output, and state values are repressed from the output unless
    non-generic signal names are present.
@@ -211,7 +214,7 @@ Response parameters
 
    Set the default value of the `squeeze` parameter for
    :func:`frequency_response` and :class:`FrequencyResponseData`
-   objects. If `None` then if a system is single-input, single-output
+   objects. If None then if a system is single-input, single-output
    (SISO) the outputs (and inputs) are returned as a 1D array (indexed by
    frequency), and if a system is multi-input or multi-output, then the
    outputs are returned as a 2D array (indexed by output and frequency) or
@@ -244,7 +247,7 @@ Response parameters
 
    Determine whether :func:`forced_response` returns the values of the
    states when the :class:`TimeResponseData` object is evaluated.  The
-   default value was `True` before version 0.9 and is `False` since then.
+   default value was True before version 0.9 and is False since then.
 
 
 Plotting parameters
@@ -260,14 +263,14 @@ Plotting parameters
    :type: bool
    :value: False
 
-   If `True`, the magnitude in :func:`bode_plot` is plotted in dB
+   If True, the magnitude in :func:`bode_plot` is plotted in dB
    (otherwise powers of 10).
 
 .. py:data:: freqplot.deg
    :type: bool
    :value: True
 
-   If `True`, the phase in :func:`bode_plot` is plotted in degrees
+   If True, the phase in :func:`bode_plot` is plotted in degrees
    (otherwise radians).
 
 .. py:data:: freqplot.feature_periphery_decades
@@ -294,7 +297,7 @@ Plotting parameters
    :type: bool
    :value: False
 
-   If `True`, use Hertz for frequency response plots (otherwise rad/sec).
+   If True, use Hertz for frequency response plots (otherwise rad/sec).
 
 .. py:data:: freqplot.number_of_samples
    :type: int
@@ -309,7 +312,7 @@ Plotting parameters
    Determine whether and how axis limits are shared between the magnitude
    variables in :func:`bode_plot`.  Can be set set to 'row' to share across
    all subplots in a row, 'col' to set across all subplots in a column, or
-   `False` to allow independent limits.
+   False to allow independent limits.
 
 .. py:data:: freqplot.share_phase
    :type: str
@@ -318,7 +321,7 @@ Plotting parameters
    Determine whether and how axis limits are shared between the phase
    variables in :func:`bode_plot`.  Can be set set to 'row' to share across
    all subplots in a row, 'col' to set across all subplots in a column, or
-   `False` to allow independent limits.
+   False to allow independent limits.
 
 .. py:data:: freqplot.share_frequency
    :type: str
@@ -327,7 +330,7 @@ Plotting parameters
    Determine whether and how axis limits are shared between the frequency
    axes in :func:`bode_plot`.  Can be set set to 'row' to share across all
    subplots in a row, 'col' to set across all subplots in a column, or
-   `False` to allow independent limits.
+   False to allow independent limits.
 
 .. py:data:: freqplot.title_frame
    :type: str
@@ -342,8 +345,8 @@ Plotting parameters
    :type: bool
    :value: False
 
-    If wrap_phase is `False`, then the phase will be unwrapped so that it
-    is continuously increasing or decreasing.  If wrap_phase is `True` the
+    If wrap_phase is False, then the phase will be unwrapped so that it
+    is continuously increasing or decreasing.  If wrap_phase is True the
     phase will be restricted to the range [-180, 180) (or [:math:`-\pi`,
     :math:`\pi`) radians). If `wrap_phase` is specified as a float, the
     phase will be offset by 360 degrees if it falls below the specified
@@ -353,7 +356,7 @@ Plotting parameters
    :type: bool
    :value: True
 
-   Set to `True` if :func:`nichols_plot` should include a Nichols-chart
+   Set to True if :func:`nichols_plot` should include a Nichols-chart
    grid.
 
 .. py:data:: nyquist.arrows
@@ -435,7 +438,7 @@ Plotting parameters
    Linestyles for mirror image of the Nyquist curve in
    :func:`nyquist_plot`.  The first element is used for unscaled portions
    of the Nyquist curve, the second element is used for portions that are
-   scaled (using max_curve_magnitude).  If `False` then omit completely.
+   scaled (using max_curve_magnitude).  If False then omit completely.
 
 .. py:data:: nyquist.primary_style
    :type: list of str
@@ -478,7 +481,7 @@ Plotting parameters
    :value: None
 
    Set the default style for arrows in :func:`phase_plane_plot` and
-   :func:`phaseplot.streamlines`.  If set to `None`, defaults to
+   :func:`phaseplot.streamlines`.  If set to None, defaults to
 
    .. code::
 
@@ -516,7 +519,7 @@ Plotting parameters
    :type: bool
    :value: False
 
-   If `True` plot omega-damping grid in :func:`pole_zero_plot`. If `False`
+   If True plot omega-damping grid in :func:`pole_zero_plot`. If False
    or None show imaginary axis for continuous time systems, unit circle for
    discrete time systems.  If `empty`, do not draw any additonal lines.
 
@@ -541,7 +544,7 @@ Plotting parameters
    :type: bool
    :value: True
 
-   If `True` plot omega-damping grid in :func:`root_locus_plot`. If `False`
+   If True plot omega-damping grid in :func:`root_locus_plot`. If False
    or None show imaginary axis for continuous time systems, unit circle for
    discrete time systems.  If `empty`, do not draw any additonal lines.
 
@@ -582,7 +585,7 @@ Plotting parameters
    Determine whether and how x-axis limits are shared between subplots in
    :func:`time_response_plot`.  Can be set set to 'row' to share across all
    subplots in a row, 'col' to set across all subplots in a column, 'all'
-   to share across all subplots, or `False` to allow independent limits.
+   to share across all subplots, or False to allow independent limits.
 
 .. py:data:: timeplot.sharey
    :type: bool
@@ -591,7 +594,7 @@ Plotting parameters
    Determine whether and how y-axis limits are shared between subplots in
    :func:`time_response_plot`.  Can be set set to 'row' to share across all
    subplots in a row, 'col' to set across all subplots in a column, 'all'
-   to share across all subplots, or `False` to allow independent limits.
+   to share across all subplots, or False to allow independent limits.
 
 .. py:data:: timeplot.time_label
    :type: str

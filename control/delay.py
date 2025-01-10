@@ -8,10 +8,10 @@
 __all__ = ['pade']
 
 def pade(T, n=1, numdeg=None):
-    """
-    Create a linear system that approximates a delay.
+    """Create a linear system that approximates a delay.
 
-    Return the numerator and denominator coefficients of the Pade approximation.
+    Return the numerator and denominator coefficients of the Pade
+    approximation of the given order.
 
     Parameters
     ----------
@@ -20,7 +20,7 @@ def pade(T, n=1, numdeg=None):
     n : positive integer
         Degree of denominator of approximation.
     numdeg : integer, or None (the default)
-        If numdeg is `None`, numerator degree equals denominator degree.
+        If numdeg is None, numerator degree equals denominator degree.
         If numdeg >= 0, specifies degree of numerator.
         If numdeg < 0, numerator degree is n+numdeg.
 

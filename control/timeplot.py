@@ -58,28 +58,28 @@ def time_response_plot(
         Sets how and where to plot the inputs:
             * False: don't plot the inputs
             * None: use value from time response data (default)
-            * 'overlay`: plot inputs overlaid with outputs
+            * 'overlay': plot inputs overlaid with outputs
             * True: plot the inputs on their own axes
     plot_outputs : bool, optional
-        If `False`, suppress plotting of the outputs.
+        If False, suppress plotting of the outputs.
     overlay_traces : bool, optional
-        If set to `True`, combine all traces onto a single row instead of
+        If set to True, combine all traces onto a single row instead of
         plotting a separate row for each trace.
     overlay_signals : bool, optional
-        If set to `True`, combine all input and output signals onto a single
+        If set to True, combine all input and output signals onto a single
         plot (for each).
     sharex, sharey : str or bool, optional
         Determine whether and how x- and y-axis limits are shared between
         subplots.  Can be set set to 'row' to share across all subplots in
         a row, 'col' to set across all subplots in a column, 'all' to share
-        across all subplots, or `False` to allow independent limits.
-        Default values are `False` for `sharex' and 'col' for `sharey`, and
-        can be set using config.defaults['timeplot.sharex'] and
-        config.defaults['timeplot.sharey'].
+        across all subplots, or False to allow independent limits.
+        Default values are False for `sharex' and 'col' for `sharey`, and
+        can be set using `config.defaults['timeplot.sharex']` and
+        `config.defaults['timeplot.sharey']`.
     transpose : bool, optional
-        If transpose is `False` (default), signals are plotted from top to
+        If transpose is False (default), signals are plotted from top to
         bottom, starting with outputs (if plotted) and then inputs.
-        Multi-trace plots are stacked horizontally.  If transpose is `True`,
+        Multi-trace plots are stacked horizontally.  If transpose is True,
         signals are plotted from left to right, starting with the inputs
         (if plotted) and then the outputs.  Multi-trace responses are
         stacked vertically.
@@ -110,7 +110,7 @@ def time_response_plot(
     ----------------
     add_initial_zero : bool
         Add an initial point of zero at the first time point for all
-        inputs with type 'step'.  Default is `True`.
+        inputs with type 'step'.  Default is True.
     ax : array of matplotlib.axes.Axes, optional
         The matplotlib axes to draw the figure on.  If not specified, the
         axes for the current figure are used or, if there is no current
@@ -119,7 +119,7 @@ def time_response_plot(
         plotted data.
     input_props : array of dicts
         List of line properties to use when plotting combined inputs.  The
-        default values are set by config.defaults['timeplot.input_props'].
+        default values are set by `config.defaults['timeplot.input_props']`.
     label : str or array_like of str, optional
         If present, replace automatically generated label(s) with the given
         label(s).  If more than one line is being generated, an array of
@@ -128,24 +128,24 @@ def time_response_plot(
     legend_map : array of str, optional
         Location of the legend for multi-axes plots.  Specifies an array
         of legend location strings matching the shape of the subplots, with
-        each entry being either `None` (for no legend) or a legend location
+        each entry being either None (for no legend) or a legend location
         string (see `~matplotlib.pyplot.legend`).
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'center right',
-        with no legend for a single response.  Use `False` to suppress legend.
+        with no legend for a single response.  Use False to suppress legend.
     output_props : array of dicts, optional
         List of line properties to use when plotting combined outputs.  The
-        default values are set by config.defaults['timeplot.output_props'].
+        default values are set by `config.defaults['timeplot.output_props']`.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.defaults['ctrlplot.rcParams'].
+        Default is set by `config.defaults['ctrlplot.rcParams']`.
     relabel : bool, optional
         (deprecated) By default, existing figures and axes are relabeled
-        when new data are added.  If set to `False`, just plot new data on
+        when new data are added.  If set to False, just plot new data on
         existing axes.
     show_legend : bool, optional
-        Force legend to be shown if `True` or hidden if `False`.  If
-        `None`, then show legend when there is more than one line on an
+        Force legend to be shown if True or hidden if False.  If
+        None, then show legend when there is more than one line on an
         axis or `legend_loc` or `legend_map` has been specified.
     time_label : str, optional
         Label to use for the time axis.
@@ -155,14 +155,14 @@ def time_response_plot(
         Replace the default trace labels with the given labels.
     trace_props : array of dicts
         List of line properties to use when plotting multiple traces.  The
-        default values are set by config.defaults['timeplot.trace_props'].
+        default values are set by `config.defaults['timeplot.trace_props']`.
 
     Notes
     -----
     1. A new figure will be generated if there is no current figure or
        the current figure has an incompatible number of axes.  To
-       force the creation of a new figures, use `plt.figure()`.  To reuse
-       a portion of an existing figure, use the `ax` keyword.
+       force the creation of a new figures, use `plt.figure`.  To reuse
+       a portion of an existing figure, use the ``ax`` keyword.
 
     2. The line properties (color, linestyle, etc) can be set for the
        entire plot using the `fmt` and/or `kwargs` parameter, which
@@ -174,7 +174,7 @@ def time_response_plot(
        the kwarg properties to determine the final line properties.
 
     3. The default plot properties, such as font sizes, can be set using
-       config.defaults[''timeplot.rcParams'].
+       `config.defaults[''timeplot.rcParams']`.
 
     """
     from .ctrlplot import _process_ax_keyword, _process_line_labels

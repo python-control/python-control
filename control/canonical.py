@@ -15,8 +15,8 @@ from .iosys import issiso
 from .statefbk import ctrb, obsv
 from .statesp import StateSpace, _convert_to_statespace
 
-__all__ = ['canonical_form', 'reachable_form', 'observable_form', 'modal_form',
-           'similarity_transform', 'bdschur']
+__all__ = ['canonical_form', 'reachable_form', 'observable_form',
+           'modal_form', 'similarity_transform', 'bdschur']
 
 
 def canonical_form(xsys, form='reachable'):
@@ -126,10 +126,12 @@ def reachable_form(xsys):
     # Check to make sure inversion was OK.  Note that since we are inverting
     # Wrx and we already checked its rank, this exception should never occur
     if matrix_rank(Tzx) != xsys.nstates:         # pragma: no cover
-        raise ValueError("Transformation matrix singular to working precision.")
+        raise ValueError(
+            "Transformation matrix singular to working precision.")
 
     # Finally, compute the output matrix
-    zsys.C = solve(Tzx.T, xsys.C.T).T  # matrix right division, zsys.C = xsys.C * inv(Tzx)
+    # matrix right division, zsys.C = xsys.C * inv(Tzx)
+    zsys.C = solve(Tzx.T, xsys.C.T).T
 
     return zsys, Tzx
 
@@ -183,7 +185,8 @@ def observable_form(xsys):
     Tzx = solve(Wrz, Wrx)  # matrix left division, Tzx = inv(Wrz) * Wrx
 
     if matrix_rank(Tzx) != xsys.nstates:
-        raise ValueError("Transformation matrix singular to working precision.")
+        raise ValueError(
+            "Transformation matrix singular to working precision.")
 
     # Finally, compute the output matrix
     zsys.B = Tzx @ xsys.B
@@ -206,7 +209,7 @@ def similarity_transform(xsys, T, timescale=1, inverse=False):
     timescale : float, optional
         If present, also rescale the time unit to tau = timescale * t.
     inverse : bool, optional
-        If `False` (default), transform so z = T x.  If `True`, transform
+        If False (default), transform so z = T x.  If True, transform
         so x = T z.
 
     Returns
@@ -270,7 +273,7 @@ def _bdschur_defective(blksizes, eigvals):
 
     Returns
     -------
-    `True` iff Schur blocks are defective.
+    True iff Schur blocks are defective.
 
     blksizes, eigvals are the 3rd and 4th results returned by mb03rd.
     """
@@ -393,7 +396,9 @@ def _bdschur_condmax_search(aschur, tschur, condmax):
             # hit search limit
             return reslower
     else:
-        raise ValueError('bisection failed to converge; pmaxlower={}, pmaxupper={}'.format(pmaxlower, pmaxupper))
+        raise ValueError(
+            "bisection failed to converge; "
+            "pmaxlower={}, pmaxupper={}".format(pmaxlower, pmaxupper))
 
 
 def bdschur(a, condmax=None, sort=None):
@@ -404,7 +409,7 @@ def bdschur(a, condmax=None, sort=None):
     a : (M, M) array_like
         Real matrix to decompose.
     condmax : None or float, optional
-        If `None` (default), use 1/sqrt(eps), which is approximately 1e8.
+        If None (default), use 1/sqrt(eps), which is approximately 1e8.
     sort : {None, 'continuous', 'discrete'}
         Block sorting; see below.
 
@@ -419,7 +424,7 @@ def bdschur(a, condmax=None, sort=None):
 
     Notes
     -----
-    If `sort` is `None`, the blocks are not sorted.
+    If `sort` is None, the blocks are not sorted.
 
     If `sort` is 'continuous', the blocks are sorted according to
     associated eigenvalues.  The ordering is first by real part of
@@ -443,7 +448,8 @@ def bdschur(a, condmax=None, sort=None):
         condmax = np.finfo(np.float64).eps ** -0.5
 
     if not (np.isscalar(condmax) and condmax >= 1.0):
-        raise ValueError('condmax="{}" must be a scalar >= 1.0'.format(condmax))
+        raise ValueError(
+            'condmax="{}" must be a scalar >= 1.0'.format(condmax))
 
     a = np.atleast_2d(a)
     if a.shape[0] == 0 or a.shape[1] == 0:
@@ -491,18 +497,18 @@ def modal_form(xsys, condmax=None, sort=False):
     Parameters
     ----------
     xsys : StateSpace object
-        System to be transformed, with state `x`.
+        System to be transformed, with state ``x``.
     condmax : None or float, optional
-        An upper bound on individual transformations.  If `None`, use
+        An upper bound on individual transformations.  If None, use
         `bdschur` default.
     sort : bool, optional
-        If `False` (default), Schur blocks will not be sorted.  See `bdschur`
+        If False (default), Schur blocks will not be sorted.  See `bdschur`
         for sort order.
 
     Returns
     -------
     zsys : StateSpace object
-        System in modal canonical form, with state `z`.
+        System in modal canonical form, with state ``z``.
     T : (M, M) ndarray
         Coordinate transformation: z = T * x.
 

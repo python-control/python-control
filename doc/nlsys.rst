@@ -94,7 +94,7 @@ The dynamics of this system can be modeling using the following code::
       outputs=['y', 'thdot'], inputs=['tau'])
 
 A summary of the model can be obtained using the string representation
-of the model (via the Python `print()` function)::
+of the model (via the Python `~python.print` function)::
 
   >>> print(servomech)
   <NonlinearIOSystem>: servomech

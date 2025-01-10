@@ -120,7 +120,7 @@ calling the transfer function object::
   val = sys(s)
 
 Discrete time transfer functions (described in more detail below) can
-be created using `z = ct.tf('z')`.
+be created using ``z = ct.tf('z')``.
 
 
 Frequency response data (FRD) systems
@@ -199,8 +199,8 @@ names::
 
 Signal names for an indexed subsystem are preserved from the original
 system and the subsystem name is set according to the values of
-`config.defaults['iosys.indexed_system_name_prefix']` and
-`config.defaults['iosys.indexed_system_name_suffix']` (see
+``config.defaults['iosys.indexed_system_name_prefix']`` and
+``config.defaults['iosys.indexed_system_name_suffix']`` (see
 :ref:`package-configuration-parameters` for more information).  The
 default subsystem name is the original system name with '$indexed'
 appended.
@@ -216,8 +216,8 @@ response.
 .. note:: If a system is single-input, single-output (SISO),
 	  `magnitude` and `phase` default to 1D arrays, indexed by
 	  frequency.  If the system is not SISO or `squeeze` is set to
-	  `False`, the array is 3D, indexed by the output, input, and
-	  frequency.  If `squeeze` is `True` for a MIMO system then
+	  False, the array is 3D, indexed by the output, input, and
+	  frequency.  If `squeeze` is True for a MIMO system then
 	  single-dimensional axes are removed.  The processing of the
 	  `squeeze` keyword can be changed by calling the response
 	  function with a new argument::
@@ -240,22 +240,24 @@ A discrete time system is created by specifying a nonzero "timebase",
 `dt`.  The timebase argument can be given when a system is
 constructed:
 
-* `dt = 0`: continuous time system (default)
-* `dt > 0`: discrete time system with sampling period 'dt'
-* `dt = True`: discrete time with unspecified sampling period
-* `dt = None`: no timebase specified
+* ``dt = 0``: continuous time system (default)
+* ``dt > 0``: discrete time system with sampling period 'dt'
+* ``dt = True``: discrete time with unspecified sampling period
+* ``dt = None``: no timebase specified
 
-Systems must have compatible timebases in order to be combined. A discrete
-time system with unspecified sampling time (`dt = True`) can be combined with
-a system having a specified sampling time; the result will be a discrete time
-system with the sample time of the latter system.  Similarly, a system with
-timebase `None` can be combined with a system having a specified timebase; the
-result will have the timebase of the latter system. For continuous time
-systems, the :func:`sample_system` function or the :meth:`StateSpace.sample`
-and :meth:`TransferFunction.sample` methods can be used to create a discrete
-time system from a continuous time system.  See
-:ref:`utility-and-conversions`. The default value of `dt` can be changed by
-changing the value of `config.defaults['control.default_dt']`.
+Systems must have compatible timebases in order to be combined. A
+discrete time system with unspecified sampling time (``dt = True``)
+can be combined with a system having a specified sampling time; the
+result will be a discrete time system with the sample time of the
+latter system.  Similarly, a system with timebase None can be combined
+with a system having a specified timebase; the result will have the
+timebase of the latter system. For continuous time systems, the
+:func:`sample_system` function or the :meth:`StateSpace.sample` and
+:meth:`TransferFunction.sample` methods can be used to create a
+discrete time system from a continuous time system.  See
+:ref:`utility-and-conversions`. The default value of `dt` can be
+changed by changing the value of
+``config.defaults['control.default_dt']``.
 
 Functions operating on LTI systems will take into account whether a
 system is continuous time or discrete time when carrying out operations
@@ -440,7 +442,7 @@ Displaying LTI system information
 =================================
 
 Information about an LTI system can be obtained using the Python
-`print()` function::
+`~python.print` function::
 
   >>> sys = ct.rss(4, 2, 2, name='sys_2x2')
   >>> print(sys)

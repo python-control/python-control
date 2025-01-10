@@ -89,7 +89,7 @@ The :func:`phase_plane_plot` function calls these helper functions
 based on the options it is passed.
 
 Note that unlike other plotting functions, phase plane plots do not involve
-computing a response and then plotting the result via a `plot()` method.
+computing a response and then plotting the result via a ``plot()`` method.
 Instead, the plot is generated directly be a call to the
 :func:`phase_plane_plot` function (or one of the
 :mod:`phaseplot` helper functions.

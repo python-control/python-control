@@ -109,15 +109,15 @@ def bode_plot(
         Passed to `matplotlib` as the format string for all lines in the plot.
         The `omega` parameter must be present (use omega=None if needed).
     dB : bool
-        If `True`, plot result in dB.  Default is False.
+        If True, plot result in dB.  Default is False.
     Hz : bool
-        If `True`, plot frequency in Hz (omega must be provided in rad/sec).
-        Default value (False) set by config.defaults['freqplot.Hz'].
+        If True, plot frequency in Hz (omega must be provided in rad/sec).
+        Default value (False) set by `config.defaults['freqplot.Hz']`.
     deg : bool
-        If `True`, plot phase in degrees (else radians).  Default value (`True`)
-        set by config.defaults['freqplot.deg'].
+        If True, plot phase in degrees (else radians).  Default
+        value (True) set by `config.defaults['freqplot.deg']`.
     display_margins : bool or str
-        If `True`, draw gain and phase margin lines on the magnitude and phase
+        If True, draw gain and phase margin lines on the magnitude and phase
         graphs and display the margins at the top of the graph.  If set to
         'overlay', the values for the gain and phase margin are placed on
         the graph.  Setting display_margins turns off the axes grid.
@@ -154,13 +154,13 @@ def bode_plot(
         Labels to use for the frequency, magnitude, and phase axes.
         Defaults are set by `config.defaults['freqplot.<keyword>']`.
     grid : bool, optional
-        If `True`, plot grid lines on gain and phase plots.  Default is set by
+        If True, plot grid lines on gain and phase plots.  Default is set by
         `config.defaults['freqplot.grid']`.
     initial_phase : float, optional
         Set the reference phase to use for the lowest frequency.  If set, the
         initial phase of the Bode plot will be set to the value closest to the
         value specified.  Units are in either degrees or radians, depending on
-        the `deg` parameter. Default is -180 if wrap_phase is `False`, 0 if
+        the `deg` parameter. Default is -180 if wrap_phase is False, 0 if
         wrap_phase is True.
     label : str or array_like of str, optional
         If present, replace automatically generated label(s) with the given
@@ -169,11 +169,11 @@ def bode_plot(
     legend_map : array of str, optional
         Location of the legend for multi-axes plots.  Specifies an array
         of legend location strings matching the shape of the subplots, with
-        each entry being either `None` (for no legend) or a legend location
+        each entry being either None (for no legend) or a legend location
         string (see `~matplotlib.pyplot.legend`).
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'center right',
-        with no legend for a single response.  Use `False` to suppress legend.
+        with no legend for a single response.  Use False to suppress legend.
     margins_method : str, optional
         Method to use in computing margins (see `stability_margins`).
     omega_limits : array_like of two values
@@ -183,33 +183,33 @@ def bode_plot(
         data is not a list of systems.
     omega_num : int
         Number of samples to use for the frequeny range.  Defaults to
-        config.defaults['freqplot.number_of_samples'].  Ignored if data is
+        `config.defaults['freqplot.number_of_samples']`.  Ignored if data is
         not a list of systems.
     overlay_inputs, overlay_outputs : bool, optional
-        If set to `True`, combine input and/or output signals onto a single
+        If set to True, combine input and/or output signals onto a single
         plot and use line colors, labels, and a legend to distinguish them.
     plot : bool, optional
         (legacy) If given, `bode_plot` returns the legacy return values
-        of magnitude, phase, and frequency.  If `False`, just return the
+        of magnitude, phase, and frequency.  If False, just return the
         values with no plot.
     plot_magnitude, plot_phase : bool, optional
-        If set to `False`, don't plot the magnitude or phase, respectively.
+        If set to False, do not plot the magnitude or phase, respectively.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.defaults['ctrlplot.rcParams'].
+        Default is set by `config.defaults['ctrlplot.rcParams']`.
     share_frequency, share_magnitude, share_phase : str or bool, optional
         Determine whether and how axis limits are shared between the
         indicated variables.  Can be set set to 'row' to share across all
         subplots in a row, 'col' to set across all subplots in a column, or
-        `False` to allow independent limits.  Note: if `sharex` is given,
+        False to allow independent limits.  Note: if `sharex` is given,
         it sets the value of `share_frequency`; if `sharey` is given, it
         sets the value of both `share_magnitude` and `share_phase`.
-        Default values are 'row' for `share_magnitude` and `share_phase',
+        Default values are 'row' for `share_magnitude` and `share_phase`,
         'col', for `share_frequency`, and can be set using
-        config.defaults['freqplot.share_<axis>'].
+        `config.defaults['freqplot.share_<axis>']`.
     show_legend : bool, optional
-        Force legend to be shown if `True` or hidden if `False`.  If
-        `None`, then show legend when there is more than one line on an
+        Force legend to be shown if True or hidden if False.  If
+        None, then show legend when there is more than one line on an
         axis or `legend_loc` or `legend_map` has been specified.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
@@ -217,16 +217,16 @@ def bode_plot(
         Set the frame of reference used to center the plot title. If set to
         'axes' (default), the horizontal position of the title will be
         centered relative to the axes.  If set to 'figure', it will be
-        centered with respect to the figure (faster execution).  The
-        default value can be set using config.defaults['freqplot.title_frame'].
+        centered with respect to the figure (faster execution).  The default
+        value can be set using `config.defaults['freqplot.title_frame']`.
     wrap_phase : bool or float
-        If wrap_phase is `False` (default), then the phase will be unwrapped
+        If wrap_phase is False (default), then the phase will be unwrapped
         so that it is continuously increasing or decreasing.  If wrap_phase is
-        `True` the phase will be restricted to the range [-180, 180) (or
+        True the phase will be restricted to the range [-180, 180) (or
         [:math:`-\\pi`, :math:`\\pi`) radians). If `wrap_phase` is specified
         as a float, the phase will be offset by 360 degrees if it falls below
-        the specified value. Default value is `False` and can be set using
-        config.defaults['freqplot.wrap_phase'].
+        the specified value. Default value is False and can be set using
+        `config.defaults['freqplot.wrap_phase']`.
 
     See Also
     --------
@@ -237,15 +237,15 @@ def bode_plot(
     Starting with python-control version 0.10, `bode_plot` returns a
     `ControlPlot` object instead of magnitude, phase, and
     frequency. To recover the old behavior, call `bode_plot` with
-    `plot=True`, which will force the legacy values (mag, phase, omega) to
+    ``plot=True``, which will force the legacy values (mag, phase, omega) to
     be returned (with a warning).  To obtain just the frequency response of
     a system (or list of systems) without plotting, use the
     `frequency_response` command.
 
     If a discrete time model is given, the frequency response is plotted
-    along the upper branch of the unit circle, using the mapping `z =
-    exp(1j * omega * dt)` where `omega` ranges from 0 to `pi/dt` and `dt`
-    is the discrete timebase.  If timebase not specified (`dt=True`),
+    along the upper branch of the unit circle, using the mapping ``z =
+    exp(1j * omega * dt)`` where `omega` ranges from 0 to ``pi/dt`` and `dt`
+    is the discrete timebase.  If timebase not specified (``dt=True``),
     `dt` is set to 1.
 
     The default values for Bode plot configuration parameters can be reset
@@ -965,7 +965,7 @@ def bode_plot(
                 mag_bbox = inv_transform.transform(
                     ax_mag.get_tightbbox(fig.canvas.get_renderer()))
 
-                # Figure out location for the text (center left in figure frame)
+                # Figure out location for text (center left in figure frame)
                 xpos = mag_bbox[0, 0]               # left edge
 
                 # Put a centered label as text outside the box
@@ -989,10 +989,10 @@ def bode_plot(
     # list of systems (e.g., "Step response for sys[1], sys[2]").
     #
 
-    # Set the initial title for the data (unique system names, preserving order)
+    # Set initial title for the data (unique system names, preserving order)
     seen = set()
-    sysnames = [response.sysname for response in data \
-                if not (response.sysname in seen or seen.add(response.sysname))]
+    sysnames = [response.sysname for response in data if not
+                (response.sysname in seen or seen.add(response.sysname))]
 
     if ax is None and title is None:
         if data[0].title is None:
@@ -1202,11 +1202,11 @@ def nyquist_response(
     encirclement_threshold : float, optional
         Define the threshold for generating a warning if the number of net
         encirclements is a non-integer value.  Default value is 0.05 and can
-        be set using config.defaults['nyquist.encirclement_threshold'].
+        be set using `config.defaults['nyquist.encirclement_threshold']`.
     indent_direction : str, optional
         For poles on the imaginary axis, set the direction of indentation to
         be 'right' (default), 'left', or 'none'.  The default value can
-        be set using config.defaults['nyquist.indent_direction'].
+        be set using `config.defaults['nyquist.indent_direction']`.
     indent_points : int, optional
         Number of points to insert in the Nyquist contour around poles that
         are at or near the imaginary axis.
@@ -1215,14 +1215,14 @@ def nyquist_response(
         imaginary axis. Portions of the Nyquist plot corresponding to
         indented portions of the contour are plotted using a different line
         style. The default value can be set using
-        config.defaults['nyquist.indent_radius'].
+        `config.defaults['nyquist.indent_radius']`.
     omega_limits : array_like of two values
         Set limits for plotted frequency range. If Hz=True the limits are
         in Hz otherwise in rad/s.  Specifying `omega` as a list of two
         elements is equivalent to providing `omega_limits`.
     omega_num : int, optional
         Number of samples to use for the frequeny range.  Defaults to
-        config.defaults['freqplot.number_of_samples'].
+        `config.defaults['freqplot.number_of_samples']`.
     warn_nyquist : bool, optional
         If set to 'False', turn off warnings about frequencies above Nyquist.
     warn_encirclements : bool, optional
@@ -1231,30 +1231,30 @@ def nyquist_response(
 
     Notes
     -----
-    1. If a discrete time model is given, the frequency response is computed
-       along the upper branch of the unit circle, using the mapping `z =
-       exp(1j * omega * dt)` where `omega` ranges from 0 to `pi/dt` and `dt`
-       is the discrete timebase.  If timebase not specified (`dt=True`),
-       `dt` is set to 1.
+    If a discrete time model is given, the frequency response is computed
+    along the upper branch of the unit circle, using the mapping ``z =
+    exp(1j * omega * dt)`` where `omega` ranges from 0 to ``pi/dt`` and
+    `dt` is the discrete timebase.  If timebase not specified
+    (``dt=True``), `dt` is set to 1.
 
-    2. If a continuous-time system contains poles on or near the imaginary
-       axis, a small indentation will be used to avoid the pole.  The radius
-       of the indentation is given by `indent_radius` and it is taken to the
-       right of stable poles and the left of unstable poles.  If a pole is
-       exactly on the imaginary axis, the `indent_direction` parameter can be
-       used to set the direction of indentation.  Setting `indent_direction`
-       to `none` will turn off indentation.
+    If a continuous-time system contains poles on or near the imaginary
+    axis, a small indentation will be used to avoid the pole.  The radius
+    of the indentation is given by `indent_radius` and it is taken to the
+    right of stable poles and the left of unstable poles.  If a pole is
+    exactly on the imaginary axis, the `indent_direction` parameter can be
+    used to set the direction of indentation.  Setting `indent_direction`
+    to 'none' will turn off indentation.
 
-    3. For those portions of the Nyquist plot in which the contour is
-       indented to avoid poles, resuling in a scaling of the Nyquist plot,
-       the line styles are according to the settings of the `primary_style`
-       and `mirror_style` keywords.  By default the scaled portions of the
-       primary curve use a dotted line style and the scaled portion of the
-       mirror image use a dashdot line style.
+    For those portions of the Nyquist plot in which the contour is indented
+    to avoid poles, resuling in a scaling of the Nyquist plot, the line
+    styles are according to the settings of the `primary_style` and
+    `mirror_style` keywords.  By default the scaled portions of the primary
+    curve use a dotted line style and the scaled portion of the mirror
+    image use a dashdot line style.
 
-    4. If the legacy keyword `return_contour` is specified as `True`, the
-       response object can be iterated over to return `count, contour`.
-       This behavior is deprecated and will be removed in a future release.
+    If the legacy keyword `return_contour` is specified as True, the
+    response object can be iterated over to return `count, contour`.  This
+    behavior is deprecated and will be removed in a future release.
 
     See Also
     --------
@@ -1502,8 +1502,8 @@ def nyquist_response(
                     "number of encirclements does not match Nyquist criterion;"
                     " check frequency range and indent radius/direction",
                     UserWarning, stacklevel=2)
-            elif indent_direction == 'none' and any(sys.poles().real == 0) and \
-                 warn_encirclements:
+            elif indent_direction == 'none' and any(sys.poles().real == 0) \
+                 and warn_encirclements:
                 warnings.warn(
                     "system has pure imaginary poles but indentation is"
                     " turned off; results may be meaningless",
@@ -1547,9 +1547,9 @@ def nyquist_plot(
         `omega` as a list of two elements is equivalent to providing
         `omega_limits`.
     unit_circle : bool, optional
-        If `True`, display the unit circle, to read gain crossover
+        If True, display the unit circle, to read gain crossover
         frequency.  The circle style is determined by
-        config.defaults['nyquist.circle_style'].
+        `config.defaults['nyquist.circle_style']`.
     mt_circles : array_like, optional
         Draw circles corresponding to the given magnitudes of sensitivity.
     ms_circles : array_like, optional
@@ -1593,10 +1593,10 @@ def nyquist_plot(
         arrow.  If a 2D array is passed, the first row will be used to
         specify arrow locations for the primary curve and the second row
         will be used for the mirror image.  Default value is 2 and can be
-        set using config.defaults['nyquist.arrows'].
+        set using `config.defaults['nyquist.arrows']`.
     arrow_size : float, optional
         Arrowhead width and length (in display coordinates).  Default value is
-        8 and can be set using config.defaults['nyquist.arrow_size'].
+        8 and can be set using `config.defaults['nyquist.arrow_size']`.
     arrow_style : matplotlib.patches.ArrowStyle, optional
         Define style used for Nyquist curve arrows (overrides `arrow_size`).
     ax : matplotlib.axes.Axes, optional
@@ -1606,7 +1606,7 @@ def nyquist_plot(
     encirclement_threshold : float, optional
         Define the threshold for generating a warning if the number of net
         encirclements is a non-integer value.  Default value is 0.05 and can
-        be set using config.defaults['nyquist.encirclement_threshold'].
+        be set using `config.defaults['nyquist.encirclement_threshold']`.
     indent_direction : str, optional
         For poles on the imaginary axis, set the direction of indentation to
         be 'right' (default), 'left', or 'none'.
@@ -1626,58 +1626,58 @@ def nyquist_plot(
         are generated.
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'upper right',
-        with no legend for a single response.  Use `False` to suppress legend.
+        with no legend for a single response.  Use False to suppress legend.
     max_curve_magnitude : float, optional
         Restrict the maximum magnitude of the Nyquist plot to this value.
         Portions of the Nyquist plot whose magnitude is restricted are
         plotted using a different line style.  The default value is 20 and
-        can be set using config.defaults['nyquist.max_curve_magnitude'].
+        can be set using `config.defaults['nyquist.max_curve_magnitude']`.
     max_curve_offset : float, optional
         When plotting scaled portion of the Nyquist plot, increase/decrease
         the magnitude by this fraction of the max_curve_magnitude to allow
         any overlaps between the primary and mirror curves to be avoided.
         The default value is 0.02 and can be set using
-        config.defaults['nyquist.max_curve_magnitude'].
+        `config.defaults['nyquist.max_curve_magnitude']`.
     mirror_style : [str, str] or False
         Linestyles for mirror image of the Nyquist curve.  The first element
         is used for unscaled portions of the Nyquist curve, the second element
         is used for portions that are scaled (using max_curve_magnitude).  If
-        `False` then omit completely.  Default linestyle (['--', ':']) is
-        determined by config.defaults['nyquist.mirror_style'].
+        False then omit completely.  Default linestyle (['--', ':']) is
+        determined by `config.defaults['nyquist.mirror_style']`.
     omega_limits : array_like of two values
         Set limits for plotted frequency range. If Hz=True the limits are
         in Hz otherwise in rad/s.  Specifying `omega` as a list of two
         elements is equivalent to providing `omega_limits`.
     omega_num : int, optional
         Number of samples to use for the frequeny range.  Defaults to
-        config.defaults['freqplot.number_of_samples'].  Ignored if data is
+        `config.defaults['freqplot.number_of_samples']`.  Ignored if data is
         not a list of systems.
     plot : bool, optional
         (legacy) If given, `nyquist_plot` returns the legacy return values
-        of (counts, contours).  If `False`, return the values with no plot.
+        of (counts, contours).  If False, return the values with no plot.
     primary_style : [str, str], optional
         Linestyles for primary image of the Nyquist curve.  The first
         element is used for unscaled portions of the Nyquist curve,
         the second element is used for portions that are scaled (using
         max_curve_magnitude).  Default linestyle (['-', '-.']) is
-        determined by config.defaults['nyquist.mirror_style'].
+        determined by `config.defaults['nyquist.mirror_style']`.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.defaults['ctrlplot.rcParams'].
+        Default is set by `config.defaults['ctrlplot.rcParams']`.
     return_contour : bool, optional
         (legacy) If 'True', return the encirclement count and Nyquist
         contour used to generate the Nyquist plot.
     show_legend : bool, optional
-        Force legend to be shown if `True` or hidden if `False`.  If
-        `None`, then show legend when there is more than one line on the
+        Force legend to be shown if True or hidden if False.  If
+        None, then show legend when there is more than one line on the
         plot or `legend_loc` has been specified.
     start_marker : str, optional
         Matplotlib marker to use to mark the starting point of the Nyquist
         plot.  Defaults value is 'o' and can be set using
-        config.defaults['nyquist.start_marker'].
+        `config.defaults['nyquist.start_marker']`.
     start_marker_size : float, optional
         Start marker size (in display coordinates).  Default value is
-        4 and can be set using config.defaults['nyquist.start_marker_size'].
+        4 and can be set using `config.defaults['nyquist.start_marker_size']`.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
     title_frame : str, optional
@@ -1697,27 +1697,27 @@ def nyquist_plot(
 
     Notes
     -----
-    1. If a discrete time model is given, the frequency response is computed
-       along the upper branch of the unit circle, using the mapping `z =
-       exp(1j * omega * dt)` where `omega` ranges from 0 to `pi/dt` and `dt`
-       is the discrete timebase.  If timebase not specified (`dt=True`),
-       `dt` is set to 1.
+    If a discrete time model is given, the frequency response is computed
+    along the upper branch of the unit circle, using the mapping ``z =
+    exp(1j * omega * dt)`` where `omega` ranges from 0 to ``pi/dt`` and
+    `dt` is the discrete timebase.  If timebase not specified
+    (``dt=True``), `dt` is set to 1.
 
-    2. If a continuous-time system contains poles on or near the imaginary
-       axis, a small indentation will be used to avoid the pole.  The radius
-       of the indentation is given by `indent_radius` and it is taken to the
-       right of stable poles and the left of unstable poles.  If a pole is
-       exactly on the imaginary axis, the `indent_direction` parameter can be
-       used to set the direction of indentation.  Setting `indent_direction`
-       to `none` will turn off indentation.  If `return_contour` is `True`, the
-       exact contour used for evaluation is returned.
+    If a continuous-time system contains poles on or near the imaginary
+    axis, a small indentation will be used to avoid the pole.  The radius
+    of the indentation is given by `indent_radius` and it is taken to the
+    right of stable poles and the left of unstable poles.  If a pole is
+    exactly on the imaginary axis, the `indent_direction` parameter can be
+    used to set the direction of indentation.  Setting `indent_direction`
+    to 'none' will turn off indentation.  If `return_contour` is True,
+    the exact contour used for evaluation is returned.
 
-    3. For those portions of the Nyquist plot in which the contour is
-       indented to avoid poles, resuling in a scaling of the Nyquist plot,
-       the line styles are according to the settings of the `primary_style`
-       and `mirror_style` keywords.  By default the scaled portions of the
-       primary curve use a dotted line style and the scaled portion of the
-       mirror image use a dashdot line style.
+    For those portions of the Nyquist plot in which the contour is indented
+    to avoid poles, resuling in a scaling of the Nyquist plot, the line
+    styles are according to the settings of the `primary_style` and
+    `mirror_style` keywords.  By default the scaled portions of the primary
+    curve use a dotted line style and the scaled portion of the mirror
+    image use a dashdot line style.
 
     Examples
     --------
@@ -2125,10 +2125,10 @@ def gangof4_response(
         data is not a list of systems.
     omega_num : int
         Number of samples to use for the frequeny range.  Defaults to
-        config.defaults['freqplot.number_of_samples'].  Ignored if data is
+        `config.defaults['freqplot.number_of_samples']`.  Ignored if data is
         not a list of systems.
     Hz : bool, optional
-        If `True`, when computing frequency limits automatically set
+        If True, when computing frequency limits automatically set
         limits to full decades in Hz instead of rad/s.
 
     Returns
@@ -2212,10 +2212,10 @@ def gangof4_plot(
         data is not a list of systems.
     omega_num : int
         Number of samples to use for the frequeny range.  Defaults to
-        config.defaults['freqplot.number_of_samples'].  Ignored if data is
+        `config.defaults['freqplot.number_of_samples']`.  Ignored if data is
         not a list of systems.
     Hz : bool, optional
-        If `True`, when computing frequency limits automatically set
+        If True, when computing frequency limits automatically set
         limits to full decades in Hz instead of rad/s.
 
     Returns
@@ -2271,7 +2271,7 @@ def singular_values_response(
     omega : array_like
         List of frequencies in rad/sec to be used for frequency response.
     Hz : bool, optional
-        If `True`, when computing frequency limits automatically set
+        If True, when computing frequency limits automatically set
         limits to full decades in Hz instead of rad/s.
 
     Returns
@@ -2288,7 +2288,7 @@ def singular_values_response(
         elements is equivalent to providing `omega_limits`.
     omega_num : int, optional
         Number of samples to use for the frequeny range.  Defaults to
-        config.defaults['freqplot.number_of_samples'].
+        `config.defaults['freqplot.number_of_samples']`.
 
     See Also
     --------
@@ -2357,10 +2357,10 @@ def singular_values_plot(
         Passed to `matplotlib` as the format string for all lines in the plot.
         The `omega` parameter must be present (use omega=None if needed).
     dB : bool
-        If `True`, plot result in dB.  Default is False.
+        If True, plot result in dB.  Default is False.
     Hz : bool
-        If `True`, plot frequency in Hz (omega must be provided in rad/sec).
-        Default value (False) set by config.defaults['freqplot.Hz'].
+        If True, plot frequency in Hz (omega must be provided in rad/sec).
+        Default value (False) set by `config.defaults['freqplot.Hz']`.
     **kwargs : `matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
@@ -2388,35 +2388,35 @@ def singular_values_plot(
         the current figure has a single axes, that axes is used.
         Otherwise, a new figure is created.
     color : matplotlib color spec
-        Color to use for singular values (or `None` for matplotlib default).
+        Color to use for singular values (or None for matplotlib default).
     grid : bool
-        If `True`, plot grid lines on gain and phase plots.  Default is set by
-        `config.defaults['freqplot.grid']`.
+        If True, plot grid lines on gain and phase plots.  Default is
+        set by `config.defaults['freqplot.grid']`.
     label : str or array_like of str, optional
         If present, replace automatically generated label(s) with the given
         label(s).  If sysdata is a list, strings should be specified for each
         system.
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'center right',
-        with no legend for a single response.  Use `False` to suppress legend.
+        with no legend for a single response.  Use False to suppress legend.
     omega_limits : array_like of two values
         Set limits for plotted frequency range. If Hz=True the limits are
         in Hz otherwise in rad/s.  Specifying `omega` as a list of two
         elements is equivalent to providing `omega_limits`.
     omega_num : int, optional
         Number of samples to use for the frequeny range.  Defaults to
-        config.defaults['freqplot.number_of_samples'].  Ignored if data is
+        `config.defaults['freqplot.number_of_samples']`.  Ignored if data is
         not a list of systems.
     plot : bool, optional
         (legacy) If given, `singular_values_plot` returns the legacy return
-        values of magnitude, phase, and frequency.  If `False`, just return
+        values of magnitude, phase, and frequency.  If False, just return
         the values with no plot.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set up config.defaults['ctrlplot.rcParams'].
+        Default is set up `config.defaults['ctrlplot.rcParams']`.
     show_legend : bool, optional
-        Force legend to be shown if `True` or hidden if `False`.  If
-        `None`, then show legend when there is more than one line on an
+        Force legend to be shown if True or hidden if False.  If
+        None, then show legend when there is more than one line on an
         axis or `legend_loc` or `legend_map` has been specified.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
@@ -2432,13 +2432,13 @@ def singular_values_plot(
 
     Notes
     -----
-    1. If plot==`False`, the following legacy values are returned:
-         * mag : ndarray (or list of ndarray if len(data) > 1))
-             Magnitude of the response (deprecated).
-         * phase : ndarray (or list of ndarray if len(data) > 1))
-             Phase in radians of the response (deprecated).
-         * omega : ndarray (or list of ndarray if len(data) > 1))
-             Frequency in rad/sec (deprecated).
+    If ``plot=False``, the following legacy values are returned:
+       * mag : ndarray (or list of ndarray if len(data) > 1))
+           Magnitude of the response (deprecated).
+       * phase : ndarray (or list of ndarray if len(data) > 1))
+           Phase in radians of the response (deprecated).
+       * omega : ndarray (or list of ndarray if len(data) > 1))
+           Frequency in rad/sec (deprecated).
 
     """
     # Keyword processing
@@ -2637,7 +2637,7 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num,
         Number of points to be used for the frequency range (if the
         frequency range is not user-specified).
     Hz : bool, optional
-        If `True`, the limits (first and last value) of the frequencies
+        If True, the limits (first and last value) of the frequencies
         are set to full decades in Hz so it fits plotting with logarithmic
         scale in Hz otherwise in rad/s. Omega is always returned in rad/sec.
 
@@ -2646,7 +2646,7 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num,
     omega_out : 1D array
         Frequency range to be used.
     omega_range_given : bool
-        `True` if the frequency range was specified by the user, either through
+        True if the frequency range was specified by the user, either through
         omega_in or through omega_limits. False if both omega_in
         and omega_limits are None.
 
@@ -2695,13 +2695,13 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
     syslist : list of LTI
         List of linear input/output systems (single system is OK)
     Hz : bool, optional
-        If `True`, the limits (first and last value) of the frequencies
+        If True, the limits (first and last value) of the frequencies
         are set to full decades in Hz so it fits plotting with logarithmic
         scale in Hz otherwise in rad/s. Omega is always returned in rad/sec.
     number_of_samples : int, optional
         Number of samples to generate.  The default value is read from
-        `config.defaults['freqplot.number_of_samples'].  If `None`, then the
-        default from `numpy.logspace` is used.
+        `config.defaults['freqplot.number_of_samples']`.  If None,
+        then the default from `numpy.logspace` is used.
     feature_periphery_decades : float, optional
         Defines how many decades shall be included in the frequency range on
         both sides of features (poles, zeros).  The default value is read from

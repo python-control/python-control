@@ -138,10 +138,10 @@ squared error using the sensor measurements :math:`y`.
 As with the :func:`lqr` function, the :func:`lqe` function can be
 called in several forms:
 
-  * `L, P, E = lqe(sys, QN, RN)`
-  * `L, P, E = lqe(sys, QN, RN, NN)`
-  * `L, P, E = lqe(A, G, C, QN, RN)`
-  * `L, P, E = lqe(A, G, C, QN, RN, NN)`
+  * ``L, P, E = lqe(sys, QN, RN)``
+  * ``L, P, E = lqe(sys, QN, RN, NN)``
+  * ``L, P, E = lqe(A, G, C, QN, RN)``
+  * ``L, P, E = lqe(A, G, C, QN, RN, NN)``
 
 where `sys` is an :class:`LTI` object, and `A`, `G`, `C`, `QN`, `RN`,
 and `NN` are 2D arrays of appropriate dimension.  If `sys` is a
@@ -165,7 +165,7 @@ input `U`.  To run the estimator on a noisy signal, use the command
 
   resp = ct.input_output_response(est, timepts, [Y, U], [X0, P0])
 
-If desired, the :func:`correct` parameter can be set to :func:`False`
+If desired, the :func:`correct` parameter can be set to False
 to allow prediction with no additional sensor information::
 
   resp = ct.input_output_response(

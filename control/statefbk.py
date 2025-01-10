@@ -120,8 +120,8 @@ def place_varga(A, B, p, dtime=False, alpha=None):
     p : 1D array_like
         Desired eigenvalue locations.
     dtime : bool, optional
-        `False` (default) for continuous time pole placement or `True`
-        for discrete time. 
+        False (default) for continuous time pole placement or True
+        for discrete time.
     alpha : float, optional
         If `dtime` is false then place_varga will leave the eigenvalues with
         real part less than alpha untouched.  If `dtime` is true then
@@ -143,20 +143,22 @@ def place_varga(A, B, p, dtime=False, alpha=None):
     Notes
     -----
     This function is a wrapper for the slycot function sb01bd, which
-    implements the pole placement algorithm of Varga [1]_. In contrast to the
-    algorithm used by place(), the Varga algorithm can place multiple poles at
-    the same location. The placement, however, may not be as robust.
+    implements the pole placement algorithm of Varga [1]_. In contrast
+    to the algorithm used by `place`, the Varga algorithm can place
+    multiple poles at the same location. The placement, however, may
+    not be as robust.
 
     References
     ----------
-    .. [1] Varga A. "A Schur method for pole assignment."  IEEE Trans. Automatic
-       Control, Vol. AC-26, pp. 517-519, 1981.
+    .. [1] Varga A. "A Schur method for pole assignment."  IEEE Trans.
+           Automatic Control, Vol. AC-26, pp. 517-519, 1981.
 
     Examples
     --------
     >>> A = [[-1, -1], [0, 1]]
     >>> B = [[0], [1]]
     >>> K = ct.place_varga(A, B, [-2, -5])
+
     """
 
     # Make sure that SLICOT is installed
@@ -267,10 +269,10 @@ def lqr(*args, **kwargs):
 
     The function can be called with either 3, 4, or 5 arguments:
 
-    * `K, S, E = lqr(sys, Q, R)`
-    * `K, S, E = lqr(sys, Q, R, N)`
-    * `K, S, E = lqr(A, B, Q, R)`
-    * `K, S, E = lqr(A, B, Q, R, N)`
+    * ``K, S, E = lqr(sys, Q, R)``
+    * ``K, S, E = lqr(sys, Q, R, N)``
+    * ``K, S, E = lqr(A, B, Q, R)``
+    * ``K, S, E = lqr(A, B, Q, R, N)``
 
     where `sys` is an `LTI` object, and `A`, `B`, `Q`, `R`, and `N` are
     2D arrays or matrices of appropriate dimension.
@@ -295,7 +297,7 @@ def lqr(*args, **kwargs):
         additional rows and columns in the `Q` matrix.
     method : str, optional
         Set the method used for computing the result.  Current methods are
-        'slycot' and 'scipy'.  If set to `None` (default), try 'slycot'
+        'slycot' and 'scipy'.  If set to None (default), try 'slycot'
         first and then 'scipy'.
 
     Returns
@@ -315,7 +317,7 @@ def lqr(*args, **kwargs):
     -----
     If the first argument is an LTI object, then this object will be used
     to define the dynamics and input matrices.  Furthermore, if the LTI
-    object corresponds to a discrete time system, the `dlqr()` function
+    object corresponds to a discrete time system, the `dlqr` function
     will be called.
 
     Examples
@@ -413,13 +415,13 @@ def dlqr(*args, **kwargs):
 
     The function can be called with either 3, 4, or 5 arguments:
 
-    * `dlqr(dsys, Q, R)`
-    * `dlqr(dsys, Q, R, N)`
-    * `dlqr(A, B, Q, R)`
-    * `dlqr(A, B, Q, R, N)`
+    * ``dlqr(dsys, Q, R)``
+    * ``dlqr(dsys, Q, R, N)``
+    * ``dlqr(A, B, Q, R)``
+    * ``dlqr(A, B, Q, R, N)``
 
     where `dsys` is a discrete-time `StateSpace` system, and `A`, `B`,
-    `Q`, `R`, and `N` are 2d arrays of appropriate dimension (`dsys.dt` must
+    `Q`, `R`, and `N` are 2d arrays of appropriate dimension (`dsys.dt`` must
     not be 0.)
 
     Parameters
@@ -442,7 +444,7 @@ def dlqr(*args, **kwargs):
         additional rows and columns in the `Q` matrix.
     method : str, optional
         Set the method used for computing the result.  Current methods are
-        'slycot' and 'scipy'.  If set to `None` (default), try 'slycot'
+        'slycot' and 'scipy'.  If set to None (default), try 'slycot'
         first and then 'scipy'.
 
     Returns
@@ -596,7 +598,7 @@ def create_statefbk_iosystem(
         represent the gains of the integral states of the controller.
 
         If a tuple is given, then it specifies a gain schedule.  The tuple
-        should be of the form `(gains, points)` where gains is a list of
+        should be of the form ``(gains, points)`` where gains is a list of
         gains `K_j` and points is a list of values `mu_j` at which the
         gains are computed.  The `gainsched_indices` parameter should be
         used to specify the scheduling variables.
@@ -631,7 +633,7 @@ def create_statefbk_iosystem(
         the controller is the desired state `x_d`, the desired input `u_d`,
         and the system state `x` (or state estimate `xhat`, if an
         estimator is given). If value is an integer `q`, the first `q`
-        values of the `[x_d, u_d, x]` vector are used.  Otherwise, the
+        values of the ``[x_d, u_d, x]`` vector are used.  Otherwise, the
         value should be a slice or a list of indices.  The list of indices
         can be specified as either integer offsets or as signal names. The
         default is to use the desired state `x_d`.
@@ -658,7 +660,7 @@ def create_statefbk_iosystem(
         design pattern (default), this system takes as inputs the desired
         state `x_d`, the desired input `u_d`, and either the system state
         `x` or the estimated state `xhat`.  It outputs the controller
-        action `u` according to the formula `u = u_d - K(x - x_d)`.  For
+        action `u` according to the formula ``u = u_d - K(x - x_d)``.  For
         the 'refgain' design pattern, the system takes as inputs the
         reference input `r` and the system or estimated state. If the
         keyword `integral_action` is specified, then an additional set of
@@ -670,7 +672,7 @@ def create_statefbk_iosystem(
 
     clsys : NonlinearIOSystem
         Input/output system representing the closed loop system.  This
-        system takes as inputs the desired trajectory `(x_d, u_d)` and
+        system takes as inputs the desired trajectory ``(x_d, u_d)`` and
         outputs the system state `x` and the applied input `u`
         (vertically stacked).
 
@@ -678,8 +680,8 @@ def create_statefbk_iosystem(
     ----------------
     control_indices : int, slice, or list of int or str, optional
         Specify the indices of the system inputs that should be determined
-        by the state feedback controller.  If value is an integer `m`, the
-        first `m` system inputs are used.  Otherwise, the value should be a
+        by the state feedback controller.  If value is an integer ``m``, the
+        first ``m`` system inputs are used.  Otherwise, the value should be a
         slice or a list of indices.  The list of indices can be specified
         as either integer offsets or as system input signal names.  If not
         specified, defaults to the system inputs.
@@ -687,7 +689,7 @@ def create_statefbk_iosystem(
     state_indices : int, slice, or list of int or str, optional
         Specify the indices of the system (or estimator) outputs that should
         be used by the state feedback controller.  If value is an integer
-        `n`, the first `n` system states are used.  Otherwise, the value
+        ``n``, the first ``n`` system states are used.  Otherwise, the value
         should be a slice or a list of indices.  The list of indices can be
         specified as either integer offsets or as estimator/system output
         signal names.  If not specified, defaults to the system states.
@@ -696,10 +698,10 @@ def create_statefbk_iosystem(
         Set the name of the signals to use for the desired state and inputs
         or the reference inputs (for the 'refgain' design pattern).  If a
         single string is specified, it should be a format string using the
-        variable `i` as an index.  Otherwise, a list of strings matching
-        the size of `x_d` and `u_d`, respectively, should be used.  Default
-        is "xd[{i}]" for xd_labels and "ud[{i}]" for ud_labels.  These
-        settings can also be overridden using the `inputs` keyword.
+        variable ``i`` as an index.  Otherwise, a list of strings matching
+        the size of ``x_d`` and ``u_d``, respectively, should be used.
+        Default is "xd[{i}]" for xd_labels and "ud[{i}]" for ud_labels.
+        These settings can also be overridden using the `inputs` keyword.
 
     inputs, outputs, states : str, or list of str, optional
         List of strings that name the individual signals of the transformed

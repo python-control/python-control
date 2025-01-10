@@ -110,7 +110,7 @@ def model_reduction(
     method : string
         Method of removing states: either 'truncate' or 'matchdc' (default).
     warn_unstable : bool, option
-        If `False`, don't warn if system is unstable.
+        If False, don't warn if system is unstable.
 
     Returns
     -------
@@ -150,7 +150,7 @@ def model_reduction(
 
     States, inputs, and outputs can be specified using integer offsets or
     using signal names.  Slices can also be specified, but must use the
-    Python `slice()` function.
+    Python `slice` function.
 
     """
     if not isinstance(sys, StateSpace):
@@ -274,7 +274,7 @@ def balanced_reduction(sys, orders, method='truncate', alpha=None):
         Desired order of reduced order model (if a vector, returns a vector
         of systems).
     method : string
-        Method of removing states, either `'truncate'` or `'matchdc'`..
+        Method of removing states, either 'truncate' or 'matchdc'.
     alpha : float
         Redefines the stability boundary for eigenvalues of the system
         matrix A.  By default for continuous-time systems, alpha <= 0
@@ -292,9 +292,9 @@ def balanced_reduction(sys, orders, method='truncate', alpha=None):
     Raises
     ------
     ValueError
-        If `method` is not `'truncate'` or `'matchdc'`
+        If `method` is not 'truncate' or 'matchdc'.
     ImportError
-        if slycot routine ab09ad, ab09md, or ab09nd is not found
+        if slycot routine ab09ad, ab09md, or ab09nd is not found.
 
     ValueError
         if there are more unstable modes than any value in orders
@@ -436,12 +436,12 @@ def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
         x[k+1] &= A x[k] + B u[k] \\\\
         y[k] &= C x[k] + D u[k]
 
-    of order `r` for a given impulse-response data (see [1]_).
+    of order :math:`r` for a given impulse-response data (see [1]_).
 
     The function can be called with 2 arguments:
 
-    * `sysd, S = eigensys_realization(data, r)`
-    * `sysd, S = eigensys_realization(YY, r)`
+    * ``sysd, S = eigensys_realization(data, r)``
+    * ``sysd, S = eigensys_realization(YY, r)``
 
     where `data` is a `TimeResponseData` object, `YY` is a 1D or 3D
     array, and r is an integer.
@@ -460,10 +460,10 @@ def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
     n : integer, optional
         Number of columns in Hankel matrix. Default is 2*r.
     dt : True or float, optional
-        `True` indicates discrete time with unspecified sampling time and a
+        True indicates discrete time with unspecified sampling time and a
         positive float is discrete time with the specified sampling time.
         It can be used to scale the StateSpace model in order to match the
-        unit-area impulse response of python-control. Default is `True`.
+        unit-area impulse response of python-control. Default is True.
     transpose : bool, optional
         Assume that input data is transposed relative to the standard
         :ref:`time-series-convention`. For TimeResponseData this parameter
@@ -553,10 +553,10 @@ def markov(*args, m=None, transpose=False, dt=None, truncate=False):
 
     The function can be called with either 1, 2 or 3 arguments:
 
-    * `H = markov(data)`
-    * `H = markov(data, m)`
-    * `H = markov(Y, U)`
-    * `H = markov(Y, U, m)`
+    * ``H = markov(data)``
+    * ``H = markov(data, m)``
+    * ``H = markov(Y, U)``
+    * ``H = markov(Y, U, m)``
 
     where `data` is a `TimeResponseData` object, `YY` is a 1D or 3D
     array, and r is an integer.
@@ -565,7 +565,7 @@ def markov(*args, m=None, transpose=False, dt=None, truncate=False):
     ----------
     Y : array_like
         Output data. If the array is 1D, the system is assumed to be
-        single input. If the array is 2D and transpose=`False`, the columns
+        single input. If the array is 2D and ``transpose=False``, the columns
         of `Y` are taken as time points, otherwise the rows of `Y` are
         taken as time points.
     U : array_like
@@ -576,10 +576,10 @@ def markov(*args, m=None, transpose=False, dt=None, truncate=False):
     m : int, optional
         Number of Markov parameters to output. Defaults to len(U).
     dt : True of float, optional
-        `True` indicates discrete time with unspecified sampling time and a
+        True indicates discrete time with unspecified sampling time and a
         positive float is discrete time with the specified sampling time.
         It can be used to scale the Markov parameters in order to match
-        the unit-area impulse response of python-control. Default is `True`
+        the unit-area impulse response of python-control. Default is True
         for array_like and dt=data.time[1]-data.time[0] for
         TimeResponseData as input.
     truncate : bool, optional

@@ -182,13 +182,13 @@ def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
     that also represents a differentially flat system.  It can be used in a
     variety of forms:
 
-    `fs.flatsys(forward, reverse)`
+    ``fs.flatsys(forward, reverse)``
         Create a flat system with mapings to/from flat flag.
 
-    `fs.flatsys(forward, reverse, updfcn[, outfcn])`
+    ``fs.flatsys(forward, reverse, updfcn[, outfcn])``
         Create a flat system that is also a nonlinear I/O system.
 
-    `fs.flatsys(linsys)`
+    ``fs.flatsys(linsys)``
         Create a flat system from a linear (StateSpace) system.
 
     Parameters
@@ -202,7 +202,7 @@ def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
     updfcn : callable, optional
         Function returning the state update function
 
-            `updfcn(t, x, u[, param]) -> array`
+            ``updfcn(t, x, u[, param]) -> array``
 
         where `x` is a 1-D array with shape (nstates,), `u` is a 1-D array
         with shape (ninputs,), `t` is a float representing the currrent
@@ -213,7 +213,7 @@ def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
     outfcn : callable, optional
         Function returning the output at the given state
 
-            `outfcn(t, x, u[, param]) -> array`
+            ``outfcn(t, x, u[, param]) -> array``
 
         where the arguments are the same as for `upfcn`.  If not
         specified, the output will be the flat outputs.
@@ -222,8 +222,8 @@ def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
         Description of the system inputs.  This can be given as an integer
         count or as a list of strings that name the individual signals.
         If an integer count is specified, the names of the signal will be
-        of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
-        this parameter is not given or given as `None`, the relevant
+        of the form 's[i]' (where 's' is one of 'u', 'y', or 'x').  If
+        this parameter is not given or given as None, the relevant
         quantity will be determined when possible based on other
         information provided to functions using the system.
 
@@ -234,7 +234,7 @@ def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
         Description of the system states.  Same format as `inputs`.
 
     dt : None, True or float, optional
-        System timebase.  `None` (default) indicates continuous time, `True`
+        System timebase.  None (default) indicates continuous time, True
         indicates discrete time with undefined sampling time, positive
         number is discrete time with specified sampling time.
 
@@ -331,8 +331,8 @@ def point_to_point(
     ----------
     sys : FlatSystem object
         Description of the differentially flat system.  This object must
-        define a function `flatsys.forward()` that takes the system state and
-        produceds the flag of flat outputs and a system `flatsys.reverse()`
+        define a function `flatsys.forward` that takes the system state and
+        produceds the flag of flat outputs and a system `flatsys.reverse`
         that takes the flag of the flat output and prodes the state and
         input.
 
@@ -358,23 +358,23 @@ def point_to_point(
 
     cost : callable
         Function that returns the integral cost given the current state
-        and input.  Called as `cost(x, u)`.
+        and input.  Called as ``cost(x, u)``.
 
     trajectory_constraints : list of tuples, optional
-        List of constraints that should hold at each point in the time vector.
-        Each element of the list should consist of a tuple with first element
-        given by `scipy.optimize.LinearConstraint` or
-        `scipy.optimize.NonlinearConstraint` and the remaining
-        elements of the tuple are the arguments that would be passed to those
+        List of constraints that should hold at each point in the time
+        vector.  Each element of the list should consist of a tuple with
+        first element given by `scipy.optimize.LinearConstraint` or
+        `scipy.optimize.NonlinearConstraint` and the remaining elements of
+        the tuple are the arguments that would be passed to those
         functions.  The following tuples are supported:
 
-        * (LinearConstraint, A, lb, ub): The matrix A is multiplied by stacked
-          vector of the state and input at each point on the trajectory for
-          comparison against the upper and lower bounds.
+        * (LinearConstraint, A, lb, ub): The matrix A is multiplied by
+          stacked vector of the state and input at each point on the
+          trajectory for comparison against the upper and lower bounds.
 
         * (NonlinearConstraint, fun, lb, ub): a user-specific constraint
-          function `fun(x, u)` is called at each point along the trajectory
-          and compared against the upper and lower bounds.
+          function ``fun(x, u)`` is called at each point along the
+          trajectory and compared against the upper and lower bounds.
 
         The constraints are applied at each time point along the trajectory.
 
@@ -399,8 +399,8 @@ def point_to_point(
     -------
     traj : `flatsys.SystemTrajectory` object
         The system trajectory is returned as an object that implements the
-        `eval()` function, we can be used to compute the value of the state
-        and input and a given time t.
+        `~flatsys.SystemTrajectory.eval` function, we can be used to
+        compute the value of the state and input and a given time t.
 
     Notes
     -----
@@ -664,8 +664,8 @@ def solve_flat_ocp(
     ----------
     sys : FlatSystem object
         Description of the differentially flat system.  This object must
-        define a function `flatsys.forward()` that takes the system state and
-        produceds the flag of flat outputs and a system `flatsys.reverse()`
+        define a function `flatsys.forward` that takes the system state and
+        produceds the flag of flat outputs and a system `flatsys.reverse`
         that takes the flag of the flat output and prodes the state and
         input.
 
@@ -687,27 +687,27 @@ def solve_flat_ocp(
 
     trajectory_cost : callable
         Function that returns the integral cost given the current state
-        and input.  Called as `cost(x, u)`.
+        and input.  Called as ``cost(x, u)``.
 
     terminal_cost : callable
         Function that returns the terminal cost given the state and input.
-        Called as `cost(x, u)`.
+        Called as ``cost(x, u)``.
 
     trajectory_constraints : list of tuples, optional
-        List of constraints that should hold at each point in the time vector.
-        Each element of the list should consist of a tuple with first element
-        given by `scipy.optimize.LinearConstraint` or
-        `scipy.optimize.NonlinearConstraint` and the remaining
-        elements of the tuple are the arguments that would be passed to those
+        List of constraints that should hold at each point in the time
+        vector.  Each element of the list should consist of a tuple with
+        first element given by `scipy.optimize.LinearConstraint` or
+        `scipy.optimize.NonlinearConstraint` and the remaining elements of
+        the tuple are the arguments that would be passed to those
         functions.  The following tuples are supported:
 
-        * (LinearConstraint, A, lb, ub): The matrix A is multiplied by stacked
-          vector of the state and input at each point on the trajectory for
-          comparison against the upper and lower bounds.
+        * (LinearConstraint, A, lb, ub): The matrix A is multiplied by
+          stacked vector of the state and input at each point on the
+          trajectory for comparison against the upper and lower bounds.
 
         * (NonlinearConstraint, fun, lb, ub): a user-specific constraint
-          function `fun(x, u)` is called at each point along the trajectory
-          and compared against the upper and lower bounds.
+          function ``fun(x, u)`` is called at each point along the
+          trajectory and compared against the upper and lower bounds.
 
         The constraints are applied at each time point along the trajectory.
 
@@ -732,8 +732,8 @@ def solve_flat_ocp(
     -------
     traj : `flatsys.SystemTrajectory` object
         The system trajectory is returned as an object that implements the
-        `eval()` function, we can be used to compute the value of the state
-        and input and a given time t.
+        `~flatsys.SystemTrajectory.eval` function, we can be used to
+        compute the value of the state and input and a given time t.
 
     Notes
     -----
@@ -744,7 +744,7 @@ def solve_flat_ocp(
     2. The return data structure includes the following additional attributes:
            * success : bool indicating whether the optimization succeeded
            * cost : computed cost of the returned trajectory
-           * message : message returned by optimization if success if `False`
+           * message : message returned by optimization if success if False
 
     3. A common failure in solving optimal control problem is that the
        default initial guess violates the constraints and the optimizer

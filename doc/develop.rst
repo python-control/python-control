@@ -180,8 +180,8 @@ System-creating commands:
 
   - `dt`: set the timebase.  This one takes a bit of care, since if it
     is not specified then it defaults to
-    `config.defaults['control.default_dt']`.  This is different than
-    setting `dt=None`, so you `dt` should always be part of **kwargs.
+    ``config.defaults['control.default_dt']``.  This is different than
+    setting ``dt=None``, so `dt` should always be part of `**kwargs`.
 
   These keywords can be parsed in a consistent way using the
   `iosys._process_iosys_keywords` function.
@@ -227,14 +227,99 @@ conventions are used throughout the package:
 General docstring info
 ----------------------
 
-* Use single backticks around all Python objects.  Double backticks
-  should never be used.  (The `doc/conf.py` file defines
-  `default_role` to be `py:obj`, so everything in a single backtick
-  will be rendered in code form and linked to the appropriate
-  documentation if it exists.)
+The guiding principle used to guide how docstrings are written is
+similar to NumPy (as articuated in the `numpydoc style guide
+<https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard>`_:
 
-* All function names, parameter names, and Python objects (`True`,
-  `False`, `None`) should be written as code (enclose in backticks).
+   A guiding principle is that human readers of the text are given
+   precedence over contorting docstrings so our tools produce nice
+   output. Rather than sacrificing the readability of the docstrings,
+   we have written pre-processors to assist Sphinx in its task.
+
+To that end, docstrings should use the following guidelines:
+
+* Use single backticks around all Python objects. The Sphinx
+  configuration file (`doc/conf.py`) defines `default_role` to be
+  `py:obj`, so everything in a single backtick will be rendered in
+  code form and linked to the appropriate documentation if it exists.
+
+  - Note: consistent with numpydoc recommendations, parameters names
+    for functions should be in single backticks, even though they
+    don't generate a link (but the font will still be OK).
+
+  - The `doc/_static/custom.css` file defines the style for Python
+    objects and is configured so that linked objects will appear in a
+    bolder type, so that it is easier to see what things you can click
+    on to get more information.
+
+* Use double backticks for inline code, such as a Python statement,
+  and formulas that could potentially be computed using Python (\`\`dt
+  > 0\`\` which reders as ``dt > 0``).  Keyword variable assignments
+  that appear as part of documentation (``squeeze=True``) should also
+  be written as code.
+
+  - In principle single backticks might actually work OK given the way
+    that the `py:obj` processing works in Sphinx, but the inclusion of
+    code is somewhat rare and the extra two backticks seem like a
+    small sacrifice (and far from a "contortion").
+
+* Built-in objects (True, False, None) should be written with no
+  backticks and should be properly capitalized.
+
+  - This guideline combined with the previous one imples that font
+    choices can look slight different depending on how you word
+    things. For exmaple, you can say `squeeze` is True or ``squeeze=True``.
+
+  - Another possibility here is to use a single backtick around
+    built-in objects, and the `py:obj` processing will then generate a
+    link back to the primary Python documentation.  That seems
+    distracting for built-ins like `True`, `False` and `None` (written
+    here in single backticks) and using double backticks looks fine in
+    Sphinx (``True``, ``False``, ``None``), but seemed to cross the
+    "contortions" threshold.
+
+* Strings used as arguments to parameters should be in single
+  (forward) ticks ('eval', 'rows', etc) and don't need to be rendered
+  as code if just listed as part of a docstring.
+
+  - The rationale here is similar to built-ins: adding 4 backticks
+    just to get them in a code font seems unnecessary.
+
+  - Note that if a string is is included in Python assignment
+    statement (e.g., ``method='slycot'``) it should be enclosed in
+    double backticks (\`\`method='slycot'\`\`).
+
+* References to the `defaults` dictionary should be of the form
+  \`config.defaults['module.param']\` (like a parameter), which
+  renders as `config.defaults['module.param']` in Sphinx.
+
+  - It would be nice to have the term show up as a link to the
+    documentation for that parameter (in the
+    :ref:`package-configuration-parameters` section of the Reference
+    Manual), but the special processing to do that hasn't been
+    implemented.  If we go that route at some point, we could perhaps
+    due a global change to single backticks.
+
+  - Depending on placement, you can end up with lots of white space
+    around defaults parameters (also true in the docstrings).
+
+* Math formulas can be written as plain text unless the require
+  special symbols (this is consistent with numpydoc) or include Python
+  code.  Use the ``:math:`` directive to handle symbols.
+
+Examples of different styles:
+
+* Single backticks to a a function: `interconnect`
+
+* Single backticks to a parameter (no link): `squeeze`
+
+* Double backticks to a code snippet: ``squeeze=True``
+
+* Built-in Python objects: True, False, None
+
+* Defaults parameter: `config.defaults['control.squeeze_time_response']`
+
+* Inline math: :math:`\eta = m \xi + \beta`
 
 
 Function docstrings
@@ -245,10 +330,10 @@ Follow numpydoc format with the following additional details:
 * All functions should have a short (< 64 character) summary line that
   starts with a capital letter and ends with a period.
 
-* All parameter descriptions should start with a capital letter and end
-  with a period.  An exception is parameters that have a list of
-  possible values, in which case a phrase sending in `:` followed by a
-  list (without punctuation) is OK.
+* All parameter descriptions should start with a capital letter and
+  end with a period.  An exception is parameters that have a list of
+  possible values, in which case a phrase sending in a colon (:)
+  followed by a list (without punctuation) is OK.
 
 * All parameters and keywords must be documented.  The
   `docstrings_test.py` unit test tries to flag as many of these as

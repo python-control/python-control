@@ -7,7 +7,7 @@
 """Generate 2D phase portraits.
 
 This module contains functions for generating 2D phase plots. The base
-function for creating phase plane portraits is `~control.phase_plane_plot`,
+function for creating phase plane portraits is `phase_plane_plot`,
 which generates a phase plane portrait for a 2 state I/O system (with no
 inputs).
 
@@ -85,7 +85,7 @@ def phase_plane_plot(
         a dict of parameters and values. For a callable, `params` should be
         dict with key 'args' and value given by a tuple (passed to callable).
     color : matplotlib color spec, optional
-        Plot all elements in the given color (use `plot_<fcn>={'color': c}`
+        Plot all elements in the given color (use ``plot_<fcn>={'color': c}``
         to set the color in one element of the phase plot.
     ax : matplotlib.axes.Axes, optional
         The matplotlib axes to draw the figure on.  If not specified and
@@ -115,39 +115,39 @@ def phase_plane_plot(
     ----------------
     arrows : int
         Set the number of arrows to plot along the streamlines. The default
-        value can be set in config.defaults['phaseplot.arrows'].
+        value can be set in `config.defaults['phaseplot.arrows']`.
     arrow_size : float
         Set the size of arrows to plot along the streamlines.  The default
-        value can be set in config.defaults['phaseplot.arrow_size'].
+        value can be set in `config.defaults['phaseplot.arrow_size']`.
     arrow_style : matplotlib patch
         Set the style of arrows to plot along the streamlines.  The default
-        value can be set in config.defaults['phaseplot.arrow_style'].
+        value can be set in `config.defaults['phaseplot.arrow_style']`.
     dir : str, optional
         Direction to draw streamlines: 'forward' to flow forward in time
         from the reference points, 'reverse' to flow backward in time, or
         'both' to flow both forward and backward.  The amount of time to
         simulate in each direction is given by the `timedata` argument.
     plot_streamlines : bool or dict, optional
-        If `True` (default) then plot streamlines based on the pointdata
+        If True (default) then plot streamlines based on the pointdata
         and gridtype.  If set to a dict, pass on the key-value pairs in
         the dict as keywords to `phaseplot.streamlines`.
     plot_vectorfield : bool or dict, optional
-        If `True` (default) then plot the vector field based on the pointdata
+        If True (default) then plot the vector field based on the pointdata
         and gridtype.  If set to a dict, pass on the key-value pairs in
         the dict as keywords to `phaseplot.vectorfield`.
     plot_equilpoints : bool or dict, optional
-        If `True` (default) then plot equilibrium points based in the phase
+        If True (default) then plot equilibrium points based in the phase
         plot boundary. If set to a dict, pass on the key-value pairs in the
         dict as keywords to `phaseplot.equilpoints`.
     plot_separatrices : bool or dict, optional
-        If `True` (default) then plot separatrices starting from each
+        If True (default) then plot separatrices starting from each
         equilibrium point.  If set to a dict, pass on the key-value pairs
         in the dict as keywords to `phaseplot.separatrices`.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.defaults['ctrlplot.rcParams'].
+        Default is set by `config.defaults['ctrlplot.rcParams']`.
     suppress_warnings : bool, optional
-        If set to `True`, suppress warning messages in generating trajectories.
+        If set to True, suppress warning messages in generating trajectories.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
 
@@ -286,9 +286,9 @@ def vectorfield(
     ----------------
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.defaults['ctrlplot.rcParams'].
+        Default is set by `config.defaults['ctrlplot.rcParams']`.
     suppress_warnings : bool, optional
-        If set to `True`, suppress warning messages in generating trajectories.
+        If set to True, suppress warning messages in generating trajectories.
 
     """
     # Process keywords
@@ -387,18 +387,18 @@ def streamlines(
     ----------------
     arrows : int
         Set the number of arrows to plot along the streamlines. The default
-        value can be set in config.defaults['phaseplot.arrows'].
+        value can be set in `config.defaults['phaseplot.arrows']`.
     arrow_size : float
         Set the size of arrows to plot along the streamlines.  The default
-        value can be set in config.defaults['phaseplot.arrow_size'].
+        value can be set in `config.defaults['phaseplot.arrow_size']`.
     arrow_style : matplotlib patch
         Set the style of arrows to plot along the streamlines.  The default
-        value can be set in config.defaults['phaseplot.arrow_style'].
+        value can be set in `config.defaults['phaseplot.arrow_style']`.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.defaults['ctrlplot.rcParams'].
+        Default is set by `config.defaults['ctrlplot.rcParams']`.
     suppress_warnings : bool, optional
-        If set to `True`, suppress warning messages in generating trajectories.
+        If set to True, suppress warning messages in generating trajectories.
 
     """
     # Process keywords
@@ -463,8 +463,8 @@ def streamlines(
 
 
 def equilpoints(
-        sys, pointdata, gridspec=None, color='k', ax=None, _check_kwargs=True,
-        **kwargs):
+        sys, pointdata, gridspec=None, color='k', ax=None,
+        _check_kwargs=True, **kwargs):
     """Plot equilibrium points in the phase plane.
 
     This function plots the equilibrium points for a planar dynamical system.
@@ -508,7 +508,7 @@ def equilpoints(
     ----------------
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.defaults['ctrlplot.rcParams'].
+        Default is set by `config.defaults['ctrlplot.rcParams']`.
 
     """
     # Process keywords
@@ -600,13 +600,13 @@ def separatrices(
     ----------------
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.defaults['ctrlplot.rcParams'].
+        Default is set by `config.defaults['ctrlplot.rcParams']`.
     suppress_warnings : bool, optional
-        If set to `True`, suppress warning messages in generating trajectories.
+        If set to True, suppress warning messages in generating trajectories.
 
     Notes
     -----
-    The value of config.defaults['separatrices_radius'] is used to set the
+    The value of `config.defaults['separatrices_radius']` is used to set the
     offset from the equlibrium point to the starting point of the separatix
     traces, in the direction of the eigenvectors evaluated at that
     equilibrium point.
@@ -1069,20 +1069,20 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         len(X0) that gives the simulation time for each initial
         condition.  Default value = 50.
     lingrid : integer or 2-tuple of integers, optional
-        Argument is either N or (N, M).  If X0 is given and X, Y are missing,
-        a grid of arrows is produced using the limits of the initial
-        conditions, with N grid points in each dimension or N grid points in x
-        and M grid points in y.
+        Argument is either N or (N, M).  If X0 is given and X, Y are
+        missing, a grid of arrows is produced using the limits of the
+        initial conditions, with N grid points in each dimension or N grid
+        points in x and M grid points in y.
     lintime : integer or tuple (integer, float), optional
-        If a single integer N is given, draw N arrows using equally space time
-        points.  If a tuple (N, lambda) is given, draw N arrows using
+        If a single integer N is given, draw N arrows using equally space
+        time points.  If a tuple (N, lambda) is given, draw N arrows using
         exponential time constant lambda
     timepts : array-like, optional
         Draw arrows at the given list times [t1, t2, ...]
     tfirst : bool, optional
-        If `True`, call `func` with signature `func(t, x, ...)`.
+        If True, call `func` with signature ``func(t, x, ...)``.
     params: tuple, optional
-        List of parameters to pass to vector field: `func(x, t, *params)`
+        List of parameters to pass to vector field: ``func(x, t, *params)``.
 
     See Also
     --------

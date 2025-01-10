@@ -133,6 +133,7 @@ def set_defaults(module, **keywords):
         defaults[module + '.' + key] = val
 
 
+# TODO: allow individual modules and individaul parameters to be reset
 def reset_defaults():
     """Reset configuration values to their default (initial) values.
 
@@ -199,7 +200,7 @@ def _get_param(module, param, argval=None, defval=None, pop=False, last=False):
     parameter for a module based on the default parameter settings and any
     arguments passed to the function.  The precedence order for parameters is
     the value passed to the function (as a keyword), the value from the
-    config.defaults dictionary, and the default value `defval`.
+    `config.defaults` dictionary, and the default value `defval`.
 
     Parameters
     ----------
@@ -214,15 +215,15 @@ def _get_param(module, param, argval=None, defval=None, pop=False, last=False):
     defval : object
         Default value of the parameter to use, if it is not located in the
         `config.defaults` dictionary.  If a dictionary is provided, then
-        `module.param` is used to determine the default value.  Defaults to
+        'module.param' is used to determine the default value.  Defaults to
         None.
     pop : bool, optional
-        If `True` and if argval is a dict, then pop the remove the parameter
+        If True and if argval is a dict, then pop the remove the parameter
         entry from the argval dict after retreiving it.  This allows the use
         of a keyword argument list to be passed through to other functions
         internal to the function being called.
     last : bool, optional
-        If `True`, check to make sure dictionary is empy after processing.
+        If True, check to make sure dictionary is empy after processing.
 
     """
 
@@ -395,7 +396,7 @@ def _process_legacy_keyword(kwargs, oldkey, newkey, newval, warn_oldkey=True):
     newval : object
         Value of the current parameter (from the function signature).
     warn_oldkey : bool
-        If set to `False`, suppress generation of a warning about using a
+        If set to False, suppress generation of a warning about using a
         legacy keyword.  This is useful if you have two versions of a
         keyword and you want to allow either to be used (see the `cost` and
         `trajectory_cost` keywords in `flatsys.point_to_point` for an

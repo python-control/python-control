@@ -25,20 +25,20 @@ The following operators are defined to operate between I/O systems:
    * - Operation
      - Description
      - Equivalent command
-   * - `sys1 + sys2`
+   * - ``sys1 + sys2``
      - Add the outputs of two systems receiving the same input
-     - `parallel(sys1, sys2)`
-   * - `sys1 * sys2`
+     - ``parallel(sys1, sys2)``
+   * - ``sys1 * sys2``
      - Connect output(s) of sys2 to input(s) of sys1
-     - `series(sys2, sys1)`
-   * - `-sys`
+     - ``series(sys2, sys1)``
+   * - ``-sys``
      - Multiply the output(s) of the system by -1
-     - `negate(sys)`
-   * - `tf1 / tf2`
+     - ``negate(sys)``
+   * - ``tf1 / tf2``
      - Divide one SISO transfer function by another
      - N/A
-   * - `tf**n`
-     - Multiply a transfer function by itself `n` times
+   * - ``tf**n``
+     - Multiply a transfer function by itself ``n`` times
      - N/A
 
 If either of the systems is a number or an array of appropriate
@@ -178,8 +178,8 @@ We now create an input/output system using these dynamics:
 Note that since we have not specified an output function, the entire state
 will be used as the output of the system.
 
-The `io_predprey` system can now be simulated to obtain the open loop dynamics
-of the system:
+The `io_predprey` system can now be simulated to obtain the open loop
+dynamics of the system:
 
 .. code-block:: python
 
@@ -336,8 +336,8 @@ we can use the list processing feature::
   H = clsys.linearize([x0, 0], 0)
 
 Note that this also utilizes the zero-padding functionality, since the
-second argument in the list `[x0, 0]` is a scalar and so the vector
-`[x0, 0]` only has three elements instead of the required four.
+second argument in the list ``[x0, 0]`` is a scalar and so the vector
+``[x0, 0]`` only has three elements instead of the required four.
 
 To run an input/output simulation with a sinusoidal signal for the first
 input, a constant for the second input, and no external disturbance, we can
@@ -364,29 +364,30 @@ use the command
 
   sumblk = ct.summing_junction(3)
 
-By default, the name of the inputs will be of the form `u[i]` and the output
-will be `y`.  This can be changed by giving an explicit list of names::
+By default, the name of the inputs will be of the form 'u[i]' and the output
+will be 'y'.  This can be changed by giving an explicit list of names::
 
   sumblk = ct.summing_junction(inputs=['a', 'b', 'c'], output='d')
 
-A more typical usage would be to define an input/output system that compares a
-reference signal to the output of the process and computes the error::
+A more typical usage would be to define an input/output system that
+compares a reference signal to the output of the process and computes
+the error::
 
   sumblk = ct.summing_junction(inputs=['r', '-y'], output='e')
 
-Note the use of the minus sign as a means of setting the sign of the input 'y'
-to be negative instead of positive.
+Note the use of the minus sign as a means of setting the sign of the
+input 'y' to be negative instead of positive.
 
 It is also possible to define "vector" summing blocks that take
-multi-dimensional inputs and produce a multi-dimensional output.  For example,
-the command
+multi-dimensional inputs and produce a multi-dimensional output.  For
+example, the command
 
 .. code-block:: python
 
   sumblk = ct.summing_junction(inputs=['r', '-y'], output='e', dimension=2)
 
-will produce an input/output block that implements `e[0] = r[0] - y[0]` and
-`e[1] = r[1] - y[1]`.
+will produce an input/output block that implements ``e[0] = r[0] - y[0]`` and
+``e[1] = r[1] - y[1]``.
 
 
 Automatic connections using signal names
@@ -439,7 +440,7 @@ parameters::
 For tuple forms, mixed specifications using integer indices and
 strings are possible.
 
-For the index range form `sysname.signal[i:j]`, if either `i` or `j`
+For the index range form ``sysname.signal[i:j]``, if either `i` or `j`
 is not specified, then it defaults to the minimum or maximum value of
 the signal range.  Note that despite the similarity to slice notation,
 negative indices and step specifications are not supported.
@@ -455,21 +456,21 @@ dimension 2::
         outputs=['y[0]', 'y[1]', 'z[0]', 'z[1]'])
 
 Suppose we construct a controller with 2 inputs and 2 outputs that
-takes the (2-dimensional) error `e` and outputs and control signal `u`::
+takes the (2-dimensional) error 'e' and outputs and control signal 'u'::
 
   C = ct.rss(4, 2, 2, name='C', input_prefix='e', output_prefix='u')
 
 Finally, we include a summing block that will take the difference between
-the reference input `r` and the measured output `y`::
+the reference input 'r' and the measured output 'y'::
 
   sumblk = ct.summing_junction(
     inputs=['r', '-y'], outputs='e', dimension=2, name='sum')
 
 The closed loop system should close the loop around the process
-outputs `y` and inputs `u`, leaving the process inputs `v` and outputs
-'w', as well as the reference input `r`.  We would like the output of
-the closed loop system to consist of all system outputs `y` and `z`,
-as well as the controller input `u`.
+outputs 'y' and inputs 'u', leaving the process inputs 'v' and outputs
+'w', as well as the reference input 'r'.  We would like the output of
+the closed loop system to consist of all system outputs 'y' and 'z',
+as well as the controller input 'u'.
 
 This collection of systems can be combined in a variety of ways.  The
 most explicit would specify every signal::
@@ -526,7 +527,7 @@ work::
 
 Various other simplifications are possible, but it can sometimes be
 complicated to debug error message when things go wrong.  Setting
-`debug=True` when calling :func:`interconnect` prints out
+``debug=True`` when calling :func:`interconnect` prints out
 information about how the arguments are processed that may be helpful
 in understanding what is going wrong.
 
@@ -607,8 +608,8 @@ and the control action will be given by
   u = u_\text{d} - K\text{p} (x - x_\text{d}) -
       K_\text{i} \int C (x - x_\text{d}) dt.
 
-If `integral_action` is a function `h`, that function will be called
-with the signature `h(t, x, u, params)` to obtain the outputs that
+If `integral_action` is a function ``h``, that function will be called
+with the signature ``h(t, x, u, params)`` to obtain the outputs that
 should be integrated.  The number of outputs that are to be integrated
 must match the number of additional columns in the `K` matrix.  If an
 estimator is specified, :math:`\hat x` will be used in place of

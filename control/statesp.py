@@ -46,8 +46,8 @@ try:
 except ImportError:
     ab13dd = None
 
-__all__ = ['StateSpace', 'LinearICSystem', 'ss2io', 'tf2io', 'tf2ss', 'ssdata',
-           'linfnorm', 'ss', 'rss', 'drss', 'summing_junction']
+__all__ = ['StateSpace', 'LinearICSystem', 'ss2io', 'tf2io', 'tf2ss',
+           'ssdata', 'linfnorm', 'ss', 'rss', 'drss', 'summing_junction']
 
 # Define module default parameter values
 _statesp_defaults = {
@@ -71,18 +71,18 @@ class StateSpace(NonlinearIOSystem, LTI):
           dx/dt &= A x + B u \\
               y &= C x + D u
 
-    where `u` is the input, `y` is the output, and `x` is the state.  State
-    space systems are usually created with the `ss` factory
-    function.
+    where :math:`u` is the input, :math:`y` is the output, and
+    :math:`x` is the state.  State space systems are usually created
+    with the `ss` factory function.
 
     Parameters
     ----------
     A, B, C, D : array_like
         System matrices of the appropriate dimensions.
     dt : None, True or float, optional
-        System timebase. 0 (default) indicates continuous time, `True`
+        System timebase. 0 (default) indicates continuous time, True
         indicates discrete time with unspecified sampling time, positive
-        number is discrete time with specified sampling time, `None`
+        number is discrete time with specified sampling time, None
         indicates unspecified timebase (either continuous or discrete time).
 
     Attributes
@@ -114,14 +114,14 @@ class StateSpace(NonlinearIOSystem, LTI):
     * dt = True: discrete time with unspecified sampling period
     * dt = None: no timebase specified
 
-    Systems must have compatible timebases in order to be combined. A discrete
-    time system with unspecified sampling time (`dt = True`) can be combined
-    with a system having a specified sampling time; the result will be a
-    discrete time system with the sample time of the latter system. Similarly,
-    a system with timebase `None` can be combined with a system having any
-    timebase; the result will have the timebase of the latter system.
-    The default value of dt can be changed by changing the value of
-    `control.config.defaults['control.default_dt']`.
+    Systems must have compatible timebases in order to be combined. A
+    discrete time system with unspecified sampling time (``dt=True``) can
+    be combined with a system having a specified sampling time; the result
+    will be a discrete time system with the sample time of the latter
+    system. Similarly, a system with timebase None can be combined with a
+    system having any timebase; the result will have the timebase of the
+    latter system.  The default value of dt can be changed by changing the
+    value of `control.config.defaults['control.default_dt']`.
 
     A state space system is callable and returns the value of the transfer
     function evaluated at a point in the complex plane.  See
@@ -146,14 +146,14 @@ class StateSpace(NonlinearIOSystem, LTI):
     may look odd when typeset by non-MathJax LaTeX systems.
 
     `control.config.defaults['statesp.latex_num_format']` is a format string
-    fragment, specifically the part of the format string after `'{:'`
+    fragment, specifically the part of the format string after ``'{:'``
     used to convert floating-point numbers to strings.  By default it
-    is `'.3g'`.
+    is '.3g'.
 
     `control.config.defaults['statesp.latex_repr_type']` must either be
-    `'partitioned'` or `'separate'`.  If `'partitioned'`, the A, B, C, D
+    'partitioned' or 'separate'.  If 'partitioned', the A, B, C, D
     matrices are shown as a single, partitioned matrix; if
-    `'separate'`, the matrices are shown separately.
+    'separate', the matrices are shown separately.
 
     """
     def __init__(self, *args, **kwargs):
@@ -162,10 +162,11 @@ class StateSpace(NonlinearIOSystem, LTI):
         Construct a state space object.
 
         The default constructor is StateSpace(A, B, C, D), where A, B, C, D
-        are matrices or equivalent objects.  To create a discrete time system,
-        use StateSpace(A, B, C, D, dt) where `dt` is the sampling time (or
-        True for unspecified sampling time).  To call the copy constructor,
-        call StateSpace(sys), where sys is a StateSpace object.
+        are matrices or equivalent objects.  To create a discrete time
+        system, use StateSpace(A, B, C, D, dt) where `dt` is the sampling
+        time (or True for unspecified sampling time).  To call the copy
+        constructor, call StateSpace(sys), where sys is a StateSpace
+        object.
 
         See `StateSpace` and `ss` for more information.
 
@@ -764,12 +765,12 @@ class StateSpace(NonlinearIOSystem, LTI):
     def __call__(self, x, squeeze=None, warn_infinite=True):
         """Evaluate system's frequency response at complex frequencies.
 
-        Returns the complex frequency response `sys(x)` where `x` is `s` for
+        Returns the complex frequency response ``sys(x)`` where `x` is `s` for
         continuous-time systems and `z` for discrete-time systems.
 
         To evaluate at a frequency omega in radians per second, enter
-        `x = omega * 1j`, for continuous-time systems, or
-        `x = exp(1j * omega * dt)` for discrete-time systems. Or use
+        ``x = omega * 1j``, for continuous-time systems, or
+        ``x = exp(1j * omega * dt)`` for discrete-time systems. Or use
         `StateSpace.frequency_response`.
 
         Parameters
@@ -777,20 +778,21 @@ class StateSpace(NonlinearIOSystem, LTI):
         x : complex or complex 1D array_like
             Complex frequencies
         squeeze : bool, optional
-            If squeeze=`True`, remove single-dimensional entries from the shape
-            of the output even if the system is not SISO. If squeeze=`False`,
-            keep all indices (output, input and, if omega is array_like,
-            frequency) even if the system is SISO. The default value can be
-            set using config.defaults['control.squeeze_frequency_response'].
+            If ``squeeze=True``, remove single-dimensional entries from the
+            shape of the output even if the system is not SISO. If
+            ``squeeze=False``, keep all indices (output, input and, if
+            omega is array_like, frequency) even if the system is SISO. The
+            default value can be set using
+            `config.defaults['control.squeeze_frequency_response']`.
         warn_infinite : bool, optional
-            If set to `False`, don't warn if frequency response is infinite.
+            If set to False, don't warn if frequency response is infinite.
 
         Returns
         -------
         fresp : complex ndarray
             The frequency response of the system.  If the system is SISO and
-            squeeze is not `True`, the shape of the array matches the shape of
-            omega.  If the system is not SISO or squeeze is `False`, the first
+            squeeze is not True, the shape of the array matches the shape of
+            omega.  If the system is not SISO or squeeze is False, the first
             two dimensions of the array are indices for the output and input
             and the remaining dimensions match omega.  If `squeeze` is True
             then single-dimensional axes are removed.
@@ -805,7 +807,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         Evaluate transfer function at complex frequency using Laub's
         method from Slycot.  Expects inputs and outputs to be
-        formatted correctly. Use `sys(x)` for a more user-friendly
+        formatted correctly. Use ``sys(x)`` for a more user-friendly
         interface.
 
         Parameters
@@ -861,10 +863,10 @@ class StateSpace(NonlinearIOSystem, LTI):
         """Evaluate system's transfer function at complex frequency
         using Laub's or Horner's method.
 
-        Evaluates `sys(x)` where `x` is `s` for continuous-time systems and `z`
-        for discrete-time systems.
+        Evaluates ``sys(x)`` where `x` is `s` for continuous-time systems
+        and `z` for discrete-time systems.
 
-        Expects inputs and outputs to be formatted correctly. Use `sys(x)`
+        Expects inputs and outputs to be formatted correctly. Use ``sys(x)``
         for a more user-friendly interface.
 
         Notes
@@ -1179,10 +1181,10 @@ class StateSpace(NonlinearIOSystem, LTI):
         ----------
         strict : bool, optional
             True (default):
-                The timebase `ssobject.dt` cannot be None; it must
+                The timebase ``ssobject.dt`` cannot be None; it must
                 be continuous (0) or discrete (True or > 0).
             False:
-              If `ssobject.dt` is None, continuous time
+              If ``ssobject.dt`` is None, continuous time
               `scipy.signal.lti` objects are returned.
 
         Returns
@@ -1284,24 +1286,26 @@ class StateSpace(NonlinearIOSystem, LTI):
               alpha=0)
             * 'zoh': zero-order hold (default)
         alpha : float within [0, 1]
-            The generalized bilinear transformation weighting parameter, which
-            should only be specified with method='gbt', and is ignored
-            otherwise.
+            The generalized bilinear transformation weighting parameter,
+            which should only be specified with method='gbt', and is
+            ignored otherwise.
         prewarp_frequency : float within [0, infinity)
-            The frequency [rad/s] at which to match with the input continuous-
-            time system's magnitude and phase (the gain=1 crossover frequency,
-            for example). Should only be specified with method='bilinear' or
-            'gbt' with alpha=0.5 and ignored otherwise.
+            The frequency [rad/s] at which to match with the input
+            continuous-time system's magnitude and phase (the gain = 1
+            crossover frequency, for example). Should only be specified
+            with `method` = 'bilinear' or 'gbt' with ``alpha=0.5`` and
+            ignored otherwise.
         name : string, optional
-            Set the name of the sampled system.  If not specified and
-            if `copy_names` is `False`, a generic name <sys[id]> is generated
-            with a unique integer id.  If `copy_names` is `True`, the new system
-            name is determined by adding the prefix and suffix strings in
-            config.defaults['iosys.sampled_system_name_prefix'] and
-            config.defaults['iosys.sampled_system_name_suffix'], with the
-            default being to add the suffix '$sampled'.
+            Set the name of the sampled system.  If not specified and if
+            `copy_names` is False, a generic name <sys[id]> is
+            generated with a unique integer id.  If `copy_names` is
+            True, the new system name is determined by adding the
+            prefix and suffix strings in
+            `config.defaults['iosys.sampled_system_name_prefix']` and
+            `config.defaults['iosys.sampled_system_name_suffix']`, with
+            the default being to add the suffix '$sampled'.
         copy_names : bool, Optional
-            If `True`, copy the names of the input signals, output
+            If True, copy the names of the input signals, output
             signals, and states to the sampled system.
 
         Returns
@@ -1312,9 +1316,9 @@ class StateSpace(NonlinearIOSystem, LTI):
         Other Parameters
         ----------------
         inputs : int, list of str or None, optional
-            Description of the system inputs.  If not specified, the origional
-            system inputs are used.  See `InputOutputSystem` for more
-            information.
+            Description of the system inputs.  If not specified, the
+            origional system inputs are used.  See `InputOutputSystem` for
+            more information.
         outputs : int, list of str or None, optional
             Description of the system outputs.  Same format as `inputs`.
         states : int, list of str, or None, optional
@@ -1368,21 +1372,22 @@ class StateSpace(NonlinearIOSystem, LTI):
         ----------
         warn_infinite : bool, optional
             By default, don't issue a warning message if the zero-frequency
-            gain is infinite.  Setting `warn_infinite` to generate the warning
-            message.
+            gain is infinite.  Setting `warn_infinite` to generate the
+            warning message.
 
         Returns
         -------
         gain : (noutputs, ninputs) ndarray or scalar
             Array or scalar value for SISO systems, depending on
-            config.defaults['control.squeeze_frequency_response'].
-            The value of the array elements or the scalar is either the
-            zero-frequency (or DC) gain, or `inf`, if the frequency response
-            is singular.
+            `config.defaults['control.squeeze_frequency_response']`.  The
+            value of the array elements or the scalar is either the
+            zero-frequency (or DC) gain, or ``inf``, if the frequency
+            response is singular.
 
             For real valued systems, the empty imaginary part of the
             complex zero-frequency response is discarded and a real array or
             scalar is returned.
+
         """
         return self._dcgain(warn_infinite)
 
@@ -1590,11 +1595,11 @@ def ss(*args, **kwargs):
 
     The function accepts either 1, 4 or 5 positional parameters:
 
-    `ss(sys)`
+    ``ss(sys)``
         Convert a linear system into space system form. Always creates a
         new system, even if sys is already a state space system.
 
-    `ss(A, B, C, D)`
+    ``ss(A, B, C, D)``
         Create a state space system from the matrices of its state and
         output equations:
 
@@ -1603,7 +1608,7 @@ def ss(*args, **kwargs):
             dx/dt &= A x + B u \\
                 y &= C x + D  u
 
-    `ss(A, B, C, D, dt)`
+    ``ss(A, B, C, D, dt)``
         Create a discrete-time state space system from the matrices of
         its state and output equations:
 
@@ -1617,7 +1622,7 @@ def ss(*args, **kwargs):
         as a scalar.
 
 
-    `ss(*args, inputs=['u1', ..., 'up'], outputs=['y1', ..., 'yq'], states=['x1', ..., 'xn'])`
+    ``ss(*args, inputs=['u1', ..., 'up'], outputs=['y1', ..., 'yq'], states=['x1', ..., 'xn'])``
         Create a system with named input, output, and state signals.
 
     Parameters
@@ -1627,18 +1632,18 @@ def ss(*args, **kwargs):
     A, B, C, D : array_like or string
         System, control, output, and feed forward matrices.
     dt : None, True or float, optional
-        System timebase. 0 (default) indicates continuous time, `True`
+        System timebase. 0 (default) indicates continuous time, True
         indicates discrete time with unspecified sampling time, positive
-        number is discrete time with specified sampling time, `None`
+        number is discrete time with specified sampling time, None
         indicates unspecified timebase (either continuous or discrete time).
     remove_useless_states : bool, optional
-        If `True`, remove states that have no effect on the input/output
+        If True, remove states that have no effect on the input/output
         dynamics.  If not specified, the value is read from
         `config.defaults['statesp.remove_useless_states']` (default = False).
     method : str, optional
         Set the method used for converting a transfer function to a state
         space system.  Current methods are 'slycot' and 'scipy'.  If set to
-        `None` (default), try 'slycot' first and then 'scipy' (SISO only).
+        None (default), try 'slycot' first and then 'scipy' (SISO only).
 
     Returns
     -------
@@ -1649,8 +1654,8 @@ def ss(*args, **kwargs):
     ----------------
     inputs, outputs, states : str, or list of str, optional
         List of strings that name the individual signals.  If this parameter
-        is not given or given as `None`, the signal names will be of the
-        form `s[i]` (where `s` is one of `u`, `y`, or `x`). See
+        is not given or given as None, the signal names will be of the
+        form 's[i]' (where 's' is one of 'u', 'y', or 'x'). See
         `InputOutputSystem` for more information.
     input_prefix, output_prefix, state_prefix : string, optional
         Set the prefix for input, output, and state signals.  Defaults =
@@ -1756,15 +1761,15 @@ def tf2io(*args, **kwargs):
 
     The function accepts either 1 or 2 parameters:
 
-    `tf2io(sys)`
+    ``tf2io(sys)``
         Convert a linear system into space space form. Always creates
         a new system, even if sys is already a StateSpace object.
 
-    `tf2io(num, den)`
+    ``tf2io(num, den)``
         Create a linear I/O system from its numerator and denominator
         polynomial coefficients.
 
-        For details see: `tf`
+        For details see: `tf`.
 
     Parameters
     ----------
@@ -1826,15 +1831,15 @@ def tf2ss(*args, **kwargs):
 
     The function accepts either 1 or 2 parameters:
 
-    `tf2ss(sys)`
+    ``tf2ss(sys)``
         Convert a transfer function into space space form.  Equivalent to
         `ss(sys)`.
 
-    `tf2ss(num, den)`
+    ``tf2ss(num, den)``
         Create a state space system from its numerator and denominator
         polynomial coefficients.
 
-        For details see: `tf`
+        For details see: `tf`.
 
     Parameters
     ----------
@@ -1861,17 +1866,17 @@ def tf2ss(*args, **kwargs):
         with a unique integer id.
     method : str, optional
         Set the method used for computing the result.  Current methods are
-        'slycot' and 'scipy'.  If set to `None` (default), try 'slycot'
+        'slycot' and 'scipy'.  If set to None (default), try 'slycot'
         first and then 'scipy' (SISO only).
 
     Raises
     ------
     ValueError
         if `num` and `den` have invalid or unequal dimensions, or if an
-        invalid number of arguments is passed in
+        invalid number of arguments is passed in.
     TypeError
         if `num` or `den` are of incorrect type, or if sys is not a
-        TransferFunction object
+        TransferFunction object.
 
     See Also
     --------
@@ -1879,10 +1884,10 @@ def tf2ss(*args, **kwargs):
 
     Notes
     -----
-    The `slycot` routine used to convert a transfer function into state
-    space form appears to have a bug and in some (rare) instances may not
-    return a system with the same poles as the input transfer function.
-    For SISO systems, setting `method=scipy` can be used as an alternative.
+    The `slycot` routine used to convert a transfer function into state space
+    form appears to have a bug and in some (rare) instances may not return
+    a system with the same poles as the input transfer function.  For SISO
+    systems, setting ``method='scipy'`` can be used as an alternative.
 
     Examples
     --------
@@ -1997,11 +2002,11 @@ def rss(states=1, outputs=1, inputs=1, strictly_proper=False, **kwargs):
         the signal will be of the form 's[i]' (where 's' is one of 'x',
         'y', or 'u').
     strictly_proper : bool, optional
-        If set to `True`, returns a proper system (no direct term).
+        If set to True, returns a proper system (no direct term).
     dt : None, True or float, optional
-        System timebase. 0 (default) indicates continuous time, `True`
+        System timebase. 0 (default) indicates continuous time, True
         indicates discrete time with unspecified sampling time, positive
-        number is discrete time with specified sampling time, `None`
+        number is discrete time with specified sampling time, None
         indicates unspecified timebase (either continuous or discrete time).
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
@@ -2021,8 +2026,8 @@ def rss(states=1, outputs=1, inputs=1, strictly_proper=False, **kwargs):
     -----
     If the number of states, inputs, or outputs is not specified, then the
     missing numbers are assumed to be 1.  If dt is not specified or is given
-    as 0 or `None`, the poles of the returned system will always have a
-    negative real part.  If dt is `True` or a postive float, the poles of the
+    as 0 or None, the poles of the returned system will always have a
+    negative real part.  If dt is True or a postive float, the poles of the
     returned system will have magnitude less than 1.
 
     """
@@ -2052,7 +2057,7 @@ def drss(*args, **kwargs):
 
     Create a stable *discrete time* random state space object.  This
     function calls `rss` using either the `dt` keyword provided by
-    the user or `dt=True` if not specified.
+    the user or ``dt=True`` if not specified.
 
     Examples
     --------
@@ -2092,33 +2097,33 @@ def summing_junction(
         inputs=None, output=None, dimension=None, prefix='u', **kwargs):
     """Create a summing junction as an input/output system.
 
-    This function creates a static input/output system that outputs the sum of
-    the inputs, potentially with a change in sign for each individual input.
-    The input/output system that is created by this function can be used as a
-    component in the `interconnect` function.
+    This function creates a static input/output system that outputs the sum
+    of the inputs, potentially with a change in sign for each individual
+    input.  The input/output system that is created by this function can be
+    used as a component in the `interconnect` function.
 
     Parameters
     ----------
     inputs : int, string or list of strings
-        Description of the inputs to the summing junction.  This can be given
-        as an integer count, a string, or a list of strings. If an integer
-        count is specified, the names of the input signals will be of the form
-        `u[i]`.
+        Description of the inputs to the summing junction.  This can be
+        given as an integer count, a string, or a list of strings. If an
+        integer count is specified, the names of the input signals will be
+        of the form 'u[i]'.
     output : string, optional
         Name of the system output.  If not specified, the output will be 'y'.
     dimension : int, optional
         The dimension of the summing junction.  If the dimension is set to a
         positive integer, a multi-input, multi-output summing junction will be
         created.  The input and output signal names will be of the form
-        `<signal>[i]` where `signal` is the input/output signal name specified
-        by the `inputs` and `output` keywords.  Default value is `None`.
+        '<signal>[i]' where 'signal' is the input/output signal name specified
+        by the `inputs` and `output` keywords.  Default value is None.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
     prefix : string, optional
         If `inputs` is an integer, create the names of the states using the
         given prefix (default = 'u').  The names of the input will be of the
-        form `prefix[i]`.
+        form 'prefix[i]'.
 
     Returns
     -------
@@ -2228,8 +2233,8 @@ def _ssmatrix(data, axis=1, square=None, rows=None, cols=None, name=None):
     data : array, list, or string
         Input data defining the contents of the 2D array
     axis : 0 or 1
-        If input data is 1D, which axis to use for return object.  The default
-        is 1, corresponding to a row matrix.
+        If input data is 1D, which axis to use for return object.  The
+        default is 1, corresponding to a row matrix.
     square : bool, optional
         If set to True, check that the input matrix is square.
     rows : int, optional

@@ -125,7 +125,7 @@ def test_parameter_docs(module, prefix):
         # TODO: check top level documenation here (__init__, attributes?)
         if inspect.isclass(obj):
             _info(f"Checking class {objname}", 1)
-            
+
             # Check member functions within the class
             test_parameter_docs(obj, prefix + name + '.')
 
@@ -386,7 +386,8 @@ class_attributes = {
 iosys_parent_attributes = [
     'input_index', 'output_index', 'state_index',       # rarely used
     'states', 'nstates', 'state_labels',                # not need in TF, FRD
-    'params', 'outfcn', 'updfcn'                        # NL I/O, SS overlap
+    'params', 'outfcn', 'updfcn',                       # NL I/O, SS overlap
+    'repr_format'                                       # rarely used
 ]
 
 #
@@ -663,9 +664,8 @@ def _check_numpydoc_style(obj, doc):
     for pyobj in python_objects:
         for section in ["Extended Summary", "Notes"]:
             text = "\n".join(doc[section])
-            if re.search(f"[\\s]{pyobj}([\\s]|$)", text) is not None:
-                _warn(f"{pyobj} appears in {section} for {name} "
-                      "without backticks")
+            if re.search(f"`{pyobj}`", text) is not None:
+                _warn(f"{pyobj} appears in {section} for {name} with backticks")
 
     if inspect.isclass(obj):
         # Specialized checks for classes
@@ -718,9 +718,8 @@ def _check_numpydoc_param(
     # Look for Python objects that are not marked properly
     python_objects = ['True', 'False', 'None']
     for pyobj in python_objects:
-        if re.search(f"[\\s]{pyobj}([\\s]|$)", param_desc) is not None:
-            _warn(f"{pyobj} appears in {param_name} description "
-                  "without backticks")
+        if re.search(f"`{pyobj}`", param_desc) is not None:
+            _warn(f"{pyobj} appears in {param_name} description with backticks")
 
 
 # Utility function to replace positional signature with docstring signature

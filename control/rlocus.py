@@ -57,7 +57,7 @@ def root_locus_map(sysdata, gains=None):
     Notes
     -----
     For backward compatibility, the `rldata` return object can be
-    assigned to the tuple `roots, gains`.
+    assigned to the tuple ``(roots, gains)``.
 
     """
     from .pzmap import PoleZeroData, PoleZeroList
@@ -108,18 +108,18 @@ def root_locus_plot(
         gains are chosen to include the main features of the root locus map.
     xlim : tuple or list, optional
         Set limits of x axis, normally with tuple
-        (see :doc:`matplotlib:api/axes_api`).
+        (see `matplotlib:api/axes_api`).
     ylim : tuple or list, optional
         Set limits of y axis, normally with tuple
-        (see :doc:`matplotlib:api/axes_api`).
+        (see `matplotlib:api/axes_api`).
     plot : bool, optional
         (legacy) If given, `root_locus_plot` returns the legacy return values
-        of roots and gains.  If `False`, just return the values with no plot.
+        of roots and gains.  If False, just return the values with no plot.
     grid : bool or str, optional
-        If `True` plot omega-damping grid, if `False` show imaginary axis
+        If True plot omega-damping grid, if False show imaginary axis
         for continuous time systems, unit circle for discrete time systems.
-        If `empty`, do not draw any additonal lines.  Default value is set
-        by config.defaults['rlocus.grid'].
+        If 'empty', do not draw any additonal lines.  Default value is set
+        by `config.defaults['rlocus.grid']`.
     initial_gain : float, optional
         Mark the point on the root locus diagram corresponding to the
         given gain.
@@ -164,10 +164,10 @@ def root_locus_plot(
         system.
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'center right',
-        with no legend for a single response.  Use `False` to suppress legend.
+        with no legend for a single response.  Use False to suppress legend.
     show_legend : bool, optional
-        Force legend to be shown if `True` or hidden if `False`.  If
-        `None`, then show legend when there is more than one line on the
+        Force legend to be shown if True or hidden if False.  If
+        None, then show legend when there is more than one line on the
         plot or `legend_loc` has been specified.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).

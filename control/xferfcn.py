@@ -61,9 +61,9 @@ class TransferFunction(LTI):
     den : 2D list of coefficient arrays
         Polynomial coefficients of the denominator.
     dt : None, True or float, optional
-        System timebase. 0 (default) indicates continuous time, `True`
+        System timebase. 0 (default) indicates continuous time, True
         indicates discrete time with unspecified sampling time, positive
-        number is discrete time with specified sampling time, `None` indicates
+        number is discrete time with specified sampling time, None indicates
         unspecified timebase (either continuous or discrete time).
 
     Attributes
@@ -85,7 +85,7 @@ class TransferFunction(LTI):
     display_format : None, 'poly' or 'zpk'
         Display format used in printing the TransferFunction object.
         Default behavior is polynomial display and can be changed by
-        changing config.defaults['xferfcn.display_format'].
+        changing `config.defaults['xferfcn.display_format']`.
     s : TransferFunction
         Represents the continuous time differential operator.
     z : TransferFunction
@@ -126,14 +126,14 @@ class TransferFunction(LTI):
     * dt = True: discrete time with unspecified sampling period
     * dt = None: no timebase specified
 
-    Systems must have compatible timebases in order to be combined. A discrete
-    time system with unspecified sampling time (`dt = True`) can be combined
-    with a system having a specified sampling time; the result will be a
-    discrete time system with the sample time of the latter system. Similarly,
-    a system with timebase `None` can be combined with a system having any
-    timebase; the result will have the timebase of the latter system.
-    The default value of dt can be changed by changing the value of
-    `control.config.defaults['control.default_dt']`.
+    Systems must have compatible timebases in order to be combined. A
+    discrete time system with unspecified sampling time (``dt = True``) can
+    be combined with a system having a specified sampling time; the result
+    will be a discrete time system with the sample time of the latter
+    system. Similarly, a system with timebase None can be combined with a
+    system having any timebase; the result will have the timebase of the
+    latter system.  The default value of dt can be changed by changing the
+    value of `control.config.defaults['control.default_dt']`.
 
     A transfer function is callable and returns the value of the transfer
     function evaluated at a point in the complex plane.  See
@@ -151,8 +151,8 @@ class TransferFunction(LTI):
 
     The TransferFunction class defines two constants `s` and `z` that
     represent the differentiation and delay operators in continuous and
-    discrete time.  These can be used to create variables that allow algebraic
-    creation of transfer functions.  For example,
+    discrete time.  These can be used to create variables that allow
+    algebraic creation of transfer functions.  For example,
 
     >>> s = ct.TransferFunction.s
     >>> G = (s + 1)/(s**2 + 2*s + 1)
@@ -336,16 +336,16 @@ class TransferFunction(LTI):
     def __call__(self, x, squeeze=None, warn_infinite=True):
         """Evaluate system's transfer function at complex frequencies.
 
-        Returns the complex frequency response `sys(x)` where `x` is `s` for
-        continuous-time systems and `z` for discrete-time systems.
+        Returns the complex frequency response ``sys(x)`` where `x` is `s`
+        for continuous-time systems and `z` for discrete-time systems.
 
         In general the system may be multiple input, multiple output
-        (MIMO), where `m = self.ninputs` number of inputs and `p =
-        self.noutputs` number of outputs.
+        (MIMO), where ``m = self.ninputs`` number of inputs and ``p =
+        self.noutputs`` number of outputs.
 
         To evaluate at a frequency omega in radians per second, enter
-        `x = omega * 1j`, for continuous-time systems, or
-        `x = exp(1j * omega * dt)` for discrete-time systems. Or use
+        ``x = omega * 1j``, for continuous-time systems, or
+        ``x = exp(1j * omega * dt)`` for discrete-time systems. Or use
         `TransferFunction.frequency_response`.
 
         Parameters
@@ -353,26 +353,29 @@ class TransferFunction(LTI):
         x : complex or complex 1D array_like
             Complex frequencies
         squeeze : bool, optional
-            If squeeze=`True`, remove single-dimensional entries from the shape
-            of the output even if the system is not SISO. If squeeze=`False`,
-            keep all indices (output, input and, if omega is array_like,
-            frequency) even if the system is SISO. The default value can be
-            set using config.defaults['control.squeeze_frequency_response'].
-            If `True` and the system is single-input single-output (SISO),
-            return a 1D array rather than a 3D array.  Default value (`True`)
-            set by config.defaults['control.squeeze_frequency_response'].
-        warn_infinite : bool, optional
-            If set to `False`, turn off divide by zero warning.
+            If ``squeeze=True``, remove single-dimensional entries from the
+            shape of the output even if the system is not SISO. If
+            ``squeeze=False``, keep all indices (output, input and, if
+            omega is array_like, frequency) even if the system is SISO. The
+            default value can be set using
+            `config.defaults['control.squeeze_frequency_response']`.  If
+            True and the system is single-input single-output (SISO),
+            return a 1D array rather than a 3D array.  Default value
+            (True) set by
+            `config.defaults['control.squeeze_frequency_response']`.
+            warn_infinite : bool, optional If set to False, turn off
+            divide by zero warning.
 
         Returns
         -------
         fresp : complex ndarray
-            The frequency response of the system.  If the system is SISO and
-            squeeze is not `True`, the shape of the array matches the shape of
-            omega.  If the system is not SISO or squeeze is `False`, the first
-            two dimensions of the array are indices for the output and input
-            and the remaining dimensions match omega.  If `squeeze` is True
-            then single-dimensional axes are removed.
+            The frequency response of the system.  If the system is SISO
+            and squeeze is not True, the shape of the array matches the
+            shape of omega.  If the system is not SISO or squeeze is
+            False, the first two dimensions of the array are indices
+            for the output and input and the remaining dimensions match
+            omega.  If `squeeze` is True then single-dimensional axes
+            are removed.
 
         """
         out = self.horner(x, warn_infinite=warn_infinite)
@@ -382,10 +385,10 @@ class TransferFunction(LTI):
         """Evaluate system's transfer function at complex frequency
         using Horner's method.
 
-        Evaluates `sys(x)` where `x` is `s` for continuous-time systems and `z`
-        for discrete-time systems.
+        Evaluates ``sys(x)`` where `x` is `s` for continuous-time systems
+        and `z` for discrete-time systems.
 
-        Expects inputs and outputs to be formatted correctly. Use `sys(x)`
+        Expects inputs and outputs to be formatted correctly. Use ``sys(x)``
         for a more user-friendly interface.
 
         """
@@ -1169,24 +1172,26 @@ class TransferFunction(LTI):
             * 'matched': pole-zero match method
             * 'zoh': zero-order hold (default)
         alpha : float within [0, 1]
-            The generalized bilinear transformation weighting parameter, which
-            should only be specified with method="gbt", and is ignored
-            otherwise. See `scipy.signal.cont2discrete`.
+            The generalized bilinear transformation weighting parameter,
+            which should only be specified with ``method='gbt'``, and is
+            ignored otherwise. See `scipy.signal.cont2discrete`.
         prewarp_frequency : float within [0, infinity)
-            The frequency [rad/s] at which to match with the input continuous-
-            time system's magnitude and phase (the gain=1 crossover frequency,
-            for example). Should only be specified with method='bilinear' or
-            'gbt' with alpha=0.5 and ignored otherwise.
+            The frequency [rad/s] at which to match with the input
+            continuous- time system's magnitude and phase (the gain=1
+            crossover frequency, for example). Should only be specified
+            with `method` = 'bilinear' or 'gbt' with ``alpha=0.5`` and
+            ignored otherwise.
         name : string, optional
-            Set the name of the sampled system.  If not specified and
-            if `copy_names` is `False`, a generic name <sys[id]> is generated
-            with a unique integer id.  If `copy_names` is `True`, the new system
+            Set the name of the sampled system.  If not specified and if
+            `copy_names` is False, a generic name <sys[id]> is generated with
+            a unique integer id.  If `copy_names` is True, the new system
             name is determined by adding the prefix and suffix strings in
-            config.defaults['iosys.sampled_system_name_prefix'] and
-            config.defaults['iosys.sampled_system_name_suffix'], with the
+            `config.defaults['iosys.sampled_system_name_prefix']` and
+            `config.defaults['iosys.sampled_system_name_suffix']`, with the
             default being to add the suffix '$sampled'.
+
         copy_names : bool, Optional
-            If `True`, copy the names of the input signals, output
+            If True, copy the names of the input signals, output
             signals, and states to the sampled system.
 
         Returns
@@ -1197,9 +1202,9 @@ class TransferFunction(LTI):
         Other Parameters
         ----------------
         inputs : int, list of str or None, optional
-            Description of the system inputs.  If not specified, the origional
-            system inputs are used.  See `InputOutputSystem` for more
-            information.
+            Description of the system inputs.  If not specified, the
+            original system inputs are used.  See `InputOutputSystem` for
+            more information.
         outputs : int, list of str or None, optional
             Description of the system outputs.  Same format as `inputs`.
 
@@ -1254,17 +1259,17 @@ class TransferFunction(LTI):
         ----------
         warn_infinite : bool, optional
             By default, don't issue a warning message if the zero-frequency
-            gain is infinite.  Setting `warn_infinite` to generate the warning
-            message.
+            gain is infinite.  Setting `warn_infinite` to generate the
+            warning message.
 
         Returns
         -------
         gain : (noutputs, ninputs) ndarray or scalar
             Array or scalar value for SISO systems, depending on
-            config.defaults['control.squeeze_frequency_response'].
-            The value of the array elements or the scalar is either the
-            zero-frequency (or DC) gain, or `inf`, if the frequency response
-            is singular.
+            `config.defaults['control.squeeze_frequency_response']`.  The
+            value of the array elements or the scalar is either the
+            zero-frequency (or DC) gain, or ``inf``, if the frequency
+            response is singular.
 
             For real valued systems, the empty imaginary part of the
             complex zero-frequency response is discarded and a real array or
@@ -1293,9 +1298,9 @@ class TransferFunction(LTI):
     # Attributes for differentiation and delay
     #
     # These attributes are created here with sphinx docstrings so that the
-    # autodoc generated documentation has a description.  The actual values of
-    # the class attributes are set at the bottom of the file to avoid problems
-    # with recursive calls.
+    # autodoc generated documentation has a description.  The actual values
+    # of the class attributes are set at the bottom of the file to avoid
+    # problems with recursive calls.
 
     #: Differentation operator (continuous time).
     #:
@@ -1504,8 +1509,8 @@ def _convert_to_transfer_function(
 
       sys = _convert_to_transfer_function([[1., 0.], [2., 3.]])
 
-    will give a system with numerator matrix `[[[1.0], [0.0]], [[2.0],
-    [3.0]]]` and denominator matrix `[[[1.0], [1.0]], [[1.0], [1.0]]]`.
+    will give a system with numerator matrix ``[[[1.0], [0.0]], [[2.0],
+    [3.0]]]`` and denominator matrix ``[[[1.0], [1.0]], [[1.0], [1.0]]]``.
 
     """
     from .statesp import StateSpace
@@ -1586,11 +1591,11 @@ def tf(*args, **kwargs):
 
     The function accepts either 1, 2, or 3 parameters:
 
-    `tf(sys)`
+    ``tf(sys)``
         Convert a linear system into transfer function form. Always creates
         a new system, even if sys is already a TransferFunction object.
 
-    `tf(num, den)`
+    ``tf(num, den)``
         Create a transfer function system from its numerator and denominator
         polynomial coefficients.
 
@@ -1602,16 +1607,16 @@ def tf(*args, **kwargs):
         for details see note below).  If the denominator for all transfer
         function is the same, `den` can be specified as a 1D array.
 
-    `tf(num, den, dt)`
+    ``tf(num, den, dt)``
         Create a discrete time transfer function system; dt can either be a
         positive number indicating the sampling time or 'True' if no
         specific timebase is given.
 
-    `tf([[G11, ..., G1m], ..., [Gp1, ..., Gpm]][, dt])`
+    ``tf([[G11, ..., G1m], ..., [Gp1, ..., Gpm]][, dt])``
         Create a pxm MIMO system from SISO transfer functions Gij.  See
         `combine_tf` for more details.
 
-    `tf('s')` or `tf('z')`
+    ``tf('s')`` or ``tf('z')``
         Create a transfer function representing the differential operator
         ('s') or delay operator ('z').
 
@@ -1626,14 +1631,14 @@ def tf(*args, **kwargs):
     den : array_like, or list of list of array_like
         Polynomial coefficients of the denominator.
     dt : None, True or float, optional
-        System timebase. 0 (default) indicates continuous time, `True`
+        System timebase. 0 (default) indicates continuous time, True
         indicates discrete time with unspecified sampling time, positive
-        number is discrete time with specified sampling time, `None` indicates
+        number is discrete time with specified sampling time, None indicates
         unspecified timebase (either continuous or discrete time).
     display_format : None, 'poly' or 'zpk'
         Set the display format used in printing the TransferFunction object.
         Default behavior is polynomial display and can be changed by
-        changing config.defaults['xferfcn.display_format'].
+        changing `config.defaults['xferfcn.display_format']`.
 
     Returns
     -------
@@ -1666,13 +1671,13 @@ def tf(*args, **kwargs):
     Notes
     -----
     MIMO transfer functions are created by passing a 2D array of coeffients:
-    `num[i][j]` contains the polynomial coefficients of the numerator
+    ``num[i][j]`` contains the polynomial coefficients of the numerator
     for the transfer function from the (j+1)st input to the (i+1)st output,
-    and `den[i][j]` works the same way.
+    and ``den[i][j]`` works the same way.
 
-    The list `[2, 3, 4]` denotes the polynomial :math:`2s^2 + 3s + 4`.
+    The list ``[2, 3, 4]`` denotes the polynomial :math:`2s^2 + 3s + 4`.
 
-    The special forms `tf('s')` and `tf('z')` can be used to create
+    The special forms ``tf('s')`` and ``tf('z')`` can be used to create
     transfer functions for differentiation and unit delays.
 
     Examples
@@ -1774,14 +1779,14 @@ def zpk(zeros, poles, gain, *args, **kwargs):
     gain : float
         System gain.
     dt : None, True or float, optional
-        System timebase. 0 (default) indicates continuous time, `True`
+        System timebase. 0 (default) indicates continuous time, True
         indicates discrete time with unspecified sampling time, positive
-        number is discrete time with specified sampling time, `None`
+        number is discrete time with specified sampling time, None
         indicates unspecified timebase (either continuous or discrete time).
     inputs, outputs, states : str, or list of str, optional
         List of strings that name the individual signals.  If this parameter
-        is not given or given as `None`, the signal names will be of the
-        form `s[i]` (where `s` is one of `u`, `y`, or `x`). See
+        is not given or given as None, the signal names will be of the
+        form 's[i]' (where 's' is one of 'u', 'y', or 'x'). See
         `InputOutputSystem` for more information.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
@@ -1789,7 +1794,7 @@ def zpk(zeros, poles, gain, *args, **kwargs):
     display_format : None, 'poly' or 'zpk', optional
         Set the display format used in printing the TransferFunction object.
         Default behavior is polynomial display and can be changed by
-        changing config.defaults['xferfcn.display_format'].
+        changing `config.defaults['xferfcn.display_format']`.
 
     Returns
     -------
@@ -1818,15 +1823,15 @@ def ss2tf(*args, **kwargs):
 
     The function accepts either 1 or 4 parameters:
 
-    `ss2tf(sys)`
+    ``ss2tf(sys)``
         Convert a linear system from state space into transfer function
         form. Always creates a new system.
 
-    `ss2tf(A, B, C, D)`
+    ``ss2tf(A, B, C, D)``
         Create a transfer function system from the matrices of its state and
         output equations.
 
-        For details see: `tf`
+        For details see: `tf`.
 
     Parameters
     ----------
@@ -1864,7 +1869,7 @@ def ss2tf(*args, **kwargs):
         if matrix sizes are not self-consistent, or if an invalid number of
         arguments is passed in
     TypeError
-        if `sys` is not a StateSpace object
+        if `sys` is not a StateSpace object.
 
     See Also
     --------

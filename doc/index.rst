@@ -2,8 +2,9 @@
 Python Control Systems Library
 ##############################
 
-The Python Control Systems Library (`python-control`) is a Python package that
-implements basic operations for analysis and design of feedback control systems.
+The Python Control Systems Library (`python-control`) is a Python
+package that implements basic operations for analysis and design of
+feedback control systems.
 
 .. rubric:: Features
 
@@ -87,8 +88,9 @@ or to test the installed package::
 
 .. _pytest: https://docs.pytest.org/
 
-Your contributions are welcome!  Simply fork the `GitHub repository <https://github.com/python-control/python-control>`_ and send a
-`pull request`_.
+Your contributions are welcome!  Simply fork the `GitHub repository
+<https://github.com/python-control/python-control>`_ and send a `pull
+request`_.
 
 .. _pull request: https://github.com/python-control/python-control/pulls
 

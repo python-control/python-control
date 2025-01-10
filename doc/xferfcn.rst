@@ -88,7 +88,8 @@ following table summarizes the induced norms for a transfer function
      - :math:`\| G \|_2`
      - :math:`\| g \|_1`
 
-The 2-norm and :math:`\infty`-norm can be computed using :func:`system_norm`::
+The 2-norm and :math:`\infty`-norm can be computed using
+:func:`system_norm`::
 
   sysnorm = ct.system_norm(sys, p=<val>)
 

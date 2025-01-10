@@ -49,14 +49,14 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
         available if the system is `StateSpace`.
     name : string, optional
         Set the name of the sampled system.  If not specified and
-        if `copy_names` is `False`, a generic name <sys[id]> is generated
-        with a unique integer id.  If `copy_names` is `True`, the new system
+        if `copy_names` is False, a generic name <sys[id]> is generated
+        with a unique integer id.  If `copy_names` is True, the new system
         name is determined by adding the prefix and suffix strings in
-        config.defaults['iosys.sampled_system_name_prefix'] and
-        config.defaults['iosys.sampled_system_name_suffix'], with the
+        `config.defaults['iosys.sampled_system_name_prefix']` and
+        `config.defaults['iosys.sampled_system_name_suffix']`, with the
         default being to add the suffix '$sampled'.
     copy_names : bool, Optional
-        If `True`, copy the names of the input signals, output
+        If True, copy the names of the input signals, output
         signals, and states to the sampled system.
 
     Notes

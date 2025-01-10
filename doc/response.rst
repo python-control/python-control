@@ -30,10 +30,10 @@ resulting in the following standard pattern::
 
 Plotting commands return a :class:`ControlPlot` object that
 provides access to the individual lines in the generated plot using
-`cplt.lines`, allowing various aspects of the plot to be modified to
+``cplt.lines``, allowing various aspects of the plot to be modified to
 suit specific needs.
 
-The plotting function is also available via the `plot()` method of the
+The plotting function is also available via the ``plot()`` method of the
 analysis object, allowing the following type of calls::
 
   step_response(sys).plot()
@@ -77,7 +77,7 @@ the system.  If a list of systems is passed, a common time vector will be
 computed and a list of responses will be returned in the form of a
 :class:`TimeResponseList` object.  The :func:`forced_response` function can
 also take a list of systems, to which a single common input is applied.
-The :class:`TimeResponseList` object has a `plot()` method that will plot
+The :class:`TimeResponseList` object has a ``plot()`` method that will plot
 each of the responses in turn, using a sequence of different colors with
 appropriate titles and legends.
 
@@ -113,8 +113,8 @@ The time vector is a 1D array with shape (n, )::
 
       T = [t1,     t2,     t3,     ..., tn    ]
 
-Input, state, and output all follow the same convention. Columns are different
-points in time, rows are different components::
+Input, state, and output all follow the same convention. Columns are
+different points in time, rows are different components::
 
       U = [[u1(t1), u1(t2), u1(t3), ..., u1(tn)]
            [u2(t1), u2(t2), u2(t3), ..., u2(tn)]
@@ -122,9 +122,9 @@ points in time, rows are different components::
            ...
            [ui(t1), ui(t2), ui(t3), ..., ui(tn)]]
 
-(and similarly for `X`, `Y`).  So, `U[:, 2]` is the system's input at the
-third point in time; and `U[1]` or `U[1, :]` is the sequence of values for
-the system's second input.
+(and similarly for `X`, `Y`).  So, ``U[:, 2]`` is the system's input
+at the third point in time; and ``U[1]`` or ``U[1, :]`` is the
+sequence of values for the system's second input.
 
 When there is only one row, a 1D object is accepted or returned, which adds
 convenience for SISO systems:
@@ -188,12 +188,13 @@ response, can be computed like this::
 
     ft = D @ U
 
-Finally, the `to_pandas()` function can be used to create a pandas dataframe::
+Finally, the `~TimeResponseData.to_pandas` method can be used to create
+a pandas dataframe::
 
     df = response.to_pandas()
 
 The column labels for the data frame are `time` and the labels for the input,
-output, and state signals (`u[i]`, `y[i]`, and `x[i]` by default, but these
+output, and state signals ('u[i]', 'y[i]', and 'x[i]' by default, but these
 can be changed using the `inputs`, `outputs`, and `states` keywords when
 constructing the system, as described in :func:`ss`, :func:`tf`, and other
 system creation function.  Note that when exporting to pandas, "rows" in the
@@ -234,8 +235,8 @@ or the `overlay_traces` keyword, which puts different traces (e.g.,
 corresponding to step inputs in different channels) on the same graph,
 with appropriate labeling via a legend on selected axes.
 
-For example, using `plot_input=True` and `overlay_signals=True` yields the
-following plot::
+For example, using ``plot_input=True`` and ``overlay_signals=True``
+yields the following plot::
 
       ct.step_response(sys_mimo).plot(
         plot_inputs=True, overlay_signals=True,
@@ -249,7 +250,7 @@ Input/output response plots created with either the
 :func:`input_output_response` functions include the input signals by
 default. These can be plotted on separate axes, but also "overlaid" on the
 output axes (useful when the input and output signals are being compared to
-each other).  The following plot shows the use of `plot_inputs='overlay'`
+each other).  The following plot shows the use of ``plot_inputs='overlay'``
 as well as the ability to reposition the legends using the `legend_map`
 keyword::
 
@@ -355,7 +356,7 @@ function::
 
 Different types of plots can also be specified for a given frequency
 response.  For example, to plot the frequency response using a a Nichols
-plot, use `plot_type='nichols'`::
+plot, use ``plot_type='nichols'``::
 
   response.plot(plot_type='nichols')
 
@@ -416,7 +417,7 @@ array of frequencies as a second argument (after the list of systems)::
 .. image:: figures/freqplot-siso_bode-omega.png
 
 Alternatively, frequency ranges can be specified by passing a list of the
-form `[wmin, wmax]`, where `wmin` and `wmax` are the minimum and
+form ``[wmin, wmax]``, where `wmin` and `wmax` are the minimum and
 maximum frequencies in the (log-spaced) frequency range::
 
   response = ct.frequency_response([sys1, sys2], [1e-2, 1e2])
@@ -461,9 +462,9 @@ as a function of the loop gain::
 
 The grid in the left hand plane shows lines of constant damping ratio as
 well as arcs corresponding to the frequency of the complex pole.  The grid
-can be turned off using the `grid` keyword.  Setting `grid` to `False` will
+can be turned off using the `grid` keyword.  Setting `grid` to False will
 turn off the grid but show the real and imaginary axis.  To completely
-remove all lines except the root loci, use `grid='empty'`.
+remove all lines except the root loci, use ``grid='empty'``.
 
 On systems that support interactive plots, clicking on a location on the
 root locus diagram will mark the pole locations on all branches of the
@@ -523,7 +524,7 @@ various ways.  The following general rules apply:
 
   The :func:`bode_plot`, :func:`time_response_plot`,
   and selected other commands can also accept a matplotlib format
-  string (e.g., `'r--'`).  The format string must appear as a positional
+  string (e.g., 'r--').  The format string must appear as a positional
   argument right after the required data argument.
 
   Note that line property arguments are the same for all lines generated as
@@ -548,9 +549,9 @@ various ways.  The following general rules apply:
   For non-input/output plots (e.g., Nyquist plots, pole/zero plots, root
   locus plots), the default labels are the system name.
 
-  If `label` is set to `False`, individual lines are still given
+  If `label` is set to False, individual lines are still given
   labels, but no legend is generated in the plot. (This can also be
-  accomplished by setting `legend_map` to `False`).
+  accomplished by setting `legend_map` to False).
 
   Note: the `label` keyword argument is not implemented for describing
   function plots or phase plane plots, since these plots are primarily
@@ -562,20 +563,21 @@ various ways.  The following general rules apply:
   can be used to customize the locations for legends.  By default, a
   minimal number of legends are used such that lines can be uniquely
   identified and no legend is generated if there is only one line in the
-  plot.  Setting `show_legend` to `False` will suppress the legend and
-  setting it to `True` will force the legend to be displayed even if
+  plot.  Setting `show_legend` to False will suppress the legend and
+  setting it to True will force the legend to be displayed even if
   there is only a single line in each axes.  In addition, if the value of
   the `legend_loc` keyword argument is set to a string or integer, it
   will set the position of the legend as described in the
   :func:`matplotlib.legend` documentation.  Finally, `legend_map` can be
   set to an array that matches the shape of the subplots, with each item
   being a string indicating the location of the legend for that axes (or
-  `None` for no legend).
+  None for no legend).
 
 * The `rcParams` keyword argument can be used to override the default
   matplotlib style parameters used when creating a plot.  The default
-  parameters for all control plots are given by the `ct.rcParams`
-  dictionary and have the following values:
+  parameters for all control plots are given by the
+  `config.defaults['rcParams'` dictionary and have the following
+  values:
 
   .. list-table::
      :widths: 50 50
@@ -597,8 +599,9 @@ various ways.  The following general rules apply:
        - 'small'
 
   Only those values that should be changed from the default need to be
-  specified in the `rcParams` keyword argument.  To override the defaults
-  for all control plots, update the `ct.rcParams` dictionary entries.
+  specified in the `rcParams` keyword argument.  To override the
+  defaults for all control plots, update the
+  `config.defaults['rcParams']` dictionary entries.
 
   The default values for style parameters for control plots can be restored
   using :func:`reset_rcParams`.
@@ -608,7 +611,7 @@ various ways.  The following general rules apply:
   and how axis limits are shared between the individual subplots.  Setting
   the keyword to 'row' will share the axes limits across all subplots in a
   row, 'col' will share across all subplots in a column, 'all' will share
-  across all subplots in the figure, and `False` will allow independent
+  across all subplots in the figure, and False will allow independent
   limits for each subplot.
 
   For Bode plots, the `share_magnitude` and `share_phase` keyword arguments
@@ -620,11 +623,11 @@ various ways.  The following general rules apply:
   the plot title.  The default title is a string of the form "<Type> plot
   for <syslist>" where <syslist> is a list of the sys names contained in
   the plot (which can be updated if the plotting is called multiple times).
-  Use `title=False` to suppress the title completely.  The title can also
+  Use ``title=False`` to suppress the title completely.  The title can also
   be updated using the :func:`ControlPlot.set_plot_title` method
   for the returned control plot object.
 
-  The plot title is only generated if `ax` is `None`.
+  The plot title is only generated if `ax` is None.
 
 The following code illustrates the use of some of these customization
 features::
@@ -678,8 +681,8 @@ example::
 
 .. image:: figures/ctrlplot-pole_zero_subplots.png
 
-Alternatively, turning off the omega-damping grid (using `grid=False` or
-`grid='empty'`) allows use of Matplotlib layout commands.
+Alternatively, turning off the omega-damping grid (using ``grid=False`` or
+``grid='empty'``) allows use of Matplotlib layout commands.
 
 
 Response and plotting functions

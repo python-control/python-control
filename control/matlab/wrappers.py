@@ -34,13 +34,13 @@ def bode(*args, **kwargs):
     omega : array
         Range of frequencies in rad/s.
     dB : boolean
-        If `True`, plot result in dB.
+        If True, plot result in dB.
     Hz : boolean
-        If `True`, plot frequency in Hz (omega must be provided in rad/sec).
+        If True, plot frequency in Hz (omega must be provided in rad/sec).
     deg : boolean
-        If `True`, return phase in degrees (else radians).
+        If True, return phase in degrees (else radians).
     plot : boolean
-        If `True`, plot magnitude and phase.
+        If True, plot magnitude and phase.
 
     Returns
     -------
@@ -115,7 +115,7 @@ def nyquist(*args, plot=True, **kwargs):
         in Hz otherwise in rad/s.  Specifying `omega` as a list of two
         elements is equivalent to providing `omega_limits`.
     plot : bool
-        If `False`, do not generate a plot.
+        If False, do not generate a plot.
 
     Returns
     -------
@@ -226,12 +226,12 @@ def rlocus(*args, **kwargs):
         Gains to use in computing plot of closed-loop poles.
     xlim : tuple or list, optional
         Set limits of x axis, normally with tuple
-        (see :doc:`matplotlib:api/axes_api`).
+        (see `matplotlib:api/axes_api`).
     ylim : tuple or list, optional
         Set limits of y axis, normally with tuple
-        (see :doc:`matplotlib:api/axes_api`).
+        (see `matplotlib:api/axes_api`).
     plot : bool
-        If `False`, do not generate a plot.
+        If False, do not generate a plot.
 
     Returns
     -------
@@ -275,10 +275,10 @@ def pzmap(*args, **kwargs):
     sys : LTI (StateSpace or TransferFunction)
         Linear system for which poles and zeros are computed.
     plot : bool, optional
-        If `True` a graph is generated with Matplotlib,
+        If True a graph is generated with Matplotlib,
         otherwise the poles and zeros are only computed and returned.
     grid : boolean (default = False)
-        If `True`, plot omega-damping grid.
+        If True, plot omega-damping grid.
 
     Returns
     -------
@@ -385,9 +385,9 @@ def connect(*args):
 
     The system `sys` is a system typically constructed with `append`, with
     multiple inputs and outputs.  The inputs and outputs are connected
-    according to the interconnection matrix `Q`, and then the final inputs and
-    outputs are trimmed according to the inputs and outputs listed in `inputv`
-    and `outputv`.
+    according to the interconnection matrix `Q`, and then the final inputs
+    and outputs are trimmed according to the inputs and outputs listed in
+    `inputv` and `outputv`.
 
     NOTE: Inputs and outputs are indexed starting at 1 and negative values
     correspond to a negative feedback interconnection.
@@ -400,8 +400,8 @@ def connect(*args):
         Interconnection matrix. First column gives the input to be connected.
         The second column gives the index of an output that is to be fed into
         that input. Each additional column gives the index of an additional
-        input that may be optionally added to that input. Negative
-        values mean the feedback is negative. A zero value is ignored. Inputs
+        input that may be optionally added to that input. Negative values
+        mean the feedback is negative. A zero value is ignored. Inputs
         and outputs are indexed starting at 1 to communicate sign information.
     inputv : 1D array
         List of final external inputs, indexed starting at 1.

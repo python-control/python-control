@@ -114,15 +114,15 @@ This equation is a *linear* equation of the form
    M c = \begin{bmatrix} \bar z(0) \\ \bar z(T) \end{bmatrix}
 
 where :math:`\bar z` is called the *flat flag* for the system.
-Assuming that :math:`M` has a sufficient number of columns and that it is full
-column rank, we can solve for a (possibly non-unique) :math:`\alpha` that
-solves the trajectory generation problem.
+Assuming that :math:`M` has a sufficient number of columns and that it
+is full column rank, we can solve for a (possibly non-unique)
+:math:`\alpha` that solves the trajectory generation problem.
 
 Module usage
 ------------
 
 To create a trajectory for a differentially flat system, a
-:class:`~flatsys.FlatSystem` object must be created.  This is done
+:class:`flatsys.FlatSystem` object must be created.  This is done
 using the :func:`~flatsys.flatsys` function::
 
   import control.flatsys as fs
@@ -145,7 +145,7 @@ and input given the flat flag::
 The flag :math:`\bar z` is implemented as a list of flat outputs :math:`z_i`
 and their derivatives up to order :math:`q_i`:
 
-  `zflag[i][j]` = :math:`z_i^{(j)}`
+  ``zflag[i][j]`` = :math:`z_i^{(j)}`
 
 The number of flat outputs must match the number of system inputs.
 
@@ -270,11 +270,11 @@ derived in *Feedback Systems* by Astrom and Murray, Example 3.11.
         vehicle_flat_forward, vehicle_flat_reverse,
 	inputs=('v', 'delta'), outputs=('x', 'y'), states=('x', 'y', 'theta'))
 
-To find a trajectory from an initial state :math:`x_0` to a final state
-:math:`x_\text{f}` in time :math:`T_\text{f}` we solve a point-to-point
-trajectory generation problem. We also set the initial and final inputs, which
-sets the vehicle velocity :math:`v` and steering wheel angle :math:`\delta` at
-the endpoints.
+To find a trajectory from an initial state :math:`x_0` to a final
+state :math:`x_\text{f}` in time :math:`T_\text{f}` we solve a
+point-to-point trajectory generation problem. We also set the initial
+and final inputs, which sets the vehicle velocity :math:`v` and
+steering wheel angle :math:`\delta` at the endpoints.
 
 .. code-block:: python
 
