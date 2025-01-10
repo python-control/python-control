@@ -210,25 +210,33 @@ class LTI(InputOutputSystem):
         # importing here prevents circular dependancy
         from control.passivity import ispassive
         return ispassive(self)
+    
+    def feedback(self, other=1, sign=-1):
+        raise NotImplementedError(f"feedback not implemented for base {self.__class__.__name__} objects")
 
     # convenience aliases
     # most function are only forward declaraed and patched in the __init__.py to avoid circular imports
 
     # conversions
+    #: Convert to :class:`StateSpace` representation; see :func:`ss`
     to_ss: Callable
+    #: Convert to :class:`TransferFunction` representation; see :func:`tf`
     to_tf: Callable
 
-    # system interconnections
-    feedback: Callable
-
     # freq domain plotting
+    #: Bode plot; see :func:`bode_plot`
     bode_plot: Callable
+    #: Nyquist plot; see :func:`nyquist_plot`
     nyquist_plot: Callable
+    #: Nichols plot; see :func:`nichols_plot`
     nichols_plot: Callable
 
     # time domain simulation
+    #: Forced response; see :func:`forced_response`
     forced_response = control.timeresp.forced_response
+    #: Impulse response; see :func:`impulse_response`
     impulse_response = control.timeresp.impulse_response
+    #: Step response; see :func:`step_response`
     step_response = control.timeresp.step_response
 
 

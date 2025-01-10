@@ -244,7 +244,7 @@ kwarg_unittest = {
     'append': test_unrecognized_kwargs,
     'bode': test_response_plot_kwargs,
     'bode_plot': test_response_plot_kwargs,
-    'LTI.bode_plot': test_response_plot_kwargs,
+    'LTI.bode_plot': test_response_plot_kwargs, # alias for bode_plot and tested via bode_plot
     'create_estimator_iosystem': stochsys_test.test_estimator_errors,
     'create_statefbk_iosystem': statefbk_test.TestStatefbk.test_statefbk_errors,
     'describing_function_plot': test_matplotlib_kwargs,
@@ -254,7 +254,6 @@ kwarg_unittest = {
     'dlqr': test_unrecognized_kwargs,
     'drss': test_unrecognized_kwargs,
     'feedback': test_unrecognized_kwargs,
-    'LTI.feedback': test_unrecognized_kwargs,
     'find_eqpt': iosys_test.test_find_operating_point,
     'find_operating_point': iosys_test.test_find_operating_point,
     'flatsys.flatsys': test_unrecognized_kwargs,
@@ -269,13 +268,13 @@ kwarg_unittest = {
     'lqr': test_unrecognized_kwargs,
     'negate': test_unrecognized_kwargs,
     'nichols_plot': test_matplotlib_kwargs,
-    'LTI.nichols_plot': test_matplotlib_kwargs,
+    'LTI.nichols_plot': test_matplotlib_kwargs, # alias for nichols_plot and tested via nichols_plot
     'nichols': test_matplotlib_kwargs,
     'nlsys': test_unrecognized_kwargs,
     'nyquist': test_matplotlib_kwargs,
     'nyquist_response': test_response_plot_kwargs,
     'nyquist_plot': test_matplotlib_kwargs,
-    'LTI.nyquist_plot': test_matplotlib_kwargs,
+    'LTI.nyquist_plot': test_matplotlib_kwargs, # alias for nyquist_plot and tested via nyquist_plot
     'phase_plane_plot': test_matplotlib_kwargs,
     'parallel': test_unrecognized_kwargs,
     'pole_zero_plot': test_unrecognized_kwargs,

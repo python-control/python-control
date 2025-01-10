@@ -123,7 +123,6 @@ except ImportError:
 # all heavily depend on the LTI class
 LTI.to_ss = ss
 LTI.to_tf = tf
-LTI.feedback = feedback
 LTI.bode_plot = bode_plot
 LTI.nyquist_plot = nyquist_plot
 LTI.nichols_plot = nichols_plot
