@@ -4,7 +4,7 @@
 Linear System Modeling, Analysis, and Design
 ********************************************
 
-Linear time invariant (LTI) systems are represented in python-control in
+Linear time invariant (LTI) systems are represented in `python-control` in
 state space, transfer function, or frequency response data (FRD) form.  Most
 functions in the toolbox will operate on any of these data types, and
 functions for converting between compatible types are provided.
@@ -167,9 +167,11 @@ Multi-input, multi-output (MIMO) systems
 
 Multi-input, multi-output (MIMO) systems are created by providing
 parameters of the appropriate dimensions to the relevant factory
-function.  For transfer functions, this is done by providing a 2D list
-of numerator and denominator polynomials to the :func:`tf` function,
-e.g.::
+function.  For state space systems, the input matrix `B`, output
+matrix `C`, and direct term `D` should be 2D matrices of the
+appropriate shape.  For transfer functions, this is done by providing
+a 2D list of numerator and denominator polynomials to the :func:`tf`
+function, e.g.::
 
   sys = ct.tf(
       [[num11, num12], [num21, num22]],
@@ -232,18 +234,21 @@ response.
 
 .. _discrete_time_systems:
 
-
 Discrete Time Systems
 =====================
 
 A discrete time system is created by specifying a nonzero "timebase",
-`dt`.  The timebase argument can be given when a system is
-constructed:
+`dt` when the system is constructed::
+
+  sys_ss = ct.ss(A, B, C, D, dt)
+  sys_tf = ct.tf(num, den, dt)
+
+The timebase argument is interpreted as follows:
 
 * ``dt = 0``: continuous time system (default)
 * ``dt > 0``: discrete time system with sampling period 'dt'
 * ``dt = True``: discrete time with unspecified sampling period
-* ``dt = None``: no timebase specified
+* ``dt = None``: no timebase specified (see below)
 
 Systems must have compatible timebases in order to be combined. A
 discrete time system with unspecified sampling time (``dt = True``)
@@ -256,18 +261,25 @@ timebase of the latter system. For continuous time systems, the
 :meth:`TransferFunction.sample` methods can be used to create a
 discrete time system from a continuous time system.  See
 :ref:`utility-and-conversions`. The default value of `dt` can be
-changed by changing the value of
-``config.defaults['control.default_dt']``.
+changed by changing the value of ``config.defaults['control.default_dt']``.
 
 Functions operating on LTI systems will take into account whether a
 system is continuous time or discrete time when carrying out operations
 that depend on this difference.  For example, the :func:`rss` function
 will place all system eigenvalues within the unit circle when called
-using `dt` corresponding to a discrete time system::
+using `dt` corresponding to a discrete time system:
+
+.. testsetup::
+
+   import random
+   random.seed(117)
+   np.random.seed(117)
+
+.. doctest::
 
   >>> sys = ct.rss(2, 1, 1, dt=True)
   >>> sys.poles()
-  array([-0.78096961+0.j,  0.09347055+0.j])
+  array([-0.53807661+0.j,  0.86313342+0.j])
 
 
 .. include:: statesp.rst
@@ -325,33 +337,34 @@ Time sampling
 -------------
 
 Continuous time systems can be converted to discrete time systems using
-the :func:`sample_system` function and specifying a sampling time::
+the :func:`sample_system` function and specifying a sampling time:
 
-  >>> csys = ct.rss(4, 2, 2, name='csys')
-  >>> dsys = ct.sample_system(csys, 0.1, method='bilinear')
-  >>> print(dsys)
-  <StateSpace>: cys$sampled
+.. doctest::
+
+  >>> sys_ct = ct.rss(4, 2, 2, name='sys')
+  >>> sys_dt = ct.sample_system(sys_ct, 0.1, method='bilinear')
+  >>> print(sys_dt)
+  <StateSpace>: sys$sampled
   Inputs (2): ['u[0]', 'u[1]']
   Outputs (2): ['y[0]', 'y[1]']
   States (4): ['x[0]', 'x[1]', 'x[2]', 'x[3]']
-
-  A = [[ 1.80851713  3.70669158  2.01645278  4.11088725]
-       [-1.08922089 -1.56305649 -0.52225931 -1.44683994]
-       [ 0.09926437  0.31372724  1.01817342  0.4445761 ]
-       [ 0.1936853   0.3376456   0.0166808   0.96877128]]
-
-  B = [[-0.07840985 -0.39220354]
-       [-0.00693812  0.12585167]
-       [-0.14077857  0.02673465]
-       [ 0.05062632 -0.08018257]]
-
-  C = [[-0.17214877 -0.06055247 -0.09715775  0.03881976]
-       [-1.60336436 -2.11612637 -1.15117992 -2.34687907]]
-
-  D = [[0.00704611 0.01107279]
-       [0.04476368 0.22390648]]
-
   dt = 0.1
+  <BLANKLINE>
+  A = [[-0.79324497 -0.51484336 -1.09297036 -0.05363047]
+       [-3.5428559  -0.9340972  -1.85691838 -0.74843144]
+       [ 3.90565206  1.9409475   3.21968314  0.48558594]
+       [ 3.47315264  1.55258121  2.09562768  1.25466845]]
+  <BLANKLINE>
+  B = [[-0.01098544  0.00485652]
+       [-0.41579876  0.02204956]
+       [ 0.45553908 -0.02459682]
+       [ 0.50510046 -0.05448362]]
+  <BLANKLINE>
+  C = [[-2.74490135 -0.3064149  -2.27909612 -0.64793559]
+       [ 2.56376145  1.09663807  2.4332544   0.30768752]]
+  <BLANKLINE>
+  D = [[-0.34680884  0.02138098]
+       [ 0.29124186 -0.01476461]]
 
 Note that the system name for the discrete time system is the name of
 the original system with the string '$sampled' appended.
@@ -360,7 +373,7 @@ Discrete time systems can also be created using the
 :func:`StateSpace.sample` or :func:`TransferFunction.sample` methods
 applied directly to the system::
 
-  dsys = csys.sample(0.1)
+  sys_dt = sys_ct.sample(0.1)
 
 
 Frequency sampling
@@ -369,24 +382,26 @@ Frequency sampling
 Transfer functions can be sampled at a selected set of frequencies to
 obtain a frequency response data representation of a system by calling
 the :func:`frd` factory function with an LTI system and an
-array of frequencies::
+array of frequencies:
 
-  >>> sys_ss = ct.ss(4, 1, 1, name='sys_ss')
+.. doctest::
+
+  >>> sys_ss = ct.rss(4, 1, 1, name='sys_ss')
   >>> sys_frd = ct.frd(sys_ss, np.logspace(-1, 1, 5))
   >>> print(sys_frd)
   <FrequencyResponseData>: sys_ss$sampled
   Inputs (1): ['u[0]']
   Outputs (1): ['y[0]']
-
+  <BLANKLINE>
   Freq [rad/s]  Response
   ------------  ---------------------
-         0.100       2.357    -3.909j
-         0.316     -0.6068    -2.216j
-         1.000      -1.383   -0.9971j
-         3.162      -1.666   -0.3708j
-        10.000      -1.703   -0.1186j
+         0.100     -0.2648+0.0006429j
+         0.316     -0.2653 +0.003783j
+         1.000     -0.2561 +0.008021j
+         3.162     -0.2528 -0.001438j
+        10.000     -0.2578 -0.002443j
 
-The :func:`frequency_response` function an also be used for this
+The :func:`frequency_response` function can also be used for this
 purpose, although in that case the output is usually used for plotting
 the frequency response, as described in more detail in the
 :ref:`frequency_response` section.
@@ -409,14 +424,14 @@ simplification:
 
 The :func:`balanced_reduction` function eliminate states based on the
 Hankel singular values of a system.  Intuitively, a system (or
-subsystem) with small Hankel singular values correspond to a situation
+subsystem) with small Hankel singular values corresponds to a situation
 in which it is difficult to observe a state and/or difficult to
 control that state.  Eliminating states corresponding to small Hankel
 singular values thus represents a good approximation in terms of the
 input/output properties of a system.  For systems with unstable modes,
 :func:`balanced_reduction` first removes the states corresponding to
 the unstable subspace from the system, then carries out a balanced
-realization on the stable part, then reinserts the unstable modes.
+realization on the stable part, and then reinserts the unstable modes.
 
 The :func:`minimal_realization` function eliminates uncontrollable or
 unobservable states in state space models or cancels pole-zero pairs
@@ -442,7 +457,9 @@ Displaying LTI System Information
 =================================
 
 Information about an LTI system can be obtained using the Python
-`~python.print` function::
+`~python.print` function:
+
+.. doctest::
 
   >>> sys = ct.rss(4, 2, 2, name='sys_2x2')
   >>> print(sys)
@@ -450,46 +467,56 @@ Information about an LTI system can be obtained using the Python
   Inputs (2): ['u[0]', 'u[1]']
   Outputs (2): ['y[0]', 'y[1]']
   States (4): ['x[0]', 'x[1]', 'x[2]', 'x[3]']
+  <BLANKLINE>
+  A = [[-2.06417506  0.28005277  0.49875395 -0.40364606]
+       [-0.18000232 -0.91682581  0.03179904 -0.16708786]
+       [-0.7963147   0.19042684 -0.72505525 -0.52196969]
+       [ 0.69457346 -0.20403756 -0.59611373 -0.94713748]]
+  <BLANKLINE>
+  B = [[-2.3400013  -1.02252469]
+       [-0.76682007 -0.        ]
+       [ 0.13399373  0.94404387]
+       [ 0.71412443 -0.45903835]]
+  <BLANKLINE>
+  C = [[ 0.62432205 -0.55879494 -0.08717116  1.05092654]
+       [-0.94352373  0.19332285  1.05341936  0.60141772]]
+  <BLANKLINE>
+  D = [[ 0.  0.]
+       [-0.  0.]]
 
-  A = [[  64.81683274  -26.26662488   71.02177207 -107.97639093]
-       [  39.61359988  -16.12926876   41.82185164  -65.62112231]
-       [ -30.6112503    12.44992996  -34.00905316   49.74919788]
-       [  10.43751558   -4.08781262   10.64062604  -18.15145265]]
+A loadable description of a system can be obtained just by displaying
+the system object::
 
-  B = [[ 2.13327172 -0.        ]
-       [ 0.98132238  0.        ]
-       [-1.22635806 -1.57449988]
-       [ 0.          0.97986024]]
+.. doctest::
 
-  C = [[-0.          1.34197324  0.28470822  0.        ]
-       [-0.2777818   0.         -0.60024615 -0.19122287]]
-
-  D = [[-0.  0.]
-       [ 0.  0.]]
-
-For a more compact representation, LTI objects can be evaluated directly
-to return a summary of the system input/output properties::
-
-  >>> sys = ct.rss(4, 2, 2, name='sys_2x2')
+  >>> sys = ct.rss(2, 1, 1, name='sys_siso')
   >>> sys
-  <StateSpace sys_2x2: ['u[0]', 'u[1]'] -> ['y[0]', 'y[1]']>
+  StateSpace(
+  array([[ 0.91008302, -0.87770371],
+         [ 6.83039608, -5.19117213]]),
+  array([[0.9810374],
+         [0.516694 ]]),
+  array([[1.38255365, 0.96999883]]),
+  array([[-0.]]),
+  name='sys_siso', states=2, outputs=1, inputs=1)
 
 Alternative representations of the system are available using the
-:func:`iosys_repr` function.
+:func:`iosys_repr` function and can be configured using
+`config.defaults['iosys.repr_format']`.
 
 Transfer functions are displayed as ratios of polynomials, using
 either 's' or 'z' depending on whether the systems is continuous or
-discrete time::
+discrete time:
 
-  >>> sys_tf = ct.tf([1, 0], [1, 2, 1], 0.1)
+.. doctest::
+
+  >>> sys_tf = ct.tf([1, 0], [1, 2, 1], 0.1, name='sys')
   >>> print(sys_tf)
-  <TransferFunction>: sys[1]
+  <TransferFunction>: sys
   Inputs (1): ['u[0]']
   Outputs (1): ['y[0]']
-
-        z
-  -------------
-  z^2 + 2 z + 1
-
   dt = 0.1
-
+  <BLANKLINE>
+          z
+    -------------
+    z^2 + 2 z + 1

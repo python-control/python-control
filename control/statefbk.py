@@ -40,7 +40,7 @@ except ImportError:
 
 
 __all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr',
-           'dlqr', 'acker', 'create_statefbk_iosystem']
+           'dlqr', 'acker', 'place_acker', 'create_statefbk_iosystem']
 
 
 # Pole placement
@@ -89,7 +89,7 @@ def place(A, B, p):
 
     See Also
     --------
-    place_varga, acker
+    place_acker, place_varga
 
     """
     from scipy.signal import place_poles
@@ -107,7 +107,7 @@ def place(A, B, p):
 
 
 def place_varga(A, B, p, dtime=False, alpha=None):
-    """Place closed loop eigenvalues.
+    """Place closed loop eigenvalues using Varga method.
 
     K = place_varga(A, B, p, dtime=False, alpha=None)
 
@@ -138,7 +138,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
     See Also
     --------
-    place, acker
+    place, place_acker
 
     Notes
     -----
@@ -210,11 +210,11 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
 
 # Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
-def acker(A, B, poles):
+def place_acker(A, B, poles):
     """Pole placement using Ackermann method.
 
     Call:
-    K = acker(A, B, poles)
+    K = place_acker(A, B, poles)
 
     Parameters
     ----------
@@ -540,7 +540,7 @@ def dlqr(*args, **kwargs):
     return K, S, E
 
 
-# Function to create an I/O sytems representing a state feedback controller
+# Function to create an I/O systems representing a state feedback controller
 def create_statefbk_iosystem(
         sys, gain, feedfwd_gain=None, integral_action=None, estimator=None,
         controller_type=None, xd_labels=None, ud_labels=None, ref_labels=None,
@@ -1220,3 +1220,7 @@ def gram(sys, type):
                 n, m, A, Q, C.transpose(), dico, fact='N', trans=tra)
         gram = X
         return gram
+
+
+# Short versions of functions
+acker = place_acker

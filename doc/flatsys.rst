@@ -118,8 +118,8 @@ Assuming that :math:`M` has a sufficient number of columns and that it
 is full column rank, we can solve for a (possibly non-unique)
 :math:`\alpha` that solves the trajectory generation problem.
 
-Module usage
-------------
+Sub-package usage
+-----------------
 
 To create a trajectory for a differentially flat system, a
 :class:`flatsys.FlatSystem` object must be created.  This is done
@@ -128,12 +128,10 @@ using the :func:`~flatsys.flatsys` function::
   import control.flatsys as fs
   sys = fs.flatsys(forward, reverse)
 
-The `forward` and `reverse` parameters describe the mappings between the
-system state/input and the differentially flat outputs and their
-derivatives ("flat flag").
-
-The :func:`~flatsys.FlatSystem.forward` method computes the
-flat flag given a state and input::
+The `forward` and `reverse` parameters describe the mappings between
+the system state/input and the differentially flat outputs and their
+derivatives ("flat flag").  The :func:`~flatsys.FlatSystem.forward`
+method computes the flat flag given a state and input::
 
   zflag = sys.forward(x, u)
 
@@ -185,20 +183,21 @@ The returned object has class :class:`~flatsys.SystemTrajectory` and
 can be used to compute the state and input trajectory between the initial and
 final condition::
 
-  xd, ud = traj.eval(T)
+  xd, ud = traj.eval(timepts)
 
-where `T` is a list of times on which the trajectory should be evaluated
-(e.g., `T = numpy.linspace(0, Tf, M)`.
+where `timepts` is a list of times on which the trajectory should be evaluated
+(e.g., `timepts = numpy.linspace(0, Tf, M)`.
 
 The :func:`~flatsys.point_to_point` function also allows the
 specification of a cost function and/or constraints, in the same
 format as :func:`optimal.solve_ocp`.
 
-The :func:`~flatsys.solve_flat_ocp` function can be used to
-solve an optimal control problem without a final state::
+The :func:`~flatsys.solve_flat_ocp` function can be used to solve an
+optimal control problem for a differentially flat system without a
+final state constraint::
 
   traj = fs.solve_flat_ocp(
-  sys, timepts, x0, u0, cost, basis=basis)
+      sys, timepts, x0, u0, cost, basis=basis)
 
 The `cost` parameter is a function with call signature
 `cost(x, u)` and should return the (incremental) cost at the given
@@ -209,16 +208,18 @@ function for the final point in the trajectory.
 Example
 -------
 
-To illustrate how we can use a two degree-of-freedom design to improve the
-performance of the system, consider the problem of steering a car to change
-lanes on a road. We use the non-normalized form of the dynamics, which are
-derived in *Feedback Systems* by Astrom and Murray, Example 3.11.
+To illustrate how we can differential flatness to generate a feasible
+trajectory, consider the problem of steering a car to change lanes on
+a road. We use the non-normalized form of the dynamics, which are
+derived in `Feedback Systems
+<https://fbswiki.org/wiki/index.php?title=FBS>`, Example 3.11 (Vehicle
+Steering).
 
 .. code-block:: python
 
+    import numpy as np
     import control as ct
     import control.flatsys as fs
-    import numpy as np
 
     # Function to take states, inputs and return the flat flag
     def vehicle_flat_forward(x, u, params={}):
@@ -290,8 +291,9 @@ steering wheel angle :math:`\delta` at the endpoints.
     traj = fs.point_to_point(vehicle_flat, Tf, x0, u0, xf, uf, basis=poly)
 
     # Create the trajectory
-    t = np.linspace(0, Tf, 100)
-    x, u = traj.eval(t)
+    timepts = np.linspace(0, Tf, 100)
+    xd, ud = traj.eval(timepts)
+    resp_p2p = ct.input_output_response(vehicle_flat, timepts, ud, X0=xd[:, 0])
 
 Alternatively, we can solve an optimal control problem in which we
 minimize a cost function along the trajectory as well as a terminal
@@ -308,20 +310,35 @@ cost:
         vehicle_flat, np.diag([1e3, 1e3, 1e3]), None, x0=xf)
 
     # Use a straight line as the initial guess
-    timepts = np.linspace(0, Tf, 10)
+    evalpts = np.linspace(0, Tf, 10)
     initial_guess = np.array(
-        [x0[i] + (xf[i] - x0[i]) * timepts/Tf for i in (0, 1)])
+        [x0[i] + (xf[i] - x0[i]) * evalpts/Tf for i in (0, 1)])
 
     # Solve the optimal control problem, evaluating cost at timepts
     bspline = fs.BSplineFamily([0, Tf/2, Tf], 4)
     traj = fs.solve_flat_ocp(
-        vehicle_flat, timepts, x0, u0, traj_cost,
+        vehicle_flat, evalpts, x0, u0, traj_cost,
 	terminal_cost=term_cost, initial_guess=initial_guess, basis=bspline)
 
-    x, u = traj.eval(t)
+    xd, ud = traj.eval(timepts)
+    resp_ocp = ct.input_output_response(vehicle_flat, timepts, ud, X0=xd[:, 0])
 
-Module classes and functions
-----------------------------
+The results of the two approaches can be shown using the
+`time_response_plot` function::
+
+    cplt = ct.time_response_plot(
+        ct.combine_time_responses([resp_p2p, resp_ocp]),
+        overlay_traces=True, trace_labels=['point_to_point', 'solve_ocp'])
+
+.. image:: figures/flatsys-steering-compare.png
+   :align: center
+
+
+Sub-package classes and functions
+---------------------------------
+
+The flat systems sub-package `flatsys` utilizes a number of classes to
+define the flatsystem, the basis functions, and the system trajetory:
 
 .. autosummary::
    :template: custom-class-template.rst
@@ -333,6 +350,9 @@ Module classes and functions
    flatsys.LinearFlatSystem
    flatsys.PolyFamily
    flatsys.SystemTrajectory
+
+The following functions can be used to define a flat system and
+compute trajectories:
 
 .. autosummary::
 

@@ -660,9 +660,10 @@ def correlation(T, X, Y=None, squeeze=True):
 
       tau, Rtau = correlation(T, X[, Y])
 
-    The signal X (and Y, if present) represent a continuous time signal
-    sampled at times T.  The return value provides the correlation Rtau
-    between X(t+tau) and X(t) at a set of time offets tau.
+    The signal X (and Y, if present) represent a continuous or
+    discrete time signal sampled at times T.  The return value
+    provides the correlation Rtau between X(t+tau) and X(t) at a set
+    of time offets tau.
 
     Parameters
     ----------

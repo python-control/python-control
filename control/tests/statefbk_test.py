@@ -15,7 +15,7 @@ from control.exception import ControlDimension, ControlSlycot, \
     ControlArgument, slycot_check
 from control.mateqn import care, dare
 from control.statefbk import (ctrb, obsv, place, place_varga, lqr, dlqr,
-                              gram, acker)
+                              gram, place_acker)
 from control.tests.conftest import slycotonly
 
 
@@ -269,7 +269,7 @@ class TestStatefbk:
                 desired = poles(des)
 
                 # Now place the poles using acker
-                K = acker(sys.A, sys.B, desired)
+                K = place_acker(sys.A, sys.B, desired)
                 new = ss(sys.A - sys.B * K, sys.B, sys.C, sys.D)
                 placed = poles(new)
 

@@ -24,6 +24,48 @@ import control.optimal as opt
 atol = 1e-4
 rtol = 1e-4
 
+# Define the kinematic car system
+def vehicle_flat_forward(x, u, params={}):
+    b = params.get('wheelbase', 3.)             # get parameter values
+    zflag = [np.zeros(3), np.zeros(3)]          # list for flag arrays
+    zflag[0][0] = x[0]                          # flat outputs
+    zflag[1][0] = x[1]
+    zflag[0][1] = u[0] * np.cos(x[2])           # first derivatives
+    zflag[1][1] = u[0] * np.sin(x[2])
+    thdot = (u[0]/b) * np.tan(u[1])             # dtheta/dt
+    zflag[0][2] = -u[0] * thdot * np.sin(x[2])  # second derivatives
+    zflag[1][2] =  u[0] * thdot * np.cos(x[2])
+    return zflag
+
+def vehicle_flat_reverse(zflag, params={}):
+    b = params.get('wheelbase', 3.)             # get parameter values
+    x = np.zeros(3); u = np.zeros(2)            # vectors to store x, u
+    x[0] = zflag[0][0]                          # x position
+    x[1] = zflag[1][0]                          # y position
+    x[2] = np.arctan2(zflag[1][1], zflag[0][1]) # angle
+    u[0] = zflag[0][1] * np.cos(x[2]) + zflag[1][1] * np.sin(x[2])
+    thdot_v = zflag[1][2] * np.cos(x[2]) - zflag[0][2] * np.sin(x[2])
+    u[1] = np.arctan2(thdot_v, u[0]**2 / b)
+    return x, u
+
+def vehicle_update(t, x, u, params):
+    b = params.get('wheelbase', 3.)             # get parameter values
+    dx = np.array([
+        np.cos(x[2]) * u[0],
+        np.sin(x[2]) * u[0],
+        (u[0]/b) * np.tan(u[1])
+    ])
+    return dx
+
+def vehicle_output(t, x, u, params): return x
+
+# Create differentially flat input/output system
+vehicle_flat = fs.FlatSystem(
+    vehicle_flat_forward, vehicle_flat_reverse, vehicle_update,
+    vehicle_output, inputs=('v', 'delta'), outputs=('x', 'y', 'theta'),
+    states=('x', 'y', 'theta'), name='vehicle_flat')
+
+
 class TestFlatSys:
     """Test differential flat systems"""
 
@@ -58,48 +100,9 @@ class TestFlatSys:
         t, y, x = ct.forced_response(sys, T, ud, x1, return_x=True)
         np.testing.assert_array_almost_equal(x, xd, decimal=3)
 
-    @pytest.fixture
-    def vehicle_flat(self):
-        """Differential flatness for a kinematic car"""
-        def vehicle_flat_forward(x, u, params={}):
-            b = params.get('wheelbase', 3.)             # get parameter values
-            zflag = [np.zeros(3), np.zeros(3)]          # list for flag arrays
-            zflag[0][0] = x[0]                          # flat outputs
-            zflag[1][0] = x[1]
-            zflag[0][1] = u[0] * np.cos(x[2])           # first derivatives
-            zflag[1][1] = u[0] * np.sin(x[2])
-            thdot = (u[0]/b) * np.tan(u[1])             # dtheta/dt
-            zflag[0][2] = -u[0] * thdot * np.sin(x[2])  # second derivatives
-            zflag[1][2] =  u[0] * thdot * np.cos(x[2])
-            return zflag
-
-        def vehicle_flat_reverse(zflag, params={}):
-            b = params.get('wheelbase', 3.)             # get parameter values
-            x = np.zeros(3); u = np.zeros(2)            # vectors to store x, u
-            x[0] = zflag[0][0]                          # x position
-            x[1] = zflag[1][0]                          # y position
-            x[2] = np.arctan2(zflag[1][1], zflag[0][1]) # angle
-            u[0] = zflag[0][1] * np.cos(x[2]) + zflag[1][1] * np.sin(x[2])
-            thdot_v = zflag[1][2] * np.cos(x[2]) - zflag[0][2] * np.sin(x[2])
-            u[1] = np.arctan2(thdot_v, u[0]**2 / b)
-            return x, u
-
-        def vehicle_update(t, x, u, params):
-            b = params.get('wheelbase', 3.)             # get parameter values
-            dx = np.array([
-                np.cos(x[2]) * u[0],
-                np.sin(x[2]) * u[0],
-                (u[0]/b) * np.tan(u[1])
-            ])
-            return dx
-
-        def vehicle_output(t, x, u, params): return x
-
-        # Create differentially flat input/output system
-        return fs.FlatSystem(
-            vehicle_flat_forward, vehicle_flat_reverse, vehicle_update,
-            vehicle_output, inputs=('v', 'delta'), outputs=('x', 'y', 'theta'),
-            states=('x', 'y', 'theta'))
+    @pytest.fixture(name='vehicle_flat')
+    def vehicle_flat_fixture(self):
+        return vehicle_flat
 
     @pytest.mark.parametrize("basis", [
         fs.PolyFamily(6), fs.PolyFamily(8), fs.BezierFamily(6),
@@ -839,3 +842,61 @@ class TestFlatSys:
 
         with pytest.raises(TypeError, match="incorrect number or type"):
             flatsys = fs.flatsys(1, 2, 3, 4, 5)
+
+
+if __name__ == '__main__':
+    # Generate images for User Guide
+    import matplotlib.pyplot as plt
+
+    #
+    # Point to point
+    #
+    # Define the endpoints of the trajectory
+    x0 = [0., -2., 0.]; u0 = [10., 0.]
+    xf = [100., 2., 0.]; uf = [10., 0.]
+    Tf = 10
+
+    # Define a set of basis functions to use for the trajectories
+    poly = fs.PolyFamily(6)
+
+    # Find a trajectory between the initial condition and the final condition
+    traj = fs.point_to_point(vehicle_flat, Tf, x0, u0, xf, uf, basis=poly)
+
+    # Create the trajectory
+    timepts = np.linspace(0, Tf, 100)
+    xd, ud = traj.eval(timepts)
+    resp_p2p = ct.input_output_response(vehicle_flat, timepts, ud, X0=xd[:, 0])
+
+    #
+    # Solve OCP
+    #
+    # Define the cost along the trajectory: penalize steering angle
+    traj_cost = ct.optimal.quadratic_cost(
+        vehicle_flat, None, np.diag([0.1, 10]), u0=uf)
+
+    # Define the terminal cost: penalize distance from the end point
+    term_cost = ct.optimal.quadratic_cost(
+        vehicle_flat, np.diag([1e3, 1e3, 1e3]), None, x0=xf)
+
+    # Use a straight line as the initial guess
+    evalpts = np.linspace(0, Tf, 10)
+    initial_guess = np.array(
+        [x0[i] + (xf[i] - x0[i]) * evalpts/Tf for i in (0, 1)])
+
+    # Solve the optimal control problem, evaluating cost at timepts
+    bspline = fs.BSplineFamily([0, Tf/2, Tf], 4)
+    traj = fs.solve_flat_ocp(
+        vehicle_flat, evalpts, x0, u0, traj_cost,
+	terminal_cost=term_cost, initial_guess=initial_guess, basis=bspline)
+
+    xd, ud = traj.eval(timepts)
+    resp_ocp = ct.input_output_response(vehicle_flat, timepts, ud, X0=xd[:, 0])
+
+    #
+    # Plot the results
+    #
+    cplt = ct.time_response_plot(
+        ct.combine_time_responses([resp_p2p, resp_ocp]),
+        overlay_traces=True, trace_labels=['point_to_point', 'solve_ocp'])
+
+    plt.savefig('flatsys-steering-compare.png')

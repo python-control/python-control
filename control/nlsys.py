@@ -612,7 +612,7 @@ class InterconnectedSystem(NonlinearIOSystem):
         Offset to the subsystem inputs, outputs, and states in the overal
         system input, output, and state arrays.
     syslist_index : dict
-        Index of the subsytem with key given by the name of the subsystem.
+        Index of the subsystem with key given by the name of the subsystem.
 
     See Also
     --------

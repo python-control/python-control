@@ -37,6 +37,8 @@ function_skiplist = [
     control.NamedSignal,                        # internal I/O class
     control.TimeResponseList,                   # internal response class
     control.FrequencyResponseList,              # internal response class
+    control.NyquistResponseList,                # internal response class
+    control.PoleZeroList,                       # internal response class
     control.FrequencyResponseData,              # check separately (iosys)
     control.InterconnectedSystem,               # check separately (iosys)
     control.flatsys.FlatSystem,                 # check separately (iosys)

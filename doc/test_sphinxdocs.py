@@ -22,13 +22,14 @@ sphinx_dir = str(resources.files('control')) + '/../doc/generated/'
 
 # Functions that should not be referenced
 legacy_functions = [
-    'FRD',                      # FrequencyResponseData (or frd)
+    'acker',                    # place_acker
     'balred',                   # balanced_reduction
     'bode',                     # bode_plot
     'c2d',                      # sample_system
     'era',                      # eigensys_realization
     'evalfr',                   # use __call__()
     'find_eqpt',                # find_operating_point
+    'FRD',                      # FrequencyResponseData (or frd)
     'gangof4',                  # gangof4_plot
     'hsvd',                     # hankel_singular_values
     'minreal',                  # minimal_realization

@@ -55,19 +55,20 @@ signal has covariance `Q` at each point in time (without any
 scaling based on the sample time).
 
 The python-control :func:`correlation` function computes the
-correlation matrix :math:`{\mathbb E}\{X^\mathsf{T}(t+\tau) X(t)\}` or the
-cross-correlation matrix :math:`{\mathbb E}\{X^\mathsf{T}(t+\tau) Y(t)\}`:
+correlation matrix :math:`{\mathbb E}\{X^\mathsf{T}(t+\tau) X(t)\}` or
+the cross-correlation matrix :math:`{\mathbb E}\{X^\mathsf{T}(t+\tau)
+Y(t)\}`, where :math:`\mathbb{E}` represents expectation:
 
 .. code::
 
   tau, Rtau = ct.correlation(timepts, X[, Y])
 
-where :math:`\mathbb{E}` represents expectation.  The signal `X` (and
-`Y`, if present) represents a continuous time signal sampled at
-regularly spaced times `timepts`.  The return value provides the
-correlation :math:`R_\tau` between :math:`X(t+\tau)` and :math:`X(t)`
-at a set of time offsets :math:`\tau` (determined based on the spacing
-of entries in the `timepts` vector.
+The signal `X` (and `Y`, if present) represents a continuous or
+discrete time signal sampled at regularly spaced times `timepts`.  The
+return value provides the correlation :math:`R_\tau` between
+:math:`X(t+\tau)` and :math:`X(t)` at a set of time offsets
+:math:`\tau` (determined based on the spacing of entries in the
+`timepts` vector.
 
 Note that the computation of the correlation function is based on a
 single time signal (or pair of time signals) and is thus a very crude
@@ -86,6 +87,10 @@ noise input, use the :func:`forced_response` (or
   Q = np.array([[0.1]])
   V = ct.white_noise(timepts, Q)
   resp = ct.forced_response(sys, timepts, V)
+  resp.plot()
+
+.. todo::
+   Add plot
 
 The correlation function for the output can be computed using the
 :func:`correlation` function and compared to the analytical expression:
@@ -96,13 +101,17 @@ The correlation function for the output can be computed using the
   plt.plot(tau, r_Y)
   plt.plot(tau, c**2 * Q.item() / (2 * a) * np.exp(-a * np.abs(tau)))
 
+.. todo::
+   Add plot
+
+
 .. _kalman-filter:
 
 Linear Quadratic Estimation (Kalman Filter)
 ===========================================
 
 A standard application of stochastic linear systems is the computation
-of the linear estimator under the assumption of white Gaussian
+of the optimal linear estimator under the assumption of white Gaussian
 measurement and process noise.  This estimator is called the linear
 quadratic estimator (LQE) and its gains can be computed using the
 :func:`lqe` function.
@@ -193,6 +202,9 @@ state :math:`x_\text{d}` and input :math:`u_\text{d}`::
   resp = ct.input_output_response(
       clsys, timepts, [Xd, Ud], [X0, np.zeros_like(X0), P0])
 
+.. todo::
+   Add example (with plots?)
+
 
 Maximum Likelihood Estimation
 =============================
@@ -234,14 +246,14 @@ most consistent with our model and penalize the noise and disturbances
 according to how likely they are (based on the given stochastic system
 model for each).
 
-Given a solution to this fixed-horizon optimal estimation problem, we can
-create an estimator for the state over all times by repeatedly applying the
-optimization problem :eq:`eq_fusion_oep` over a moving horizon.  At each
-time :math:`k`, we take the measurements for the last :math:`N` time steps
-along with the previously estimated state at the start of the horizon,
-:math:`x[k-N]` and reapply the optimization in equation
-:eq:`eq_fusion_oep`.  This approach is known as a \define{moving horizon
-estimator} (MHE).
+Given a solution to this fixed-horizon optimal estimation problem, we
+can create an estimator for the state over all times by repeatedly
+applying the optimization problem :eq:`eq_fusion_oep` over a moving
+horizon.  At each time :math:`k`, we take the measurements for the
+last :math:`N` time steps along with the previously estimated state at
+the start of the horizon, :math:`x[k-N]` and reapply the optimization
+in equation :eq:`eq_fusion_oep`.  This approach is known as a *moving
+horizon estimator* (MHE).
 
 The formulation for the moving horizon estimation problem is very general
 and various situations can be captured using the conditional probability
@@ -317,6 +329,11 @@ For discrete time systems, the
 can be used to generate an input/output system that implements a
 moving horizon estimator.
 
+An example showing the use of the optimal estimation problem and
+moving horizon estimation (MHE) applied to a planar vertical takeoff
+and landing (PVTOL) model is given in the :doc:`Moving Horizon
+Estimation Jupyter notebook <examples/mhe-pvtol>`.
+
 Several functions are available to help set up standard optimal estimation
 problems:
 
@@ -324,3 +341,6 @@ problems:
 
    optimal.gaussian_likelihood_cost
    optimal.disturbance_range_constraint
+
+.. todo::
+   Add example: LQE vs MHE (from CDS 112)

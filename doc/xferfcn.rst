@@ -71,7 +71,7 @@ the :math:`\infty`-norm:
      - :math:`\max_k \|x[k]\|`
 
 Given a norm for input signals and a norm for output signals, we can
-define the \emph{induced norm} for an input/output system.  The
+define the *induced norm* for an input/output system.  The
 following table summarizes the induced norms for a transfer function
 :math:`G(s)` with impulse response :math:`g(t)`:
 
@@ -93,7 +93,7 @@ The 2-norm and :math:`\infty`-norm can be computed using
 
   sysnorm = ct.system_norm(sys, p=<val>)
 
-where `val` is either 2 or 'inf'.
+where `val` is either 2 or 'inf' (the 1-norm is not yet implemented).
 
 
 Stability margins
@@ -108,10 +108,12 @@ function for a feedback system, assuming the loop will be closed using
 negative feedback with gain 1.
 
 The :func:`stability_margins` function computes all three of these
-margins as well as the frequencies at which they occur::
+margins as well as the frequencies at which they occur:
+
+.. doctest::
 
   >>> sys = ct.tf(10, [1, 2, 3, 4])
-  >>> gm, pm, sm, wpc, wgc, wms = ct.stability(sys)
+  >>> gm, pm, sm, wpc, wgc, wms = ct.stability_margins(sys)
   >>> print(f"Gain margin: {gm:2.2} at omega = {wpc:2.2} rad/sec")
   Gain margin: 0.2 at omega = 1.7 rad/sec
 
@@ -139,7 +141,7 @@ where
 
 .. math::
 
-   S = \frac{1}{1 + P C}, \qquad T = \frac{P C}{1 + P C},
+   S = \frac{1}{1 + P C}, \qquad T = \frac{P C}{1 + P C}
 
 are the sensitivty function and complementary sensitivity function,
 and :math:`P(s)` represents the process dynamics.
@@ -155,7 +157,9 @@ Systems with time delays
 
 Time delays are not directly representable in `python-control`, but
 the :func:`pade` function generates a linear system that approximates
-a time delay to a given order::
+a time delay to a given order:
+
+.. doctest::
 
   >>> num, den = ct.pade(0.1, 3)
   >>> delay = ct.tf(num, den, name='delay')
@@ -163,7 +167,7 @@ a time delay to a given order::
   <TransferFunction>: delay
   Inputs (1): ['u[0]']
   Outputs (1): ['y[0]']
-
-  -s^3 + 120 s^2 - 6000 s + 1.2e+05
-  ---------------------------------
-  s^3 + 120 s^2 + 6000 s + 1.2e+05
+  <BLANKLINE>
+    -s^3 + 120 s^2 - 6000 s + 1.2e+05
+    ---------------------------------
+    s^3 + 120 s^2 + 6000 s + 1.2e+05

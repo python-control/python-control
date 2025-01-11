@@ -45,7 +45,7 @@ Functions that transform systems from one form to another:
 
 .. _interconnections-ref:
 
-System interconnections
+System Interconnections
 =======================
 
 .. autosummary::
@@ -181,11 +181,11 @@ State space synthesis:
 .. autosummary::
    :toctree: generated/
 
-    acker
     create_statefbk_iosystem
     dlqr
     lqr
     place
+    place_acker
     place_varga
 
 Frequency domain synthesis:

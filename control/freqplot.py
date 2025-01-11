@@ -37,7 +37,8 @@ from .xferfcn import TransferFunction
 __all__ = ['bode_plot', 'NyquistResponseData', 'nyquist_response',
            'nyquist_plot', 'singular_values_response',
            'singular_values_plot', 'gangof4_plot', 'gangof4_response',
-           'bode', 'nyquist', 'gangof4', 'FrequencyResponseList']
+           'bode', 'nyquist', 'gangof4', 'FrequencyResponseList',
+           'NyquistResponseList']
 
 # Default values for module parameter variables
 _freqplot_defaults = {
@@ -65,6 +66,11 @@ _freqplot_defaults = {
 
 class FrequencyResponseList(list):
     def plot(self, *args, plot_type=None, **kwargs):
+        """Plot a list of frequency responses.
+
+        See `FrequencyResponseData.plot` for details.
+
+        """
         if plot_type == None:
             for response in self:
                 if plot_type is not None and response.plot_type != plot_type:
@@ -1157,7 +1163,19 @@ class NyquistResponseData:
 
 
 class NyquistResponseList(list):
+    """List of NyquistResponseData objects with plotting capability.
+
+    This class consists of a list of `NyquistResponseData` objects.
+    It is a subclass of the Python `list` class, with a `plot` method that
+    plots the individual `NyquistResponseData` objects.
+
+    """
     def plot(self, *args, **kwargs):
+        """Plot a list of Nyquist responses.
+
+        See `nyquist_plot` for details.
+
+        """
         return nyquist_plot(self, *args, **kwargs)
 
 

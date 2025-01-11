@@ -12,7 +12,7 @@ functionality required to work through the examples in the textbook
 `Feedback Systems <http://fbsbook.org>`_ by Astrom and Murray.  In
 addition to standard techniques available for linear control systems,
 support for nonlinear systems (including trajectory generation, gain
-scheduling, phase plane diagrams, and describing functions) is also
+scheduling, phase plane diagrams, and describing functions) is
 included.  A :ref:`matlab-module` is available that provides many of
 the common functions corresponding to commands available in the MATLAB
 Control Systems Toolbox.

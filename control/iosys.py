@@ -305,7 +305,7 @@ class InputOutputSystem():
 
         Format used in creating the representation for the system:
 
-          * 'info' : <IOSystemType:sysname:[inputs]->[outputs]
+          * 'info' : <IOSystemType:sysname:[inputs] -> [outputs]>
           * 'eval' : system specific, loadable representation
           * 'latex' : HTML/LaTeX representation of the object
 

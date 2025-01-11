@@ -320,7 +320,9 @@ kwarg_unittest = {
     'flatsys.LinearFlatSystem.__init__': test_unrecognized_kwargs,
     'NonlinearIOSystem.linearize': test_unrecognized_kwargs,
     'NyquistResponseData.plot': test_response_plot_kwargs,
+    'NyquistResponseList.plot': test_response_plot_kwargs,
     'PoleZeroData.plot': test_response_plot_kwargs,
+    'PoleZeroList.plot': test_response_plot_kwargs,
     'InterconnectedSystem.__init__':
         interconnect_test.test_interconnect_exceptions,
     'StateSpace.__init__':

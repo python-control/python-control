@@ -257,7 +257,8 @@ Plotting parameters
    :type: dict
    :value: {'axes.labelsize': 'small', 'axes.titlesize': 'small', 'figure.titlesize': 'medium', 'legend.fontsize': 'x-small', 'xtick.labelsize': 'small', 'ytick.labelsize': 'small'}
 
-   Overrides the default Matplotlib parameters used for generating plots.
+   Overrides the default Matplotlib parameters used for generating
+   plots.  This dictionary can also be accessed as ``ct.rcParams``.
 
 .. py:data:: freqplot.dB
    :type: bool

@@ -717,6 +717,11 @@ class TimeResponseList(list):
 
     """
     def plot(self, *args, **kwargs):
+        """Plot a list of time responses.
+
+        See `time_response_plot` for details.
+
+        """
         from .ctrlplot import ControlPlot
 
         lines = None

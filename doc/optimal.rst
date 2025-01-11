@@ -75,13 +75,14 @@ that the cost function is given by
 
   J(x, u) = \sum_{k=0}^{N-1} L(x_k, u_k)\, dt + V(x_N).
 
-A common use of optimization-based control techniques is the implementation
-of model predictive control (also called receding horizon control).  In
-model predictive control, a finite horizon optimal control problem is solved,
-generating open-loop state and control trajectories.  The resulting control
-trajectory is applied to the system for a fraction of the horizon
-length. This process is then repeated, resulting in a sampled data feedback
-law.  This approach is illustrated in the following figure:
+A common use of optimization-based control techniques is the
+implementation of model predictive control (MPC, also called receding
+horizon control).  In model predictive control, a finite horizon
+optimal control problem is solved, generating open-loop state and
+control trajectories.  The resulting control trajectory is applied to
+the system for a fraction of the horizon length. This process is then
+repeated, resulting in a sampled data feedback law.  This approach is
+illustrated in the following figure:
 
 .. image:: figures/mpc-overview.png
    :width: 640
@@ -93,7 +94,7 @@ Every :math:`\Delta T` seconds, an optimal control problem is solved over a
 x(t))` is then applied to the system. If we let :math:`x_T^{\*}(\cdot;
 x(t))` represent the optimal trajectory starting from :math:`x(t)` then the
 system state evolves from :math:`x(t)` at current time :math:`t` to
-:math:`x_T^{*}(\delta T, x(t))` at the next sample time :math:`t + \Delta
+:math:`x_T^{*}(\Delta T, x(t))` at the next sample time :math:`t + \Delta
 T`, assuming no model uncertainty.
 
 In reality, the system will not follow the predicted path exactly, so that
@@ -102,7 +103,7 @@ recompute the optimal path from the new state at time :math:`t + \Delta T`,
 extending our horizon by an additional :math:`\Delta T` units of time.  This
 approach can be shown to generate stabilizing control laws under suitable
 conditions (see, for example, the FBS2e supplement on `Optimization-Based
-Control <https://fbswiki.org/wiki/index.php/OBC>`_.
+Control <https://fbswiki.org/wiki/index.php/OBC>`_).
 
 
 Module usage
@@ -120,7 +121,7 @@ import `control.optimal`::
 
 To describe an optimal control problem we need an input/output system, a
 time horizon, a cost function, and (optionally) a set of constraints on the
-state and/or input, either along the trajectory and at the terminal time.
+state and/or input, along the trajectory and/or at the terminal time.
 The optimal control module operates by converting the optimal control
 problem into a standard optimization problem that can be solved by
 :func:`scipy.optimize.minimize`.  The optimal control problem can be solved
@@ -129,8 +130,9 @@ by using the :func:`optimal.solve_ocp` function::
   res = opt.solve_ocp(sys, timepts, X0, cost, constraints)
 
 The `sys` parameter should be an :class:`InputOutputSystem` and the
-`timepts` parameter should represent a time vector that gives the list of
-times at which the cost and constraints should be evaluated.
+`timepts` parameter should represent a time vector that gives the list
+of times at which the cost and constraints should be evaluated (the
+time points need not be uniformly spaced).
 
 The `cost` function has call signature ``cost(t, x, u)`` and should
 return the (incremental) cost at the given time, state, and input.  It
@@ -138,9 +140,9 @@ will be evaluated at each point in the `timepts` vector.  The
 `terminal_cost` parameter can be used to specify a cost function for
 the final point in the trajectory.
 
-The `constraints` parameter is a list of constraints similar to that used by
-the :func:`scipy.optimize.minimize` function.  Each constraint is specified
-using one of the following forms::
+The `constraints` parameter is a list of constraints similar to that
+used by the :func:`scipy.optimize.minimize` function.  Each constraint
+is specified using one of the following forms::
 
   LinearConstraint(A, lb, ub)
   NonlinearConstraint(f, lb, ub)
@@ -160,8 +162,8 @@ A nonlinear constraint is satisfied if
 
    lb <= f(x, u) <= ub
 
-By default, `constraints` are taken to be trajectory constraints holding at
-all points on the trajectory.  The `terminal_constraint` parameter can be
+The `constraints` are taken as trajectory constraints holding at all
+points on the trajectory.  The `terminal_constraint` parameter can be
 used to specify a constraint that only holds at the final point of the
 trajectory.
 
@@ -171,10 +173,11 @@ that has the following elements:
   * `res.success`: True if the optimization was successfully solved
   * `res.inputs`: optimal input
   * `res.states`: state trajectory (if `return_x` was True)
-  * `res.time`: copy of the time timepts vector
+  * `res.time`: copy of the time `timepts` vector
 
 In addition, the results from :func:`scipy.optimize.minimize` are also
-available.
+available as additional attributes, as described in
+`scipy.optimize.OptimizeResult`.
 
 To simplify the specification of cost functions and constraints, the
 :mod:`optimal` module defines a number of utility functions for
@@ -194,9 +197,11 @@ optimal control problems:
 Example
 -------
 
-Consider the vehicle steering example described in FBS2e.  The dynamics of
-the system can be defined as a nonlinear input/output system using the
-following code::
+Consider the vehicle steering example described in Example 2.3 of
+`Optimization-Based Control (OBC)
+<https://fbswiki.org/wiki/index.php?title=OBC>`_.  The
+dynamics of the system can be defined as a nonlinear input/output
+system using the following code::
 
   import numpy as np
   import control as ct
@@ -290,10 +295,6 @@ yields
 
 .. image:: figures/steering-optimal.png
    :align: center
-
-An example showing the use of the optimal estimation problem and moving
-horizon estimation (MHE) is given in the :doc:`mhe-pvtol Jupyter
-notebook <examples/mhe-pvtol>`.
 
 
 Optimization Tips

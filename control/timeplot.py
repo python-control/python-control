@@ -102,7 +102,7 @@ def time_response_plot(
 
           * cplt.figure: `matplotlib.figure.Figure` containing the plot.
 
-          * cplt.legend: legend object(s) contained in the plot
+          * cplt.legend: legend object(s) contained in the plot.
 
         See `ControlPlot` for more detailed information.
 

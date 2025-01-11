@@ -8,14 +8,20 @@ of the form
 
 .. math::
 
-   \frac{dx}{dt} &= f(t, x, u, \theta) \\
-   y &= h(t, x, u, \theta)
+   \frac{dx}{dt} &= f(t, x, u, \theta), \\
+   y &= h(t, x, u, \theta),
 
 where :math:`t` represents the current time, :math:`x` is the system
-state, math:`u` is the system input, :math:`y` is the system output,
+state, :math:`u` is the system input, :math:`y` is the system output,
 and :math:`\theta` represents a set of parameters.
 
 Discrete time systems are also supported and have dynamics of the form
+
+.. math::
+
+   x[t+1] &= f(t, x[t], u[t], \theta), \\
+   y[t] &= h(t, x[t], u[t], \theta).
+
 
 Creating nonlinear models
 -------------------------
@@ -38,7 +44,7 @@ time (use the `dt` keyword to create a discrete time system).
 The output function `outfcn` is used to specify the outputs of the
 system and has the same calling signature as `updfcn`.  If it is not
 specified, then the output of the system is set equal to the system
-state.  Otherwise, it should return an output of shape (p,).
+state.  Otherwise, it should return an array of shape (p,).
 
 Note that the number of states, inputs, and outputs should generally
 be explicitly specified, although some operations can infer the
@@ -54,7 +60,9 @@ simple model of a spring loaded arm driven by a motor:
    :width: 240
    :align: center
 
-The dynamics of this system can be modeling using the following code::
+The dynamics of this system can be modeling using the following code:
+
+.. testcode::
 
   # Parameter values
   servomech_params = {
@@ -95,7 +103,9 @@ The dynamics of this system can be modeling using the following code::
       outputs=['y', 'thdot'], inputs=['tau'])
 
 A summary of the model can be obtained using the string representation
-of the model (via the Python `~python.print` function)::
+of the model (via the Python `~python.print` function):
+
+.. doctest::
 
   >>> print(servomech)
   <NonlinearIOSystem>: servomech
@@ -103,9 +113,9 @@ of the model (via the Python `~python.print` function)::
   Outputs (2): ['y', 'thdot']
   States (2): ['theta', 'thdot']
   Parameters: ['J', 'b', 'k', 'r', 'l', 'eps']
-
-  Update: <function servomech_update at 0x117a17f60>
-  Output: <function servomech_output at 0x1354e3d80>
+  <BLANKLINE>
+  Update: <function servomech_update at ...>
+  Output: <function servomech_output at ...>
 
 
 Operating points and linearization
@@ -127,7 +137,7 @@ output::
 
 The first form finds an equilibrium point for a given input `u0` based
 on an initial guess `x0`.  The second form fixes the desired output
-values `y0` and uses x0 and u0 as an initial guess to find the
+values `y0` and uses `x0` and `u0` as an initial guess to find the
 equilibrium point.  If no equilibrium point can be found, the function
 returns the operating point that minimizes the state update (state
 derivative for continuous time systems, state difference for discrete
@@ -146,7 +156,7 @@ Simulations and plotting
 To simulate an input/output system, use the
 :func:`input_output_response` function::
 
-  resp = ct.input_output_response(io_sys, T, U, x0, params)
+  resp = ct.input_output_response(sys_nl, T, U, x0, params)
   t, y, x = resp.time, resp.outputs, resp.states
 
 Time responses can be plotted using the :func:`time_response_plot`
@@ -156,10 +166,36 @@ method::
   cplt = ct.time_response_plot(resp)
 
 The resulting :class:`ControlPlot` object can be used to access
-different plot elements. The :func:`combine_time_responses` function
-an be used to combine multiple time responses into a single
-`TimeResponseData` object.  See the :ref:`response-chapter` chapter
-for more information on this functionality.
+different plot elements:
+
+* `cplt.lines`: Array of `matplotlib.lines.Line2D` objects for each
+  line in the plot.  The shape of the array matches the subplots shape
+  and the value of the array is a list of Line2D objects in that
+  subplot.
+
+* `cplt.axes`: 2D array of `matplotlib.axes.Axes` for the plot.
+
+* `cplt.figure`: `matplotlib.figure.Figure` containing the plot.
+
+* `cplt.legend`: legend object(s) contained in the plot.
+
+The :func:`combine_time_responses` function an be used to combine
+multiple time responses into a single `TimeResponseData` object::
+
+  timepts = np.linspace(0, 10)
+
+  U1 = np.sin(timepts)
+  resp1 = ct.input_output_response(servomech, timepts, U1)
+
+  U2 = np.cos(2*timepts)
+  resp2 = ct.input_output_response(servomech, timepts, U2)
+
+  cplt.ct.combine_time_responses(
+      [resp1, resp2], trace_labels=["Scenario #1", "Scenario #2"]).plot()
+
+.. image:: figures/timeplot-servomech-combined.png
+   :align: center
+
 
 Nonlinear system properties
 ---------------------------
@@ -180,12 +216,14 @@ current time, state, input, and (optionally) parameter values.  The
 :func:`~NonlinearIOSystem.output` method returns the system output.
 For static nonlinear systems, it is also possible to obtain the value
 of the output by directly calling the system with the value of the
-input::
+input:
+
+.. doctest::
 
   >>> sys = ct.nlsys(
   ...    None, lambda t, x, u, params: np.sin(u), inputs=1, outputs=1)
   >>> sys(1)
   np.float64(0.8414709848078965)
 
-The :func:`~NonlinearIOSystem.linearize` method is equivalent to the
+The :func:`NonlinearIOSystem.linearize` method is equivalent to the
 :func:`linearize` function.

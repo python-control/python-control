@@ -392,12 +392,29 @@ the web page when that chapter is being viewed.  In some cases a
 section may be in its own file, including in the chapter page by using
 the `include` directive (see `nlsys.py` for an example).
 
-Sphinx files guidlines:
+Sphinx files guidelines:
 
 * Each file should declare the `currentmodule` at or near the top of
   the file.  Except for sub-packages (`control.flatsys`) and modules
   that need to be imported separately (`control.optimal`),
   `currentmodule` should be set to control.
+
+* When possible, sample code in the User Guide should use Sphinx
+  doctest directives so that the code is executed by `make doctest`.
+  Two styles are possible: doctest-style blocks (showing code with a
+  prompt and the expected response) and code blocks (using the
+  `testcode` directive).
+
+* When refering to the python-control package, several different forms
+  can be used:
+
+  - Full name: "the Python Control Systems Library (python-control)"
+    (used sparingly, mainly at the tops of chapters).
+
+  - Adjective form: "the python-control package" or "a python-control
+    module" (this is the most common form).
+
+  - Noun form: "`python-control`" (only used occassionally).
 
 
 Reference Manual

@@ -26,7 +26,10 @@ If such an intersection exists, it indicates that there may be a limit
 cycle of amplitude :math:`A` with frequency :math:`\omega`.
 
 Describing function analysis is a simple method, but it is approximate
-because it assumes that higher harmonics can be neglected.
+because it assumes that higher harmonics can be neglected.  More
+information on describing functions can be found in `Feedback Systems
+<https://fbswiki.org/wiki/index.php?title=FBS>`_, Section 10.5
+(Generalized Notions of Gain and Phase).
 
 
 Module usage
@@ -37,24 +40,26 @@ compute the describing function of a nonlinear function::
 
   N = ct.describing_function(F, A)
 
+where `F` is a scalar nonlinear function.
+
 Stability analysis using describing functions is done by looking for
-amplitudes :math:`a` and frequencies :math`\omega` such that
+amplitudes :math:`A` and frequencies :math:`\omega` such that
 
 .. math::
 
    H(j\omega) = \frac{-1}{N(A)}
 
 These points can be determined by generating a Nyquist plot in which
-the transfer function :math:`H(j\omega)` intersections the negative
+the transfer function :math:`H(j\omega)` intersects the negative
 reciprocal of the describing function :math:`N(A)`.  The
 :func:`describing_function_response` function computes the
 amplitude and frequency of any points of intersection::
 
-    response = ct.describing_function_response(H, F, amp_range[, omega_range])
-    response.intersections	# frequency, amplitude pairs
+    dfresp = ct.describing_function_response(H, F, amp_range[, omega_range])
+    dfresp.intersections	# frequency, amplitude pairs
 
 A Nyquist plot showing the describing function and the intersections
-with the Nyquist curve can be generated using ``response.plot()``, which
+with the Nyquist curve can be generated using ``dfresp.plot()``, which
 calls the :func:`describing_function_plot` function.
 
 
@@ -78,9 +83,8 @@ nonlinearity::
 
   F = ct.saturation_nonlinearity(1)
 
-These functions use the
-:class:`DescribingFunctionNonlinearity`, which allows an
-analytical description of the describing function.
+These functions use the :class:`DescribingFunctionNonlinearity` class,
+which allows an analytical description of the describing function.
 
 Module classes and functions
 ----------------------------

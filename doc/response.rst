@@ -20,13 +20,13 @@ in control system analysis, for example::
 While plotting functions can be called directly, the standard pattern used
 in the toolbox is to provide a function that performs the basic computation
 or analysis (e.g., computation of the time or frequency response) and
-returns and object representing the output data.  A separate plotting
-function, typically ending in `_plot` is then used to plot the data,
+returns an object representing the output data.  A separate plotting
+function, typically ending in `_plot`, is then used to plot the data,
 resulting in the following standard pattern::
 
   response = ct.nyquist_response([sys1, sys2])
   count = ct.response.count          # number of encirclements of -1
-  cplt = ct.nyquist_plot(response)  # Nyquist plot
+  cplt = ct.nyquist_plot(response)   # Nyquist plot
 
 Plotting commands return a :class:`ControlPlot` object that
 provides access to the individual lines in the generated plot using
@@ -46,8 +46,25 @@ The remainder of this chapter provides additional documentation on how
 these response and plotting functions can be customized.
 
 
-Time response data
+Time Response Data
 ==================
+
+Time responses are used to provide information on the behavior of a
+system in response to a standard input (such as a step function or
+impulse function), the initial state with no input, a custom function
+of time, or any combination of the above.  Time responses are useful
+for evaluating system performance of either linear or nonlinear
+systems, in continous or discrete time.  The time response for a
+linear system to a standard input can be often computed exactly while
+the responses of nonlinear systems or linear systems with arbitary
+input signals must be computed numerically.
+
+Continous time signals in `python-control` are represented by the
+value of the signal at a set of specified time points, with linear
+interpolation between the time points.  The time points need not be
+uniformly spaced. Discrete time signals are represented by the value
+of the signal at a uniformly-spaced sequence of times.
+
 
 LTI response functions
 ----------------------
@@ -66,9 +83,9 @@ Each of these functions returns a :class:`TimeResponseData` object
 that contains the data for the time response (described in more detail
 in the next section).
 
-The :func:`forced_response` system is the most general and allows by
-the zero initial state response to be simulated as well as the
-response from a non-zero initial condition.
+The :func:`forced_response` system is the most general and computes
+the response of the system to a given input from a zero or non-zero
+initial condition.
 
 For linear time invariant (LTI) systems, the :func:`impulse_response`,
 :func:`initial_response`, and :func:`step_response` functions will
@@ -81,7 +98,7 @@ The :class:`TimeResponseList` object has a ``plot()`` method that will plot
 each of the responses in turn, using a sequence of different colors with
 appropriate titles and legends.
 
-In addition the :func:`input_output_response` function, which handles
+In addition, the :func:`input_output_response` function, which handles
 simulation of nonlinear systems and interconnected systems, can be
 used.  For an LTI system, results are generally more accurate using
 the LTI simulation functions above.  The :func:`input_output_response`
@@ -91,6 +108,7 @@ function is described in more detail in the :ref:`iosys-module` section.
 
 Time series data
 ----------------
+
 A variety of functions in the library return time series data: sequences of
 values that change over time.  A common set of conventions is used for
 returning such data: columns represent different points in time, rows are
@@ -101,13 +119,12 @@ throughout the library, for example in the functions
 :func:`forced_response`, :func:`step_response`, :func:`impulse_response`,
 and :func:`initial_response`.
 
-.. note::
-    The convention used by python-control is different from the convention
-    used in the `scipy.signal
-    <https://docs.scipy.org/doc/scipy/reference/signal.html>`_ library. In
-    Scipy's convention the meaning of rows and columns is interchanged.
-    Thus, all 2D values must be transposed when they are used with functions
-    from `scipy.signal`_.
+.. note:: The convention used by `python-control` is different from
+    the convention used in the `scipy.signal
+    <https://docs.scipy.org/doc/scipy/reference/signal.html>`_
+    library. In Scipy's convention the meaning of rows and columns is
+    interchanged.  Thus, all 2D values must be transposed when they
+    are used with functions from `scipy.signal`_.
 
 The time vector is a 1D array with shape (n, )::
 
@@ -197,7 +214,7 @@ The column labels for the data frame are `time` and the labels for the input,
 output, and state signals ('u[i]', 'y[i]', and 'x[i]' by default, but these
 can be changed using the `inputs`, `outputs`, and `states` keywords when
 constructing the system, as described in :func:`ss`, :func:`tf`, and other
-system creation function.  Note that when exporting to pandas, "rows" in the
+system creation functions.  Note that when exporting to pandas, "rows" in the
 data frame correspond to time and "cols" (DataSeries) correspond to signals.
 
 Time response plots
@@ -211,12 +228,14 @@ state, and output vectors associated with the simulation, as described
 above. Time response data can be plotted with the
 :func:`time_response_plot` function, which is also available as the
 :func:`TimeResponseData.plot` method.  For example, the step response
-for a two-input, two-output can be plotted using the commands::
+for a two-input, two-output can be plotted using the commands:
+
+.. testcode::
 
   sys_mimo = ct.tf2ss(
       [[[1], [0.1]], [[0.2], [1]]],
       [[[1, 0.6, 1], [1, 1, 1]], [[1, 0.4, 1], [1, 2, 1]]], name="sys_mimo")
-  response = ct.step_response(sys)
+  response = ct.step_response(sys_mimo)
   response.plot()
 
 which produces the following plot:
@@ -237,7 +256,9 @@ corresponding to step inputs in different channels) on the same graph,
 with appropriate labeling via a legend on selected axes.
 
 For example, using ``plot_input=True`` and ``overlay_signals=True``
-yields the following plot::
+yields the following plot:
+
+.. testcode::
 
       ct.step_response(sys_mimo).plot(
         plot_inputs=True, overlay_signals=True,
@@ -309,11 +330,11 @@ and styles for various signals and traces::
 
 .. _frequency_response:
 
-Frequency response data
+Frequency Response Data
 =======================
 
 Linear time invariant (LTI) systems can be analyzed in terms of their
-frequency response and python-control provides a variety of tools for
+frequency response and `python-control` provides a variety of tools for
 carrying out frequency response analysis.  The most basic of these is
 the :func:`frequency_response` function, which will compute
 the frequency response for one or more linear systems::
@@ -446,14 +467,14 @@ Frequency response data can also be accessed directly and plotted manually::
   plt.loglog(fresp.omega, fresp.magnitude['y[1]', 'u[0]'])
 
 Access to frequency response data is available via the attributes
-`omega`, `magnitude`,` `phase`, and `response`, where `response`
+`omega`, `magnitude`, `phase`, and `response`, where `response`
 represents the complex value of the frequency response at each frequency.
 The `magnitude`, `phase`, and `response` arrays can be indexed using
 either input/output indices or signal names, with the first index
 corresponding to the output signal and the second input corresponding to
 the input signal.
 
-Pole/zero data
+Pole/Zero Data
 ==============
 
 Pole/zero maps and root locus diagrams provide insights into system
@@ -510,7 +531,7 @@ for each system is plotted in different colors::
    :align: center
 
 
-Customizing control plots
+Customizing Control Plots
 =========================
 
 A set of common options are available to customize control plots in
@@ -595,7 +616,7 @@ various ways.  The following general rules apply:
 * The `rcParams` keyword argument can be used to override the default
   matplotlib style parameters used when creating a plot.  The default
   parameters for all control plots are given by the
-  `config.defaults['rcParams'` dictionary and have the following
+  `config.defaults['ctrlplot.rcParams']` dictionary and have the following
   values:
 
   .. list-table::
@@ -620,7 +641,8 @@ various ways.  The following general rules apply:
   Only those values that should be changed from the default need to be
   specified in the `rcParams` keyword argument.  To override the
   defaults for all control plots, update the
-  `config.defaults['rcParams']` dictionary entries.
+  `config.defaults['ctrlplt.rcParams']` dictionary entries.  For convenience,
+  this dictionary can alse be accessed as ``ct.rcParams``.
 
   The default values for style parameters for control plots can be restored
   using :func:`reset_rcParams`.
@@ -641,7 +663,7 @@ various ways.  The following general rules apply:
 * The `title` keyword can be used to override the automatic creation of
   the plot title.  The default title is a string of the form "<Type> plot
   for <syslist>" where <syslist> is a list of the sys names contained in
-  the plot (which can be updated if the plotting is called multiple times).
+  the plot (which is updated if the plotting is called multiple times).
   Use ``title=False`` to suppress the title completely.  The title can also
   be updated using the :func:`ControlPlot.set_plot_title` method
   for the returned control plot object.
@@ -706,7 +728,7 @@ Alternatively, turning off the omega-damping grid (using ``grid=False`` or
 ``grid='empty'``) allows use of Matplotlib layout commands.
 
 
-Response and plotting functions
+Response and Plotting Reference
 ===============================
 
 Response functions
@@ -734,6 +756,19 @@ number of encirclements for a Nyquist plot) as well as plotting (via the
 
 Plotting functions
 ------------------
+
+Plotting functions take a response or list of responses and return a
+`ControlPlot` object that can be used to retrieve information about
+the plot.  Plotting functions can also be called with a system or list
+of systems, in which case the appropriate response will be first
+computed and then plotted.
+
+Note that the `phase_plane_plot` function is part of the
+python-control namespace, but the individual functions for customizing
+phase plots are contained in the `phaseplot` module, which should be
+imported separately using ``import control.phaseplot as pp``.  The
+phase plane plotting functionality is described in more detail in the
+:ref:`phase-plane-plots` section.
 
 .. autosummary::
 
@@ -783,13 +818,3 @@ The following classes are used in generating response data.
    PoleZeroData
    TimeResponseData
    TimeResponseList
-
-.. _controlplot-params:
-
-Plot parameters
----------------
-
-Matplotlib users the :func:`matplotlib.rcParams` to specify default
-properties of figures and axes.  The `python-control` plotting
-functions make use of a set of default values for all plots that
-override the default Matplotlib values.

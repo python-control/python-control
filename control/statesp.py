@@ -2035,7 +2035,7 @@ def rss(states=1, outputs=1, inputs=1, strictly_proper=False, **kwargs):
     kwargs.update({'states': states, 'outputs': outputs, 'inputs': inputs})
     name, inputs, outputs, states, dt = _process_iosys_keywords(kwargs)
 
-    # Figure out the size of the sytem
+    # Figure out the size of the system
     nstates, _ = _process_signal_list(states)
     ninputs, _ = _process_signal_list(inputs)
     noutputs, _ = _process_signal_list(outputs)
