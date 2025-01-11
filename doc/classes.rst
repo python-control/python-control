@@ -33,7 +33,8 @@ some of the functions that can be used to convert objects from one class to
 another:
 
 .. image:: figures/classes.pdf
-  :width: 800
+   :width: 800
+   :align: center
 
 
 Response and plotting classes

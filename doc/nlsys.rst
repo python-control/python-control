@@ -51,7 +51,8 @@ To illustrate the creation of a nonlinear I/O system model, consider a
 simple model of a spring loaded arm driven by a motor:
 
 .. image:: figures/servomech-diagram.png
-  :width: 240
+   :width: 240
+   :align: center
 
 The dynamics of this system can be modeling using the following code::
 

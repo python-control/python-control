@@ -83,6 +83,7 @@ diagram:
 
 .. image:: figures/bdalg-feedback.png
    :width: 240
+   :align: center
 
 By default a gain of -1 is applied at the output of the second system,
 so the dynamics illustrate above can be created using the command

@@ -97,7 +97,8 @@ class FrequencyResponseData(LTI):
     Other Parameters
     ----------------
     plot_type : str, optional
-        Set the type of plot to generate with `plot()` ('bode', 'nichols').
+        Set the type of plot to generate with `~FrequencyResponseData.plot`
+        ('bode', 'nichols').
     title : str, optional
         Set the title to use when plotting.
     plot_magnitude, plot_phase : bool, optional
@@ -857,12 +858,12 @@ class FrequencyResponseData(LTI):
 
     # Plotting interface
     def plot(self, plot_type=None, *args, **kwargs):
-        """Plot the frequency response using a Bode plot.
+        """Plot the frequency response using Bode or singular values plot.
 
         Plot the frequency response using either a standard Bode plot
-        (default) or using a singular values plot (by setting `plot_type`
-        to 'svplot').  See `bode_plot` and `singular_values_plot` for more
-        detailed descriptions.
+        (``plot_type='bode'``, default) or a singular values plot
+        (``plot_type='svplot'``).  See `bode_plot` and
+        `singular_values_plot` for more detailed descriptions.
 
         """
         from .freqplot import bode_plot, singular_values_plot

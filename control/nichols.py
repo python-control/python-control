@@ -194,7 +194,7 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
         :doc:`Matplotlib linestyle \
             <matplotlib:gallery/lines_bars_and_markers/linestyles>`.
     ax : matplotlib.axes.Axes, optional
-        Axes to add grid to.  If None, use `matplotlib.pyplot.gca()`.
+        Axes to add grid to.  If None, use `matplotlib.pyplot.gca`.
     label_cl_phases : bool, optional
         If True, closed-loop phase lines will be labelled.
 

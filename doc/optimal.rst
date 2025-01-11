@@ -84,6 +84,8 @@ length. This process is then repeated, resulting in a sampled data feedback
 law.  This approach is illustrated in the following figure:
 
 .. image:: figures/mpc-overview.png
+   :width: 640
+   :align: center
 
 Every :math:`\Delta T` seconds, an optimal control problem is solved over a
 :math:`T` second horizon, starting from the current state.  The first
@@ -286,7 +288,7 @@ Plotting the results::
 yields
 
 .. image:: figures/steering-optimal.png
-
+   :align: center
 
 An example showing the use of the optimal estimation problem and moving
 horizon estimation (MHE) is given in the :doc:`mhe-pvtol Jupyter

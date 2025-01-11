@@ -159,7 +159,7 @@ System display parameters
    :value: True
 
    If True, show the input, output, and state count when using
-   `iosys_repr()` and the 'eval' format.  Otherwise, the input,
+   `iosys_repr` and the 'eval' format.  Otherwise, the input,
    output, and state values are repressed from the output unless
    non-generic signal names are present.
 

@@ -104,6 +104,7 @@ intersphinx_mapping = \
     {'scipy': ('https://docs.scipy.org/doc/scipy', None),
      'numpy': ('https://numpy.org/doc/stable', None),
      'matplotlib': ('https://matplotlib.org/stable/', None),
+     'python': ('https://docs.python.org/3/', None),
      }
 
 # If this is True, todo and todolist produce output, else they produce nothing.

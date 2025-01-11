@@ -84,7 +84,7 @@ class OptimalControlProblem():
         will be broadcast by extension of the time axis.
     log : bool, optional
         If True, turn on logging messages (using Python logging module).
-        Use `python.logging.basicConfig` to enable logging output
+        Use `logging.basicConfig` to enable logging output
         (e.g., to a file).
 
     Attributes
@@ -1216,7 +1216,7 @@ def create_mpc_iosystem(
         `InputOutputSystem`.
     log : bool, optional
         If True, turn on logging messages (using Python logging module).
-        Use `python.logging.basicConfig` to enable logging output
+        Use `logging.basicConfig` to enable logging output
         (e.g., to a file).
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic

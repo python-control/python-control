@@ -19,6 +19,7 @@ The default method for generating a phase plane plot is to provide a
     ct.phase_plane_plot(sys, axis_limits, T)
 
 .. image:: figures/phaseplot-dampedosc-default.png
+   :align: center
 
 By default, the plot includes streamlines generated from starting
 points on limits of the plot, with arrows showing the flow of the
@@ -44,6 +45,7 @@ an inverted pendulum system, which is created using a mesh grid::
     plt.ylabel(r"$\dot\theta$ [rad/sec]")
 
 .. image:: figures/phaseplot-invpend-meshgrid.png
+   :align: center
 
 This figure shows several features of more complex phase plane plots:
 multiple equilibrium points are shown, with saddle points showing
@@ -75,6 +77,7 @@ are part of the :mod:`phaseplot` (pp) module::
     plt.gca().set_aspect('equal')
 
 .. image:: figures/phaseplot-oscillator-helpers.png
+   :align: center
 
 The following helper functions are available:
 
