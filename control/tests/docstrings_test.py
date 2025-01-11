@@ -21,6 +21,9 @@ function_skiplist = [
     control.ControlPlot.reshape,                # needed for legacy interface
     control.phase_plot,                         # legacy function
     control.drss,                               # documention in rss
+    control.frd,                                # tested separately below
+    control.ss,                                 # tested separately below
+    control.tf,                                 # tested separately below
 ]
 
 # Checksums to use for checking whether a docstring has changed
@@ -31,13 +34,10 @@ function_docstring_hash = {
     control.dlqr:                       '896cfa651dbbd80e417635904d13c9d6',
     control.lqe:                        '567bf657538935173f2e50700ba87168',
     control.lqr:                        'a3e0a85f781fc9c0f69a4b7da4f0bd22',
-    control.frd:                        '099464bf2d14f25a8769ef951adf658b',
     control.margin:                     'f02b3034f5f1d44ce26f916cc3e51600',
     control.parallel:                   '025c5195a34c57392223374b6244a8c4',
     control.series:                     '9aede1459667738f05cf4fc46603a4f6',
-    control.ss:                         '1b9cfad5dbdf2f474cfdeadf5cb1ad80',
     control.ss2tf:                      '48ff25d22d28e7b396e686dd5eb58831',
-    control.tf:                         '53a13f4a7f75a31c81800e10c88730ef',
     control.tf2ss:                      '086a3692659b7321c2af126f79f4bc11',
     control.markov:                     'a4199c54cb50f07c0163d3790739eafe',
     control.gangof4:                    '0e52eb6cf7ce024f9a41f3ae3ebf04f7',
@@ -260,14 +260,244 @@ def test_deprecated_functions(module, prefix):
                         f"{name} deprecated but w/ non-standard docs/warnings")
                 assert name != 'ss2io'
 
+#
+# Tests for I/O system classes
+#
+# The tests below try to make sure that we document I/O system classes
+# and the factory functions that create them in a uniform way.
+#
+
+ct = control
+fs = control.flatsys
+
+# Dictionary of factory functions associated with primary classes
+class_factory_function = {
+    fs.FlatSystem: fs.flatsys,
+    ct.FrequencyResponseData: ct.frd,
+    ct.InterconnectedSystem: ct.interconnect,
+    ct.LinearICSystem: ct.interconnect,
+    ct.NonlinearIOSystem: ct.nlsys,
+    ct.StateSpace: ct.ss,
+    ct.TransferFunction: ct.tf,
+}
+
+#
+# List of arguments described in class docstrings
+#
+# These are the minimal arguments needed to initialize the class.  Optional
+# arguments should be documented in the factory functions and do not need
+# to be duplicated in the class documentation.
+#
+class_args = {
+    fs.FlatSystem: ['forward', 'reverse'],
+    ct.FrequencyResponseData: ['response', 'omega', 'dt'],
+    ct.NonlinearIOSystem: [
+        'updfcn', 'outfcn', 'inputs', 'outputs', 'states', 'params', 'dt'],
+    ct.StateSpace: ['A', 'B', 'C', 'D', 'dt'],
+    ct.TransferFunction: ['num', 'den', 'dt'],
+}
+
+#
+# List of attributes described in class docstrings
+#
+# This is the list of attributes for the class that are not already listed
+# as parameters used to initialize the class.  These should all be defined
+# in the class docstring.
+#
+# Attributes that are part of all I/O system classes should be listed in
+# `std_class_attributes`.  Attributes that are not commonly needed are
+# defined as part of a parent class can just be documented there, and
+# should be listed in `iosys_parent_attributes` (these will be searched
+# using the MRO).
+
+std_class_attributes = [
+    'ninputs', 'noutputs', 'input_labels', 'output_labels', 'name', 'shape']
+
+# List of attributes defined for specific I/O systems
+class_attributes = {
+    fs.FlatSystem: [],
+    ct.FrequencyResponseData: [],
+    ct.NonlinearIOSystem: ['nstates', 'state_labels'],
+    ct.StateSpace: ['nstates', 'state_labels'],
+    ct.TransferFunction: [],
+}
+
+# List of attributes defined in a parent class (no need to warn)
+iosys_parent_attributes = [
+    'input_index', 'output_index', 'state_index',       # rarely used
+    'states', 'nstates', 'state_labels',                # not need in TF, FRD
+    'params', 'outfcn', 'updfcn'                        # NL I/O, SS overlap
+]
+
+#
+# List of arguments described (only) in factory function docstrings
+#
+# These lists consist of the arguments that should be documented in the
+# factory functions and should not be duplicated in the class
+# documentation, even though in some cases they are actually processed in
+# the class __init__ function.
+#
+std_factory_args = [
+    'inputs', 'outputs', 'name', 'input_prefix', 'output_prefix']
+
+factory_args = {
+    fs.flatsys: ['states', 'state_prefix'],
+    ct.frd: ['sys'],
+    ct.nlsys: ['state_prefix'],
+    ct.ss: ['sys', 'states', 'state_prefix'],
+    ct.tf: ['sys'],
+}
+
+
+@pytest.mark.parametrize(
+    "cls, fcn, args",
+    [(cls, class_factory_function[cls], class_args[cls])
+     for cls in class_args.keys()])
+def test_iosys_primary_classes(cls, fcn, args):
+    docstring = inspect.getdoc(cls)
+
+    # Make sure the typical arguments are there
+    for argname in args + std_class_attributes + class_attributes[cls]:
+        _check_parameter_docs(cls.__name__, argname, docstring)
+
+    # Make sure we reference the factory function
+    if re.search(
+            r"created.*(with|by|using).*the[\s]*"
+            f":func:`~control\\..*{fcn.__name__}`"
+            r"[\s]factory[\s]function", docstring, re.DOTALL) is None:
+        pytest.fail(
+            f"{cls.__name__} does not reference factory function "
+            f"{fcn.__name__}")
+
+    # Make sure we don't reference parameters from the factory function
+    for argname in factory_args[fcn]:
+        if re.search(f"[\\s]+{argname}(, .*)*[\\s]*:", docstring) is not None:
+            pytest.fail(
+                f"{cls.__name__} references factory function parameter "
+                f"'{argname}'")
+
+
+@pytest.mark.parametrize("cls", class_args.keys())
+def test_iosys_attribute_lists(cls, ignore_future_warning):
+    fcn = class_factory_function[cls]
+
+    # Create a system that we can scan for attributes
+    sys = ct.rss(2, 1, 1)
+    ignore_args = []
+    match fcn:
+        case ct.tf:
+            sys = ct.tf(sys)
+            ignore_args = ['state_labels']
+        case ct.frd:
+            sys = ct.frd(sys, [0.1, 1, 10])
+            ignore_args = ['state_labels']
+        case ct.nlsys:
+            sys = ct.nlsys(sys)
+        case fs.flatsys:
+            sys = fs.flatsys(sys)
+            sys = fs.flatsys(sys.forward, sys.reverse)
+
+    docstring = inspect.getdoc(cls)
+    for name, obj in inspect.getmembers(sys):
+        if name.startswith('_') or inspect.ismethod(obj) or name in ignore_args:
+            # Skip hidden variables; class methods are checked elsewhere
+            continue
+
+        # Try to find documentation in primary class
+        if _check_parameter_docs(
+                cls.__name__, name, docstring, fail_if_missing=False):
+            continue
+
+        # Couldn't find in main documentation; look in parent classes
+        for parent in cls.__mro__:
+            if parent == object:
+                pytest.fail(
+                    f"{cls.__name__} attribute '{name}' not documented")
+
+            if _check_parameter_docs(
+                    parent.__name__, name, inspect.getdoc(parent),
+                    fail_if_missing=False):
+                if name not in iosys_parent_attributes + factory_args[fcn]:
+                    warnings.warn(
+                        f"{cls.__name__} attribute '{name}' only documented "
+                        f"in parent class {parent.__name__}")
+                break
+
+
+@pytest.mark.parametrize("cls", [ct.InputOutputSystem, ct.LTI])
+def test_iosys_container_classes(cls):
+    # Create a system that we can scan for attributes
+    sys = cls(states=2, outputs=1, inputs=1)
+
+    docstring = inspect.getdoc(cls)
+    for name, obj in inspect.getmembers(sys):
+        if name.startswith('_') or inspect.ismethod(obj):
+            # Skip hidden variables; class methods are checked elsewhere
+            continue
+
+        # Look through all classes in hierarchy
+        if verbose:
+            print(f"{name=}")
+        for parent in cls.__mro__:
+            if parent == object:
+                pytest.fail(
+                    f"{cls.__name__} attribute '{name}' not documented")
+
+            if verbose:
+                print(f"  {parent=}")
+            if _check_parameter_docs(
+                    parent.__name__, name, inspect.getdoc(parent),
+                    fail_if_missing=False):
+                break
+
+
+@pytest.mark.parametrize("cls", [ct.InterconnectedSystem, ct.LinearICSystem])
+def test_iosys_intermediate_classes(cls):
+    docstring = inspect.getdoc(cls)
+
+    # Make sure there is not a parameters section
+    if re.search(r"\nParameters\n----", docstring) is not None:
+        pytest.fail(f"intermediate {cls} docstring contains Parameters section")
+
+    # Make sure we reference the factory function
+    fcn = class_factory_function[cls]
+    if re.search(f":func:`~control.{fcn.__name__}`", docstring) is None:
+        pytest.fail(
+            f"{cls.__name__} does not reference factory function "
+            f"{fcn.__name__}")
+
+
+@pytest.mark.parametrize("fcn", factory_args.keys())
+def test_iosys_factory_functions(fcn):
+    docstring = inspect.getdoc(fcn)
+    cls = list(class_factory_function.keys())[
+        list(class_factory_function.values()).index(fcn)]
+
+    # Make sure we reference parameters in class and factory function docstring
+    for argname in class_args[cls] + std_factory_args + factory_args[fcn]:
+        _check_parameter_docs(fcn.__name__, argname, docstring)
+
+    # Make sure we don't reference any class attributes
+    for argname in std_class_attributes + class_attributes[cls]:
+        if argname in std_factory_args:
+            continue
+        if re.search(f"[\\s]+{argname}(, .*)*[\\s]*:", docstring) is not None:
+            pytest.fail(
+                f"{fcn.__name__} references class attribute '{argname}'")
+
 
 # Utility function to check for an argument in a docstring
-def _check_parameter_docs(funcname, argname, docstring, prefix=""):
+def _check_parameter_docs(
+        funcname, argname, docstring, prefix="", fail_if_missing=True):
     funcname = prefix + funcname
 
     # Find the "Parameters" section of docstring, where we start searching
-    if not (match := re.search(r"\nParameters\n----", docstring)):
-        pytest.fail(f"{funcname} docstring missing Parameters section")
+    if not (match := re.search(
+            r"\nParameters\n----", docstring)):
+        if fail_if_missing:
+            pytest.fail(f"{funcname} docstring missing Parameters section")
+        else:
+            return False
     else:
         start = match.start()
 
@@ -299,7 +529,10 @@ def _check_parameter_docs(funcname, argname, docstring, prefix=""):
             docstring)):
         if verbose:
             print(f"      {funcname}: {argname} not documented")
-        pytest.fail(f"{funcname} '{argname}' not documented")
+        if fail_if_missing:
+            pytest.fail(f"{funcname} '{argname}' not documented")
+        else:
+            return False
 
     # Make sure there isn't another instance
     second_match = re.search(
@@ -307,3 +540,5 @@ def _check_parameter_docs(funcname, argname, docstring, prefix=""):
             docstring[match.end():])
     if second_match:
         pytest.fail(f"{funcname} '{argname}' documented twice")
+
+    return True

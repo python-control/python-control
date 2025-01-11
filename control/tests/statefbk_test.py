@@ -930,9 +930,10 @@ def unicycle():
 
     return ct.NonlinearIOSystem(
         unicycle_update, None,
-        inputs = ['v', 'phi'],
-        outputs = ['x', 'y', 'theta'],
-        states = ['x_', 'y_', 'theta_'])
+        inputs=['v', 'phi'],
+        outputs=['x', 'y', 'theta'],
+        states=['x_', 'y_', 'theta_'],
+        params={'a': 1})        # only used for testing params
 
 from math import pi
 
@@ -1194,3 +1195,40 @@ def test_create_statefbk_errors():
 
     with pytest.raises(ControlArgument, match="feedfwd_pattern != 'refgain'"):
         ct.create_statefbk_iosystem(sys, K, Kf, feedfwd_pattern='trajgen')
+
+
+def test_create_statefbk_params(unicycle):
+    # Speeds and angles at which to compute the gains
+    speeds = [1, 5, 10]
+    angles = np.linspace(0, pi/2, 4)
+    points = list(itertools.product(speeds, angles))
+
+    # Gains for each speed (using LQR controller)
+    Q = np.identity(unicycle.nstates)
+    R = np.identity(unicycle.ninputs)
+    gain, _, _ = ct.lqr(unicycle.linearize([0, 0, 0], [5, 0]), Q, R)
+
+    #
+    # Schedule on desired speed and angle
+    #
+
+    # Create a linear controller
+    ctrl, clsys = ct.create_statefbk_iosystem(unicycle, gain)
+    assert [k for k in ctrl.params.keys()] == []
+    assert [k for k in clsys.params.keys()] == ['a']
+    assert clsys.params['a'] == 1
+
+    # Create a nonlinear controller
+    ctrl, clsys = ct.create_statefbk_iosystem(
+        unicycle, gain, controller_type='nonlinear')
+    assert [k for k in ctrl.params.keys()] == ['K']
+    assert [k for k in clsys.params.keys()] == ['K', 'a']
+    assert clsys.params['a'] == 1
+
+    # Override the default parameters
+    ctrl, clsys = ct.create_statefbk_iosystem(
+        unicycle, gain, controller_type='nonlinear', params={'a': 2, 'b': 1})
+    assert [k for k in ctrl.params.keys()] == ['K']
+    assert [k for k in clsys.params.keys()] == ['K', 'a', 'b']
+    assert clsys.params['a'] == 2
+    assert clsys.params['b'] == 1

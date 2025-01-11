@@ -145,20 +145,14 @@ class InputOutputSystem(object):
     Attributes
     ----------
     ninputs, noutputs, nstates : int
-        Number of input, output and state variables
+        Number of input, output, and state variables.
     input_index, output_index, state_index : dict
-        Dictionary of signal names for the inputs, outputs and states and the
-        index of the corresponding array
-    dt : None, True or float
-        System timebase. 0 (default) indicates continuous time, True indicates
-        discrete time with unspecified sampling time, positive number is
-        discrete time with specified sampling time, None indicates unspecified
-        timebase (either continuous or discrete time).
-    params : dict, optional
-        Parameter values for the systems.  Passed to the evaluation functions
-        for the system as default values, overriding internal defaults.
-    name : string, optional
-        System name (used for specifying signals)
+        Dictionary of signal names for the inputs, outputs, and states and
+        the index of the corresponding array.
+    input_labels, output_labels, state_labels : list of str
+        List of signal names for inputs, outputs, and states.
+    shape : tuple
+        2-tuple of I/O system dimension, (noutputs, ninputs).
 
     Other Parameters
     ----------------
@@ -194,7 +188,7 @@ class InputOutputSystem(object):
             raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # Keep track of the keywords that we recognize
-    kwargs_list = [
+    _kwargs_list = [
         'name', 'inputs', 'outputs', 'states', 'input_prefix',
         'output_prefix', 'state_prefix', 'dt']
 
@@ -293,13 +287,8 @@ class InputOutputSystem(object):
         """copy the signal and system name of sys. Name is given as a keyword
         in case a specific name (e.g. append 'linearized') is desired. """
         # Figure out the system name and assign it
-        if prefix == "" and prefix_suffix_name is not None:
-            prefix = config.defaults[
-                'iosys.' + prefix_suffix_name + '_system_name_prefix']
-        if suffix == "" and prefix_suffix_name is not None:
-            suffix = config.defaults[
-                'iosys.' + prefix_suffix_name + '_system_name_suffix']
-        self.name = prefix + sys.name + suffix
+        self.name = _extended_system_name(
+            sys.name, prefix, suffix, prefix_suffix_name)
 
         # Name the inputs, outputs, and states
         self.input_index = sys.input_index.copy()
@@ -431,6 +420,11 @@ class InputOutputSystem(object):
     state_labels = property(
         lambda self: list(self.state_index.keys()),     # getter
         set_states)                                     # setter
+
+    @property
+    def shape(self):
+        """2-tuple of I/O system dimension, (noutputs, ninputs)."""
+        return (self.noutputs, self.ninputs)
 
     # TODO: add dict as a means to selective change names?  [GH #1019]
     def update_names(self, **kwargs):
@@ -1057,3 +1051,14 @@ def _process_subsys_index(idx, sys_labels, slice_to_list=False):
         idx = range(len(sys_labels))[idx]
 
     return idx, labels
+
+
+# Create an extended system name
+def _extended_system_name(name, prefix="", suffix="", prefix_suffix_name=None):
+    if prefix == "" and prefix_suffix_name is not None:
+        prefix = config.defaults[
+            'iosys.' + prefix_suffix_name + '_system_name_prefix']
+    if suffix == "" and prefix_suffix_name is not None:
+        suffix = config.defaults[
+            'iosys.' + prefix_suffix_name + '_system_name_suffix']
+    return prefix + name + suffix
