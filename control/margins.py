@@ -7,6 +7,7 @@ Routines in this module:
 margins.stability_margins
 margins.phase_crossover_frequencies
 margins.margin
+margins.disk_margins
 """
 
 """Copyright (c) 2011 by California Institute of Technology
@@ -64,8 +65,8 @@ except ImportError:
     ab13md = None
 try:
     from . import mag2db
-except:
-    # Likely the following:
+except ImportError:
+    # Likely due the following circular import issue:
     #
     # ImportError: cannot import name 'mag2db' from partially initialized module
     # 'control' (most likely due to a circular import) (control/__init__.py)
@@ -526,8 +527,8 @@ def disk_margins(L, omega, skew = 0.0):
         the disk-based stability margins
     skew : (optional, default = 0) skew parameter for disk margin calculation.
         skew = 0 uses the "balanced" sensitivity function 0.5*(S - T)
-        skew = -1 uses the sensitivity function S
-        skew = 1 uses the complementary sensitivity function T
+        skew = 1 uses the sensitivity function S
+        skew = -1 uses the complementary sensitivity function T
 
     Returns
     -------
