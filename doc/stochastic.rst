@@ -11,7 +11,7 @@ involving linear and nonlinear I/O systems with Gaussian white noise
 as an input.
 
 
-Stochastic signals
+Stochastic Signals
 ==================
 
 A stochastic signal is a representation of the output of a random
@@ -98,7 +98,7 @@ The correlation function for the output can be computed using the
 
 .. _kalman-filter:
 
-Linear quadratic estimation (Kalman filter)
+Linear Quadratic Estimation (Kalman Filter)
 ===========================================
 
 A standard application of stochastic linear systems is the computation
@@ -194,7 +194,7 @@ state :math:`x_\text{d}` and input :math:`u_\text{d}`::
       clsys, timepts, [Xd, Ud], [X0, np.zeros_like(X0), P0])
 
 
-Maximum likelihood estimation
+Maximum Likelihood Estimation
 =============================
 
 Consider a *nonlinear* system with discrete time dynamics of the form

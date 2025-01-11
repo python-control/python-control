@@ -14,7 +14,7 @@ operator overloading and block diagram algebra, as well as a
 description of the :class:`InterconnectedSystem` class, which can be
 created using the :func:`interconnect` function.
 
-Operator overloading
+Operator Overloading
 ====================
 
 The following operators are defined to operate between I/O systems:
@@ -64,7 +64,7 @@ with the following rules:
       and arrays.
 
 
-Block diagram algebra
+Block Diagram Algebra
 =====================
 
 Block diagram algebra is implemented using the following functions:
@@ -108,7 +108,7 @@ given, but caution should be used since the order of states in the
 combined system is not guaranteed.
 
 
-Signal-based interconnection
+Signal-Based Interconnection
 ============================
 
 More complex input/output systems can be constructed by using the

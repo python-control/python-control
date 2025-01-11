@@ -1,7 +1,7 @@
 .. _function-ref:
 
 ******************
-Function reference
+Function Reference
 ******************
 
 .. Include header information from the main control module
@@ -11,7 +11,7 @@ Function reference
    :no-special-members:
 
 
-System creation
+System Creation
 ===============
 
 Functions that create input/output systems from a description of the
@@ -65,7 +65,7 @@ System interconnections
     split_tf
 
 
-Time response
+Time Response
 =============
 
 .. autosummary::
@@ -104,7 +104,7 @@ Phase plane plots
     phaseplot.vectorfield
 
 
-Frequency response
+Frequency Response
 ==================
 
 .. autosummary::
@@ -122,7 +122,7 @@ Frequency response
     nichols_grid
 
 
-Control system analysis
+Control System Analysis
 =======================
 
 Time domain analysis:
@@ -173,7 +173,7 @@ Passive systems analysis:
     solve_passivity_LMI
 
 
-Control system synthesis
+Control System Synthesis
 ========================
 
 State space synthesis:
@@ -199,7 +199,7 @@ Frequency domain synthesis:
     rootlocus_pid_designer
 
 
-System ID and model reduction
+System ID and Model Reduction
 =============================
 .. autosummary::
    :toctree: generated/
@@ -212,7 +212,7 @@ System ID and model reduction
     markov
 
 
-Nonlinear system support
+Nonlinear System Support
 ========================
 .. autosummary::
    :toctree: generated/
@@ -277,7 +277,7 @@ Optimal control
    optimal.state_range_constraint
 
 
-Stochastic system support
+Stochastic System Support
 =========================
 .. autosummary::
    :toctree: generated/
@@ -289,7 +289,7 @@ Stochastic system support
     white_noise
 
 
-Matrix computations
+Matrix Computations
 ===================
 .. autosummary::
    :toctree: generated/
@@ -304,7 +304,7 @@ Matrix computations
 
 .. _utility-and-conversions:
 
-Utility functions
+Utility Functions
 =================
 .. autosummary::
    :toctree: generated/

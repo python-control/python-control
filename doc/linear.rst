@@ -10,7 +10,7 @@ functions in the toolbox will operate on any of these data types, and
 functions for converting between compatible types are provided.
 
 
-Creating LTI systems
+Creating LTI Systems
 ====================
 
 LTI systems are created using "factory functions" that accept the
@@ -233,7 +233,7 @@ response.
 .. _discrete_time_systems:
 
 
-Discrete time systems
+Discrete Time Systems
 =====================
 
 A discrete time system is created by specifying a nonzero "timebase",
@@ -275,7 +275,7 @@ using `dt` corresponding to a discrete time system::
 .. include:: xferfcn.rst
 
 
-Model conversion and reduction
+Model Conversion and Reduction
 ==============================
 
 A variety of functions are available to manipulate LTI systems,
@@ -438,7 +438,7 @@ equilibrium values (thereby keeping the input/output gain unchanged at
 zero frequency ["DC"]).
 
 
-Displaying LTI system information
+Displaying LTI System Information
 =================================
 
 Information about an LTI system can be obtained using the Python

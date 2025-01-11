@@ -2,7 +2,7 @@
 
 .. _descfcn-module:
 
-Describing functions
+Describing Functions
 ====================
 
 For nonlinear systems consisting of a feedback connection between a

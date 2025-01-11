@@ -2,7 +2,7 @@
 
 .. _package-configuration-parameters:
 
-Package configuration parameters
+Package Configuration Parameters
 ================================
 
 The python-control package can be customized to allow for different default

@@ -1,7 +1,8 @@
 .. currentmodule:: control
 
-Phase plane plots
+Phase Plane Plots
 =================
+
 Insight into nonlinear systems can often be obtained by looking at phase
 plane diagrams.  The :func:`phase_plane_plot` function allows the
 creation of a 2-dimensional phase plane diagram for a system.  This

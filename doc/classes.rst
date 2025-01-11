@@ -3,10 +3,10 @@
 .. _class-ref:
 
 **********************
-Control system classes
+Control System Classes
 **********************
 
-Input/output system classes
+Input/output System Classes
 ===========================
 
 The classes listed below are used to represent models of input/output
@@ -37,7 +37,7 @@ another:
    :align: center
 
 
-Response and plotting classes
+Response and Plotting Classes
 =============================
 
 These classes are used as the outputs of `_response`, `_map`, and
@@ -57,7 +57,7 @@ More informaton on the functions used to create these classes can be
 found in the :ref:iosys-module chapter.
 
 
-Nonlinear system classes
+Nonlinear System Classes
 ========================
 
 These classes are used for various nonlinear input/output system

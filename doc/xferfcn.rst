@@ -1,6 +1,6 @@
 .. currentmodule:: control
 
-Frequency domain analysis and design
+Frequency Domain Analysis and Design
 ====================================
 
 Transfer function properties

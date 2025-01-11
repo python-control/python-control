@@ -1,6 +1,6 @@
 .. currentmodule:: control
 
-Nonlinear system models
+Nonlinear System Models
 =======================
 
 Nonlinear input/output systems are represented as state space systems

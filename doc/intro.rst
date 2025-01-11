@@ -8,7 +8,7 @@ package, including documentation for all functions in the package and
 examples illustrating their use.
 
 
-Package overview
+Package Overview
 ================
 
 .. automodule:: control
@@ -85,7 +85,7 @@ Note that Google Colab does not currently support Slycot, so some
 functionality may not be available.
 
 
-Package conventions
+Package Conventions
 ===================
 
 The python-control package makes use of a few naming and calling conventions:
@@ -113,7 +113,7 @@ The python-control package makes use of a few naming and calling conventions:
   objects that include the input and output dimensions.
 
 
-Some differences from MATLAB
+Some Differences from MATLAB
 ============================
 
 Users familiar with the MATLAB control systems toolbox will find much

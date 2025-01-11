@@ -1,6 +1,6 @@
 .. _optimal-module:
 
-Optimization-based control
+Optimization-Based Control
 ==========================
 
 .. automodule:: control.optimal
@@ -103,6 +103,7 @@ extending our horizon by an additional :math:`\Delta T` units of time.  This
 approach can be shown to generate stabilizing control laws under suitable
 conditions (see, for example, the FBS2e supplement on `Optimization-Based
 Control <https://fbswiki.org/wiki/index.php/OBC>`_.
+
 
 Module usage
 ------------
@@ -293,6 +294,7 @@ yields
 An example showing the use of the optimal estimation problem and moving
 horizon estimation (MHE) is given in the :doc:`mhe-pvtol Jupyter
 notebook <examples/mhe-pvtol>`.
+
 
 Optimization Tips
 -----------------

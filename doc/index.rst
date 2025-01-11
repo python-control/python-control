@@ -51,11 +51,11 @@ or the GitHub site: https://github.com/python-control/python-control.
 
    intro
    Tutorial <examples/python-control_tutorial.ipynb>
-   Linear systems <linear>
-   I/O response and plotting <response>
-   Nonlinear systems <nonlinear>
-   Interconnected I/O systems <iosys>
-   Stochastic systems <stochastic>
+   Linear Systems <linear>
+   I/O Response and Plotting <response>
+   Nonlinear Systems <nonlinear>
+   Interconnected I/O Systems <iosys>
+   Stochastic Systems <stochastic>
    examples
    genindex
 

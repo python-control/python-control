@@ -10,7 +10,7 @@ listing of the practices that have evolved over the course of
 development since the package was created in 2009.
 
 
-Package structure
+Package Structure
 =================
 
 The python-control package is maintained on GitHub, with documentation
@@ -96,7 +96,7 @@ GitHub repository file and directory layout:
       + \*.ipynb - Jupyter notebooks
 
 
-Naming conventions
+Naming Conventions
 ==================
 
 Generally speaking, standard Python and NumPy naming conventions are
@@ -206,7 +206,7 @@ Signal arguments:
   signals.
 
 
-Documentation guidelines
+Documentation Guidelines
 ========================
 
 The python-control package is documented using docstrings and Sphinx.
@@ -407,7 +407,7 @@ The reference manual should provide a fairly comprehensive description
 of every class, function and configuration variable in the package.
 
 
-Utility functions
+Utility Functions
 =================
 
 The following utility functions can be used to help with standard
@@ -425,7 +425,7 @@ processing and parsing operations:
    xferfcn._convert_to_transfer_function
 
 
-Sample files
+Sample Files
 ============
 
 

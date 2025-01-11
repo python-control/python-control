@@ -1,6 +1,6 @@
 .. _flatsys-module:
 
-Differentially flat systems
+Differentially Flat Systems
 ===========================
 
 .. automodule:: control.flatsys

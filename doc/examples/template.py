@@ -125,7 +125,7 @@ def sample_function(data, option=False, **kwargs):
     -----
     This section can contain a more detailed description of how the system
     works.  OK to include some limited mathematics, either via inline math
-    directions for a short formula (like this: ..math: a = b c) or via a
+    directions for a short formula (like this: ..math:`x = \alpha y`) or via a
     displayed equation:
 
     ..math::
@@ -137,8 +137,9 @@ def sample_function(data, option=False, **kwargs):
 
     If you refer to parameters, such as the `data` argument to this
     function, but them in single backticks (which will render them in code
-    style in Sphinx).  You should also do this for Python contains like
-    `True, `False`, and `None`.
+    style in Sphinx).  Strings that should be interpreted as Python code
+    use double backticks: ``mag, phase, omega = response``.  Python
+    built-in objects, like True, False, and None are written on their own.
 
     """
     inputs = kwargs['inputs']

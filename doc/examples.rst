@@ -12,7 +12,7 @@ also be accessed online via the `python-control GitHub repository
 <https://github.com/python-control/python-control/tree/master/examples>`_.
 
 
-Python scripts
+Python Scripts
 ==============
 
 The following Python scripts document the use of a variety of methods in the
@@ -40,7 +40,7 @@ other sources.
    examples/markov
    examples/era_msd
 
-Jupyter notebooks
+Jupyter Notebooks
 =================
 
 The examples below use `python-control` in a Jupyter notebook environment.

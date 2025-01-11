@@ -1,6 +1,6 @@
 .. currentmodule:: control
 
-State space analysis and design
+State Space Analysis and Design
 ===============================
 
 This section describes the functions the are available to analyze
