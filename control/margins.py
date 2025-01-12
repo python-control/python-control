@@ -8,6 +8,7 @@ margins.stability_margins
 margins.phase_crossover_frequencies
 margins.margin
 margins.disk_margins
+margins.disk_margin_plot
 """
 
 """Copyright (c) 2011 by California Institute of Technology
