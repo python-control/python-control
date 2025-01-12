@@ -23,7 +23,7 @@ if __name__ == '__main__':
     print(f"Lo = {L}")
 
     print(f"------------- Balanced sensitivity function (S - T) -------------")
-    DM, GM, PM = control.disk_margins(L, omega, 0.0) # balanced (S - T)
+    DM, GM, PM = control.margins.disk_margins(L, omega, 0.0) # balanced (S - T)
     print(f"min(DM) = {min(DM)}")
     print(f"min(GM) = {control.db2mag(min(GM))}")
     print(f"min(GM) = {min(GM)} dB")
@@ -61,14 +61,14 @@ if __name__ == '__main__':
     plt.xlim([omega[0], omega[-1]])
 
     #print(f"------------- Sensitivity function (S) -------------")
-    #DM, GM, PM = control.disk_margins(L, omega, 1.0) # S-based (S)
+    #DM, GM, PM = control.margins.disk_margins(L, omega, 1.0) # S-based (S)
     #print(f"min(DM) = {min(DM)}")
     #print(f"min(GM) = {control.db2mag(min(GM))}")
     #print(f"min(GM) = {min(GM)} dB")
     #print(f"min(PM) = {min(PM)} deg\n\n")
 
     #print(f"------------- Complementary sensitivity function (T) -------------")
-    #DM, GM, PM = control.disk_margins(L, omega, -1.0) # T-based (T)
+    #DM, GM, PM = control.margins.disk_margins(L, omega, -1.0) # T-based (T)
     #print(f"min(DM) = {min(DM)}")
     #print(f"min(GM) = {control.db2mag(min(GM))}")
     #print(f"min(GM) = {min(GM)} dB")
@@ -79,7 +79,7 @@ if __name__ == '__main__':
     print(f"Li = {L}")
 
     print(f"------------- Balanced sensitivity function (S - T) -------------")
-    DM, GM, PM = control.disk_margins(L, omega, 0.0) # balanced (S - T)
+    DM, GM, PM = control.margins.disk_margins(L, omega, 0.0) # balanced (S - T)
     print(f"min(DM) = {min(DM)}")
     print(f"min(GM) = {control.db2mag(min(GM))}")
     print(f"min(GM) = {min(GM)} dB")
@@ -117,25 +117,25 @@ if __name__ == '__main__':
     plt.xlim([omega[0], omega[-1]])
 
     #print(f"------------- Sensitivity function (S) -------------")
-    #DM, GM, PM = control.disk_margins(L, omega, 1.0) # S-based (S)
+    #DM, GM, PM = control.margins.disk_margins(L, omega, 1.0) # S-based (S)
     #print(f"min(DM) = {min(DM)}")
     #print(f"min(GM) = {control.db2mag(min(GM))}")
     #print(f"min(GM) = {min(GM)} dB")
     #print(f"min(PM) = {min(PM)} deg\n\n")
 
     #print(f"------------- Complementary sensitivity function (T) -------------")
-    #DM, GM, PM = control.disk_margins(L, omega, -1.0) # T-based (T)
+    #DM, GM, PM = control.margins.disk_margins(L, omega, -1.0) # T-based (T)
     #print(f"min(DM) = {min(DM)}")
     #print(f"min(GM) = {control.db2mag(min(GM))}")
     #print(f"min(GM) = {min(GM)} dB")
     #print(f"min(PM) = {min(PM)} deg\n\n")
 
     # Input/output loop gain
-    L = control.append(P*K, K*P)
+    L = control.append(P, K)
     print(f"L = {L}")
 
     print(f"------------- Balanced sensitivity function (S - T) -------------")
-    DM, GM, PM = control.disk_margins(L, omega, 0.0) # balanced (S - T)
+    DM, GM, PM = control.margins.disk_margins(L, omega, 0.0) # balanced (S - T)
     print(f"min(DM) = {min(DM)}")
     print(f"min(GM) = {control.db2mag(min(GM))}")
     print(f"min(GM) = {min(GM)} dB")
@@ -172,15 +172,21 @@ if __name__ == '__main__':
     plt.tight_layout()
     plt.xlim([omega[0], omega[-1]])
 
+    plt.figure(2)
+    control.margins.disk_margin_plot(DM, -1.0) # S-based (S)
+    control.margins.disk_margin_plot(DM, 1.0) # T-based (T)
+    control.margins.disk_margin_plot(DM, 0.0) # balanced (S - T)
+    plt.legend(['$\\sigma$ = -1.0','$\\sigma$ = 1.0','$\\sigma$ = 0.0'])
+
     #print(f"------------- Sensitivity function (S) -------------")
-    #DM, GM, PM = control.disk_margins(L, omega, 1.0) # S-based (S)
+    #DM, GM, PM = control.margins.disk_margins(L, omega, 1.0) # S-based (S)
     #print(f"min(DM) = {min(DM)}")
     #print(f"min(GM) = {control.db2mag(min(GM))}")
     #print(f"min(GM) = {min(GM)} dB")
     #print(f"min(PM) = {min(PM)} deg\n\n")
 
     #print(f"------------- Complementary sensitivity function (T) -------------")
-    #DM, GM, PM = control.disk_margins(L, omega, -1.0) # T-based (T)
+    #DM, GM, PM = control.margins.disk_margins(L, omega, -1.0) # T-based (T)
     #print(f"min(DM) = {min(DM)}")
     #print(f"min(GM) = {control.db2mag(min(GM))}")
     #print(f"min(GM) = {min(GM)} dB")
@@ -200,21 +206,21 @@ if __name__ == '__main__':
     print(f"L = {L}\n\n")
 
     print(f"------------- Balanced sensitivity function (S - T) -------------")
-    DM, GM, PM = control.disk_margins(L, omega, 0.0) # balanced (S - T)
+    DM, GM, PM = control.margins.disk_margins(L, omega, 0.0) # balanced (S - T)
     print(f"min(DM) = {min(DM)}")
     print(f"min(GM) = {np.db2mag(min(GM))}")
     print(f"min(GM) = {min(GM)} dB")
     print(f"min(PM) = {min(PM)} deg\n\n")
 
     print(f"------------- Sensitivity function (S) -------------")
-    DM, GM, PM = control.disk_margins(L, omega, 1.0) # S-based (S)
+    DM, GM, PM = control.margins.disk_margins(L, omega, 1.0) # S-based (S)
     print(f"min(DM) = {min(DM)}")
     print(f"min(GM) = {np.db2mag(min(GM))}")
     print(f"min(GM) = {min(GM)} dB")
     print(f"min(PM) = {min(PM)} deg\n\n")
 
     print(f"------------- Complementary sensitivity function (T) -------------")
-    DM, GM, PM = control.disk_margins(L, omega, -1.0) # T-based (T)
+    DM, GM, PM = control.margins.disk_margins(L, omega, -1.0) # T-based (T)
     print(f"min(DM) = {min(DM)}")
     print(f"min(GM) = {np.db2mag(min(GM))}")
     print(f"min(GM) = {min(GM)} dB")
@@ -257,7 +263,7 @@ if __name__ == '__main__':
     K = control.ss([],[],[],[[-1, 0], [0, -1]])
     L = control.ss(P*K)
     print(f"L = {L}")
-    DM, GM, PM = control.disk_margins(L, omega, 0.0) # balanced
+    DM, GM, PM = control.margins.disk_margins(L, omega, 0.0) # balanced
     print(f"min(DM) = {min(DM)}")
     print(f"min(GM) = {min(GM)} dB")
     print(f"min(PM) = {min(PM)} deg")

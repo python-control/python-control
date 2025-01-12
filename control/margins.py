@@ -49,6 +49,8 @@ $Id$
 """
 
 import math
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 from warnings import warn
 import numpy as np
 import scipy as sp
@@ -516,144 +518,6 @@ def phase_crossover_frequencies(sys):
 
     return omega, gain
 
-def disk_margins(L, omega, skew = 0.0):
-    """Compute disk-based stability margins for SISO or MIMO LTI system.
-
-    Parameters
-    ----------
-    L : SISO or MIMO LTI system representing the loop transfer function
-    omega : ndarray
-        1d array of (non-negative) frequencies at which to evaluate
-        the disk-based stability margins
-    skew : (optional, default = 0) skew parameter for disk margin calculation.
-        skew = 0 uses the "balanced" sensitivity function 0.5*(S - T)
-        skew = 1 uses the sensitivity function S
-        skew = -1 uses the complementary sensitivity function T
-
-    Returns
-    -------
-    DM : ndarray
-        1d array of frequency-dependent disk margins.  DM is the same
-        size as "omega" parameter.
-    GM : ndarray
-        1d array of frequency-dependent disk-based gain margins, in dB.
-        GM is the same size as "omega" parameter.
-    PM : ndarray
-        1d array of frequency-dependent disk-based phase margins, in deg.
-        PM is the same size as "omega" parameter.
-
-    Examples
-    --------
-    >> import control
-    >> import numpy as np
-    >> import matplotlib
-    >> import matplotlib.pyplot as plt
-    >>
-    >> omega = np.logspace(-1, 3, 1001)
-    >> P = control.ss([[0, 10],[-10, 0]], np.eye(2), [[1, 10], [-10, 1]], [[0, 0],[0, 0]])
-    >> K = control.ss([],[],[], [[1, -2], [0, 1]])
-    >> L = P*K
-    >> DM, GM, PM = control.disk_margins(L, omega, 0.0) # balanced (S - T)
-    >> print(f"min(DM) = {min(DM)}")
-    >> print(f"min(GM) = {min(GM)} dB")
-    >> print(f"min(PM) = {min(PM)} deg")
-    >>
-    >> plt.figure(1)
-    >> plt.subplot(3,1,1)
-    >> plt.semilogx(omega, DM, label='$\\alpha$')
-    >> plt.legend()
-    >> plt.title('Disk Margin (Outputs)')
-    >> plt.grid()
-    >> plt.tight_layout()
-    >> plt.xlim([omega[0], omega[-1]])
-    >>
-    >> plt.figure(1)
-    >> plt.subplot(3,1,2)
-    >> plt.semilogx(omega, GM, label='$\\gamma_{m}$')
-    >> plt.ylabel('Margin (dB)')
-    >> plt.legend()
-    >> plt.title('Disk-Based Gain Margin (Outputs)')
-    >> plt.grid()
-    >> plt.ylim([0, 40])
-    >> plt.tight_layout()
-    >> plt.xlim([omega[0], omega[-1]])
-    >>
-    >> plt.figure(1)
-    >> plt.subplot(3,1,3)
-    >> plt.semilogx(omega, PM, label='$\\phi_{m}$')
-    >> plt.ylabel('Margin (deg)')
-    >> plt.legend()
-    >> plt.title('Disk-Based Phase Margin (Outputs)')
-    >> plt.grid()
-    >> plt.ylim([0, 90])
-    >> plt.tight_layout()
-    >> plt.xlim([omega[0], omega[-1]])
-
-    References
-    ----------
-    [1] Blight, James D., R. Lane Dailey, and Dagfinn Gangsaas. “Practical
-        Control Law Design for Aircraft Using Multivariable Techniques.”
-        International Journal of Control 59, no. 1 (January 1994): 93-137.
-        https://doi.org/10.1080/00207179408923071.
-
-    [2] Seiler, Peter, Andrew Packard, and Pascal Gahinet. “An Introduction
-        to Disk Margins [Lecture Notes].” IEEE Control Systems Magazine 40,
-        no. 5 (October 2020): 78-95.
-
-    [3] P. Benner, V. Mehrmann, V. Sima, S. Van Huffel, and A. Varga, "SLICOT
-        - A Subroutine Library in Systems and Control Theory", Applied and
-        Computational Control, Signals, and Circuits (Birkhauser), Vol. 1, Ch.
-        10, pp. 505-546, 1999.
-
-    [4] S. Van Huffel, V. Sima, A. Varga, S. Hammarling, and F. Delebecque,
-        "Development of High Performance Numerical Software for Control", IEEE
-        Control Systems Magazine, Vol. 24, Nr. 1, Feb., pp. 60-76, 2004.
-    """
-
-    # Get dimensions of feedback system
-    ny,_ = ss(L).C.shape
-    I = ss([], [], [], np.eye(ny))
-
-    # Loop sensitivity function
-    S = I.feedback(L)
-
-    # Compute frequency response of the "balanced" (according
-    # to the skew parameter "sigma") sensitivity function [1-2]
-    ST = S + (skew - 1)*I/2
-    ST_mag, ST_phase, _ = ST.frequency_response(omega)
-    ST_jw = (ST_mag*np.exp(1j*ST_phase))
-    if not L.issiso():
-        ST_jw = ST_jw.transpose(2,0,1)
-
-    # Frequency-dependent complex disk margin, computed using upper bound of
-    # the structured singular value, a.k.a. "mu", of (S + (skew - 1)/2).
-    # Uses SLICOT routine AB13MD to compute. [1,3-4].
-    DM = np.zeros(omega.shape, np.float64)
-    GM = np.zeros(omega.shape, np.float64)
-    PM = np.zeros(omega.shape, np.float64)
-    for ii in range(0,len(omega)):
-        # Disk margin (magnitude) vs. frequency
-        DM[ii] = 1/ab13md(ST_jw[ii], np.array(ny*[1]), np.array(ny*[2]))[0]
-
-        # Gain-only margin (dB) vs. frequency
-        gamma_min = (1 - DM[ii]*(1 - skew)/2)/(1 + DM[ii]*(1 + skew)/2)
-        gamma_max = (1 + DM[ii]*(1 - skew)/2)/(1 - DM[ii]*(1 + skew)/2)
-        GM[ii] = mag2db(np.minimum(1/gamma_min, gamma_max))
-
-        # Phase-only margin (deg) vs. frequency
-        if math.isinf(gamma_max):
-            PM[ii] = 90.0
-        else:
-            PM[ii] = (1 + gamma_min*gamma_max)/(gamma_min + gamma_max)
-            if PM[ii] >= 1.0:
-                PM[ii] = 0.0 # np.arccos(1.0)
-            elif PM[ii] <= -1.0:
-                PM[ii] = float('Inf') # np.arccos(-1.0)
-            else:
-                PM[ii] = np.rad2deg(np.arccos(PM[ii]))
-
-    return (DM, GM, PM)
-
 def margin(*args):
     """margin(sysdata)
 
@@ -703,3 +567,177 @@ def margin(*args):
                          % len(args))
 
     return margin[0], margin[1], margin[3], margin[4]
+
+def disk_margins(L, omega, skew = 0.0):
+    """Compute disk-based stability margins for SISO or MIMO LTI system.
+
+    Parameters
+    ----------
+    L : SISO or MIMO LTI system representing the loop transfer function
+    omega : ndarray
+        1d array of (non-negative) frequencies (rad/s) at which to evaluate
+        the disk-based stability margins
+    skew : (optional, default = 0) skew parameter for disk margin calculation.
+        skew = 0 uses the "balanced" sensitivity function 0.5*(S - T)
+        skew = 1 uses the sensitivity function S
+        skew = -1 uses the complementary sensitivity function T
+
+    Returns
+    -------
+    DM : ndarray
+        1d array of frequency-dependent disk margins.  DM is the same
+        size as "omega" parameter.
+    GM : ndarray
+        1d array of frequency-dependent disk-based gain margins, in dB.
+        GM is the same size as "omega" parameter.
+    PM : ndarray
+        1d array of frequency-dependent disk-based phase margins, in deg.
+        PM is the same size as "omega" parameter.
+
+    Examples
+    --------
+    >> import control
+    >> import numpy as np
+    >> import matplotlib
+    >> import matplotlib.pyplot as plt
+    >>
+    >> omega = np.logspace(-1, 3, 1001)
+    >> P = control.ss([[0, 10],[-10, 0]], np.eye(2), [[1, 10], [-10, 1]], [[0, 0],[0, 0]])
+    >> K = control.ss([],[],[], [[1, -2], [0, 1]])
+    >> L = P*K
+    >> DM, GM, PM = control.disk_margins(L, omega, 0.0) # balanced (S - T)
+    >> print(f"min(DM) = {min(DM)}")
+    >> print(f"min(GM) = {min(GM)} dB")
+    >> print(f"min(PM) = {min(PM)} deg")
+    >>
+    >> plt.figure(1)
+    >> plt.subplot(3,1,1)
+    >> plt.semilogx(omega, DM, label='$\\alpha$')
+    >> plt.legend()
+    >> plt.title('Disk Margin')
+    >> plt.grid()
+    >> plt.tight_layout()
+    >> plt.xlim([omega[0], omega[-1]])
+    >>
+    >> plt.figure(1)
+    >> plt.subplot(3,1,2)
+    >> plt.semilogx(omega, GM, label='$\\gamma_{m}$')
+    >> plt.ylabel('Margin (dB)')
+    >> plt.legend()
+    >> plt.title('Disk-Based Gain Margin')
+    >> plt.grid()
+    >> plt.ylim([0, 40])
+    >> plt.tight_layout()
+    >> plt.xlim([omega[0], omega[-1]])
+    >>
+    >> plt.figure(1)
+    >> plt.subplot(3,1,3)
+    >> plt.semilogx(omega, PM, label='$\\phi_{m}$')
+    >> plt.ylabel('Margin (deg)')
+    >> plt.legend()
+    >> plt.title('Disk-Based Phase Margin')
+    >> plt.grid()
+    >> plt.ylim([0, 90])
+    >> plt.tight_layout()
+    >> plt.xlim([omega[0], omega[-1]])
+
+    References
+    ----------
+    [1] Blight, James D., R. Lane Dailey, and Dagfinn Gangsaas. “Practical
+        Control Law Design for Aircraft Using Multivariable Techniques.”
+        International Journal of Control 59, no. 1 (January 1994): 93-137.
+        https://doi.org/10.1080/00207179408923071.
+
+    [2] Seiler, Peter, Andrew Packard, and Pascal Gahinet. “An Introduction
+        to Disk Margins [Lecture Notes].” IEEE Control Systems Magazine 40,
+        no. 5 (October 2020): 78-95.
+
+    [3] P. Benner, V. Mehrmann, V. Sima, S. Van Huffel, and A. Varga, "SLICOT
+        - A Subroutine Library in Systems and Control Theory", Applied and
+        Computational Control, Signals, and Circuits (Birkhauser), Vol. 1, Ch.
+        10, pp. 505-546, 1999.
+
+    [4] S. Van Huffel, V. Sima, A. Varga, S. Hammarling, and F. Delebecque,
+        "Development of High Performance Numerical Software for Control", IEEE
+        Control Systems Magazine, Vol. 24, Nr. 1, Feb., pp. 60-76, 2004.
+    """
+
+    # Check for prerequisites
+    if (not L.issiso()) and (ab13md == None):
+        raise ControlMIMONotImplemented("Need slycot to compute MIMO disk_margins")
+
+    # Get dimensions of feedback system
+    ny,_ = ss(L).C.shape
+    I = ss([], [], [], np.eye(ny))
+
+    # Loop sensitivity function
+    S = I.feedback(L)
+
+    # Compute frequency response of the "balanced" (according
+    # to the skew parameter "sigma") sensitivity function [1-2]
+    ST = S + (skew - 1)*I/2
+    ST_mag, ST_phase, _ = ST.frequency_response(omega)
+    ST_jw = (ST_mag*np.exp(1j*ST_phase))
+    if not L.issiso():
+        ST_jw = ST_jw.transpose(2,0,1)
+
+    # Frequency-dependent complex disk margin, computed using upper bound of
+    # the structured singular value, a.k.a. "mu", of (S + (skew - 1)/2).
+    # Uses SLICOT routine AB13MD to compute. [1,3-4].
+    DM = np.zeros(omega.shape, np.float64)
+    GM = np.zeros(omega.shape, np.float64)
+    PM = np.zeros(omega.shape, np.float64)
+    for ii in range(0,len(omega)):
+        # Disk margin (a.k.a. "alpha") vs. frequency
+        if L.issiso() and (ab13md == None):
+            #TODO: replace with unstructured singular value
+            DM[ii] = 1/ab13md(ST_jw[ii], np.array(ny*[1]), np.array(ny*[2]))[0]
+        else:
+            DM[ii] = 1/ab13md(ST_jw[ii], np.array(ny*[1]), np.array(ny*[2]))[0]
+
+        # Gain-only margin (dB) vs. frequency
+        gamma_min = (1 - DM[ii]*(1 - skew)/2)/(1 + DM[ii]*(1 + skew)/2)
+        gamma_max = (1 + DM[ii]*(1 - skew)/2)/(1 - DM[ii]*(1 + skew)/2)
+        GM[ii] = mag2db(np.minimum(1/gamma_min, gamma_max))
+
+        # Phase-only margin (deg) vs. frequency
+        if math.isinf(gamma_max):
+            PM[ii] = 90.0
+        else:
+            PM[ii] = (1 + gamma_min*gamma_max)/(gamma_min + gamma_max)
+            if PM[ii] >= 1.0:
+                PM[ii] = 0.0
+            elif PM[ii] <= -1.0:
+                PM[ii] = float('Inf')
+            else:
+                PM[ii] = np.rad2deg(np.arccos(PM[ii]))
+
+    return (DM, GM, PM)
+
+def disk_margin_plot(DM_jw, skew = 0.0, ax = None, alpha = 0.3):
+    # Smallest (worst-case) disk margin within frequencies of interest
+    DM_min = min(DM_jw) # worst-case
+
+    # Complex bounding curve of stable gain/phase variations
+    theta = np.linspace(0, np.pi, 500)
+    f = (2 + DM_min*(1 - skew)*np.exp(1j*theta))/\
+        (2 - DM_min*(1 - skew)*np.exp(1j*theta))
+
+    # Create axis if needed
+    if ax is None:
+        ax = plt.gca()
+
+    # Plot the allowable complex "disk" of gain/phase variations
+    gamma_dB = mag2db(np.abs(f)) # gain margin (dB)
+    phi_deg = np.rad2deg(np.angle(f)) # phase margin (deg)
+    out = ax.plot(gamma_dB, phi_deg, alpha=0.3, label='_nolegend_')
+    x1 = ax.lines[0].get_xydata()[:,0]
+    y1 = ax.lines[0].get_xydata()[:,1]
+    ax.fill_between(x1,y1, alpha = alpha)
+    plt.ylabel('Gain Variation (dB)')
+    plt.xlabel('Phase Variation (deg)')
+    plt.title('Range of Gain and Phase Variations')
+    plt.grid()
+    plt.tight_layout()
+
+    return out
