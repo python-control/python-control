@@ -201,12 +201,19 @@ Consider the vehicle steering example described in Example 2.3 of
 `Optimization-Based Control (OBC)
 <https://fbswiki.org/wiki/index.php?title=OBC>`_.  The
 dynamics of the system can be defined as a nonlinear input/output
-system using the following code::
+system using the following code:
 
+.. testsetup:: optimal
+
+    import matplotlib.pyplot as plt
+    plt.close('all')
+
+.. testcode:: optimal
+
+  import matplotlib.pyplot as plt
   import numpy as np
   import control as ct
   import control.optimal as opt
-  import matplotlib.pyplot as plt
 
   def vehicle_update(t, x, u, params):
       # Get the parameters for the model
@@ -234,14 +241,18 @@ system using the following code::
 We consider an optimal control problem that consists of "changing lanes" by
 moving from the point x = 0 m, y = -2 m, :math:`\theta` = 0 to the point x =
 100 m, y = 2 m, :math:`\theta` = 0) over a period of 10 seconds and
-with a starting and ending velocity of 10 m/s::
+with a starting and ending velocity of 10 m/s:
+
+.. testcode:: optimal
 
   x0 = np.array([0., -2., 0.]); u0 = np.array([10., 0.])
   xf = np.array([100., 2., 0.]); uf = np.array([10., 0.])
   Tf = 10
 
 To set up the optimal control problem we design a cost function that
-penalizes the state and input using quadratic cost functions::
+penalizes the state and input using quadratic cost functions:
+
+.. testcode:: optimal
 
   Q = np.diag([0, 0, 0.1])          # don't turn too sharply
   R = np.diag([1, 1])               # keep inputs small
@@ -250,18 +261,33 @@ penalizes the state and input using quadratic cost functions::
   term_cost = opt.quadratic_cost(vehicle, P, 0, x0=xf)
 
 We also constrain the maximum turning rate to 0.1 radians (about 6 degrees)
-and constrain the velocity to be in the range of 9 m/s to 11 m/s::
+and constrain the velocity to be in the range of 9 m/s to 11 m/s:
+
+.. testcode:: optimal
 
   constraints = [ opt.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
 
-Finally, we solve for the optimal inputs::
+Finally, we solve for the optimal inputs:
+
+.. testcode:: optimal
 
   timepts = np.linspace(0, Tf, 10, endpoint=True)
   result = opt.solve_ocp(
       vehicle, timepts, x0, traj_cost, constraints,
       terminal_cost=term_cost, initial_guess=u0)
 
-Plotting the results::
+.. testoutput:: optimal
+  :hide:
+
+  Summary statistics:
+  * Cost function calls: ...
+  * Constraint calls: ...
+  * System simulations: ...
+  * Final cost: ...
+
+Plotting the results:
+
+.. testcode:: optimal
 
   # Simulate the system dynamics (open loop)
   resp = ct.input_output_response(
@@ -289,7 +315,11 @@ Plotting the results::
 
   plt.suptitle("Lane change maneuver")
   plt.tight_layout()
-  plt.show()
+
+.. testcode:: optimal
+  :hide:
+
+  plt.savefig('figures/steering-optimal.png')
 
 yields
 

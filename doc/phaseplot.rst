@@ -12,7 +12,14 @@ functionality is supported by a set of mapping functions that are part of
 the `phaseplot` module.
 
 The default method for generating a phase plane plot is to provide a
-2D dynamical system along with a range of coordinates and time limit::
+2D dynamical system along with a range of coordinates and time limit:
+
+.. testsetup:: phaseplot
+
+    import matplotlib.pyplot as plt
+    plt.close('all')
+
+.. testcode:: phaseplot
 
     sys = ct.nlsys(
         lambda t, x, u, params: np.array([[0, 1], [-1, -1]]) @ x,
@@ -20,6 +27,12 @@ The default method for generating a phase plane plot is to provide a
     axis_limits = [-1, 1, -1, 1]
     T = 8
     ct.phase_plane_plot(sys, axis_limits, T)
+
+.. testcode:: phaseplot
+    :hide:
+
+    import matplotlib.pyplot as plt
+    plt.savefig('figures/phaseplot-dampedosc-default.png')
 
 .. image:: figures/phaseplot-dampedosc-default.png
    :align: center
@@ -32,7 +45,14 @@ including plotting a grid of vectors instead of streamlines and
 turning on and off various features of the plot.
 
 To illustrate some of these possibilities, consider a phase plane plot for
-an inverted pendulum system, which is created using a mesh grid::
+an inverted pendulum system, which is created using a mesh grid:
+
+.. testcode:: phaseplot
+    :hide:
+
+    plt.figure()
+
+.. testcode:: phaseplot
 
     def invpend_update(t, x, u, params):
         m, l, b, g = params['m'], params['l'], params['b'], params['g']
@@ -40,12 +60,17 @@ an inverted pendulum system, which is created using a mesh grid::
     invpend = ct.nlsys(invpend_update, states=2, inputs=1, name='invpend')
 
     ct.phase_plane_plot(
-        invpend, [-2*pi, 2*pi, -2, 2], 5,
+        invpend, [-2 * np.pi, 2 * np.pi, -2, 2], 5,
         gridtype='meshgrid', gridspec=[5, 8], arrows=3,
         plot_equilpoints={'gridspec': [12, 9]},
         params={'m': 1, 'l': 1, 'b': 0.2, 'g': 1})
     plt.xlabel(r"$\theta$ [rad]")
     plt.ylabel(r"$\dot\theta$ [rad/sec]")
+
+.. testcode:: phaseplot
+    :hide:
+
+    plt.savefig('figures/phaseplot-invpend-meshgrid.png')
 
 .. image:: figures/phaseplot-invpend-meshgrid.png
    :align: center
@@ -61,7 +86,14 @@ multiple features in the phase plane plot give a good global picture of the
 topological structure of solutions of the dynamical system.
 
 Phase plots can be built up by hand using a variety of helper functions that
-are part of the :mod:`phaseplot` (pp) module::
+are part of the :mod:`phaseplot` (pp) module:
+
+.. testcode:: phaseplot
+    :hide:
+
+    plt.figure()
+
+.. testcode:: phaseplot
 
     import control.phaseplot as pp
 
@@ -76,8 +108,13 @@ are part of the :mod:`phaseplot` (pp) module::
         oscillator, np.array([[0, 0]]), 1.5,
         gridtype='circlegrid', gridspec=[0.5, 6], dir='both')
     pp.streamlines(
-        oscillator, np.array([[1, 0]]), 2*pi, arrows=6, color='b')
+        oscillator, np.array([[1, 0]]), 2 * np.pi, arrows=6, color='b')
     plt.gca().set_aspect('equal')
+
+.. testcode:: phaseplot
+    :hide:
+
+    plt.savefig('figures/phaseplot-oscillator-helpers.png')
 
 .. image:: figures/phaseplot-oscillator-helpers.png
    :align: center

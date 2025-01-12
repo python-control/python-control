@@ -289,18 +289,22 @@ input/output system that takes the sum of an arbitrary number of inputs.  For
 example, to create an input/output system that takes the sum of three inputs,
 use the command
 
-.. code-block:: python
+.. testcode:: summing
 
   sumblk = ct.summing_junction(3)
 
 By default, the name of the inputs will be of the form 'u[i]' and the output
-will be 'y'.  This can be changed by giving an explicit list of names::
+will be 'y'.  This can be changed by giving an explicit list of names:
+
+.. testcode:: summing
 
   sumblk = ct.summing_junction(inputs=['a', 'b', 'c'], output='d')
 
 A more typical usage would be to define an input/output system that
 compares a reference signal to the output of the process and computes
-the error::
+the error:
+
+.. testcode:: summing
 
   sumblk = ct.summing_junction(inputs=['r', '-y'], output='e')
 
@@ -311,7 +315,7 @@ It is also possible to define "vector" summing blocks that take
 multi-dimensional inputs and produce a multi-dimensional output.  For
 example, the command
 
-.. code-block:: python
+.. testcode:: summing
 
   sumblk = ct.summing_junction(inputs=['r', '-y'], output='e', dimension=2)
 
@@ -330,7 +334,9 @@ omitted, the :func:`interconnect` function will connect all signals
 of the same name to each other.  This can allow for simplified methods of
 interconnecting systems, especially when combined with the
 :func:`summing_junction` function.  For example, the following code
-will create a unity gain, negative feedback system::
+will create a unity gain, negative feedback system:
+
+.. testcode: autoconnect
 
   P = ct.tf([1], [1, 0], inputs='u', outputs='y')
   C = ct.tf([10], [1, 1], inputs='e', outputs='u')

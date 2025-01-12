@@ -156,7 +156,7 @@ Simulations and plotting
 To simulate an input/output system, use the
 :func:`input_output_response` function::
 
-  resp = ct.input_output_response(sys_nl, T, U, x0, params)
+  resp = ct.input_output_response(sys_nl, timepts, U, x0, params)
   t, y, x = resp.time, resp.outputs, resp.states
 
 Time responses can be plotted using the :func:`time_response_plot`
@@ -180,7 +180,9 @@ different plot elements:
 * `cplt.legend`: legend object(s) contained in the plot.
 
 The :func:`combine_time_responses` function an be used to combine
-multiple time responses into a single `TimeResponseData` object::
+multiple time responses into a single `TimeResponseData` object:
+
+.. testcode::
 
   timepts = np.linspace(0, 10)
 
@@ -190,8 +192,15 @@ multiple time responses into a single `TimeResponseData` object::
   U2 = np.cos(2*timepts)
   resp2 = ct.input_output_response(servomech, timepts, U2)
 
-  cplt.ct.combine_time_responses(
-      [resp1, resp2], trace_labels=["Scenario #1", "Scenario #2"]).plot()
+  resp = ct.combine_time_responses(
+      [resp1, resp2], trace_labels=["Scenario #1", "Scenario #2"])
+  resp.plot(legend_loc=False)
+
+.. testcode::
+  :hide:
+
+  import matplotlib.pyplot as plt
+  plt.savefig('figures/timeplot-servomech-combined.png')
 
 .. image:: figures/timeplot-servomech-combined.png
    :align: center

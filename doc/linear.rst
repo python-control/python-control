@@ -41,7 +41,16 @@ of linear time-invariant (LTI) systems:
 where :math:`u` is the input, :math:`y` is the output, and :math:`x`
 is the state.
 
-To create a state space system, use the :func:`ss` function::
+To create a state space system, use the :func:`ss` function:
+
+.. testsetup:: statesp
+
+  A = np.diag([-1, -2])
+  B = np.eye(2)
+  C = np.eye(1, 2)
+  D = np.zeros((1, 2))
+
+.. testcode:: statesp
 
   sys = ct.ss(A, B, C, D)
 
@@ -52,7 +61,9 @@ functions can be found in the :ref:`interconnections-ref` section of
 the :ref:`function-ref`.
 
 Systems, inputs, outputs, and states can be given labels to allow more
-customized access to system information::
+customized access to system information:
+
+.. testcode:: statesp
 
   sys = ct.ss(
       A, B, C, D, name='sys',
@@ -64,9 +75,11 @@ operations as well as the :func:`feedback`, :func:`parallel`, and
 :ref:`function-ref`.
 
 The :func:`rss` function can be used to create a random state space
-system with a desired number or inputs, outputs, and states::
+system with a desired number or inputs, outputs, and states:
 
-  sys = ct.rss(states=4, outputs=1, inputs=1], strictly_proper=True)
+.. testcode:: statesp
+
+  sys = ct.rss(states=4, outputs=1, inputs=1, strictly_proper=True)
 
 The `states`, `inputs`, and `output` parameters can also be
 given as lists of strings to create named signals.  All systems
@@ -88,12 +101,21 @@ transfer functions
 where :math:`n` is greater than or equal to :math:`m` for a proper
 transfer function.  Improper transfer functions are also allowed.
 
-To create a transfer function, use the :func:`tf` function::
+To create a transfer function, use the :func:`tf` function:
+
+.. testsetup:: xferfcn
+
+  num = np.array([1, 2])
+  den = np.array([3, 4])
+
+.. testcode:: xferfcn
 
   sys = ct.tf(num, den)
 
 The system name as well as input and output labels can be specified in
-the same way as state space systems::
+the same way as state space systems:
+
+.. testcode:: xferfcn
 
   sys = ct.tf(num, den, name='sys', inputs=['u'], outputs=['y'])
 
@@ -105,19 +127,25 @@ functions can be found in the :ref:`interconnections-ref` section of the
 
 To aid in the construction of transfer functions, the :func:`tf`
 factory function can used to create transfer function corresponding
-to the derivative or difference operator::
+to the derivative or difference operator:
+
+.. testcode:: xferfcn
 
   s = ct.tf('s')
 
 Standard algebraic operations can be used to construct more
-complicated transfer functions::
+complicated transfer functions:
+
+.. testcode:: xferfcn
 
   sys = 5 * (s + 10)/(s**2 + 2*s + 1)
 
 Transfer functions can be evaluated at a point in the complex plane by
-calling the transfer function object::
+calling the transfer function object:
 
-  val = sys(s)
+.. testcode:: xferfcn
+
+  val = sys(1 + 0.5j)
 
 Discrete time transfer functions (described in more detail below) can
 be created using ``z = ct.tf('z')``.
@@ -132,14 +160,25 @@ systems in frequency response data form.  The main data attributes are
 `fresp` is the (complex-value) value of the transfer function at each
 frequency point.
 
-FRD systems can be created with the :func:`frd` factory function::
+FRD systems can be created with the :func:`frd` factory function:
 
-  sys = ct.frd(fresp, omega)
+.. testsetup:: frdata
+
+  sys_lti = ct.rss(2, 2, 2)
+  lti_resp = ct.frequency_response(sys_lti)
+  fresp = lti_resp.response
+  freqpts = lti_resp.frequency
+
+.. testcode:: frdata
+
+  sys = ct.frd(fresp, freqpts)
 
 FRD systems can also be created by evaluating an LTI system at a given
-set of frequencies::
+set of frequencies:
 
-  frd_sys = ct.frd(lti_sys, omega)
+.. testcode:: frdata
+
+  frd_sys = ct.frd(sys_lti, freqpts)
 
 Frequency response data systems have a somewhat more limited set of
 functions that are available, although all of the standard algebraic
@@ -147,9 +186,11 @@ manipulations can be performed.
 
 The FRD class is also used as the return type for the
 :func:`frequency_response` function.  This object can be assigned to a
-tuple using::
+tuple using:
 
-  response = ct.frequency_response(sys)
+.. testcode:: frdata
+
+  response = ct.frequency_response(sys_lti)
   mag, phase, omega = response
 
 where `mag` is the magnitude (absolute value, not dB or log10) of the
@@ -171,7 +212,17 @@ function.  For state space systems, the input matrix `B`, output
 matrix `C`, and direct term `D` should be 2D matrices of the
 appropriate shape.  For transfer functions, this is done by providing
 a 2D list of numerator and denominator polynomials to the :func:`tf`
-function, e.g.::
+function, e.g.:
+
+.. testsetup:: mimo
+
+  sys = ct.tf(ct.rss(4, 2, 2))
+  [[num11, num12], [num21, num22]] = sys.num_list
+  [[den11, den12], [den21, den22]] = sys.den_list
+
+  A, B, C, D = ct.ssdata(ct.rss(4, 3, 2))  # 3 output, 2 input
+
+.. testcode:: mimo
 
   sys = ct.tf(
       [[num11, num12], [num21, num22]],
@@ -183,21 +234,25 @@ values,with the first dimension corresponding to the output index of
 the system, the second dimension corresponding to the input index, and
 the 3rd dimension corresponding to the frequency points in omega.
 
-Signal names for MIMO systems are specified using lists of labels::
+Signal names for MIMO systems are specified using lists of labels:
 
-  sys = ct.ss(A, B, C, D, inputs=['u1', 'u2'], outputs=['y1' 'y2'])
+.. testcode:: mimo
+
+  sys = ct.ss(A, B, C, D, inputs=['u1', 'u2'], outputs=['y1', 'y2', 'y3'])
 
 Signals that are not given explicit labels are given labels of the
 form 's[i]' where the default value of 's' is 'x' for states, 'u' for
 inputs, and 'y' for outputs, and 'i' ranges over the dimension of the
 signal (starting at 0).
 
-Subsets of input/output pairs for LTI systems can be obtained by indexing
-the system using either numerical indices (including slices) or signal
-names::
+Subsets of input/output pairs for LTI systems can be obtained by
+indexing the system using either numerical indices (including slices)
+or signal names:
 
-    subsys = sys[[0, 2], 0:2]
-    subsys = sys[['y[0]', 'y[2]'], ['u[0]', 'u[1]']]
+.. testcode:: mimo
+
+  subsys = sys[[0, 2], 0:2]
+  subsys = sys[['y1', 'y3'], ['u1', 'u2']]
 
 Signal names for an indexed subsystem are preserved from the original
 system and the subsystem name is set according to the values of
@@ -208,7 +263,9 @@ default subsystem name is the original system name with '$indexed'
 appended.
 
 For FRD objects, the frequency response properties for MIMO systems
-can be accessed using the names of the inputs and outputs::
+can be accessed using the names of the inputs and outputs:
+
+.. testcode:: frdata
 
   response.magnitude['y[0]', 'u[1]']
 
@@ -238,7 +295,15 @@ Discrete Time Systems
 =====================
 
 A discrete time system is created by specifying a nonzero "timebase",
-`dt` when the system is constructed::
+`dt` when the system is constructed:
+
+.. testsetup:: dtime
+
+  A, B, C, D = ct.ssdata(ct.rss(2, 1, 1))
+  num, den = ct.tfdata(ct.rss(2, 1, 1))
+  dt = 0.1
+
+.. testcode:: dtime
 
   sys_ss = ct.ss(A, B, C, D, dt)
   sys_tf = ct.tf(num, den, dt)
@@ -308,20 +373,36 @@ operate on LTI systems will work on any subclass.
 
 To explicitly convert a state space system into a transfer function
 representation, the state space system can be passed as an argument to
-the :func:`tf` factory functions::
+the :func:`tf` factory functions:
+
+.. testcode:: convert
 
   sys_ss = ct.rss(4, 2, 2, name='sys_ss')
   sys_tf = ct.tf(sys_ss, name='sys_tf')
 
 The :func:`ss2tf` function can also be used, passing either the state
-space system or the matrices that represent the state space systems::
+space system or the matrices that represent the state space systems:
+
+.. testcode:: convert
+  :hide:
+
+  A, B, C, D = ct.ssdata(sys_ss)
+
+.. testcode:: convert
 
   sys_tf = ct.ss2tf(A, B, C, D)
 
 In either form, system and signal names can be changed by passing the
 appropriate keyword arguments.
 
-Conversion of transfer functions to state space form is also possible::
+Conversion of transfer functions to state space form is also possible:
+
+.. testcode:: convert
+  :hide:
+
+  num, den = ct.tfdata(sys_tf)
+
+.. testcode:: convert
 
   sys_ss = ct.ss(sys_tf)
   sys_ss = ct.tf2ss(sys_tf)

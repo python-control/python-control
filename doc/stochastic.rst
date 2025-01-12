@@ -79,30 +79,58 @@ To compute the response of a linear (or nonlinear) system to a white
 noise input, use the :func:`forced_response` (or
 :func:`input_output_response`) function:
 
-.. code::
+.. testsetup::
+
+  import matplotlib.pyplot as plt
+  import numpy as np
+  import random
+  import control as ct
+
+  random.seed(71)
+  np.random.seed(71)
+
+.. testcode::
 
   a, c = 1, 1
-  sys = ct.ss([[-a]], [[1]], [[c]], 0)
+  sys = ct.ss([[-a]], [[1]], [[c]], 0, name='sys')
   timepts = np.linspace(0, 5, 1000)
   Q = np.array([[0.1]])
   V = ct.white_noise(timepts, Q)
   resp = ct.forced_response(sys, timepts, V)
   resp.plot()
 
-.. todo::
-   Add plot
+.. testcode::
+  :hide:
+
+  plt.savefig('figures/stochastic-whitenoise-response.png')
+  plt.close('all')
+
+.. image:: figures/stochastic-whitenoise-response.png
+   :align: center
 
 The correlation function for the output can be computed using the
 :func:`correlation` function and compared to the analytical expression:
 
-.. code::
+.. testcode::
 
   tau, r_Y = ct.correlation(timepts, resp.outputs)
-  plt.plot(tau, r_Y)
-  plt.plot(tau, c**2 * Q.item() / (2 * a) * np.exp(-a * np.abs(tau)))
+  plt.plot(tau, r_Y, label='empirical')
+  plt.plot(
+      tau, c**2 * Q.item() / (2 * a) * np.exp(-a * np.abs(tau)),
+      label='approximation')
+  plt.xlabel(r"$\tau$")
+  plt.ylabel(r"$r_\tau$")
+  plt.title(f"Output correlation for {sys.name}")
+  plt.legend()
 
-.. todo::
-   Add plot
+.. testcode::
+  :hide:
+
+  plt.savefig('figures/stochastic-whitenoise-correlation.png')
+  plt.close('all')
+
+.. image:: figures/stochastic-whitenoise-correlation.png
+   :align: center
 
 
 .. _kalman-filter:
@@ -159,6 +187,9 @@ time optimal controller.  For the second two forms, the :func:`dlqr`
 function can be used.  Additional arguments and details are given on
 the :func:`lqr` and :func:`dlqr` documentation pages.
 
+.. todo::
+   Convert the following code to testcode
+
 The :func:`create_estimator_iosystem` function can be used to create
 an I/O system implementing a Kalman filter, including integration of
 the Riccati ODE.  The command has the form
@@ -180,8 +211,9 @@ to allow prediction with no additional sensor information::
   resp = ct.input_output_response(
       estim, timepts, 0, [X0, P0], param={'correct': False})
 
-The :func:`create_statefbk_iosystem` function can be used to combine
-an estimator with a state feedback controller::
+The :func:`create_estimator_iosystem` and
+:func:`create_statefbk_iosystem` functions can be used to combine an
+estimator with a state feedback controller::
 
   K, _, _ = ct.lqr(sys, Qx, Qu)
   estim = ct.create_estimator_iosystem(sys, Qv, Qw, P0)

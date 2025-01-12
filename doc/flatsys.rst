@@ -215,7 +215,12 @@ derived in `Feedback Systems
 <https://fbswiki.org/wiki/index.php?title=FBS>`, Example 3.11 (Vehicle
 Steering).
 
-.. code-block:: python
+.. testsetup:: flatsys
+
+    import matplotlib.pyplot as plt
+    plt.close('all')
+
+.. testcode:: flatsys
 
     import numpy as np
     import control as ct
@@ -267,8 +272,18 @@ Steering).
 
         return x, u
 
+    def vehicle_update(t, x, u, params):
+        b = params.get('wheelbase', 3.)             # get parameter values
+        dx = np.array([
+            np.cos(x[2]) * u[0],
+            np.sin(x[2]) * u[0],
+            (u[0]/b) * np.tan(u[1])
+        ])
+        return dx
+
     vehicle_flat = fs.flatsys(
         vehicle_flat_forward, vehicle_flat_reverse,
+	updfcn=vehicle_update, outfcn=None, name='vehicle_flat',
 	inputs=('v', 'delta'), outputs=('x', 'y'), states=('x', 'y', 'theta'))
 
 To find a trajectory from an initial state :math:`x_0` to a final
@@ -277,7 +292,7 @@ point-to-point trajectory generation problem. We also set the initial
 and final inputs, which sets the vehicle velocity :math:`v` and
 steering wheel angle :math:`\delta` at the endpoints.
 
-.. code-block:: python
+.. testcode:: flatsys
 
     # Define the endpoints of the trajectory
     x0 = [0., -2., 0.]; u0 = [10., 0.]
@@ -299,7 +314,7 @@ Alternatively, we can solve an optimal control problem in which we
 minimize a cost function along the trajectory as well as a terminal
 cost:
 
-.. code-block:: python
+.. testcode:: flatsys
 
     # Define the cost along the trajectory: penalize steering angle
     traj_cost = ct.optimal.quadratic_cost(
@@ -324,11 +339,19 @@ cost:
     resp_ocp = ct.input_output_response(vehicle_flat, timepts, ud, X0=xd[:, 0])
 
 The results of the two approaches can be shown using the
-`time_response_plot` function::
+`time_response_plot` function:
+
+.. testcode:: flatsys
 
     cplt = ct.time_response_plot(
         ct.combine_time_responses([resp_p2p, resp_ocp]),
         overlay_traces=True, trace_labels=['point_to_point', 'solve_ocp'])
+
+.. testcode:: flatsys
+   :hide:
+
+   import matplotlib.pyplot as plt
+   plt.savefig('figures/flatsys-steering-compare.png')
 
 .. image:: figures/flatsys-steering-compare.png
    :align: center
