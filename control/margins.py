@@ -77,7 +77,7 @@ except ImportError:
     def mag2db(mag):
         return 20*np.log10(mag)
 
-__all__ = ['stability_margins', 'phase_crossover_frequencies', 'margin', 'disk_margins']
+__all__ = ['stability_margins', 'phase_crossover_frequencies', 'margin', 'disk_margins', 'disk_margin_plot']
 
 # private helper functions
 def _poly_iw(sys):
