@@ -319,3 +319,45 @@ class TestConfig:
             indexed_system_name_suffix='POST')
         sys2 = sys[1:, 1:]
         assert sys2.name == 'PRE' + sys.name + 'POST'
+
+    @pytest.mark.parametrize("kwargs", [
+        {},
+        {'name': 'mysys'},
+        {'inputs': 1},
+        {'inputs': 'u'},
+        {'outputs': 1},
+        {'outputs': 'y'},
+        {'states': 1},
+        {'states': 'x'},
+        {'inputs': 1, 'outputs': 'y', 'states': 'x'},
+        {'dt': 0.1}
+    ])
+    def test_repr_format(self, kwargs):
+        from ..statesp import StateSpace
+        from numpy import array
+
+        sys = ct.ss([[1]], [[1]], [[1]], [[0]], **kwargs)
+        new = eval(repr(sys))
+        for attr in ['A', 'B', 'C', 'D']:
+            assert getattr(new, attr) == getattr(sys, attr)
+        for prop in ['input_labels', 'output_labels', 'state_labels']:
+            assert getattr(new, attr) == getattr(sys, attr)
+        if 'name' in kwargs:
+            assert new.name == sys.name
+
+
+def test_config_context_manager():
+    # Make sure we can temporarily set the value of a parameter
+    default_val = ct.config.defaults['statesp.latex_repr_type']
+    with ct.config.defaults({'statesp.latex_repr_type': 'new value'}):
+        assert ct.config.defaults['statesp.latex_repr_type'] != default_val
+        assert ct.config.defaults['statesp.latex_repr_type'] == 'new value'
+    assert ct.config.defaults['statesp.latex_repr_type'] == default_val
+
+    # OK to call the context manager and not do anything with it
+    ct.config.defaults({'statesp.latex_repr_type': 'new value'})
+    assert ct.config.defaults['statesp.latex_repr_type'] == default_val
+
+    with pytest.raises(ValueError, match="unknown parameter 'unknown'"):
+        with ct.config.defaults({'unknown': 'new value'}):
+            pass

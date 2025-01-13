@@ -96,6 +96,7 @@ def test_kwarg_search(module, prefix):
 @pytest.mark.parametrize(
     "function, nsssys, ntfsys, moreargs, kwargs",
     [(control.append, 2, 0, (), {}),
+     (control.combine_tf, 0, 0, ([[1, 0], [0, 1]], ), {}),
      (control.dlqe, 1, 0, ([[1]], [[1]]), {}),
      (control.dlqr, 1, 0, ([[1, 0], [0, 1]], [[1]]), {}),
      (control.drss, 0, 0, (2, 1, 1), {}),
@@ -245,6 +246,7 @@ kwarg_unittest = {
     'bode': test_response_plot_kwargs,
     'bode_plot': test_response_plot_kwargs,
     'LTI.bode_plot': test_response_plot_kwargs, # alias for bode_plot and tested via bode_plot
+    'combine_tf': test_unrecognized_kwargs,
     'create_estimator_iosystem': stochsys_test.test_estimator_errors,
     'create_statefbk_iosystem': statefbk_test.TestStatefbk.test_statefbk_errors,
     'describing_function_plot': test_matplotlib_kwargs,

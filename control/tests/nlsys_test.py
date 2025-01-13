@@ -19,7 +19,7 @@ import control as ct
 # Basic test of nlsys()
 def test_nlsys_basic():
     def kincar_update(t, x, u, params):
-        l = params.get('l', 1)  # wheelbase
+        l = params['l']              # wheelbase
         return np.array([
             np.cos(x[2]) * u[0],     # x velocity
             np.sin(x[2]) * u[0],     # y velocity
@@ -33,10 +33,11 @@ def test_nlsys_basic():
         kincar_update, kincar_output,
         states=['x', 'y', 'theta'],
         inputs=2, input_prefix='U',
-        outputs=2)
+        outputs=2, params={'l': 1})
     assert kincar.input_labels == ['U[0]', 'U[1]']
     assert kincar.output_labels == ['y[0]', 'y[1]']
     assert kincar.state_labels == ['x', 'y', 'theta']
+    assert kincar.params == {'l': 1}
 
 
 # Test nonlinear initial, step, and forced response
@@ -199,3 +200,68 @@ def test_ss2io():
         with pytest.raises(ValueError, match=r"new .* doesn't match"):
             kwargs = {attr: getattr(sys, 'n' + attr) - 1}
             nlsys = ct.nlsys(sys, **kwargs)
+
+
+def test_ICsystem_str():
+    sys1 = ct.rss(2, 2, 3, name='sys1', strictly_proper=True)
+    sys2 = ct.rss(2, 3, 2, name='sys2', strictly_proper=True)
+
+    with pytest.warns(UserWarning, match="Unused") as record:
+        sys = ct.interconnect(
+            [sys1, sys2], inputs=['r1', 'r2'], outputs=['y1', 'y2'],
+            connections=[
+                ['sys1.u[0]', '-sys2.y[0]', 'sys2.y[1]'],
+                ['sys1.u[1]', 'sys2.y[0]', '-sys2.y[1]'],
+                ['sys2.u[0]', 'sys2.y[0]', (0, 0, -1)],
+                ['sys2.u[1]', (1, 1, -2), (0, 1, -2)],
+            ],
+            inplist=['sys1.u[0]', 'sys1.u[1]'],
+            outlist=['sys2.y[0]', 'sys2.y[1]'])
+    assert len(record) == 2
+    assert str(record[0].message).startswith("Unused input")
+    assert str(record[1].message).startswith("Unused output")
+
+    ref = \
+        r"<LinearICSystem>: sys\[[\d]+\]" + "\n" + \
+        r"Inputs \(2\): \['r1', 'r2'\]" + "\n" + \
+        r"Outputs \(2\): \['y1', 'y2'\]" + "\n" + \
+        r"States \(4\): \['sys1_x\[0\].*'sys2_x\[1\]'\]" + "\n" + \
+        "\n" + \
+        r"Subsystems \(2\):" + "\n" + \
+        r" \* <StateSpace sys1: \[.*\] -> \['y\[0\]', 'y\[1\]']>" + "\n" + \
+        r" \* <StateSpace sys2: \['u\[0\]', 'u\[1\]'] -> \[.*\]>" + "\n" + \
+        "\n" + \
+        r"Connections:" + "\n" + \
+        r" \* sys1.u\[0\] <- -sys2.y\[0\] \+ sys2.y\[1\] \+ r1" + "\n" + \
+        r" \* sys1.u\[1\] <- sys2.y\[0\] - sys2.y\[1\] \+ r2" + "\n" + \
+        r" \* sys1.u\[2\] <-" + "\n" + \
+        r" \* sys2.u\[0\] <- -sys1.y\[0\] \+ sys2.y\[0\]" + "\n" + \
+        r" \* sys2.u\[1\] <- -2.0 \* sys1.y\[1\] - 2.0 \* sys2.y\[1\]" + \
+        "\n\n" + \
+        r"Outputs:" + "\n" + \
+        r" \* y1 <- sys2.y\[0\]" + "\n" + \
+        r" \* y2 <- sys2.y\[1\]" + \
+        "\n\n" + \
+        r"A = \[\[.*\]\]" + "\n\n" + \
+        r"B = \[\[.*\]\]" + "\n\n" + \
+        r"C = \[\[.*\]\]" + "\n\n" + \
+        r"D = \[\[.*\]\]"
+
+    assert re.match(ref, str(sys), re.DOTALL)
+
+
+# Make sure nlsys str() works as expected
+@pytest.mark.parametrize("params, expected", [
+    ({}, r"States \(1\): \['x\[0\]'\]" + "\n\n"),
+    ({'a': 1}, r"States \(1\): \['x\[0\]'\]" + "\n" +
+     r"Parameters: \['a'\]" + "\n\n"),
+    ({'a': 1, 'b': 1}, r"States \(1\): \['x\[0\]'\]" + "\n" +
+     r"Parameters: \['a', 'b'\]" + "\n\n"),
+])
+def test_nlsys_params_str(params, expected):
+    sys = ct.nlsys(
+            lambda t, x, u, params: -x, inputs=1, outputs=1, states=1,
+            params=params)
+    out = str(sys)
+
+    assert re.search(expected, out) is not None

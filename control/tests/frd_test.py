@@ -465,21 +465,23 @@ class TestFRD:
             [0.1, 1.0, 10.0, 100.0], name='sys0')
         sys1 = ct.frd(
             sys0.fresp, sys0.omega, smooth=True, name='sys1')
-        ref0 = "FrequencyResponseData(" \
-            "array([[[1.  +0.j , 0.9 +0.1j, 0.1 +2.j , 0.05+3.j ]]])," \
-            " array([  0.1,   1. ,  10. , 100. ]))"
-        ref1 = ref0[:-1] + ", smooth=True)"
+        ref_common = "FrequencyResponseData(\n" \
+            "array([[[1.  +0.j , 0.9 +0.1j, 0.1 +2.j , 0.05+3.j ]]]),\n" \
+            "array([  0.1,   1. ,  10. , 100. ]),"
+        ref0 = ref_common + "\nname='sys0', outputs=1, inputs=1)"
+        ref1 = ref_common + " smooth=True," + \
+            "\nname='sys1', outputs=1, inputs=1)"
         sysm = ct.frd(
             np.matmul(array([[1], [2]]), sys0.fresp), sys0.omega, name='sysm')
 
-        assert repr(sys0) == ref0
-        assert repr(sys1) == ref1
+        assert ct.iosys_repr(sys0, format='eval') == ref0
+        assert ct.iosys_repr(sys1, format='eval') == ref1
 
-        sys0r = eval(repr(sys0))
+        sys0r = eval(ct.iosys_repr(sys0, format='eval'))
         np.testing.assert_array_almost_equal(sys0r.fresp, sys0.fresp)
         np.testing.assert_array_almost_equal(sys0r.omega, sys0.omega)
 
-        sys1r = eval(repr(sys1))
+        sys1r = eval(ct.iosys_repr(sys1, format='eval'))
         np.testing.assert_array_almost_equal(sys1r.fresp, sys1.fresp)
         np.testing.assert_array_almost_equal(sys1r.omega, sys1.omega)
         assert(sys1._ifunc is not None)
@@ -503,19 +505,22 @@ Inputs (2): ['u[0]', 'u[1]']
 Outputs (1): ['y[0]']
 
 Input 1 to output 1:
-Freq [rad/s]  Response
-------------  ---------------------
-       0.100           1        +0j
-       1.000         0.9      +0.1j
-      10.000         0.1        +2j
-     100.000        0.05        +3j
+
+  Freq [rad/s]  Response
+  ------------  ---------------------
+         0.100           1        +0j
+         1.000         0.9      +0.1j
+        10.000         0.1        +2j
+       100.000        0.05        +3j
+
 Input 2 to output 1:
-Freq [rad/s]  Response
-------------  ---------------------
-       0.100           2        +0j
-       1.000         1.8      +0.2j
-      10.000         0.2        +4j
-     100.000         0.1        +6j"""
+
+  Freq [rad/s]  Response
+  ------------  ---------------------
+         0.100           2        +0j
+         1.000         1.8      +0.2j
+        10.000         0.2        +4j
+       100.000         0.1        +6j"""
         assert str(sysm) == refm
 
     def test_unrecognized_keyword(self):
