@@ -26,7 +26,7 @@ import scipy as sp
 
 from . import config
 from .iosys import InputOutputSystem, _parse_spec, _process_iosys_keywords, \
-    _process_signal_list, common_timebase, isctime, isdtime
+    _process_signal_list, common_timebase, iosys_repr, isctime, isdtime
 from .timeresp import _check_convert_array, _process_time_response, \
     TimeResponseData, TimeResponseList
 
@@ -154,9 +154,13 @@ class NonlinearIOSystem(InputOutputSystem):
         self._current_params = {} if params is None else params.copy()
 
     def __str__(self):
-        return f"{InputOutputSystem.__str__(self)}\n\n" + \
+        out = f"{InputOutputSystem.__str__(self)}"
+        if len(self.params) > 0:
+            out += f"\nParameters: {[p for p in self.params.keys()]}"
+        out += "\n\n" + \
             f"Update: {self.updfcn}\n" + \
             f"Output: {self.outfcn}"
+        return out
 
     # Return the value of a static nonlinear system
     def __call__(sys, u, params=None, squeeze=None):
@@ -778,6 +782,71 @@ class InterconnectedSystem(NonlinearIOSystem):
                              index + "; combining with previous entries")
                     self.output_map[index + j, ylist_index] += gain
 
+    def __str__(self):
+        import textwrap
+        out = InputOutputSystem.__str__(self)
+
+        out += f"\n\nSubsystems ({len(self.syslist)}):\n"
+        for sys in self.syslist:
+            out += "\n".join(textwrap.wrap(
+                iosys_repr(sys, format='info'), width=78,
+                initial_indent=" * ", subsequent_indent="    ")) + "\n"
+
+        # Build a list of input, output, and inpout signals
+        input_list, output_list, inpout_list = [], [], []
+        for sys in self.syslist:
+            input_list += [sys.name + "." + lbl for lbl in sys.input_labels]
+            output_list += [sys.name + "." + lbl for lbl in sys.output_labels]
+        inpout_list = input_list + output_list
+
+        # Define a utility function to generate the signal
+        def cxn_string(signal, gain, first):
+            if gain == 1:
+                return (" + " if not first else "") + f"{signal}"
+            elif gain == -1:
+                return (" - " if not first else "-") + f"{signal}"
+            elif gain > 0:
+                return (" + " if not first else "") + f"{gain} * {signal}"
+            elif gain < 0:
+                return (" - " if not first else "-") + \
+                    f"{abs(gain)} * {signal}"
+
+        out += f"\nConnections:\n"
+        for i in range(len(input_list)):
+            first = True
+            cxn = f"{input_list[i]} <- "
+            if np.any(self.connect_map[i]):
+                for j in range(len(output_list)):
+                    if self.connect_map[i, j]:
+                        cxn += cxn_string(
+                            output_list[j], self.connect_map[i,j], first)
+                        first = False
+            if np.any(self.input_map[i]):
+                for j in range(len(self.input_labels)):
+                    if self.input_map[i, j]:
+                        cxn += cxn_string(
+                            self.input_labels[j], self.input_map[i, j], first)
+                        first = False
+            out += "\n".join(textwrap.wrap(
+                cxn, width=78, initial_indent=" * ",
+                subsequent_indent="     ")) + "\n"
+
+        out += f"\nOutputs:\n"
+        for i in range(len(self.output_labels)):
+            first = True
+            cxn = f"{self.output_labels[i]} <- "
+            if np.any(self.output_map[i]):
+                for j in range(len(inpout_list)):
+                    if self.output_map[i, j]:
+                        cxn += cxn_string(
+                            output_list[j], self.output_map[i, j], first)
+                        first = False
+                out += "\n".join(textwrap.wrap(
+                    cxn, width=78, initial_indent=" * ",
+                    subsequent_indent="     ")) + "\n"
+
+        return out
+
     def _update_params(self, params, warning=False):
         for sys in self.syslist:
             local = sys.params.copy()   # start with system parameters
@@ -1018,7 +1087,7 @@ class InterconnectedSystem(NonlinearIOSystem):
     def connection_table(self, show_names=False, column_width=32):
         """Print table of connections inside an interconnected system model.
 
-        Intended primarily for :class:`InterconnectedSystems` that have been
+        Intended primarily for :class:`InterconnectedSystem`'s that have been
         connected implicitly using signal names.
 
         Parameters
@@ -1303,7 +1372,7 @@ def nlsys(updfcn, outfcn=None, **kwargs):
     Examples
     --------
     >>> def kincar_update(t, x, u, params):
-    ...     l = params.get('l', 1)  # wheelbase
+    ...     l = params['l']              # wheelbase
     ...     return np.array([
     ...         np.cos(x[2]) * u[0],     # x velocity
     ...         np.sin(x[2]) * u[0],     # y velocity
@@ -1314,7 +1383,8 @@ def nlsys(updfcn, outfcn=None, **kwargs):
     ...     return x[0:2]  # x, y position
     >>>
     >>> kincar = ct.nlsys(
-    ...     kincar_update, kincar_output, states=3, inputs=2, outputs=2)
+    ...     kincar_update, kincar_output, states=3, inputs=2, outputs=2,
+    ...     params={'l': 1})
     >>>
     >>> timepts = np.linspace(0, 10)
     >>> response = ct.input_output_response(

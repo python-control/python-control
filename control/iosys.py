@@ -16,7 +16,7 @@ from . import config
 from .exception import ControlIndexError
 
 __all__ = ['InputOutputSystem', 'NamedSignal', 'issiso', 'timebase',
-           'common_timebase', 'isdtime', 'isctime']
+           'common_timebase', 'isdtime', 'isctime', 'iosys_repr']
 
 # Define module default parameter values
 _iosys_defaults = {
@@ -31,6 +31,8 @@ _iosys_defaults = {
     'iosys.indexed_system_name_suffix': '$indexed',
     'iosys.converted_system_name_prefix': '',
     'iosys.converted_system_name_suffix': '$converted',
+    'iosys.repr_format': 'eval',
+    'iosys.repr_show_count': True,
 }
 
 
@@ -162,6 +164,8 @@ class InputOutputSystem(object):
         Set the prefix for output signals.  Default = 'y'.
     state_prefix : string, optional
         Set the prefix for state signals.  Default = 'x'.
+    repr_format : str
+        String representation format.  See :func:`control.iosys_repr`.
 
     """
     # Allow NDarray * IOSystem to give IOSystem._rmul_() priority
@@ -182,6 +186,8 @@ class InputOutputSystem(object):
 
         # Process timebase: if not given use default, but allow None as value
         self.dt = _process_dt_keyword(kwargs)
+
+        self._repr_format = kwargs.pop('repr_format', None)
 
         # Make sure there were no other keywords
         if kwargs:
@@ -237,18 +243,127 @@ class InputOutputSystem(object):
     #: :meta hide-value:
     nstates = None
 
-    def __repr__(self):
-        return f'<{self.__class__.__name__}:{self.name}:' + \
-            f'{list(self.input_labels)}->{list(self.output_labels)}>'
+    #
+    # System representation
+    #
 
     def __str__(self):
         """String representation of an input/output object"""
-        str = f"<{self.__class__.__name__}>: {self.name}\n"
-        str += f"Inputs ({self.ninputs}): {self.input_labels}\n"
-        str += f"Outputs ({self.noutputs}): {self.output_labels}\n"
+        out = f"<{self.__class__.__name__}>: {self.name}"
+        out += f"\nInputs ({self.ninputs}): {self.input_labels}"
+        out += f"\nOutputs ({self.noutputs}): {self.output_labels}"
         if self.nstates is not None:
-            str += f"States ({self.nstates}): {self.state_labels}"
-        return str
+            out += f"\nStates ({self.nstates}): {self.state_labels}"
+        out += self._dt_repr(separator="\n", space=" ")
+        return out
+
+    def __repr__(self):
+        return iosys_repr(self, format=self.repr_format)
+
+    def _repr_info_(self, html=False):
+        out = f"<{self.__class__.__name__} {self.name}: " + \
+            f"{list(self.input_labels)} -> {list(self.output_labels)}"
+        out += self._dt_repr(separator=", ", space="") + ">"
+
+        if html:
+            # Replace symbols that might be interpreted by HTML processing
+            # TODO: replace -> with right arrow (later)
+            escape_chars = {
+                '$': r'\$',
+                '<': '&lt;',
+                '>': '&gt;',
+            }
+            return "".join([c if c not in escape_chars else
+                            escape_chars[c] for c in out])
+        else:
+            return out
+
+    def _repr_eval_(self):
+        # Defaults to _repr_info_; override in subclasses
+        return self._repr_info_()
+
+    def _repr_latex_(self):
+        # Defaults to using __repr__; override in subclasses
+        return None
+
+    def _repr_html_(self):
+        # Defaults to using __repr__; override in subclasses
+        return None
+
+    @property
+    def repr_format(self):
+        """String representation format.
+
+        Format used in creating the representation for the system:
+
+          * 'info' : <IOSystemType:sysname:[inputs]->[outputs]
+          * 'eval' : system specific, loadable representation
+          * 'latex' : HTML/LaTeX representation of the object
+
+        The default representation for an input/output is set to 'info'.
+        This value can be changed for an individual system by setting the
+        `repr_format` parameter when the system is created or by setting
+        the `repr_format` property after system creation.  Set
+        config.defaults['iosys.repr_format'] to change for all I/O systems
+        or use the `repr_format` parameter/attribute for a single system.
+
+        """
+        return self._repr_format if self._repr_format is not None \
+            else config.defaults['iosys.repr_format']
+
+    @repr_format.setter
+    def repr_format(self, value):
+        self._repr_format = value
+
+    def _label_repr(self, show_count=None):
+        show_count = config._get_param(
+            'iosys', 'repr_show_count', show_count, True)
+        out, count = "", 0
+
+        # Include the system name if not generic
+        if not self._generic_name_check():
+            name_spec = f"name='{self.name}'"
+            count += len(name_spec)
+            out += name_spec
+
+        # Include the state, output, and input names if not generic
+        for sig_name, sig_default, sig_labels in zip(
+                ['states', 'outputs', 'inputs'],
+                ['x', 'y', 'u'],        # TODO: replace with defaults
+                [self.state_labels, self.output_labels, self.input_labels]):
+            if sig_name == 'states' and self.nstates is None:
+                continue
+
+            # Check if the signal labels are generic
+            if any([re.match(r'^' + sig_default + r'\[\d*\]$', label) is None
+                    for label in sig_labels]):
+                spec = f"{sig_name}={sig_labels}"
+            elif show_count:
+                spec = f"{sig_name}={len(sig_labels)}"
+            else:
+                spec = ""
+
+            # Append the specification string to the output, with wrapping
+            if count == 0:
+                count = len(spec)       # no system name => suppress comma
+            elif count + len(spec) > 72:
+                # TODO: check to make sure a single line is enough (minor)
+                out += ",\n"
+                count = len(spec)
+            elif len(spec) > 0:
+                out += ", "
+                count += len(spec) + 2
+            out += spec
+
+        return out
+
+    def _dt_repr(self, separator="\n", space=""):
+        if config.defaults['control.default_dt'] != self.dt:
+            return "{separator}dt{space}={space}{dt}".format(
+                separator=separator, space=space,
+                dt='None' if self.dt is None else self.dt)
+        else:
+            return ""
 
     # Find a list of signals by name, index, or pattern
     def _find_signals(self, name_list, sigdict):
@@ -683,6 +798,47 @@ def isctime(sys=None, dt=None, strict=False):
         return True if not strict else False
     else:
         return sys.isctime(strict)
+
+
+def iosys_repr(sys, format=None):
+    """Return representation of an I/O system.
+
+    Parameters
+    ----------
+    sys : InputOutputSystem
+        System for which the representation is generated.
+    format : str
+        Format to use in creating the representation:
+
+          * 'info' : <IOSystemType:sysname:[inputs]->[outputs]
+          * 'eval' : system specific, loadable representation
+          * 'latex' : HTML/LaTeX representation of the object
+
+    Returns
+    -------
+    str
+        String representing the input/output system.
+
+    Notes
+    -----
+    By default, the representation for an input/output is set to 'eval'.
+    Set config.defaults['iosys.repr_format'] to change for all I/O systems
+    or use the `repr_format` parameter for a single system.
+
+    Jupyter will automatically use the 'latex' representation for I/O
+    systems, when available.
+
+    """
+    format = config.defaults['iosys.repr_format'] if format is None else format
+    match format:
+        case 'info':
+            return sys._repr_info_()
+        case 'eval':
+            return sys._repr_eval_()
+        case 'latex':
+            return sys._repr_html_()
+        case _:
+            raise ValueError(f"format '{format}' unknown")
 
 
 # Utility function to parse iosys keywords
