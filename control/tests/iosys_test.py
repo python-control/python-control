@@ -2351,7 +2351,7 @@ def test_iosys_repr(fcn, spec, expected, missing, format):
     sys.repr_format = format
     out = repr(sys)
     if format == 'eval':
-        assert re.search(expected, out) != None
+        assert re.search(expected, out) is not None
 
         if missing is not None:
             assert re.search(missing, out) is None
