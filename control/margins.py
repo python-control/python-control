@@ -715,14 +715,14 @@ def disk_margins(L, omega, skew = 0.0):
 
     return (DM, GM, PM)
 
-def disk_margin_plot(DM_jw, skew = 0.0, ax = None, alpha = 0.3):
-    # Smallest (worst-case) disk margin within frequencies of interest
-    DM_min = min(DM_jw) # worst-case
+def disk_margin_plot(alpha_max, skew = 0.0, ax = None, ntheta = 500, shade = True, shade_alpha = 0.1):
+    """TODO: docstring 
+    """
 
     # Complex bounding curve of stable gain/phase variations
-    theta = np.linspace(0, np.pi, 500)
-    f = (2 + DM_min*(1 - skew)*np.exp(1j*theta))/\
-        (2 - DM_min*(1 - skew)*np.exp(1j*theta))
+    theta = np.linspace(0, np.pi, ntheta)
+    f = (2 + alpha_max*(1 - skew)*np.exp(1j*theta))/\
+        (2 - alpha_max*(1 + skew)*np.exp(1j*theta))
 
     # Create axis if needed
     if ax is None:
@@ -731,10 +731,14 @@ def disk_margin_plot(DM_jw, skew = 0.0, ax = None, alpha = 0.3):
     # Plot the allowable complex "disk" of gain/phase variations
     gamma_dB = mag2db(np.abs(f)) # gain margin (dB)
     phi_deg = np.rad2deg(np.angle(f)) # phase margin (deg)
-    out = ax.plot(gamma_dB, phi_deg, alpha=0.3, label='_nolegend_')
-    x1 = ax.lines[0].get_xydata()[:,0]
-    y1 = ax.lines[0].get_xydata()[:,1]
-    ax.fill_between(x1,y1, alpha = alpha)
+    if shade:
+        out = ax.plot(gamma_dB, phi_deg, alpha=shade_alpha, label='_nolegend_')
+        x1 = ax.lines[0].get_xydata()[:,0]
+        y1 = ax.lines[0].get_xydata()[:,1]
+        ax.fill_between(x1,y1, alpha = shade_alpha)
+    else:
+        out = ax.plot(gamma_dB, phi_deg)
+
     plt.ylabel('Gain Variation (dB)')
     plt.xlabel('Phase Variation (deg)')
     plt.title('Range of Gain and Phase Variations')

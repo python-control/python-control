@@ -6,6 +6,10 @@ import os, sys, math
 import numpy as np
 import matplotlib.pyplot as plt
 import control
+try:
+    from slycot import ab13md
+except ImportError:
+    ab13md = None
 
 if __name__ == '__main__':
 
@@ -20,14 +24,14 @@ if __name__ == '__main__':
 
     # Output loop gain
     L = P*K
-    print(f"Lo = {L}")
+    #print(f"Lo = {L}")
 
-    print(f"------------- Balanced sensitivity function (S - T) -------------")
+    print(f"------------- Balanced sensitivity function (S - T), outputs -------------")
     DM, GM, PM = control.margins.disk_margins(L, omega, 0.0) # balanced (S - T)
     print(f"min(DM) = {min(DM)}")
     print(f"min(GM) = {control.db2mag(min(GM))}")
     print(f"min(GM) = {min(GM)} dB")
-    print(f"min(PM) = {min(PM)} deg\n\n")
+    print(f"min(PM) = {min(PM)} deg\n")
 
     plt.figure(1)
     plt.subplot(3,3,1)
@@ -60,14 +64,14 @@ if __name__ == '__main__':
     plt.tight_layout()
     plt.xlim([omega[0], omega[-1]])
 
-    #print(f"------------- Sensitivity function (S) -------------")
+    #print(f"------------- Sensitivity function (S), outputs -------------")
     #DM, GM, PM = control.margins.disk_margins(L, omega, 1.0) # S-based (S)
     #print(f"min(DM) = {min(DM)}")
     #print(f"min(GM) = {control.db2mag(min(GM))}")
     #print(f"min(GM) = {min(GM)} dB")
     #print(f"min(PM) = {min(PM)} deg\n\n")
 
-    #print(f"------------- Complementary sensitivity function (T) -------------")
+    #print(f"------------- Complementary sensitivity function (T), outputs -------------")
     #DM, GM, PM = control.margins.disk_margins(L, omega, -1.0) # T-based (T)
     #print(f"min(DM) = {min(DM)}")
     #print(f"min(GM) = {control.db2mag(min(GM))}")
@@ -76,14 +80,14 @@ if __name__ == '__main__':
 
     # Input loop gain
     L = K*P
-    print(f"Li = {L}")
+    #print(f"Li = {L}")
 
-    print(f"------------- Balanced sensitivity function (S - T) -------------")
+    print(f"------------- Balanced sensitivity function (S - T), inputs -------------")
     DM, GM, PM = control.margins.disk_margins(L, omega, 0.0) # balanced (S - T)
     print(f"min(DM) = {min(DM)}")
     print(f"min(GM) = {control.db2mag(min(GM))}")
     print(f"min(GM) = {min(GM)} dB")
-    print(f"min(PM) = {min(PM)} deg\n\n")
+    print(f"min(PM) = {min(PM)} deg\n")
 
     plt.figure(1)
     plt.subplot(3,3,2)
@@ -116,14 +120,14 @@ if __name__ == '__main__':
     plt.tight_layout()
     plt.xlim([omega[0], omega[-1]])
 
-    #print(f"------------- Sensitivity function (S) -------------")
+    #print(f"------------- Sensitivity function (S), inputs -------------")
     #DM, GM, PM = control.margins.disk_margins(L, omega, 1.0) # S-based (S)
     #print(f"min(DM) = {min(DM)}")
     #print(f"min(GM) = {control.db2mag(min(GM))}")
     #print(f"min(GM) = {min(GM)} dB")
     #print(f"min(PM) = {min(PM)} deg\n\n")
 
-    #print(f"------------- Complementary sensitivity function (T) -------------")
+    #print(f"------------- Complementary sensitivity function (T), inputs -------------")
     #DM, GM, PM = control.margins.disk_margins(L, omega, -1.0) # T-based (T)
     #print(f"min(DM) = {min(DM)}")
     #print(f"min(GM) = {control.db2mag(min(GM))}")
@@ -131,15 +135,15 @@ if __name__ == '__main__':
     #print(f"min(PM) = {min(PM)} deg\n\n")
 
     # Input/output loop gain
-    L = control.append(P, K)
-    print(f"L = {L}")
+    L = control.parallel(P, K)
+    #print(f"L = {L}")
 
-    print(f"------------- Balanced sensitivity function (S - T) -------------")
+    print(f"------------- Balanced sensitivity function (S - T), inputs and outputs -------------")
     DM, GM, PM = control.margins.disk_margins(L, omega, 0.0) # balanced (S - T)
     print(f"min(DM) = {min(DM)}")
     print(f"min(GM) = {control.db2mag(min(GM))}")
     print(f"min(GM) = {min(GM)} dB")
-    print(f"min(PM) = {min(PM)} deg\n\n")
+    print(f"min(PM) = {min(PM)} deg\n")
 
     plt.figure(1)
     plt.subplot(3,3,3)
@@ -173,19 +177,21 @@ if __name__ == '__main__':
     plt.xlim([omega[0], omega[-1]])
 
     plt.figure(2)
-    control.margins.disk_margin_plot(DM, -1.0) # S-based (S)
-    control.margins.disk_margin_plot(DM, 1.0) # T-based (T)
-    control.margins.disk_margin_plot(DM, 0.0) # balanced (S - T)
-    plt.legend(['$\\sigma$ = -1.0','$\\sigma$ = 1.0','$\\sigma$ = 0.0'])
+    control.margins.disk_margin_plot(min(DM), -2.0) # S-based (S)
+    control.margins.disk_margin_plot(min(DM), 0.0) # balanced (S - T)
+    control.margins.disk_margin_plot(min(DM), 2.0) # T-based (T)
+    plt.legend(['$\\sigma$ = -2.0','$\\sigma$ = 0.0','$\\sigma$ = 2.0'])
+    plt.xlim([-8, 8])
+    plt.ylim([0, 35])
 
-    #print(f"------------- Sensitivity function (S) -------------")
+    #print(f"------------- Sensitivity function (S), inputs and outputs -------------")
     #DM, GM, PM = control.margins.disk_margins(L, omega, 1.0) # S-based (S)
     #print(f"min(DM) = {min(DM)}")
     #print(f"min(GM) = {control.db2mag(min(GM))}")
     #print(f"min(GM) = {min(GM)} dB")
     #print(f"min(PM) = {min(PM)} deg\n\n")
 
-    #print(f"------------- Complementary sensitivity function (T) -------------")
+    #print(f"------------- Complementary sensitivity function (T), inputs and outputs -------------")
     #DM, GM, PM = control.margins.disk_margins(L, omega, -1.0) # T-based (T)
     #print(f"min(DM) = {min(DM)}")
     #print(f"min(GM) = {control.db2mag(min(GM))}")
@@ -203,31 +209,31 @@ if __name__ == '__main__':
     # Disk-based stability margins for example SISO loop transfer function(s)
     L = 6.25*(s + 3)*(s + 5)/(s*(s + 1)**2*(s**2 + 0.18*s + 100))
     L = 6.25/(s*(s + 1)**2*(s**2 + 0.18*s + 100))
-    print(f"L = {L}\n\n")
+    #print(f"L = {L}")
 
     print(f"------------- Balanced sensitivity function (S - T) -------------")
     DM, GM, PM = control.margins.disk_margins(L, omega, 0.0) # balanced (S - T)
     print(f"min(DM) = {min(DM)}")
     print(f"min(GM) = {np.db2mag(min(GM))}")
     print(f"min(GM) = {min(GM)} dB")
-    print(f"min(PM) = {min(PM)} deg\n\n")
+    print(f"min(PM) = {min(PM)} deg\n")
 
     print(f"------------- Sensitivity function (S) -------------")
     DM, GM, PM = control.margins.disk_margins(L, omega, 1.0) # S-based (S)
     print(f"min(DM) = {min(DM)}")
     print(f"min(GM) = {np.db2mag(min(GM))}")
     print(f"min(GM) = {min(GM)} dB")
-    print(f"min(PM) = {min(PM)} deg\n\n")
+    print(f"min(PM) = {min(PM)} deg\n")
 
     print(f"------------- Complementary sensitivity function (T) -------------")
     DM, GM, PM = control.margins.disk_margins(L, omega, -1.0) # T-based (T)
     print(f"min(DM) = {min(DM)}")
     print(f"min(GM) = {np.db2mag(min(GM))}")
     print(f"min(GM) = {min(GM)} dB")
-    print(f"min(PM) = {min(PM)} deg\n\n")
+    print(f"min(PM) = {min(PM)} deg\n")
 
     print(f"------------- Python control built-in -------------")
-    GM_, PM_, SM_ = control.margins.stability_margins(L)[:3] # python-control default (S-based...?)
+    GM_, PM_, SM_ = stability_margins(L)[:3] # python-control default (S-based...?)
     print(f"SM_ = {SM_}")
     print(f"GM_ = {GM_} dB")
     print(f"PM_ = {PM_} deg")
@@ -254,41 +260,5 @@ if __name__ == '__main__':
     plt.ylabel('Margin (deg)')
     plt.legend()
     plt.title('Phase-Only Margin')
-    plt.grid()
-    plt.ylim([0, 180])
-
-    # Disk-based stability margins for example MIMO loop transfer function(s)
-    P = control.tf([[[0, 1, -1],[0, 1, 1]],[[0, -1, 1],[0, 1, -1]]],
-        [[[1, 0, 1],[1, 0, 1]],[[1, 0, 1],[1, 0, 1]]])
-    K = control.ss([],[],[],[[-1, 0], [0, -1]])
-    L = control.ss(P*K)
-    print(f"L = {L}")
-    DM, GM, PM = control.margins.disk_margins(L, omega, 0.0) # balanced
-    print(f"min(DM) = {min(DM)}")
-    print(f"min(GM) = {min(GM)} dB")
-    print(f"min(PM) = {min(PM)} deg")
-
-    plt.figure(1)
-    plt.subplot(2,3,4)
-    plt.semilogx(omega, DM, label='$\\alpha$')
-    plt.xlabel('Frequency (rad/s)')
-    plt.legend()
-    plt.grid()
-
-    plt.figure(1)
-    plt.subplot(2,3,5)
-    plt.semilogx(omega, GM, label='$\\gamma_{m}$')
-    plt.xlabel('Frequency (rad/s)')
-    plt.ylabel('Margin (dB)')
-    plt.legend()
-    plt.grid()
-    plt.ylim([0, 16])
-
-    plt.figure(1)
-    plt.subplot(2,3,6)
-    plt.semilogx(omega, PM, label='$\\phi_{m}$')
-    plt.xlabel('Frequency (rad/s)')
-    plt.ylabel('Margin (deg)')
-    plt.legend()
     plt.grid()
     plt.ylim([0, 180])
