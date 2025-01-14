@@ -285,7 +285,6 @@ class FrequencyResponseData(LTI):
         if self.squeeze not in (None, True, False):
             raise ValueError("unknown squeeze value")
 
-        # Process iosys keywords
         defaults = {
             'inputs': self.fresp.shape[1] if not getattr(
                 self, 'input_index', None) else self.input_labels,
@@ -401,29 +400,36 @@ class FrequencyResponseData(LTI):
 
         mimo = self.ninputs > 1 or self.noutputs > 1
         outstr = [f"{InputOutputSystem.__str__(self)}"]
+        nl = "\n  " if mimo else "\n"
+        sp = "  " if mimo else ""
 
         for i in range(self.ninputs):
             for j in range(self.noutputs):
                 if mimo:
-                    outstr.append("Input %i to output %i:" % (i + 1, j + 1))
-                outstr.append('Freq [rad/s]  Response')
-                outstr.append('------------  ---------------------')
+                    outstr.append(
+                        "\nInput %i to output %i:" % (i + 1, j + 1))
+                outstr.append(nl + 'Freq [rad/s]  Response')
+                outstr.append(sp + '------------  ---------------------')
                 outstr.extend(
-                    ['%12.3f  %10.4g%+10.4gj' % (w, re, im)
+                    [sp + '%12.3f  %10.4g%+10.4gj' % (w, re, im)
                      for w, re, im in zip(self.omega,
                                           real(self.fresp[j, i, :]),
                                           imag(self.fresp[j, i, :]))])
 
         return '\n'.join(outstr)
 
-    def __repr__(self):
-        """Loadable string representation,
-
-        limited for number of data points.
-        """
-        return "FrequencyResponseData({d}, {w}{smooth})".format(
+    def _repr_eval_(self):
+        # Loadable format
+        out = "FrequencyResponseData(\n{d},\n{w}{smooth}".format(
             d=repr(self.fresp), w=repr(self.omega),
             smooth=(self._ifunc and ", smooth=True") or "")
+
+        out += self._dt_repr()
+        if len(labels := self._label_repr()) > 0:
+            out += ",\n" + labels
+
+        out += ")"
+        return out
 
     def __neg__(self):
         """Negate a transfer function."""

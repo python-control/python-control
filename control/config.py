@@ -73,6 +73,28 @@ class DefaultDict(collections.UserDict):
         else:
             return key
 
+    #
+    # Context manager functionality
+    #
+
+    def __call__(self, mapping):
+        self.saved_mapping = dict()
+        self.temp_mapping = mapping.copy()
+        return self
+
+    def __enter__(self):
+        for key, val in self.temp_mapping.items():
+            if not key in self:
+                raise ValueError(f"unknown parameter '{key}'")
+            self.saved_mapping[key] = self[key]
+            self[key] = val
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        for key, val in self.saved_mapping.items():
+            self[key] = val
+        del self.saved_mapping, self.temp_mapping
+        return None
 
 defaults = DefaultDict(_control_defaults)
 
@@ -266,7 +288,7 @@ def use_legacy_defaults(version):
     Parameters
     ----------
     version : string
-        Version number of the defaults desired. Ranges from '0.1' to '0.8.4'.
+        Version number of the defaults desired. Ranges from '0.1' to '0.10.1'.
 
     Examples
     --------
@@ -279,26 +301,26 @@ def use_legacy_defaults(version):
     (major, minor, patch) = (None, None, None)  # default values
 
     # Early release tag format: REL-0.N
-    match = re.match("REL-0.([12])", version)
+    match = re.match(r"^REL-0.([12])$", version)
     if match: (major, minor, patch) = (0, int(match.group(1)), 0)
 
     # Early release tag format: control-0.Np
-    match = re.match("control-0.([3-6])([a-d])", version)
+    match = re.match(r"^control-0.([3-6])([a-d])$", version)
     if match: (major, minor, patch) = \
        (0, int(match.group(1)), ord(match.group(2)) - ord('a') + 1)
 
     # Early release tag format: v0.Np
-    match = re.match("[vV]?0.([3-6])([a-d])", version)
+    match = re.match(r"^[vV]?0\.([3-6])([a-d])$", version)
     if match: (major, minor, patch) = \
        (0, int(match.group(1)), ord(match.group(2)) - ord('a') + 1)
 
     # Abbreviated version format: vM.N or M.N
-    match = re.match("([vV]?[0-9]).([0-9])", version)
+    match = re.match(r"^[vV]?([0-9]*)\.([0-9]*)$", version)
     if match: (major, minor, patch) = \
        (int(match.group(1)), int(match.group(2)), 0)
 
     # Standard version format: vM.N.P or M.N.P
-    match = re.match("[vV]?([0-9]).([0-9]).([0-9])", version)
+    match = re.match(r"^[vV]?([0-9]*)\.([0-9]*)\.([0-9]*)$", version)
     if match: (major, minor, patch) = \
         (int(match.group(1)), int(match.group(2)), int(match.group(3)))
 
