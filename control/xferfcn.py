@@ -1210,9 +1210,7 @@ class TransferFunction(LTI):
 
         Notes
         -----
-        1. Available only for SISO systems
-
-        2. Uses `scipy.signal.cont2discrete`
+        Available only for SISO systems.  Uses `scipy.signal.cont2discrete`.
 
         Examples
         --------

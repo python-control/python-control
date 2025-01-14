@@ -159,22 +159,21 @@ def time_response_plot(
 
     Notes
     -----
-    1. A new figure will be generated if there is no current figure or
-       the current figure has an incompatible number of axes.  To
-       force the creation of a new figures, use `plt.figure`.  To reuse
-       a portion of an existing figure, use the ``ax`` keyword.
+    A new figure will be generated if there is no current figure or the
+    current figure has an incompatible number of axes.  To force the
+    creation of a new figures, use `plt.figure`.  To reuse a portion of an
+    existing figure, use the ``ax`` keyword.
 
-    2. The line properties (color, linestyle, etc) can be set for the
-       entire plot using the `fmt` and/or `kwargs` parameter, which
-       are passed on to `matplotlib`.  When combining signals or
-       traces, the `input_props`, `output_props`, and `trace_props`
-       parameters can be used to pass a list of dictionaries
-       containing the line properties to use.  These input/output
-       properties are combined with the trace properties and finally
-       the kwarg properties to determine the final line properties.
+    The line properties (color, linestyle, etc) can be set for the entire
+    plot using the `fmt` and/or `kwargs` parameter, which are passed on to
+    `matplotlib`.  When combining signals or traces, the `input_props`,
+    `output_props`, and `trace_props` parameters can be used to pass a list
+    of dictionaries containing the line properties to use.  These
+    input/output properties are combined with the trace properties and
+    finally the kwarg properties to determine the final line properties.
 
-    3. The default plot properties, such as font sizes, can be set using
-       `config.defaults[''timeplot.rcParams']`.
+    The default plot properties, such as font sizes, can be set using
+    `config.defaults[''timeplot.rcParams']`.
 
     """
     from .ctrlplot import _process_ax_keyword, _process_line_labels

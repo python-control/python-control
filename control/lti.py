@@ -316,19 +316,20 @@ def damp(sys, doprint=True):
 
     Notes
     -----
-    If the system is continuous,
-        wn = abs(poles)
-        zeta  = -real(poles)/poles
+    If the system is continuous
+
+        | ``wn = abs(poles)``
+        | ``zeta  = -real(poles)/poles``
 
     If the system is discrete, the discrete poles are mapped to their
     equivalent location in the s-plane via
 
-        s = log(poles)/dt
+        | ``s = log(poles)/dt``
 
     and
 
-        wn = abs(s)
-        zeta = -real(s)/wn.
+        | ``wn = abs(s)``
+        | ``zeta = -real(s)/wn``
 
     Examples
     --------
@@ -477,20 +478,19 @@ def frequency_response(
 
     Notes
     -----
-    1. This function is a wrapper for `StateSpace.frequency_response`
-       and `TransferFunction.frequency_response`.
+    This function is a wrapper for `StateSpace.frequency_response` and
+    `TransferFunction.frequency_response`.  You can also use the
+    lower-level methods ``sys(s)`` or ``sys(z)`` to generate the frequency
+    response for a single system.
 
-    2. You can also use the lower-level methods ``sys(s)`` or ``sys(z)`` to
-       generate the frequency response for a single system.
+    All frequency data should be given in rad/sec.  If frequency limits are
+    computed automatically, the `Hz` keyword can be used to ensure that
+    limits are in factors of decades in Hz, so that Bode plots with
+    ``Hz=True`` look better.
 
-    3. All frequency data should be given in rad/sec.  If frequency limits
-       are computed automatically, the `Hz` keyword can be used to ensure
-       that limits are in factors of decades in Hz, so that Bode plots with
-       ``Hz=True`` look better.
-
-    4. The frequency response data can be plotted by calling the
-       `bode_plot` function or using the `plot` method of
-       the `FrequencyResponseData` class.
+    The frequency response data can be plotted by calling the `bode_plot`
+    function or using the `plot` method of the `FrequencyResponseData`
+    class.
 
     Examples
     --------

@@ -997,22 +997,22 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
 
     Notes
     -----
-    1. For discrete time systems, the input/output response is computed
-       using the `scipy.signal.dlsim` function.
+    For discrete time systems, the input/output response is computed
+    using the `scipy.signal.dlsim` function.
 
-    2. For continuous time systems, the output is computed using the matrix
-       exponential ``exp(A t)`` and assuming linear interpolation of the
-       inputs between time points.
+    For continuous time systems, the output is computed using the
+    matrix exponential ``exp(A t)`` and assuming linear interpolation
+    of the inputs between time points.
 
-    3. If a nonlinear I/O system is passed to `forced_response`, the
-       `input_output_response` function is called instead.  The main
-       difference between `input_output_response` and `forced_response` is
-       that `forced_response` is specialized (and optimized) for linear
-       systems.
+    If a nonlinear I/O system is passed to `forced_response`, the
+    `input_output_response` function is called instead.  The main
+    difference between `input_output_response` and `forced_response`
+    is that `forced_response` is specialized (and optimized) for
+    linear systems.
 
-    4. (legacy) The return value of the system can also be accessed by
-        assigning the function to a tuple of length 2 (time, output) or of
-        length 3 (time, output, state) if `return_x` is True.
+    (legacy) The return value of the system can also be accessed by
+    assigning the function to a tuple of length 2 (time, output) or of
+    length 3 (time, output, state) if `return_x` is True.
 
     Examples
     --------

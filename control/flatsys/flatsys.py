@@ -58,7 +58,8 @@ class FlatSystem(NonlinearIOSystem):
     -----
     The class must implement two functions:
 
-    zflag = flatsys.foward(x, u, params)
+    ``zflag = flatsys.foward(x, u, params)``
+
         This function computes the flag (derivatives) of the flat output.
         The inputs to this function are the state 'x' and inputs 'u' (both
         1D arrays).  The output should be a 2D array with the first
@@ -66,7 +67,8 @@ class FlatSystem(NonlinearIOSystem):
         dimension of the length required to represent the full system
         dynamics (typically the number of states)
 
-    x, u = flatsys.reverse(zflag, params)
+    ``x, u = flatsys.reverse(zflag, params)``
+
         This function system state and inputs give the the flag (derivatives)
         of the flat output.  The input to this function is an 2D array whose
         first dimension is equal to the number of system inputs and whose
@@ -737,19 +739,20 @@ def solve_flat_ocp(
 
     Notes
     -----
-    1. Additional keyword parameters can be used to fine tune the behavior
-       of the underlying optimization function.  See `minimize_*` keywords
-       in `optimal.OptimalControlProblem` for more information.
+    Additional keyword parameters can be used to fine tune the behavior of
+    the underlying optimization function.  See `minimize_*` keywords in
+    `optimal.OptimalControlProblem` for more information.
 
-    2. The return data structure includes the following additional attributes:
-           * success : bool indicating whether the optimization succeeded
-           * cost : computed cost of the returned trajectory
-           * message : message returned by optimization if success if False
+    The return data structure includes the following additional attributes:
 
-    3. A common failure in solving optimal control problem is that the
-       default initial guess violates the constraints and the optimizer
-       can't find a feasible solution.  Using the `initial_guess` parameter
-       can often be used to overcome these errors.
+        * success : bool indicating whether the optimization succeeded
+        * cost : computed cost of the returned trajectory
+        * message : message returned by optimization if success if False
+
+    A common failure in solving optimal control problem is that the default
+    initial guess violates the constraints and the optimizer can't find a
+    feasible solution.  Using the `initial_guess` parameter can often be
+    used to overcome these errors.
 
     """
     #

@@ -1109,19 +1109,19 @@ def solve_ocp(
 
     Notes
     -----
-    1. For discrete time systems, the final value of the timepts vector
-       specifies the final time t_N, and the trajectory cost is computed
-       from time t_0 to t_{N-1}.  Note that the input u_N does not affect
-       the state x_N and so it should always be returned as 0.  Further, if
-       neither a terminal cost nor a terminal constraint is given, then the
-       input at time point t_{N-1} does not affect the cost function and
-       hence u_{N-1} will also be returned as zero.  If you want the
-       trajectory cost to include state costs at time t_{N}, then you can
-       set `terminal_cost` to be the same function as `cost`.
+    For discrete time systems, the final value of the timepts vector
+    specifies the final time t_N, and the trajectory cost is computed from
+    time t_0 to t_{N-1}.  Note that the input u_N does not affect the state
+    x_N and so it should always be returned as 0.  Further, if neither a
+    terminal cost nor a terminal constraint is given, then the input at
+    time point t_{N-1} does not affect the cost function and hence u_{N-1}
+    will also be returned as zero.  If you want the trajectory cost to
+    include state costs at time t_{N}, then you can set `terminal_cost` to
+    be the same function as `cost`.
 
-    2. Additional keyword parameters can be used to fine-tune the behavior
-       of the underlying optimization and integration functions.  See
-       `OptimalControlProblem` for more information.
+    Additional keyword parameters can be used to fine-tune the behavior of
+    the underlying optimization and integration functions.  See
+    `OptimalControlProblem` for more information.
 
     """
     # Process keyword arguments

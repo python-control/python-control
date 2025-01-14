@@ -1325,7 +1325,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         Notes
         -----
-        Uses `scipy.signal.cont2discrete`
+        Uses `scipy.signal.cont2discrete`.
 
         Examples
         --------

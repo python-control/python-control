@@ -65,15 +65,13 @@ def place(A, B, p):
 
     Notes
     -----
-    Algorithm
-        This is a wrapper function for `scipy.signal.place_poles`, which
-        implements the Tits and Yang algorithm [1]_. It will handle SISO,
-        MISO, and MIMO systems. If you want more control over the algorithm,
-        use `scipy.signal.place_poles` directly.
+    This is a wrapper function for `scipy.signal.place_poles`, which
+    implements the Tits and Yang algorithm [1]_. It will handle SISO, MISO,
+    and MIMO systems. If you want more control over the algorithm, use
+    `scipy.signal.place_poles` directly.
 
-    Limitations
-        The algorithm will not place poles at the same location more
-        than rank(B) times.
+    Limitations: The algorithm will not place poles at the same location
+    more than rank(B) times.
 
     References
     ----------
