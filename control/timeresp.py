@@ -110,7 +110,7 @@ class TimeResponseData:
         and if a system is multi-input or multi-output, then the inputs are
         returned as a 2D array (indexed by input and time) and the outputs
         are returned as either a 2D array (indexed by output and time) or a
-        3D array (indexed by output, trace, and time).  If ``squeeze=True``,
+        3D array (indexed by output, trace, and time).  If `squeeze` = True,
         access to the output response will remove single-dimensional
         entries from the shape of the inputs and outputs even if the system
         is not SISO. If squeeze=False, keep the input as a 2D or 3D array
@@ -445,10 +445,10 @@ class TimeResponseData:
         Parameters
         ----------
         squeeze : bool, optional
-            If ``squeeze=True``, access to the output response will remove
+            If `squeeze` = True, access to the output response will remove
             single-dimensional entries from the shape of the inputs,
             outputs, and states even if the system is not SISO. If
-            ``squeeze=False``, keep the input as a 2D or 3D array (indexed
+            `squeeze` = False, keep the input as a 2D or 3D array (indexed
             by the input (if multi-input), trace (if single input) and
             time) and the output and states as a 3D array (indexed by the
             output/state, trace, and time) even if the system is SISO.
@@ -814,8 +814,8 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
         The special value "any" means that there can be any
         number of elements in a certain dimension.
 
-        * ``(2, 3)`` describes an array with 2 rows and 3 columns
-        * ``(2, 'any')`` describes an array with 2 rows and any number of
+        * (2, 3) describes an array with 2 rows and 3 columns
+        * (2, 'any') describes an array with 2 rows and any number of
           columns
 
     err_msg_start : str
@@ -827,7 +827,7 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
         If True, all dimensions with only one element are removed from the
         array. If False the array's shape is unmodified.
 
-        For example: ``array([[1,2,3]])`` is converted to ``array([1, 2,
+        For example: ``array([[1, 2, 3]])`` is converted to ``array([1, 2,
         3])``.
 
     transpose : bool, optional
@@ -1001,7 +1001,7 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
     using the `scipy.signal.dlsim` function.
 
     For continuous time systems, the output is computed using the
-    matrix exponential ``exp(A t)`` and assuming linear interpolation
+    matrix exponential exp(A t) and assuming linear interpolation
     of the inputs between time points.
 
     If a nonlinear I/O system is passed to `forced_response`, the
@@ -1267,8 +1267,8 @@ def _process_time_response(
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then
         the signals are returned as a 1D array (indexed by time).  If
-        ``squeeze=True``, remove single-dimensional entries from the shape
-        of the signal even if the system is not SISO. If ``squeeze=False``,
+        `squeeze` = True, remove single-dimensional entries from the shape
+        of the signal even if the system is not SISO. If `squeeze` = False,
         keep the signal as a 3D array (indexed by the output, input, and
         time) even if the system is SISO. The default value can be set
         using `config.defaults['control.squeeze_time_response']`.
@@ -1372,9 +1372,9 @@ def step_response(
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then
         the output response is returned as a 1D array (indexed by time).
-        If ``squeeze=True``, remove single-dimensional entries from the
+        If `squeeze` = True, remove single-dimensional entries from the
         shape of the output even if the system is not SISO. If
-        ``squeeze=False``, keep the output as a 3D array (indexed by the
+        `squeeze` = False, keep the output as a 3D array (indexed by the
         output, input, and time) even if the system is SISO. The default
         value can be set using
         `config.defaults['control.squeeze_time_response']`.
@@ -1539,7 +1539,7 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
 
         If `sysdata` corresponds to a MIMO system, `S` is a 2D list of dicts.
         To get the step response characteristics from the j-th input to the
-        i-th output, access ``S[i][j]``
+        i-th output, access ``S[i][j]``.
 
 
     See Also
@@ -1761,9 +1761,9 @@ def initial_response(
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then
         the output response is returned as a 1D array (indexed by time).
-        If ``squeeze=True``, remove single-dimensional entries from the
+        If `squeeze` = True, remove single-dimensional entries from the
         shape of the output even if the system is not SISO. If
-        ``squeeze=False``, keep the output as a 2D array (indexed by the
+        `squeeze` = False, keep the output as a 2D array (indexed by the
         output number and time) even if the system is SISO. The default
         value can be set using
         `config.defaults['control.squeeze_time_response']`.
@@ -1877,9 +1877,9 @@ def impulse_response(
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then
         the output response is returned as a 1D array (indexed by time).
-        If ``squeeze=True``, remove single-dimensional entries from the
+        If `squeeze` = True, remove single-dimensional entries from the
         shape of the output even if the system is not SISO. If
-        ``squeeze=False``, keep the output as a 2D array (indexed by the
+        `squeeze` = False, keep the output as a 2D array (indexed by the
         output number and time) even if the system is SISO. The default
         value can be set using
         `config.defaults['control.squeeze_time_response']`.

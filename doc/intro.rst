@@ -134,7 +134,7 @@ some things to keep in mind:
   [1, 2, 3] and matrices are written using 2D nested lists, e.g., [[1,
   2], [3, 4]].
 * Functions that in MATLAB would return variable numbers of values
-  will have a parameter of the form ``return_<val>`` that is used to
+  will have a parameter of the form `return_<val>` that is used to
   return additional data.  (These functions usually return an object of
   a class that has attributes that can be used to access the
   information and this is the preferred usage pattern.)

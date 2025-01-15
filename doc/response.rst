@@ -30,7 +30,7 @@ resulting in the following standard pattern::
 
 Plotting commands return a :class:`ControlPlot` object that
 provides access to the individual lines in the generated plot using
-``cplt.lines``, allowing various aspects of the plot to be modified to
+`cplt.lines`, allowing various aspects of the plot to be modified to
 suit specific needs.
 
 The plotting function is also available via the ``plot()`` method of the
@@ -282,7 +282,7 @@ or the `overlay_traces` keyword, which puts different traces (e.g.,
 corresponding to step inputs in different channels) on the same graph,
 with appropriate labeling via a legend on selected axes.
 
-For example, using ``plot_input=True`` and ``overlay_signals=True``
+For example, using `plot_input` = True and `overlay_signals` = True
 yields the following plot:
 
 .. testcode:: timeplot
@@ -305,7 +305,7 @@ Input/output response plots created with either the
 :func:`input_output_response` functions include the input signals by
 default. These can be plotted on separate axes, but also "overlaid" on the
 output axes (useful when the input and output signals are being compared to
-each other).  The following plot shows the use of ``plot_inputs='overlay'``
+each other).  The following plot shows the use of `plot_inputs` = 'overlay'
 as well as the ability to reposition the legends using the `legend_map`
 keyword:
 
@@ -473,7 +473,7 @@ function:
 
 Different types of plots can also be specified for a given frequency
 response.  For example, to plot the frequency response using a a Nichols
-plot, use ``plot_type='nichols'``:
+plot, use `plot_type` = 'nichols':
 
 .. testcode:: freqplot
 
@@ -659,7 +659,7 @@ The grid in the left hand plane shows lines of constant damping ratio as
 well as arcs corresponding to the frequency of the complex pole.  The grid
 can be turned off using the `grid` keyword.  Setting `grid` to False will
 turn off the grid but show the real and imaginary axis.  To completely
-remove all lines except the root loci, use ``grid='empty'``.
+remove all lines except the root loci, use `grid` = 'empty'.
 
 On systems that support interactive plots, clicking on a location on the
 root locus diagram will mark the pole locations on all branches of the
@@ -829,7 +829,7 @@ various ways.  The following general rules apply:
   specified in the `rcParams` keyword argument.  To override the
   defaults for all control plots, update the
   `config.defaults['ctrlplt.rcParams']` dictionary entries.  For convenience,
-  this dictionary can alse be accessed as ``ct.rcParams``.
+  this dictionary can alse be accessed as `ct.rcParams`.
 
   The default values for style parameters for control plots can be restored
   using :func:`reset_rcParams`.
@@ -851,7 +851,7 @@ various ways.  The following general rules apply:
   the plot title.  The default title is a string of the form "<Type> plot
   for <syslist>" where <syslist> is a list of the sys names contained in
   the plot (which is updated if the plotting is called multiple times).
-  Use ``title=False`` to suppress the title completely.  The title can also
+  Use `title` = False to suppress the title completely.  The title can also
   be updated using the :func:`ControlPlot.set_plot_title` method
   for the returned control plot object.
 
@@ -928,8 +928,8 @@ example:
 .. image:: figures/ctrlplot-pole_zero_subplots.png
    :align: center
 
-Alternatively, turning off the omega-damping grid (using ``grid=False`` or
-``grid='empty'``) allows use of Matplotlib layout commands.
+Alternatively, turning off the omega-damping grid (using `grid` = False or
+`grid` = 'empty') allows use of Matplotlib layout commands.
 
 
 Response and Plotting Reference

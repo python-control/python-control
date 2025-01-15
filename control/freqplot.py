@@ -243,15 +243,15 @@ def bode_plot(
     Starting with python-control version 0.10, `bode_plot` returns a
     `ControlPlot` object instead of magnitude, phase, and
     frequency. To recover the old behavior, call `bode_plot` with
-    ``plot=True``, which will force the legacy values (mag, phase, omega) to
+    `plot` = True, which will force the legacy values (mag, phase, omega) to
     be returned (with a warning).  To obtain just the frequency response of
     a system (or list of systems) without plotting, use the
     `frequency_response` command.
 
     If a discrete time model is given, the frequency response is plotted
     along the upper branch of the unit circle, using the mapping ``z =
-    exp(1j * omega * dt)`` where `omega` ranges from 0 to ``pi/dt`` and `dt`
-    is the discrete timebase.  If timebase not specified (``dt=True``),
+    exp(1j * omega * dt)`` where `omega` ranges from 0 to pi/`dt` and `dt`
+    is the discrete timebase.  If timebase not specified (`dt` = True),
     `dt` is set to 1.
 
     The default values for Bode plot configuration parameters can be reset
@@ -1251,9 +1251,9 @@ def nyquist_response(
     -----
     If a discrete time model is given, the frequency response is computed
     along the upper branch of the unit circle, using the mapping ``z =
-    exp(1j * omega * dt)`` where `omega` ranges from 0 to ``pi/dt`` and
+    exp(1j * omega * dt)`` where `omega` ranges from 0 to pi/`dt` and
     `dt` is the discrete timebase.  If timebase not specified
-    (``dt=True``), `dt` is set to 1.
+    (`dt` = True), `dt` is set to 1.
 
     If a continuous-time system contains poles on or near the imaginary
     axis, a small indentation will be used to avoid the pole.  The radius
@@ -1717,9 +1717,9 @@ def nyquist_plot(
     -----
     If a discrete time model is given, the frequency response is computed
     along the upper branch of the unit circle, using the mapping ``z =
-    exp(1j * omega * dt)`` where `omega` ranges from 0 to ``pi/dt`` and
+    exp(1j * omega * dt)`` where `omega` ranges from 0 to pi/`dt` and
     `dt` is the discrete timebase.  If timebase not specified
-    (``dt=True``), `dt` is set to 1.
+    (`dt` = True), `dt` is set to 1.
 
     If a continuous-time system contains poles on or near the imaginary
     axis, a small indentation will be used to avoid the pole.  The radius
@@ -2450,12 +2450,12 @@ def singular_values_plot(
 
     Notes
     -----
-    If ``plot=False``, the following legacy values are returned:
-       * mag : ndarray (or list of ndarray if len(data) > 1))
+    If `plot` = `False`, the following legacy values are returned:
+       * `mag` : ndarray (or list of ndarray if len(data) > 1))
            Magnitude of the response (deprecated).
-       * phase : ndarray (or list of ndarray if len(data) > 1))
+       * `phase` : ndarray (or list of ndarray if len(data) > 1))
            Phase in radians of the response (deprecated).
-       * omega : ndarray (or list of ndarray if len(data) > 1))
+       * `omega` : ndarray (or list of ndarray if len(data) > 1))
            Frequency in rad/sec (deprecated).
 
     """

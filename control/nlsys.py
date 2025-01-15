@@ -74,10 +74,10 @@ class NonlinearIOSystem(InputOutputSystem):
         operating in continuous or discrete time.  It can have the
         following values:
 
-        * dt = 0: continuous time system (default)
-        * dt > 0: discrete time system with sampling period 'dt'
-        * dt = True: discrete time with unspecified sampling period
-        * dt = None: no timebase specified
+        * `dt` = 0: continuous time system (default)
+        * `dt` > 0: discrete time system with sampling period 'dt'
+        * `dt` = True: discrete time with unspecified sampling period
+        * `dt` = None: no timebase specified
 
     Attributes
     ----------
@@ -1367,10 +1367,10 @@ def nlsys(updfcn, outfcn=None, **kwargs):
         operating in continuous or discrete time.  It can have the
         following values:
 
-        * dt = 0: continuous time system (default)
-        * dt > 0: discrete time system with sampling period 'dt'
-        * dt = True: discrete time with unspecified sampling period
-        * dt = None: no timebase specified
+        * `dt` = 0: continuous time system (default)
+        * `dt` > 0: discrete time system with sampling period 'dt'
+        * `dt` = True: discrete time with unspecified sampling period
+        * `dt` = None: no timebase specified
 
     name : string, optional
         System name (used for specifying signals). If unspecified, a
@@ -2391,10 +2391,10 @@ def interconnect(
         operating in continuous or discrete time.  It can have the following
         values:
 
-        * ``dt=0``: continuous time system (default)
-        * ``dt>0``: discrete time system with sampling period 'dt'
-        * ``dt=True``: discrete time with unspecified sampling period
-        * ``dt=None``: no timebase specified
+        * `dt` = 0: continuous time system (default)
+        * `dt` > 0`: discrete time system with sampling period 'dt'
+        * `dt` = True: discrete time with unspecified sampling period
+        * `dt` = None: no timebase specified
 
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic

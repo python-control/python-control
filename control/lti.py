@@ -91,9 +91,9 @@ class LTI(InputOutputSystem):
             radians/sec at which the system will be evaluated.  If None (default),
             a set of frequencies is computed based on the system dynamics.
         squeeze : bool, optional
-            If ``squeeze=True``, remove single-dimensional entries from the
+            If `squeeze` = True, remove single-dimensional entries from the
             shape of the output even if the system is not SISO. If
-            ``squeeze=False``, keep all indices (output, input and, if
+            `squeeze` = False, keep all indices (output, input and, if
             omega is array_like, frequency) even if the system is SISO. The
             default value can be set using
             `config.defaults['control.squeeze_frequency_response']`.
@@ -372,9 +372,9 @@ def evalfr(sys, x, squeeze=None):
     x : complex scalar or 1D array_like
         Complex frequency(s).
     squeeze : bool, optional (default=True)
-        If ``squeeze=True``, remove single-dimensional entries from the
+        If `squeeze` = True, remove single-dimensional entries from the
         shape of the output even if the system is not SISO. If
-        ``squeeze=False``, keep all indices (output, input and, if omega is
+        `squeeze` = False, keep all indices (output, input and, if omega is
         array_like, frequency) even if the system is SISO. The default
         value can be set using
         `config.defaults['control.squeeze_frequency_response']`.
@@ -465,9 +465,9 @@ def frequency_response(
         limits to full decades in Hz instead of rad/s. Omega is always
         returned in rad/sec.
     squeeze : bool, optional
-        If ``squeeze=True``, remove single-dimensional entries from the
+        If `squeeze` = True, remove single-dimensional entries from the
         shape of the output even if the system is not SISO. If
-        ``squeeze=False``, keep all indices (output, input and, if omega is
+        `squeeze` = False, keep all indices (output, input and, if omega is
         array_like, frequency) even if the system is SISO. The default
         value can be set using
         `config.defaults['control.squeeze_frequency_response']`.
@@ -486,7 +486,7 @@ def frequency_response(
     All frequency data should be given in rad/sec.  If frequency limits are
     computed automatically, the `Hz` keyword can be used to ensure that
     limits are in factors of decades in Hz, so that Bode plots with
-    ``Hz=True`` look better.
+    `Hz` = True look better.
 
     The frequency response data can be plotted by calling the `bode_plot`
     function or using the `plot` method of the `FrequencyResponseData`

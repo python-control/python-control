@@ -256,8 +256,8 @@ or signal names:
 
 Signal names for an indexed subsystem are preserved from the original
 system and the subsystem name is set according to the values of
-``config.defaults['iosys.indexed_system_name_prefix']`` and
-``config.defaults['iosys.indexed_system_name_suffix']`` (see
+`config.defaults['iosys.indexed_system_name_prefix']` and
+`config.defaults['iosys.indexed_system_name_suffix']` (see
 :ref:`package-configuration-parameters` for more information).  The
 default subsystem name is the original system name with '$indexed'
 appended.
@@ -310,13 +310,13 @@ A discrete time system is created by specifying a nonzero "timebase",
 
 The timebase argument is interpreted as follows:
 
-* ``dt = 0``: continuous time system (default)
-* ``dt > 0``: discrete time system with sampling period 'dt'
-* ``dt = True``: discrete time with unspecified sampling period
-* ``dt = None``: no timebase specified (see below)
+* `dt` = 0: continuous time system (default)
+* `dt` > 0: discrete time system with sampling period 'dt'
+* `dt` = True: discrete time with unspecified sampling period
+* `dt` = None: no timebase specified (see below)
 
 Systems must have compatible timebases in order to be combined. A
-discrete time system with unspecified sampling time (``dt = True``)
+discrete time system with unspecified sampling time (`dt` = True)
 can be combined with a system having a specified sampling time; the
 result will be a discrete time system with the sample time of the
 latter system.  Similarly, a system with timebase None can be combined
@@ -326,7 +326,7 @@ timebase of the latter system. For continuous time systems, the
 :meth:`TransferFunction.sample` methods can be used to create a
 discrete time system from a continuous time system.  See
 :ref:`utility-and-conversions`. The default value of `dt` can be
-changed by changing the value of ``config.defaults['control.default_dt']``.
+changed by changing the value of `config.defaults['control.default_dt']`.
 
 Functions operating on LTI systems will take into account whether a
 system is continuous time or discrete time when carrying out operations

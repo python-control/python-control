@@ -112,7 +112,7 @@ def stepinfo(sysdata, T=None, yfinal=None, SettlingTimeThreshold=0.02,
 
         If `sysdata` corresponds to a MIMO system, `S` is a 2D list of dicts.
         To get the step response characteristics from the j-th input to the
-        i-th output, access ``S[i][j]``
+        i-th output, access ``S[i][j]``.
 
     See Also
     --------

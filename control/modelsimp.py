@@ -565,7 +565,7 @@ def markov(*args, m=None, transpose=False, dt=None, truncate=False):
     ----------
     Y : array_like
         Output data. If the array is 1D, the system is assumed to be
-        single input. If the array is 2D and ``transpose=False``, the columns
+        single input. If the array is 2D and `transpose` = False, the columns
         of `Y` are taken as time points, otherwise the rows of `Y` are
         taken as time points.
     U : array_like

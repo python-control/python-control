@@ -269,8 +269,8 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
 
     To use non-interactively, choose starting-point PID gains `Kp0`, `Ki0`,
     and `Kd0` (you might want to start with all zeros to begin with),
-    select which gain you would like to vary (e.g. ``gain='P'``, ``'I'``,
-    or ``'D'``), and choose a value of `deltaK` (default 0.001) to specify
+    select which gain you would like to vary (e.g. `gain` = 'P', 'I',
+    or 'D'), and choose a value of `deltaK` (default 0.001) to specify
     by how much you would like to change that gain. Repeatedly run
     `rootlocus_pid_designer` with different values of `deltaK` until you
     are satisfied with the performance for that gain. Then, to tune a
@@ -317,7 +317,7 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     Kd/dt*(z-1)/z, respectively.
 
     It is also possible to move the derivative term into the feedback path
-    `C_b` using ``derivative_in_feedback_path=True``. This may be desired to
+    `C_b` using `derivative_in_feedback_path` = True. This may be desired to
     avoid that the plant is subject to an impulse function when the reference
     `r` is a step input. `C_b` is otherwise set to zero.
 

@@ -162,7 +162,7 @@ def time_response_plot(
     A new figure will be generated if there is no current figure or the
     current figure has an incompatible number of axes.  To force the
     creation of a new figures, use `plt.figure`.  To reuse a portion of an
-    existing figure, use the ``ax`` keyword.
+    existing figure, use the `ax` keyword.
 
     The line properties (color, linestyle, etc) can be set for the entire
     plot using the `fmt` and/or `kwargs` parameter, which are passed on to

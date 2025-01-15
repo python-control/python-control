@@ -108,13 +108,13 @@ class StateSpace(NonlinearIOSystem, LTI):
     A discrete time system is created by specifying a nonzero 'timebase', dt
     when the system is constructed:
 
-    * dt = 0: continuous time system (default)
-    * dt > 0: discrete time system with sampling period 'dt'
-    * dt = True: discrete time with unspecified sampling period
-    * dt = None: no timebase specified
+    * `dt` = 0: continuous time system (default)
+    * `dt` > 0: discrete time system with sampling period 'dt'
+    * `dt` = True: discrete time with unspecified sampling period
+    * `dt` = None: no timebase specified
 
     Systems must have compatible timebases in order to be combined. A
-    discrete time system with unspecified sampling time (``dt=True``) can
+    discrete time system with unspecified sampling time (`dt` = True) can
     be combined with a system having a specified sampling time; the result
     will be a discrete time system with the sample time of the latter
     system. Similarly, a system with timebase None can be combined with a
@@ -145,7 +145,7 @@ class StateSpace(NonlinearIOSystem, LTI):
     may look odd when typeset by non-MathJax LaTeX systems.
 
     `control.config.defaults['statesp.latex_num_format']` is a format string
-    fragment, specifically the part of the format string after ``'{:'``
+    fragment, specifically the part of the format string after '{:'
     used to convert floating-point numbers to strings.  By default it
     is '.3g'.
 
@@ -777,9 +777,9 @@ class StateSpace(NonlinearIOSystem, LTI):
         x : complex or complex 1D array_like
             Complex frequencies
         squeeze : bool, optional
-            If ``squeeze=True``, remove single-dimensional entries from the
+            If `squeeze` = True, remove single-dimensional entries from the
             shape of the output even if the system is not SISO. If
-            ``squeeze=False``, keep all indices (output, input and, if
+            `squeeze` = False, keep all indices (output, input and, if
             omega is array_like, frequency) even if the system is SISO. The
             default value can be set using
             `config.defaults['control.squeeze_frequency_response']`.
@@ -1180,10 +1180,10 @@ class StateSpace(NonlinearIOSystem, LTI):
         ----------
         strict : bool, optional
             True (default):
-                The timebase ``ssobject.dt`` cannot be None; it must
+                The timebase `ssobject.dt` cannot be None; it must
                 be continuous (0) or discrete (True or > 0).
             False:
-              If ``ssobject.dt`` is None, continuous time
+              If `ssobject.dt` is None, continuous time
               `scipy.signal.lti` objects are returned.
 
         Returns
@@ -1292,7 +1292,7 @@ class StateSpace(NonlinearIOSystem, LTI):
             The frequency [rad/s] at which to match with the input
             continuous-time system's magnitude and phase (the gain = 1
             crossover frequency, for example). Should only be specified
-            with `method` = 'bilinear' or 'gbt' with ``alpha=0.5`` and
+            with `method` = 'bilinear' or 'gbt' with `alpha` = 0.5 and
             ignored otherwise.
         name : string, optional
             Set the name of the sampled system.  If not specified and if
@@ -1380,7 +1380,7 @@ class StateSpace(NonlinearIOSystem, LTI):
             Array or scalar value for SISO systems, depending on
             `config.defaults['control.squeeze_frequency_response']`.  The
             value of the array elements or the scalar is either the
-            zero-frequency (or DC) gain, or ``inf``, if the frequency
+            zero-frequency (or DC) gain, or `inf`, if the frequency
             response is singular.
 
             For real valued systems, the empty imaginary part of the
@@ -1595,10 +1595,12 @@ def ss(*args, **kwargs):
     The function accepts either 1, 4 or 5 positional parameters:
 
     ``ss(sys)``
+
         Convert a linear system into space system form. Always creates a
         new system, even if sys is already a state space system.
 
     ``ss(A, B, C, D)``
+
         Create a state space system from the matrices of its state and
         output equations:
 
@@ -1608,6 +1610,7 @@ def ss(*args, **kwargs):
                 y &= C x + D  u
 
     ``ss(A, B, C, D, dt)``
+
         Create a discrete-time state space system from the matrices of
         its state and output equations:
 
@@ -1761,10 +1764,12 @@ def tf2io(*args, **kwargs):
     The function accepts either 1 or 2 parameters:
 
     ``tf2io(sys)``
+
         Convert a linear system into space space form. Always creates
         a new system, even if sys is already a StateSpace object.
 
     ``tf2io(num, den)``
+
         Create a linear I/O system from its numerator and denominator
         polynomial coefficients.
 
@@ -1831,10 +1836,12 @@ def tf2ss(*args, **kwargs):
     The function accepts either 1 or 2 parameters:
 
     ``tf2ss(sys)``
+
         Convert a transfer function into space space form.  Equivalent to
         `ss(sys)`.
 
     ``tf2ss(num, den)``
+
         Create a state space system from its numerator and denominator
         polynomial coefficients.
 
@@ -1886,7 +1893,7 @@ def tf2ss(*args, **kwargs):
     The `slycot` routine used to convert a transfer function into state space
     form appears to have a bug and in some (rare) instances may not return
     a system with the same poles as the input transfer function.  For SISO
-    systems, setting ``method='scipy'`` can be used as an alternative.
+    systems, setting `method` = 'scipy' can be used as an alternative.
 
     Examples
     --------
@@ -2056,7 +2063,7 @@ def drss(*args, **kwargs):
 
     Create a stable *discrete time* random state space object.  This
     function calls `rss` using either the `dt` keyword provided by
-    the user or ``dt=True`` if not specified.
+    the user or `dt` = True if not specified.
 
     Examples
     --------

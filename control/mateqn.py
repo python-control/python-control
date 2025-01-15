@@ -351,7 +351,7 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
         and then 'scipy'.
     stabilizing : bool, optional
         If `method` is 'slycot', unstabilized eigenvalues will be returned
-        in the initial elements of ``L``.  Not supported for 'scipy'.
+        in the initial elements of `L`.  Not supported for 'scipy'.
 
     Returns
     -------

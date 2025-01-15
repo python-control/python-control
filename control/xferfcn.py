@@ -121,13 +121,13 @@ class TransferFunction(LTI):
     A discrete time transfer function is created by specifying a nonzero
     'timebase' dt when the system is constructed:
 
-    * dt = 0: continuous time system (default)
-    * dt > 0: discrete time system with sampling period 'dt'
-    * dt = True: discrete time with unspecified sampling period
-    * dt = None: no timebase specified
+    * `dt` = 0: continuous time system (default)
+    * `dt` > 0: discrete time system with sampling period 'dt'
+    * `dt` = True: discrete time with unspecified sampling period
+    * `dt` = None: no timebase specified
 
     Systems must have compatible timebases in order to be combined. A
-    discrete time system with unspecified sampling time (``dt = True``) can
+    discrete time system with unspecified sampling time (`dt` = True) can
     be combined with a system having a specified sampling time; the result
     will be a discrete time system with the sample time of the latter
     system. Similarly, a system with timebase None can be combined with a
@@ -353,9 +353,9 @@ class TransferFunction(LTI):
         x : complex or complex 1D array_like
             Complex frequencies
         squeeze : bool, optional
-            If ``squeeze=True``, remove single-dimensional entries from the
+            If `squeeze` = True, remove single-dimensional entries from the
             shape of the output even if the system is not SISO. If
-            ``squeeze=False``, keep all indices (output, input and, if
+            `squeeze` = False, keep all indices (output, input and, if
             omega is array_like, frequency) even if the system is SISO. The
             default value can be set using
             `config.defaults['control.squeeze_frequency_response']`.  If
@@ -1173,13 +1173,13 @@ class TransferFunction(LTI):
             * 'zoh': zero-order hold (default)
         alpha : float within [0, 1]
             The generalized bilinear transformation weighting parameter,
-            which should only be specified with ``method='gbt'``, and is
+            which should only be specified with `method` = 'gbt', and is
             ignored otherwise. See `scipy.signal.cont2discrete`.
         prewarp_frequency : float within [0, infinity)
             The frequency [rad/s] at which to match with the input
             continuous- time system's magnitude and phase (the gain=1
             crossover frequency, for example). Should only be specified
-            with `method` = 'bilinear' or 'gbt' with ``alpha=0.5`` and
+            with `method` = 'bilinear' or 'gbt' with `alpha` = 0.5 and
             ignored otherwise.
         name : string, optional
             Set the name of the sampled system.  If not specified and if
@@ -1266,7 +1266,7 @@ class TransferFunction(LTI):
             Array or scalar value for SISO systems, depending on
             `config.defaults['control.squeeze_frequency_response']`.  The
             value of the array elements or the scalar is either the
-            zero-frequency (or DC) gain, or ``inf``, if the frequency
+            zero-frequency (or DC) gain, or `inf`, if the frequency
             response is singular.
 
             For real valued systems, the empty imaginary part of the
@@ -1590,10 +1590,12 @@ def tf(*args, **kwargs):
     The function accepts either 1, 2, or 3 parameters:
 
     ``tf(sys)``
+
         Convert a linear system into transfer function form. Always creates
         a new system, even if sys is already a TransferFunction object.
 
     ``tf(num, den)``
+
         Create a transfer function system from its numerator and denominator
         polynomial coefficients.
 
@@ -1606,15 +1608,18 @@ def tf(*args, **kwargs):
         function is the same, `den` can be specified as a 1D array.
 
     ``tf(num, den, dt)``
+
         Create a discrete time transfer function system; dt can either be a
         positive number indicating the sampling time or 'True' if no
         specific timebase is given.
 
     ``tf([[G11, ..., G1m], ..., [Gp1, ..., Gpm]][, dt])``
+
         Create a pxm MIMO system from SISO transfer functions Gij.  See
         `combine_tf` for more details.
 
     ``tf('s')`` or ``tf('z')``
+
         Create a transfer function representing the differential operator
         ('s') or delay operator ('z').
 
@@ -1673,7 +1678,7 @@ def tf(*args, **kwargs):
     for the transfer function from the (j+1)st input to the (i+1)st output,
     and ``den[i][j]`` works the same way.
 
-    The list ``[2, 3, 4]`` denotes the polynomial :math:`2s^2 + 3s + 4`.
+    The list ``[2, 3, 4]`` denotes the polynomial :math:`2 s^2 + 3 s + 4`.
 
     The special forms ``tf('s')`` and ``tf('z')`` can be used to create
     transfer functions for differentiation and unit delays.
@@ -1822,10 +1827,12 @@ def ss2tf(*args, **kwargs):
     The function accepts either 1 or 4 parameters:
 
     ``ss2tf(sys)``
+
         Convert a linear system from state space into transfer function
         form. Always creates a new system.
 
     ``ss2tf(A, B, C, D)``
+
         Create a transfer function system from the matrices of its state and
         output equations.
 

@@ -58,8 +58,8 @@ def series(*sys, **kwargs):
     Raises
     ------
     ValueError
-        if ``sys2.ninputs`` does not equal ``sys1.noutputs``
-        if ``sys1.dt`` is not compatible with ``sys2.dt``
+        If `sys2.ninputs` does not equal `sys1.noutputs` or if `sys1.dt` is
+        not compatible with `sys2.dt`.
 
     See Also
     --------
@@ -72,8 +72,8 @@ def series(*sys, **kwargs):
     system class.  The output type is the type of `sys1` unless a more
     general type is required based on type type of `sys2`.
 
-    If both systems have a defined timebase (dt = 0 for continuous time,
-    dt > 0 for discrete time), then the timebase for both systems must
+    If both systems have a defined timebase (`dt` = 0 for continuous time,
+    `dt` > 0 for discrete time), then the timebase for both systems must
     match.  If only one of the system has a timebase, the return
     timebase will be set to match it.
 
@@ -143,8 +143,8 @@ def parallel(*sys, **kwargs):
     the type of `sys1`.  If `sys1` is a scalar, then the output type is
     the type of `sys2`.
 
-    If both systems have a defined timebase (dt = 0 for continuous time,
-    dt > 0 for discrete time), then the timebase for both systems must
+    If both systems have a defined timebase (`dt` = 0 for continuous time,
+    `dt` > 0 for discrete time), then the timebase for both systems must
     match.  If only one of the system has a timebase, the return
     timebase will be set to match it.
 

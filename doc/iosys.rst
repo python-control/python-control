@@ -560,7 +560,7 @@ work:
 
 Various other simplifications are possible, but it can sometimes be
 complicated to debug error message when things go wrong.  Setting
-``debug=True`` when calling :func:`interconnect` prints out
+`debug` = True when calling :func:`interconnect` prints out
 information about how the arguments are processed that may be helpful
 in understanding what is going wrong.
 

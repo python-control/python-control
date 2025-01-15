@@ -497,7 +497,7 @@ def modal_form(xsys, condmax=None, sort=False):
     Parameters
     ----------
     xsys : StateSpace object
-        System to be transformed, with state ``x``.
+        System to be transformed, with state x.
     condmax : None or float, optional
         An upper bound on individual transformations.  If None, use
         `bdschur` default.
@@ -508,7 +508,7 @@ def modal_form(xsys, condmax=None, sort=False):
     Returns
     -------
     zsys : StateSpace object
-        System in modal canonical form, with state ``z``.
+        System in modal canonical form, with state z.
     T : (M, M) ndarray
         Coordinate transformation: z = T * x.
 

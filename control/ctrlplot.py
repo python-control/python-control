@@ -148,7 +148,7 @@ class ControlPlot():
         Figure on which the Axes are drawn.
     legend : `matplotlib:.legend.Legend` (instance or ndarray)
         Legend object(s) for the plot.  If more than one legend is
-        included, this will be an array with each entry being either`` None``
+        included, this will be an array with each entry being either None
         (for no legend) or a legend object.
 
     """

@@ -178,10 +178,10 @@ System-creating commands:
   - `input_prefix`, `output_prefix`, `state_prefix`: change the default
     prefixes used for naming signals.
 
-  - `dt`: set the timebase.  This one takes a bit of care, since if it
-    is not specified then it defaults to
-    ``config.defaults['control.default_dt']``.  This is different than
-    setting ``dt=None``, so `dt` should always be part of `**kwargs`.
+  - `dt`: set the timebase.  This one takes a bit of care, since if it is
+    not specified then it defaults to
+    `config.defaults['control.default_dt']`.  This is different than
+    setting `dt` = None, so `dt` should always be part of `**kwargs`.
 
   These keywords can be parsed in a consistent way using the
   `iosys._process_iosys_keywords` function.
@@ -236,7 +236,8 @@ similar to NumPy (as articuated in the `numpydoc style guide
    output. Rather than sacrificing the readability of the docstrings,
    we have written pre-processors to assist Sphinx in its task.
 
-To that end, docstrings should use the following guidelines:
+To that end, docstrings in `python-control` should use the following
+guidelines:
 
 * Use single backticks around all Python objects. The Sphinx
   configuration file (`doc/conf.py`) defines `default_role` to be
@@ -252,23 +253,32 @@ To that end, docstrings should use the following guidelines:
     bolder type, so that it is easier to see what things you can click
     on to get more information.
 
-* Use double backticks for inline code, such as a Python statement,
-  and formulas that could potentially be computed using Python (\`\`dt
-  > 0\`\` which reders as ``dt > 0``).  Keyword variable assignments
-  that appear as part of documentation (``squeeze=True``) should also
-  be written as code.
+* Use double backticks for inline code, such as a Python code fragments.
 
   - In principle single backticks might actually work OK given the way
     that the `py:obj` processing works in Sphinx, but the inclusion of
     code is somewhat rare and the extra two backticks seem like a
     small sacrifice (and far from a "contortion").
 
-* Built-in objects (True, False, None) should be written with no
-  backticks and should be properly capitalized.
+* Avoid the use of backticks and \:math\: for simple formulas where
+  the additional annotation or formatting does not add anything.  For
+  example "-c <= x <= c" (without the double quotes) in
+  `relay_hysteresis_nonlinearity`.
 
-  - This guideline combined with the previous one imples that font
-    choices can look slight different depending on how you word
-    things. For exmaple, you can say `squeeze` is True or ``squeeze=True``.
+  - Some of these formulas might be interpreted as Python code
+    fragments, but they only need to be in double quotes if that makes
+    the documentation easier to understand.
+
+  - Examples:
+
+      * \`dt\` > 0 not \`\`dt > 0\`\` (`dt` is a parameter)
+      * \`squeeze\` = True not \`\`squeeze = True\`\` nor squeeze = True.
+      * -c <= x <= c not \`\`-c <= x <= c\`\` nor \:math\:\`-c \\leq x
+        \\leq c`.
+      * \:math\:\`|x| < \\epsilon\` (becomes :math:`|x| < \epsilon`)
+
+* Built-in Python objects (True, False, None) should be written with no
+  backticks and should be properly capitalized.
 
   - Another possibility here is to use a single backtick around
     built-in objects, and the `py:obj` processing will then generate a
@@ -286,8 +296,10 @@ To that end, docstrings should use the following guidelines:
     just to get them in a code font seems unnecessary.
 
   - Note that if a string is is included in Python assignment
-    statement (e.g., ``method='slycot'``) it should be enclosed in
-    double backticks (\`\`method='slycot'\`\`).
+    statement (e.g., ``method='slycot'``) it looks quite ugly in text
+    form to have it enclosed in double backticks
+    (\`\`method='slycot'\`\`), so OK to use method='slycot' (no
+    backticks).
 
 * References to the `defaults` dictionary should be of the form
   \`config.defaults['module.param']\` (like a parameter), which
@@ -313,7 +325,7 @@ Examples of different styles:
 
 * Single backticks to a parameter (no link): `squeeze`
 
-* Double backticks to a code snippet: ``squeeze=True``
+* Double backticks to a code fragment: ``subsys = sys[i][j]``.
 
 * Built-in Python objects: True, False, None
 
@@ -415,6 +427,20 @@ Sphinx files guidelines:
     module" (this is the most common form).
 
   - Noun form: "`python-control`" (only used occassionally).
+
+* Unlike docstrings, use backticks and \:math\: more liberally when it
+  is appropriate to highlight/format code properly.  However, Python
+  built-ins should still just be written as True, False, and None (no
+  backticks).
+
+  - The Sphinx documentation is not read in "raw" form, so OK to add
+    the additional annotations.
+
+  - The Python built-ins occur frequently and are capitalized, and so
+    the additional formatting doesn't add much and would be
+    inconsistent if you jump from the User Guide to the Reference
+    Manual (eg, to look at a function more closely via a link in the
+    User Guide).
 
 
 Reference Manual

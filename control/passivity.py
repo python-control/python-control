@@ -29,8 +29,8 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
     function should solve for that index (they are mutually exclusive, they
     can't both be None, otherwise you're trying to solve a nonconvex
     bilinear matrix inequality.) The last element of the output `solution`
-    is either the output or input passivity index, for ``rho = None`` and
-    ``nu = None`` respectively.
+    is either the output or input passivity index, for `rho` = None and
+    `nu` = None, respectively.
 
     The sources for the algorithm are:
 
@@ -283,8 +283,8 @@ def ispassive(sys, ofp_index=0, ifp_index=0):
 
     .. math:: V(x) >= 0 \land \dot{V}(x) <= y^T u
 
-    is equivalent to the default case of ``ofp_index = 0`` and ``ifp_index` =
-    0``.  Note that computing the `ofp_index` and `ifp_index` for a system,
+    is equivalent to the default case of `ofp_index` = 0 and `ifp_index` =
+    0.  Note that computing the `ofp_index` and `ifp_index` for a system,
     then using both values simultaneously as inputs to this function is not
     guaranteed to have an output of True (the system might not be passive
     with both indices at the same time).

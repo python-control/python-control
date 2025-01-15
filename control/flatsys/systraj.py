@@ -122,9 +122,9 @@ class SystemTrajectory:
         squeeze : bool, optional
             By default, if a system is single-input, single-output (SISO)
             then the output response is returned as a 1D array (indexed by
-            time).  If ``squeeze=True`, remove single-dimensional entries
+            time).  If `squeeze` = True, remove single-dimensional entries
             from the shape of the output even if the system is not SISO. If
-            ``squeeze=False``, keep the output as a 3D array (indexed by
+            `squeeze` = False, keep the output as a 3D array (indexed by
             the output, input, and time) even if the system is SISO. The
             default value can be set using
             `config.defaults['control.squeeze_time_response']`.

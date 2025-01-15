@@ -115,10 +115,10 @@ class InputOutputSystem():
     is operating in continuous or discrete time. It can have the following
     values:
 
-      * ``dt = None``   No timebase specified
-      * ``dt = 0``      Continuous time system
-      * ``dt > 0``      Discrete time system with sampling time dt
-      * ``dt = True``   Discrete time system with unspecified sampling time
+      * `dt` = None: No timebase specified
+      * `dt` = 0: Continuous time system
+      * `dt` > 0: Discrete time system with sampling time dt
+      * `dt` = True: Discrete time system with unspecified sampling time
 
     Parameters
     ----------
@@ -672,7 +672,7 @@ def timebase(sys, strict=True):
     dt = timebase(sys)
 
     returns the timebase for a system 'sys'.  If the strict option is
-    set to True, ``dt = True`` will be returned as 1.
+    set to True, `dt` = True will be returned as 1.
 
     Parameters
     ----------
@@ -680,7 +680,7 @@ def timebase(sys, strict=True):
         System whose timebase is to be determined.
     strict : bool, optional
         Whether to implement strict checking.  If set to True (default),
-        a float will always be returned (``dt = True`` will be returned as 1).
+        a float will always be returned (`dt` = True will be returned as 1).
 
     Returns
     -------

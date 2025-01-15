@@ -91,11 +91,11 @@ def system_norm(system, p=2, tol=1e-6, print_warning=True, method=None):
         System in continuous or discrete time for which the norm should
         be computed.
     p : int or str
-        Type of norm to be computed. ``p=2`` gives the H2 norm, and
-        ``p='inf'`` gives the L-infinity norm.
+        Type of norm to be computed. `p` = 2 gives the H2 norm, and
+        `p` = 'inf' gives the L-infinity norm.
     tol : float
         Relative tolerance for accuracy of L-infinity norm
-        computation. Ignored unless ``p='inf'``.
+        computation. Ignored unless `p` = 'inf'.
     print_warning : bool
         Print warning message in case norm value may be uncertain.
     method : str, optional
@@ -111,7 +111,7 @@ def system_norm(system, p=2, tol=1e-6, print_warning=True, method=None):
     Notes
     -----
     Does not yet compute the L-infinity norm for discrete time systems
-    with pole(s) in ``z=0`` unless Slycot is used.
+    with pole(s) at the origin unless Slycot is used.
 
     Examples
     --------

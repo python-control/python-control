@@ -626,9 +626,9 @@ class relay_hysteresis_nonlinearity(DescribingFunctionNonlinearity):
 
         F = relay_hysteresis_nonlinearity(b, c)
 
-    The output of this function is ``b`` if ``x > c`` and ``-b`` if ``x <
-    -c``.  For ``-c <= x <= c``, the value depends on the branch of the
-    hysteresis loop (as illustrated in Figure 10.20 of FBS2e).
+    The output of this function is b if x > c and -b if x < -c.  For -c <=
+    x <= c, the value depends on the branch of the hysteresis loop (as
+    illustrated in Figure 10.20 of FBS2e).
 
     Parameters
     ----------
@@ -702,9 +702,9 @@ class friction_backlash_nonlinearity(DescribingFunctionNonlinearity):
         F = friction_backlash_nonlinearity(b)
 
     This function maintains an internal state representing the 'center' of
-    a mechanism with backlash.  If the new input is within ``b/2`` of the
+    a mechanism with backlash.  If the new input is within b/2 of the
     current center, the output is unchanged.  Otherwise, the output is
-    given by the input shifted by ``b/2``.
+    given by the input shifted by b/2.
 
     Parameters
     ----------

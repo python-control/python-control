@@ -85,7 +85,7 @@ def phase_plane_plot(
         a dict of parameters and values. For a callable, `params` should be
         dict with key 'args' and value given by a tuple (passed to callable).
     color : matplotlib color spec, optional
-        Plot all elements in the given color (use ``plot_<fcn>={'color': c}``
+        Plot all elements in the given color (use `plot_<fcn>` = {'color': c}
         to set the color in one element of the phase plot.
     ax : matplotlib.axes.Axes, optional
         The matplotlib axes to draw the figure on.  If not specified and
@@ -1049,7 +1049,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     func : callable(x, t, ...)
         Computes the time derivative of y (compatible with odeint).  The
         function should be the same for as used for `scipy.integrate`.
-        Namely, it should be a function of the form dxdt = F(t, x) that
+        Namely, it should be a function of the form dx/dt = F(t, x) that
         accepts a state x of dimension 2 and returns a derivative dx/dt of
         dimension 2.
     X, Y: 3-element sequences, optional, as [start, stop, npts]

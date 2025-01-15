@@ -185,12 +185,15 @@ def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
     variety of forms:
 
     ``fs.flatsys(forward, reverse)``
+
         Create a flat system with mapings to/from flat flag.
 
     ``fs.flatsys(forward, reverse, updfcn[, outfcn])``
+
         Create a flat system that is also a nonlinear I/O system.
 
     ``fs.flatsys(linsys)``
+
         Create a flat system from a linear (StateSpace) system.
 
     Parameters

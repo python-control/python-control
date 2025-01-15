@@ -419,7 +419,7 @@ def dlqr(*args, **kwargs):
     * ``dlqr(A, B, Q, R, N)``
 
     where `dsys` is a discrete-time `StateSpace` system, and `A`, `B`,
-    `Q`, `R`, and `N` are 2d arrays of appropriate dimension (`dsys.dt`` must
+    `Q`, `R`, and `N` are 2d arrays of appropriate dimension (`dsys.dt` must
     not be 0.)
 
     Parameters
@@ -658,7 +658,7 @@ def create_statefbk_iosystem(
         design pattern (default), this system takes as inputs the desired
         state `x_d`, the desired input `u_d`, and either the system state
         `x` or the estimated state `xhat`.  It outputs the controller
-        action `u` according to the formula ``u = u_d - K(x - x_d)``.  For
+        action `u` according to the formula u = u_d - K(x - x_d).  For
         the 'refgain' design pattern, the system takes as inputs the
         reference input `r` and the system or estimated state. If the
         keyword `integral_action` is specified, then an additional set of
@@ -670,7 +670,7 @@ def create_statefbk_iosystem(
 
     clsys : NonlinearIOSystem
         Input/output system representing the closed loop system.  This
-        system takes as inputs the desired trajectory ``(x_d, u_d)`` and
+        system takes as inputs the desired trajectory (x_d, u_d) and
         outputs the system state `x` and the applied input `u`
         (vertically stacked).
 
@@ -678,8 +678,8 @@ def create_statefbk_iosystem(
     ----------------
     control_indices : int, slice, or list of int or str, optional
         Specify the indices of the system inputs that should be determined
-        by the state feedback controller.  If value is an integer ``m``, the
-        first ``m`` system inputs are used.  Otherwise, the value should be a
+        by the state feedback controller.  If value is an integer `m`, the
+        first `m` system inputs are used.  Otherwise, the value should be a
         slice or a list of indices.  The list of indices can be specified
         as either integer offsets or as system input signal names.  If not
         specified, defaults to the system inputs.
@@ -687,7 +687,7 @@ def create_statefbk_iosystem(
     state_indices : int, slice, or list of int or str, optional
         Specify the indices of the system (or estimator) outputs that should
         be used by the state feedback controller.  If value is an integer
-        ``n``, the first ``n`` system states are used.  Otherwise, the value
+        `n`, the first `n` system states are used.  Otherwise, the value
         should be a slice or a list of indices.  The list of indices can be
         specified as either integer offsets or as estimator/system output
         signal names.  If not specified, defaults to the system states.
@@ -696,8 +696,8 @@ def create_statefbk_iosystem(
         Set the name of the signals to use for the desired state and inputs
         or the reference inputs (for the 'refgain' design pattern).  If a
         single string is specified, it should be a format string using the
-        variable ``i`` as an index.  Otherwise, a list of strings matching
-        the size of ``x_d`` and ``u_d``, respectively, should be used.
+        variable `i` as an index.  Otherwise, a list of strings matching
+        the size of x_d and u_d, respectively, should be used.
         Default is "xd[{i}]" for xd_labels and "ud[{i}]" for ud_labels.
         These settings can also be overridden using the `inputs` keyword.
 
