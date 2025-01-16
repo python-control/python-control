@@ -75,7 +75,6 @@ Time Response
     impulse_response
     initial_response
     input_output_response
-    phase_plane_plot
     step_response
     time_response_plot
     combine_time_responses
@@ -95,6 +94,7 @@ Phase plane plots
 .. autosummary::
    :toctree: generated/
 
+    phase_plane_plot
     phaseplot.boxgrid
     phaseplot.circlegrid
     phaseplot.equilpoints

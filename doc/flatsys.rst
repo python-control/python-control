@@ -1,15 +1,16 @@
+.. currentmodule:: control
+
 .. _flatsys-module:
 
 Differentially Flat Systems
 ===========================
 
-.. automodule:: control.flatsys
-   :noindex:
-   :no-members:
-   :no-inherited-members:
-   :no-special-members:
+The `flatsys` sub-package contains a set of classes and functions to
+compute trajectories for differentially flat systems.  The objects in
+this sub-package must be explictly imported::
 
-.. currentmodule:: control
+  import control as ct
+  import control.flatsys as fs
 
 
 Overview of differential flatness
@@ -121,11 +122,14 @@ is full column rank, we can solve for a (possibly non-unique)
 Sub-package usage
 -----------------
 
-To create a trajectory for a differentially flat system, a
-:class:`flatsys.FlatSystem` object must be created.  This is done
-using the :func:`~flatsys.flatsys` function::
+To access the flat system modules, import `control.flatsys`::
 
   import control.flatsys as fs
+
+To create a trajectory for a differentially flat system, a
+:class:`~flatsys.FlatSystem` object must be created.  This is done
+using the :func:`~flatsys.flatsys` function::
+
   sys = fs.flatsys(forward, reverse)
 
 The `forward` and `reverse` parameters describe the mappings between

@@ -1,4 +1,4 @@
-:orphan: remove this line and the next bbefore use (supresses toctree warning)
+:orphan: remove this line and the next before use (supresses toctree warning)
 
 .. currentmodule:: control
 

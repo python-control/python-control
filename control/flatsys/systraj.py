@@ -18,7 +18,7 @@ class SystemTrajectory:
 
     The `SystemTrajectory` class is used to represent the
     trajectory of a (differentially flat) system.  Used by the
-    `trajsys.point_to_point` function to return a trajectory.
+    `point_to_point` function to return a trajectory.
 
     Parameters
     ----------
@@ -131,7 +131,7 @@ class SystemTrajectory:
 
         Returns
         -------
-        results : TimeResponseData
+        results : `control.TimeResponseData`
             Time response represented as a `TimeResponseData` object
             containing the following properties:
 

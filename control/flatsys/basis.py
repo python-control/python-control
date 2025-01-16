@@ -1,9 +1,10 @@
 # basis.py - BasisFamily class
 # RMM, 10 Nov 2012
 
-"""The :mod:`control.flatsys.basis` module defines the
-`flatsys.BasisFamily` class that used to specify a set of basis
-functions for implementing differential flatness computations.
+"""Define base class for implementing basis functions.
+
+This module defines the `BasisFamily` class that used to specify a set
+of basis functions for implementing differential flatness computations.
 
 """
 

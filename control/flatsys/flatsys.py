@@ -24,11 +24,10 @@ from .systraj import SystemTrajectory
 class FlatSystem(NonlinearIOSystem):
     """Base class for representing a differentially flat system.
 
-    The FlatSystem class is used as a base class to describe
-    differentially flat systems for trajectory generation.  The output
-    of the system does not need to be the differentially flat output.
-    Flat systems are usually created with the `~control.flatsys.flatsys`
-    factory function.
+    The FlatSystem class is used as a base class to describe differentially
+    flat systems for trajectory generation.  The output of the system does
+    not need to be the differentially flat output.  Flat systems are
+    usually created with the `flatsys` factory function.
 
     Parameters
     ----------
@@ -334,12 +333,12 @@ def point_to_point(
 
     Parameters
     ----------
-    sys : FlatSystem object
+    sys : `FlatSystem` object
         Description of the differentially flat system.  This object must
-        define a function `flatsys.forward` that takes the system state and
-        produceds the flag of flat outputs and a system `flatsys.reverse`
-        that takes the flag of the flat output and prodes the state and
-        input.
+        define a function `~FlatSystem.forward` that takes the system state
+        and produces the flag of flat outputs and a function
+        `~FlatSystem.reverse` that takes the flag of the flat output and
+        prodes the state and input.
 
     timepts : float or 1D array_like
         The list of points for evaluating cost and constraints, as well as
@@ -355,9 +354,9 @@ def point_to_point(
         The initial time for the trajectory (corresponding to x0).  If not
         specified, its value is taken to be zero.
 
-    basis : `flatsys.BasisFamily` object, optional
+    basis : `BasisFamily` object, optional
         The basis functions to use for generating the trajectory.  If not
-        specified, the `flatsys.PolyFamily` basis family
+        specified, the `PolyFamily` basis family
         will be used, with the minimal number of elements required to find a
         feasible trajectory (twice the number of system states)
 
@@ -402,9 +401,9 @@ def point_to_point(
 
     Returns
     -------
-    traj : `flatsys.SystemTrajectory` object
+    traj : `SystemTrajectory` object
         The system trajectory is returned as an object that implements the
-        `~flatsys.SystemTrajectory.eval` function, we can be used to
+        `~SystemTrajectory.eval` function, we can be used to
         compute the value of the state and input and a given time t.
 
     Notes
@@ -667,12 +666,12 @@ def solve_flat_ocp(
 
     Parameters
     ----------
-    sys : FlatSystem object
+    sys : `FlatSystem` object
         Description of the differentially flat system.  This object must
-        define a function `flatsys.forward` that takes the system state and
-        produceds the flag of flat outputs and a system `flatsys.reverse`
-        that takes the flag of the flat output and prodes the state and
-        input.
+        define a function `~FlatSystem.forward` that takes the system state
+        and produces the flag of flat outputs and a function
+        `~FlatSystem.reverse` that takes the flag of the flat output and
+        prodes the state and input.
 
     timepts : float or 1D array_like
         The list of points for evaluating cost and constraints, as well as
@@ -684,9 +683,9 @@ def solve_flat_ocp(
         values are given as None, they are replaced by a vector of zeros of
         the appropriate dimension.
 
-    basis : `flatsys.BasisFamily` object, optional
+    basis : `BasisFamily` object, optional
         The basis functions to use for generating the trajectory.  If not
-        specified, the `flatsys.PolyFamily` basis family
+        specified, the `PolyFamily` basis family
         will be used, with the minimal number of elements required to find a
         feasible trajectory (twice the number of system states)
 
@@ -735,22 +734,22 @@ def solve_flat_ocp(
 
     Returns
     -------
-    traj : `flatsys.SystemTrajectory` object
+    traj : `SystemTrajectory`
         The system trajectory is returned as an object that implements the
-        `~flatsys.SystemTrajectory.eval` function, we can be used to
-        compute the value of the state and input and a given time t.
+        `SystemTrajectory.eval` function, we can be used to
+        compute the value of the state and input and a given time `t`.
 
     Notes
     -----
     Additional keyword parameters can be used to fine tune the behavior of
     the underlying optimization function.  See `minimize_*` keywords in
-    `optimal.OptimalControlProblem` for more information.
+    `control.optimal.OptimalControlProblem` for more information.
 
     The return data structure includes the following additional attributes:
 
-        * success : bool indicating whether the optimization succeeded
-        * cost : computed cost of the returned trajectory
-        * message : message returned by optimization if success if False
+        * `success` : bool indicating whether the optimization succeeded
+        * `cost` : computed cost of the returned trajectory
+        * `message` : message returned by optimization if success if False
 
     A common failure in solving optimal control problem is that the default
     initial guess violates the constraints and the optimizer can't find a

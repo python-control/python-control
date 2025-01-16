@@ -7,9 +7,10 @@
 """Generate 2D phase portraits.
 
 This module contains functions for generating 2D phase plots. The base
-function for creating phase plane portraits is `phase_plane_plot`,
+function for creating phase plane portraits is `~control.phase_plane_plot`,
 which generates a phase plane portrait for a 2 state I/O system (with no
-inputs).
+inputs). Utility functions are available to customize the individual
+elements of a phase plane portrait.
 
 The docstring examples assume the following import commands::
 
@@ -85,8 +86,9 @@ def phase_plane_plot(
         a dict of parameters and values. For a callable, `params` should be
         dict with key 'args' and value given by a tuple (passed to callable).
     color : matplotlib color spec, optional
-        Plot all elements in the given color (use `plot_<fcn>` = {'color': c}
-        to set the color in one element of the phase plot.
+        Plot all elements in the given color (use ``plot_<element>`` =
+        {'color': c} to set the color in one element of the phase
+        plot (equilpoints, separatrices, streamlines, etc).
     ax : matplotlib.axes.Axes, optional
         The matplotlib axes to draw the figure on.  If not specified and
         the current figure has a single axes, that axes is used.
@@ -130,7 +132,7 @@ def phase_plane_plot(
     plot_streamlines : bool or dict, optional
         If True (default) then plot streamlines based on the pointdata
         and gridtype.  If set to a dict, pass on the key-value pairs in
-        the dict as keywords to `phaseplot.streamlines`.
+        the dict as keywords to `streamlines`.
     plot_vectorfield : bool or dict, optional
         If True (default) then plot the vector field based on the pointdata
         and gridtype.  If set to a dict, pass on the key-value pairs in

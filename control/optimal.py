@@ -6,7 +6,14 @@
 """Optimization-based control module.
 
 This module provides support for optimization-based controllers for
-nonlinear systems with state and input constraints.
+nonlinear systems with state and input constraints.  An optimal
+control problem can be solved using the `solve_ocp` function or set up
+using the `OptimalControlProblem` class and then solved using the
+`~OptimalControlProblem.compute_trajectory` method.  Utility functions
+are available to define common cost functions and input/state
+constraints.  Optimal estimation problems can be solved using the
+`solve_oep` function or by using the `OptimalEstimationProblem` class
+and the `~OptimalEstimationProblem.compute_estimate` method..
 
 The docstring examples assume the following import commands::
 
@@ -47,7 +54,7 @@ class OptimalControlProblem():
     to specify an optimal control problem: the system dynamics, cost
     function, and constraints.  As much as possible, the information used
     to specify an optimal control problem matches the notation and
-    terminology of the SciPy `optimize.minimize` module, with the hope that
+    terminology of `scipy.optimize` module, with the hope that
     this makes it easier to remember how to describe a problem.
 
     Parameters
@@ -1188,7 +1195,7 @@ def create_mpc_iosystem(
 
     constraints : list of tuples, optional
         List of constraints that should hold at each point in the time
-        vector.  See `optimal.solve_ocp` for more details.
+        vector.  See `solve_ocp` for more details.
 
     terminal_cost : callable, optional
         Function that returns the terminal cost given the final state
@@ -1199,8 +1206,8 @@ def create_mpc_iosystem(
         Same format as `constraints`.
 
     **kwargs
-        Additional parameters, passed to `scipy.optimal.minimize` and
-        `NonlinearIOSystem`.
+        Additional parameters, passed to `scipy.optimize.minimize` and
+        `~control.NonlinearIOSystem`.
 
     Returns
     -------
@@ -2019,11 +2026,11 @@ def solve_oep(
     control_indices : int, slice, or list of int or string, optional
         Specify the indices in the system input vector that correspond to
         the control inputs.  For more information on possible values, see
-        `optimal.OptimalEstimationProblem`.
+        `OptimalEstimationProblem`.
     disturbance_indices : int, list of int, or slice, optional
         Specify the indices in the system input vector that correspond to
         the input disturbances.  For more information on possible values, see
-        `optimal.OptimalEstimationProblem`.
+        `OptimalEstimationProblem`.
     initial_guess : 2D array_like, optional
         Initial guess for the state estimate at each time point.
     print_summary : bool, optional
@@ -2059,7 +2066,7 @@ def solve_oep(
     -----
     Additional keyword parameters can be used to fine-tune the behavior of
     the underlying optimization and integration functions.  See
-    `optimal.OptimalControlProblem` for more information.
+    `OptimalControlProblem` for more information.
 
     """
     # Set up the optimal control problem

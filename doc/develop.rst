@@ -450,6 +450,42 @@ The reference manual should provide a fairly comprehensive description
 of every class, function and configuration variable in the package.
 
 
+Modules and sub-packages
+------------------------
+
+When documenting (independent) modules and sub-packages (refered to
+here collectively as modules), use the following guidelines for
+documentatation:
+
+* In module docstrings, refer to module functions and classes without
+  including the module prefix.  This will let Sphinx set up the links
+  to the functions in the proper way and has the advantage that it
+  keeps the docstrings shorter.
+
+* Objects in the parent (`control`) package should be referenced using
+  the `~control` prefix, so that Sphinx generates the links properly
+  (otherwise it looks within the package).
+
+* In the User Guide, set ``currentmodule`` to ``control`` and refer to
+  the module objects using the prefix `~prefix` in the text portions
+  of the document but `px` (shortened prefix) in the code sections.
+  This will let users copy and past code from the examples and is
+  consistent with the use of the `ct` short prefix.  Since this is in
+  the User Guide, the additional characters are not as big an issue.
+
+* If you include an `autosummary` of functions in the User Guide
+  section, list the functions using the regular prefix (without ``~``)
+  to remind everyone the function is in a module.
+
+* When referring to a module function or class in a docstring or User
+  Guide section that is not part of the module, use the fully
+  qualified function or class (\'prefix.function\').
+
+The main overarching principle should be to make sure that references
+to objects that have more detailed information should show up as a
+link, not as code.
+
+
 Utility Functions
 =================
 

@@ -4,11 +4,11 @@
 
 """MATLAB compatibility sub-package.
 
-The :mod:`control.matlab` sub-package contains a number of functions
-that emulate some of the functionality of MATLAB.  The intent of these
-functions is to provide a simple interface to the python control
-systems library (python-control) for people who are familiar with the
-MATLAB Control Systems Toolbox (tm).
+This sub-package contains a number of functions that emulate some of
+the functionality of MATLAB.  The intent of these functions is to
+provide a simple interface to the python control systems library
+(python-control) for people who are familiar with the MATLAB Control
+Systems Toolbox (tm).
 
 """
 

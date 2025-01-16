@@ -1,15 +1,17 @@
+.. currentmodule:: control
+
 .. _optimal-module:
 
 Optimization-Based Control
 ==========================
 
-.. automodule:: control.optimal
-   :noindex:
-   :no-members:
-   :no-inherited-members:
-   :no-special-members:
+The `optimal` module contains a set of classes and functions that can
+be used to solve optimal control and optimal estimation problems for
+linear or nonlinear systems.  The objects in this module must be
+explicitly imported::
 
-.. currentmodule:: control
+  import control as ct
+  import control.optimal as opt
 
 
 Optimal control problem setup
@@ -125,7 +127,7 @@ state and/or input, along the trajectory and/or at the terminal time.
 The optimal control module operates by converting the optimal control
 problem into a standard optimization problem that can be solved by
 :func:`scipy.optimize.minimize`.  The optimal control problem can be solved
-by using the :func:`optimal.solve_ocp` function::
+by using the :func:`~optimal.solve_ocp` function::
 
   res = opt.solve_ocp(sys, timepts, X0, cost, constraints)
 
@@ -167,7 +169,7 @@ points on the trajectory.  The `terminal_constraint` parameter can be
 used to specify a constraint that only holds at the final point of the
 trajectory.
 
-The return value for :func:`optimal.solve_ocp` is a bundle object
+The return value for :func:`~optimal.solve_ocp` is a bundle object
 that has the following elements:
 
   * `res.success`: True if the optimization was successfully solved
@@ -353,13 +355,13 @@ solutions do not seem close to optimal, here are a few things to try:
 * Use a smooth basis: as an alternative to parameterizing the optimal
   control inputs using the value of the control at the listed time
   points, you can specify a set of basis functions using the `basis`
-  keyword in :func:`solve_ocp` and then parameterize the controller by
+  keyword in :func:`~optimal.solve_ocp` and then parameterize the controller by
   linear combination of the basis functions.  The :ref:`flatsys
   sub-package <flatsys-module>` defines several sets of basis
   functions that can be used.
 
 * Tweak the optimizer: by using the `minimize_method`, `minimize_options`,
-  and `minimize_kwargs` keywords in :func:`solve_ocp`, you can
+  and `minimize_kwargs` keywords in :func:`~optimal.solve_ocp`, you can
   choose the SciPy optimization function that you use and set many
   parameters.  See :func:`scipy.optimize.minimize` for more information on
   the optimizers that are available and the options and keywords that they
