@@ -186,8 +186,6 @@ def root_locus_plot(
     then set the axis limits to the desired values.
 
     """
-    from .pzmap import pole_zero_plot
-
     # Legacy parameters
     for oldkey in ['kvect', 'k']:
         gains = config._process_legacy_keyword(kwargs, oldkey, 'gains', gains)

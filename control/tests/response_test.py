@@ -10,7 +10,7 @@
 # processed by _response(), then we need to make sure that arguments are
 # properly passed from _plot() to _response().  The unit tests in this file
 # make sure that this functionality is implemented properly across all
-# *relevan* _response/_map/plot pairs.
+# *relevant* _response/_map/plot pairs.
 #
 # Response/map function         Plotting function         Comments
 # ---------------------         -----------------         --------
@@ -24,7 +24,7 @@
 # input_output_response         time_response_plot        no passthru args
 # nyquist_response              nyquist_plot              included below
 # pole_zero_map                 pole_zero_plot            no passthru args
-# root_locus_map                pole_zero_plot            included below
+# root_locus_map                root_locus_plot           included below
 # singular_values_response      singular_values_plot      included below
 # step_response                 time_response_plot        no passthru args
 
