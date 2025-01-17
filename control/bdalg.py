@@ -363,7 +363,7 @@ def append(*sys, **kwargs):
 
     Parameters
     ----------
-    sys1, sys2, ..., sysn: scalar, array, or :class:`LTI`
+    sys1, sys2, ..., sysn : scalar, array, or :class:`LTI`
         I/O systems to combine.
 
     Other Parameters
@@ -382,7 +382,7 @@ def append(*sys, **kwargs):
 
     Returns
     -------
-    out: :class:`LTI`
+    out : :class:`LTI`
         Combined system, with input/output vectors consisting of all
         input/output vectors appended. Specific type returned is the type of
         the first argument.
