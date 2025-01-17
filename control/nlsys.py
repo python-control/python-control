@@ -26,7 +26,7 @@ import scipy as sp
 
 from . import config
 from .iosys import InputOutputSystem, _parse_spec, _process_iosys_keywords, \
-    _process_signal_list, common_timebase, isctime, isdtime
+    _process_signal_list, common_timebase, iosys_repr, isctime, isdtime
 from .timeresp import _check_convert_array, _process_time_response, \
     TimeResponseData, TimeResponseList
 
@@ -39,10 +39,11 @@ __all__ = ['NonlinearIOSystem', 'InterconnectedSystem', 'nlsys',
 class NonlinearIOSystem(InputOutputSystem):
     """Nonlinear I/O system.
 
-    Creates an :class:`~control.InputOutputSystem` for a nonlinear system by
-    specifying a state update function and an output function.  The new system
-    can be a continuous or discrete time system (Note: discrete-time systems
-    are not yet supported by most functions.)
+    Creates an :class:`~control.InputOutputSystem` for a nonlinear system
+    by specifying a state update function and an output function.  The new
+    system can be a continuous or discrete time system. Nonlinear I/O
+    systems are usually created with the :func:`~control.nlsys` factory
+    function.
 
     Parameters
     ----------
@@ -63,20 +64,13 @@ class NonlinearIOSystem(InputOutputSystem):
 
         where the arguments are the same as for `upfcn`.
 
-    inputs : int, list of str or None, optional
-        Description of the system inputs.  This can be given as an integer
-        count or as a list of strings that name the individual signals.
-        If an integer count is specified, the names of the signal will be
-        of the form 's[i]' (where 's' is one of 'u', 'y', or 'x').  If
-        this parameter is not given or given as `None`, the relevant
-        quantity will be determined when possible based on other
-        information provided to functions using the system.
+    inputs, outputs, states : int, list of str or None, optional
+        Description of the system inputs, outputs, and states.  See
+        :func:`control.nlsys` for more details.
 
-    outputs : int, list of str or None, optional
-        Description of the system outputs.  Same format as `inputs`.
-
-    states : int, list of str, or None, optional
-        Description of the system states.  Same format as `inputs`.
+    params : dict, optional
+        Parameter values for the systems.  Passed to the evaluation functions
+        for the system as default values, overriding internal defaults.
 
     dt : timebase, optional
         The timebase for the system, used to specify whether the system is
@@ -88,13 +82,16 @@ class NonlinearIOSystem(InputOutputSystem):
         * dt = True: discrete time with unspecified sampling period
         * dt = None: no timebase specified
 
+    Attributes
+    ----------
+    ninputs, noutputs, nstates : int
+        Number of input, output and state variables.
+    shape : tuple
+        2-tuple of I/O system dimension, (noutputs, ninputs).
+    input_labels, output_labels, state_labels : list of str
+        Names for the input, output, and state variables.
     name : string, optional
-        System name (used for specifying signals). If unspecified, a
-        generic name <sys[id]> is generated with a unique integer id.
-
-    params : dict, optional
-        Parameter values for the system.  Passed to the evaluation functions
-        for the system as default values, overriding internal defaults.
+        System name.
 
     See Also
     --------
@@ -157,9 +154,13 @@ class NonlinearIOSystem(InputOutputSystem):
         self._current_params = {} if params is None else params.copy()
 
     def __str__(self):
-        return f"{InputOutputSystem.__str__(self)}\n\n" + \
+        out = f"{InputOutputSystem.__str__(self)}"
+        if len(self.params) > 0:
+            out += f"\nParameters: {[p for p in self.params.keys()]}"
+        out += "\n\n" + \
             f"Update: {self.updfcn}\n" + \
             f"Output: {self.outfcn}"
+        return out
 
     # Return the value of a static nonlinear system
     def __call__(sys, u, params=None, squeeze=None):
@@ -713,6 +714,11 @@ class InterconnectedSystem(NonlinearIOSystem):
         if outputs is None and outlist is not None:
             outputs = len(outlist)
 
+        if params is None:
+            params = {}
+            for sys in self.syslist:
+                params = params | sys.params
+
         # Create updfcn and outfcn
         def updfcn(t, x, u, params):
             self._update_params(params)
@@ -775,6 +781,71 @@ class InterconnectedSystem(NonlinearIOSystem):
                         warn("multiple connections given for output %d" %
                              index + "; combining with previous entries")
                     self.output_map[index + j, ylist_index] += gain
+
+    def __str__(self):
+        import textwrap
+        out = InputOutputSystem.__str__(self)
+
+        out += f"\n\nSubsystems ({len(self.syslist)}):\n"
+        for sys in self.syslist:
+            out += "\n".join(textwrap.wrap(
+                iosys_repr(sys, format='info'), width=78,
+                initial_indent=" * ", subsequent_indent="    ")) + "\n"
+
+        # Build a list of input, output, and inpout signals
+        input_list, output_list, inpout_list = [], [], []
+        for sys in self.syslist:
+            input_list += [sys.name + "." + lbl for lbl in sys.input_labels]
+            output_list += [sys.name + "." + lbl for lbl in sys.output_labels]
+        inpout_list = input_list + output_list
+
+        # Define a utility function to generate the signal
+        def cxn_string(signal, gain, first):
+            if gain == 1:
+                return (" + " if not first else "") + f"{signal}"
+            elif gain == -1:
+                return (" - " if not first else "-") + f"{signal}"
+            elif gain > 0:
+                return (" + " if not first else "") + f"{gain} * {signal}"
+            elif gain < 0:
+                return (" - " if not first else "-") + \
+                    f"{abs(gain)} * {signal}"
+
+        out += f"\nConnections:\n"
+        for i in range(len(input_list)):
+            first = True
+            cxn = f"{input_list[i]} <- "
+            if np.any(self.connect_map[i]):
+                for j in range(len(output_list)):
+                    if self.connect_map[i, j]:
+                        cxn += cxn_string(
+                            output_list[j], self.connect_map[i,j], first)
+                        first = False
+            if np.any(self.input_map[i]):
+                for j in range(len(self.input_labels)):
+                    if self.input_map[i, j]:
+                        cxn += cxn_string(
+                            self.input_labels[j], self.input_map[i, j], first)
+                        first = False
+            out += "\n".join(textwrap.wrap(
+                cxn, width=78, initial_indent=" * ",
+                subsequent_indent="     ")) + "\n"
+
+        out += f"\nOutputs:\n"
+        for i in range(len(self.output_labels)):
+            first = True
+            cxn = f"{self.output_labels[i]} <- "
+            if np.any(self.output_map[i]):
+                for j in range(len(inpout_list)):
+                    if self.output_map[i, j]:
+                        cxn += cxn_string(
+                            output_list[j], self.output_map[i, j], first)
+                        first = False
+                out += "\n".join(textwrap.wrap(
+                    cxn, width=78, initial_indent=" * ",
+                    subsequent_indent="     ")) + "\n"
+
+        return out
 
     def _update_params(self, params, warning=False):
         for sys in self.syslist:
@@ -1016,7 +1087,7 @@ class InterconnectedSystem(NonlinearIOSystem):
     def connection_table(self, show_names=False, column_width=32):
         """Print table of connections inside an interconnected system model.
 
-        Intended primarily for :class:`InterconnectedSystems` that have been
+        Intended primarily for :class:`InterconnectedSystem`'s that have been
         connected implicitly using signal names.
 
         Parameters
@@ -1220,8 +1291,7 @@ class InterconnectedSystem(NonlinearIOSystem):
         return dropped_inputs, dropped_outputs
 
 
-def nlsys(
-        updfcn, outfcn=None, inputs=None, outputs=None, states=None, **kwargs):
+def nlsys(updfcn, outfcn=None, **kwargs):
     """Create a nonlinear input/output system.
 
     Creates an :class:`~control.InputOutputSystem` for a nonlinear system by
@@ -1230,7 +1300,7 @@ def nlsys(
 
     Parameters
     ----------
-    updfcn : callable
+    updfcn : callable (or StateSpace)
         Function returning the state update function
 
             `updfcn(t, x, u, params) -> array`
@@ -1239,6 +1309,10 @@ def nlsys(
         with shape (ninputs,), `t` is a float representing the currrent
         time, and `params` is a dict containing the values of parameters
         used by the function.
+
+        If a :class:`StateSpace` system is passed as the update function,
+        then a nonlinear I/O system is created that implements the linear
+        dynamics of the state space system.
 
     outfcn : callable
         Function returning the output at the given state
@@ -1285,6 +1359,12 @@ def nlsys(
     sys : :class:`NonlinearIOSystem`
         Nonlinear input/output system.
 
+    Other Parameters
+    ----------------
+    input_prefix, output_prefix, state_prefix : string, optional
+        Set the prefix for input, output, and state signals.  Defaults =
+        'u', 'y', 'x'.
+
     See Also
     --------
     ss, tf
@@ -1292,7 +1372,7 @@ def nlsys(
     Examples
     --------
     >>> def kincar_update(t, x, u, params):
-    ...     l = params.get('l', 1)  # wheelbase
+    ...     l = params['l']              # wheelbase
     ...     return np.array([
     ...         np.cos(x[2]) * u[0],     # x velocity
     ...         np.sin(x[2]) * u[0],     # y velocity
@@ -1303,14 +1383,40 @@ def nlsys(
     ...     return x[0:2]  # x, y position
     >>>
     >>> kincar = ct.nlsys(
-    ...     kincar_update, kincar_output, states=3, inputs=2, outputs=2)
+    ...     kincar_update, kincar_output, states=3, inputs=2, outputs=2,
+    ...     params={'l': 1})
     >>>
     >>> timepts = np.linspace(0, 10)
     >>> response = ct.input_output_response(
     ...     kincar, timepts, [10, 0.05 * np.sin(timepts)])
+
     """
-    return NonlinearIOSystem(
-        updfcn, outfcn, inputs=inputs, outputs=outputs, states=states, **kwargs)
+    from .statesp import StateSpace
+    from .iosys import _extended_system_name
+
+    if isinstance(updfcn, StateSpace):
+        sys_ss = updfcn
+        kwargs['inputs'] = kwargs.get('inputs', sys_ss.input_labels)
+        kwargs['outputs'] = kwargs.get('outputs', sys_ss.output_labels)
+        kwargs['states'] = kwargs.get('states', sys_ss.state_labels)
+        kwargs['name'] = kwargs.get('name', _extended_system_name(
+            sys_ss.name, prefix_suffix_name='converted'))
+
+        sys_nl = NonlinearIOSystem(
+            lambda t, x, u, params:
+                sys_ss.A @ np.atleast_1d(x) + sys_ss.B @ np.atleast_1d(u),
+            lambda t, x, u, params:
+                sys_ss.C @ np.atleast_1d(x) + sys_ss.D @ np.atleast_1d(u),
+            **kwargs)
+
+        if sys_nl.nstates != sys_ss.nstates or sys_nl.shape != sys_ss.shape:
+            raise ValueError(
+                "new input, output, or state specification "
+                "doesn't match system size")
+
+        return sys_nl
+    else:
+        return NonlinearIOSystem(updfcn, outfcn, **kwargs)
 
 
 def input_output_response(
@@ -2240,7 +2346,8 @@ def interconnect(
 
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions
-        for the system as default values, overriding internal defaults.
+        for the system as default values, overriding internal defaults.  If
+        not specified, defaults to parameters from subsystems.
 
     dt : timebase, optional
         The timebase for the system, used to specify whether the system is

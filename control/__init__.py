@@ -118,5 +118,14 @@ try:
 except ImportError:
     __version__ = "dev"
 
+# patch the LTI class with function aliases for convenience functions
+# this needs to be done after the fact since the modules that contain the functions
+# all heavily depend on the LTI class
+LTI.to_ss = ss
+LTI.to_tf = tf
+LTI.bode_plot = bode_plot
+LTI.nyquist_plot = nyquist_plot
+LTI.nichols_plot = nichols_plot
+
 # Initialize default parameter values
 reset_defaults()

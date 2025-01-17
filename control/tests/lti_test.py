@@ -1,15 +1,19 @@
 """lti_test.py"""
 
+import re
+
 import numpy as np
 import pytest
-from .conftest import editsdefaults
 
 import control as ct
-from control import c2d, tf, ss, tf2ss, NonlinearIOSystem
-from control.lti import LTI, evalfr, damp, dcgain, zeros, poles, bandwidth
-from control import common_timebase, isctime, isdtime, issiso
-from control.tests.conftest import slycotonly
+from control import NonlinearIOSystem, c2d, common_timebase, isctime, \
+    isdtime, issiso, ss, tf, tf2ss
 from control.exception import slycot_check
+from control.lti import LTI, bandwidth, damp, dcgain, evalfr, poles, zeros
+from control.tests.conftest import slycotonly
+
+from .conftest import editsdefaults
+
 
 class TestLTI:
     @pytest.mark.parametrize("fun, args", [
@@ -368,3 +372,41 @@ def test_scalar_algebra(op, fcn):
 
     scaled = getattr(sys, op)(2)
     np.testing.assert_almost_equal(getattr(sys(1j), op)(2), scaled(1j))
+
+
+@pytest.mark.parametrize(
+    "fcn, args, kwargs, suppress, " +
+    "repr_expected, str_expected, latex_expected", [
+    (ct.ss, (-1e-12, 1, 2, 3), {}, False,
+     r"StateSpace\([\s]*array\(\[\[-1.e-12\]\]\).*",
+     None,                      # standard Numpy formatting
+     r"10\^\{-12\}"),
+    (ct.ss, (-1e-12, 1, 3, 3), {}, True,
+     r"StateSpace\([\s]*array\(\[\[-0\.\]\]\).*",
+     None,                      # standard Numpy formatting
+     r"-0"),
+    (ct.tf, ([1, 1e-12, 1], [1, 2, 1]), {}, False,
+     r"\[1\.e\+00, 1\.e-12, 1.e\+00\]",
+     r"s\^2 \+ 1e-12 s \+ 1",
+     r"1 \\times 10\^\{-12\}"),
+    (ct.tf, ([1, 1e-12, 1], [1, 2, 1]), {}, True,
+     r"\[1\., 0., 1.\]",
+     r"s\^2 \+ 1",
+     r"\{s\^2 \+ 1\}"),
+])
+@pytest.mark.usefixtures("editsdefaults")
+def test_printoptions(
+        fcn, args, kwargs, suppress,
+        repr_expected, str_expected, latex_expected):
+    sys = fcn(*args, **kwargs)
+
+    with np.printoptions(suppress=suppress):
+        # Test loadable representation
+        assert re.search(repr_expected, ct.iosys_repr(sys, 'eval')) is not None
+
+        # Test string representation
+        if str_expected is not None:
+            assert re.search(str_expected, str(sys)) is not None
+
+        # Test LaTeX/HTML representation
+        assert re.search(latex_expected, sys._repr_html_()) is not None

@@ -164,7 +164,7 @@ def parallel(sys1, *sysn, **kwargs):
         or `y`). See :class:`InputOutputSystem` for more information.
     states : str, or list of str, optional
         List of names for system states.  If not given, state names will be
-        of of the form `x[i]` for interconnections of linear systems or
+        of the form `x[i]` for interconnections of linear systems or
         '<subsys_name>.<state_name>' for interconnected nonlinear systems.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
@@ -512,7 +512,7 @@ def connect(sys, Q, inputv, outputv):
 
     return Ytrim * sys * Utrim
 
-def combine_tf(tf_array):
+def combine_tf(tf_array, **kwargs):
     """Combine array-like of transfer functions into MIMO transfer function.
 
     Parameters
@@ -528,6 +528,16 @@ def combine_tf(tf_array):
     TransferFunction
         Transfer matrix represented as a single MIMO TransferFunction object.
 
+    Other Parameters
+    ----------------
+    inputs, outputs : str, or list of str, optional
+        List of strings that name the individual signals.  If not given,
+        signal names will be of the form `s[i]` (where `s` is one of `u`,
+        or `y`). See :class:`InputOutputSystem` for more information.
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
+
     Raises
     ------
     ValueError
@@ -542,20 +552,34 @@ def combine_tf(tf_array):
     --------
     Combine two transfer functions
 
-    >>> s = ct.TransferFunction.s
-    >>> ct.combine_tf([
-    ...     [1 / (s + 1)],
-    ...     [s / (s + 2)],
-    ... ])
-    TransferFunction([[array([1])], [array([1, 0])]], [[array([1, 1])], [array([1, 2])]])
+    >>> s = ct.tf('s')
+    >>> ct.combine_tf(
+    ...     [[1 / (s + 1)],
+    ...      [s / (s + 2)]],
+    ...     name='G'
+    ... )
+    TransferFunction(
+    [[array([1])],
+     [array([1, 0])]],
+    [[array([1, 1])],
+     [array([1, 2])]],
+    name='G', outputs=2, inputs=1)
 
     Combine NumPy arrays with transfer functions
 
-    >>> ct.combine_tf([
-    ...     [np.eye(2), np.zeros((2, 1))],
-    ...     [np.zeros((1, 2)), ct.TransferFunction([1], [1, 0])],
-    ... ])
-    TransferFunction([[array([1.]), array([0.]), array([0.])], [array([0.]), array([1.]), array([0.])], [array([0.]), array([0.]), array([1])]], [[array([1.]), array([1.]), array([1.])], [array([1.]), array([1.]), array([1.])], [array([1.]), array([1.]), array([1, 0])]])
+    >>> ct.combine_tf(
+    ...     [[np.eye(2), np.zeros((2, 1))],
+    ...      [np.zeros((1, 2)), ct.tf([1], [1, 0])]],
+    ...     name='G'
+    ... )
+    TransferFunction(
+    [[array([1.]), array([0.]), array([0.])],
+     [array([0.]), array([1.]), array([0.])],
+     [array([0.]), array([0.]), array([1])]],
+    [[array([1.]), array([1.]), array([1.])],
+     [array([1.]), array([1.]), array([1.])],
+     [array([1.]), array([1.]), array([1, 0])]],
+    name='G', outputs=3, inputs=3)
     """
     # Find common timebase or raise error
     dt_list = []
@@ -595,8 +619,8 @@ def combine_tf(tf_array):
                         f"row {row_index}."
                     )
                 for j_in in range(col.ninputs):
-                    num_row.append(col.num[j_out][j_in])
-                    den_row.append(col.den[j_out][j_in])
+                    num_row.append(col.num_array[j_out, j_in])
+                    den_row.append(col.den_array[j_out, j_in])
             num.append(num_row)
             den.append(den_row)
     for row_index, row in enumerate(num):
@@ -611,10 +635,14 @@ def combine_tf(tf_array):
                 "Mismatched number transfer function inputs in row "
                 f"{row_index} of denominator."
             )
-    return tf.TransferFunction(num, den, dt=dt)
+    return tf.TransferFunction(num, den, dt=dt, **kwargs)
+
 
 def split_tf(transfer_function):
-    """Split MIMO transfer function into NumPy array of SISO tranfer functions.
+    """Split MIMO transfer function into NumPy array of SISO transfer functions.
+
+    System and signal names for the array of SISO transfer functions are
+    copied from the MIMO system.
 
     Parameters
     ----------
@@ -630,21 +658,29 @@ def split_tf(transfer_function):
     --------
     Split a MIMO transfer function
 
-    >>> G = ct.TransferFunction(
-    ...     [
-    ...         [[87.8], [-86.4]],
-    ...         [[108.2], [-109.6]],
-    ...     ],
-    ...     [
-    ...         [[1, 1], [1, 1]],
-    ...         [[1, 1], [1, 1]],
-    ...     ],
+    >>> G = ct.tf(
+    ...     [ [[87.8], [-86.4]],
+    ...       [[108.2], [-109.6]] ],
+    ...     [ [[1, 1], [1, 1]],
+    ...       [[1, 1], [1, 1]],   ],
+    ...     name='G'
     ... )
     >>> ct.split_tf(G)
-    array([[TransferFunction(array([87.8]), array([1, 1])),
-            TransferFunction(array([-86.4]), array([1, 1]))],
-           [TransferFunction(array([108.2]), array([1, 1])),
-            TransferFunction(array([-109.6]), array([1, 1]))]], dtype=object)
+    array([[TransferFunction(
+            array([87.8]),
+            array([1, 1]),
+            name='G', outputs=1, inputs=1), TransferFunction(
+                                            array([-86.4]),
+                                            array([1, 1]),
+                                            name='G', outputs=1, inputs=1)],
+           [TransferFunction(
+            array([108.2]),
+            array([1, 1]),
+            name='G', outputs=1, inputs=1), TransferFunction(
+                                            array([-109.6]),
+                                            array([1, 1]),
+                                            name='G', outputs=1, inputs=1)]],
+          dtype=object)
     """
     tf_split_lst = []
     for i_out in range(transfer_function.noutputs):
@@ -652,9 +688,12 @@ def split_tf(transfer_function):
         for i_in in range(transfer_function.ninputs):
             row.append(
                 tf.TransferFunction(
-                    transfer_function.num[i_out][i_in],
-                    transfer_function.den[i_out][i_in],
+                    transfer_function.num_array[i_out, i_in],
+                    transfer_function.den_array[i_out, i_in],
                     dt=transfer_function.dt,
+                    inputs=transfer_function.input_labels[i_in],
+                    outputs=transfer_function.output_labels[i_out],
+                    name=transfer_function.name
                 )
             )
         tf_split_lst.append(row)

@@ -130,7 +130,7 @@ jobs:
           auto-update-conda: false
           auto-activate-base: false
       - name: Conda build
-        shell: bash -l {0}
+        shell: bash -el {0}
         run: |
           set -e
           conda mambabuild conda-recipe
@@ -226,7 +226,7 @@ jobs:
           sudo apt-get -y update
           case ${{ matrix.blas_lib }} in
             Generic )  sudo apt-get -y install libblas3 liblapack3 ;;
-            unset | OpenBLAS        ) sudo apt-get -y install libopenblas-base ;;
+            unset | OpenBLAS ) sudo apt-get -y install libopenblas0 ;;
             *)
               echo "BLAS ${{ matrix.blas_lib }} not supported for wheels on Ubuntu"
               exit 1 ;;
@@ -277,7 +277,7 @@ jobs:
 
     defaults:
       run:
-        shell: bash -l {0}
+        shell: bash -el {0}
 
     steps:
       - name: Checkout Slycot
@@ -309,22 +309,22 @@ jobs:
           set -e
           case ${{ matrix.blas_lib }} in
             unset        ) # the conda-forge default (os dependent)
-              mamba install libblas libcblas liblapack
+              conda install libblas libcblas liblapack
               ;;
             Generic      )
-              mamba install 'libblas=*=*netlib' 'libcblas=*=*netlib' 'liblapack=*=*netlib'
+              conda install 'libblas=*=*netlib' 'libcblas=*=*netlib' 'liblapack=*=*netlib'
               echo "libblas * *netlib" >> $CONDA_PREFIX/conda-meta/pinned
               ;;
             OpenBLAS     )
-              mamba install 'libblas=*=*openblas' openblas
+              conda install 'libblas=*=*openblas' openblas
               echo "libblas * *openblas" >> $CONDA_PREFIX/conda-meta/pinned
               ;;
             Intel10_64lp )
-              mamba install 'libblas=*=*mkl' mkl
+              conda install 'libblas=*=*mkl' mkl
               echo "libblas * *mkl" >> $CONDA_PREFIX/conda-meta/pinned
               ;;
           esac
-          mamba install -c ./slycot-conda-pkgs slycot
+          conda install -c ./slycot-conda-pkgs slycot
           conda list
       - name: Test with pytest
         run: JOBNAME="$JOBNAME" pytest control/tests
