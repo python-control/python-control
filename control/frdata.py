@@ -829,21 +829,12 @@ class FrequencyResponseData(LTI):
         # TODO: handle omega re-mapping
 
         new_fresp = np.zeros(
-            (
-                self.noutputs + other.noutputs,
-                self.ninputs + other.ninputs,
-                self.omega.shape[-1],
-            ),
-            dtype=complex,
-        )
+            (self.noutputs + other.noutputs, self.ninputs + other.ninputs,
+             self.omega.shape[-1]), dtype=complex)
         new_fresp[:self.noutputs, :self.ninputs, :] = np.reshape(
-            self.fresp,
-            (self.noutputs, self.ninputs, -1),
-        )
+            self.fresp, (self.noutputs, self.ninputs, -1))
         new_fresp[self.noutputs:, self.ninputs:, :] = np.reshape(
-            other.fresp,
-            (other.noutputs, other.ninputs, -1),
-        )
+            other.fresp, (other.noutputs, other.ninputs, -1))
 
         return FRD(new_fresp, self.omega, smooth=(self._ifunc is not None))
 
