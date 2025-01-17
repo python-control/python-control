@@ -845,7 +845,7 @@ class FrequencyResponseData(LTI):
             (other.noutputs, other.ninputs, -1),
         )
 
-        return FRD(new_fresp, self.omega, smooth=(self.ifunc is not None))
+        return FRD(new_fresp, self.omega, smooth=(self._ifunc is not None))
 
     # Plotting interface
     def plot(self, plot_type=None, *args, **kwargs):
