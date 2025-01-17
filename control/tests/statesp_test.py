@@ -569,18 +569,22 @@ class TestStateSpace:
             # Power of 0
             result = sys**0
             expected = StateSpace([], [], [], np.eye(2), dt=0)
-            assert _tf_close_coeff(
-                ss2tf(expected).minreal(),
-                ss2tf(result).minreal(),
-            )
+            np.testing.assert_allclose(expected.A, result.A)
+            np.testing.assert_allclose(expected.B, result.B)
+            np.testing.assert_allclose(expected.C, result.C)
+            np.testing.assert_allclose(expected.D, result.D)
             # Power of 1
             result = sys**1
             expected = sys
-            assert _tf_close_coeff(
-                ss2tf(expected).minreal(),
-                ss2tf(result).minreal(),
-            )
+            np.testing.assert_allclose(expected.A, result.A)
+            np.testing.assert_allclose(expected.B, result.B)
+            np.testing.assert_allclose(expected.C, result.C)
+            np.testing.assert_allclose(expected.D, result.D)
             # Power of -1 (inverse of biproper system)
+            # Testing transfer function representations to avoid the
+            # non-uniqueness of the state-space representation. Once MIMO
+            # canonical forms are supported, can check canonical state-space
+            # matrices instead.
             result = (sys * sys**-1).minreal()
             expected = StateSpace([], [], [], np.eye(2), dt=0)
             assert _tf_close_coeff(
@@ -596,17 +600,17 @@ class TestStateSpace:
             # Power of 3
             result = sys**3
             expected = sys * sys * sys
-            assert _tf_close_coeff(
-                ss2tf(expected).minreal(),
-                ss2tf(result).minreal(),
-            )
+            np.testing.assert_allclose(expected.A, result.A)
+            np.testing.assert_allclose(expected.B, result.B)
+            np.testing.assert_allclose(expected.C, result.C)
+            np.testing.assert_allclose(expected.D, result.D)
             # Power of -3
             result = sys**-3
             expected = sys**-1 * sys**-1 * sys**-1
-            assert _tf_close_coeff(
-                ss2tf(expected).minreal(),
-                ss2tf(result).minreal(),
-            )
+            np.testing.assert_allclose(expected.A, result.A)
+            np.testing.assert_allclose(expected.B, result.B)
+            np.testing.assert_allclose(expected.C, result.C)
+            np.testing.assert_allclose(expected.D, result.D)
 
     @slycotonly
     def test_truediv(self, sys222, sys322):
