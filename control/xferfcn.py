@@ -884,7 +884,6 @@ class TransferFunction(LTI):
         The second model is converted to a transfer function if necessary,
         inputs and outputs are appended and their order is preserved"""
         other = _convert_to_transfer_function(other)
-        common_timebase(self.dt, other.dt)  # Call just to validate ``dt``s
 
         new_tf = bdalg.combine_tf([
             [self, np.zeros((self.noutputs, other.ninputs))],
