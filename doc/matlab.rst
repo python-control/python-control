@@ -67,6 +67,7 @@ Time-Domain Analysis
    impulse
    initial
    lsim
+   stepinfo
 
 Frequency-Domain Analysis
 =========================
@@ -75,8 +76,9 @@ Frequency-Domain Analysis
 
    bode
    nyquist
-   nichols
    margin
+   nichols
+   ngrid
    freqresp
    evalfr
 

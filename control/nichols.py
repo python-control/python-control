@@ -177,9 +177,9 @@ def _inner_extents(ax):
 
 def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
                  label_cl_phases=True):
-    """Nichols chart grid.
+    """Plot Nichols chart grid.
 
-    Plots a Nichols chart grid on the current axis, or creates a new chart
+    Plots a Nichols chart grid on the current axes, or creates a new chart
     if no plot already exists.
 
     Parameters

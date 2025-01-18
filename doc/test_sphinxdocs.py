@@ -62,10 +62,9 @@ verbose = 0
 standalone = False
 
 control_module_list = [
-    control, control.flatsys, control.optimal, control.phaseplot
-]
+    control, control.flatsys, control.optimal, control.phaseplot]
 @pytest.mark.parametrize("module", control_module_list)
-def test_sphinx_functions(module):
+def test_sphinx_functions(module, check_legacy=True):
 
     # Look through every object in the package
     _info(f"Checking module {module}", 1)
@@ -104,7 +103,8 @@ def test_sphinx_functions(module):
                 case True, _, True, _:
                     _warn(f"deprecated object" + referenced)
                 case True, _, _, True:
-                    _warn(f"legacy object" + referenced)
+                    if check_legacy:
+                        _warn(f"legacy object" + referenced)
                 case False, False, False, False:
                     _fail(f"{objname} not referenced in sphinx docs")
 
@@ -160,6 +160,12 @@ def test_config_defaults():
         _warn(f"Unknown params in config.rst: {config_rstdocs}")
 
 
+# Test MATLAB library separately (and after config_defaults)
+def test_sphinx_matlab():
+    import control.matlab
+    test_sphinx_functions(control.matlab, check_legacy=False)
+
+
 def _check_deprecated(obj):
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')     # debug via sphinx, not here
@@ -193,5 +199,6 @@ if __name__ == "__main__":
 
     for module in control_module_list:
         test_sphinx_functions(module)
-
     test_config_defaults()
+    test_sphinx_matlab()
+
