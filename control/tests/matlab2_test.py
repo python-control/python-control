@@ -230,7 +230,7 @@ class TestControlMatlab:
         assert isinstance(arr, np.ndarray)
         assert not isinstance(arr, matrix)
 
-        #Convert array-like objects to arrays
+        #Convert array_like objects to arrays
         #Input is matrix, shape (1,3), must convert to array
         arr = _check_convert_array(matrix("1. 2 3"), [(3,), (1,3)], 'Test: ')
         assert isinstance(arr, np.ndarray)

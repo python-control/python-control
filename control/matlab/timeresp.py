@@ -20,9 +20,9 @@ def step(sys, T=None, input=0, output=None, return_x=False):
 
     Parameters
     ----------
-    sys : StateSpace, or TransferFunction
+    sys : `StateSpace` or `TransferFunction`
         LTI system to simulate.
-    T : array-like or number, optional
+    T : array_like or number, optional
         Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given).
     input : int
@@ -68,9 +68,9 @@ def stepinfo(sysdata, T=None, yfinal=None, SettlingTimeThreshold=0.02,
 
     Parameters
     ----------
-    sysdata : StateSpace or TransferFunction or array_like
-        The system data. Either LTI system to similate (StateSpace,
-        TransferFunction), or a time series of step response data.
+    sysdata : `StateSpace` or `TransferFunction` or array_like
+        The system data. Either LTI system to similate (`StateSpace`,
+        `TransferFunction`), or a time series of step response data.
     T : array_like or float, optional
         Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given).
@@ -146,9 +146,9 @@ def impulse(sys, T=None, input=0, output=None, return_x=False):
 
     Parameters
     ----------
-    sys : StateSpace, TransferFunction
+    sys : `StateSpace` or `TransferFunction`
         LTI system to simulate.
-    T : array-like or number, optional
+    T : array_like or number, optional
         Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given).
     input : int
@@ -195,12 +195,12 @@ def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
 
     Parameters
     ----------
-    sys : StateSpace, or TransferFunction
+    sys : `StateSpace` or `TransferFunction`
         LTI system to simulate.
-    T : array-like or number, optional
+    T : array_like or number, optional
         Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given).
-    X0 : array-like object or number, optional
+    X0 : array_like object or number, optional
         Initial condition (default = 0).
     input : int
         This input is ignored, but present for compatibility with step
@@ -248,15 +248,15 @@ def lsim(sys, U=0., T=None, X0=0.):
 
     Parameters
     ----------
-    sys : LTI (StateSpace, or TransferFunction)
+    sys : `StateSpace` or `TransferFunction`
         LTI system to simulate.
-    U : array-like or number, optional
+    U : array_like or number, optional
         Input array giving input at each time `T` (default = 0).  If `U` is
         None or 0, a special algorithm is used. This special algorithm is
         faster than the general algorithm, which is used otherwise.
-    T : array-like, optional for discrete LTI `sys`
+    T : array_like, optional for discrete LTI `sys`
         Time steps at which the input is defined; values must be evenly spaced.
-    X0 : array-like or number, optional
+    X0 : array_like or number, optional
         Initial condition (default = 0).
 
     Returns

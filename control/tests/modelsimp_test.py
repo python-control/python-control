@@ -201,14 +201,14 @@ class TestModelsimp:
         # 0 for k > m-2 (see modelsimp.py).
         #
 
-        # Generate stable continuous time system
+        # Generate stable continuous-time system
         Hc = rss(k, 1, 1)
 
         # Choose sampling time based on fastest time constant / 10
         w, _ = np.linalg.eig(Hc.A)
         Ts = np.min(-np.real(w)) / 10.
 
-        # Convert to a discrete time system via sampling
+        # Convert to a discrete-time system via sampling
         Hd = c2d(Hc, Ts, 'zoh')
 
         # Compute the Markov parameters from state space

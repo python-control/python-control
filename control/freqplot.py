@@ -66,7 +66,7 @@ _freqplot_defaults = {
 
 class FrequencyResponseList(list):
     def plot(self, *args, plot_type=None, **kwargs):
-        """Plot a list of frequency responses.
+        """List of FrequencyResponseData objects with plotting capability.
 
         See `FrequencyResponseData.plot` for details.
 
@@ -248,7 +248,7 @@ def bode_plot(
     a system (or list of systems) without plotting, use the
     `frequency_response` command.
 
-    If a discrete time model is given, the frequency response is plotted
+    If a discrete-time model is given, the frequency response is plotted
     along the upper branch of the unit circle, using the mapping ``z =
     exp(1j * omega * dt)`` where `omega` ranges from 0 to pi/`dt` and `dt`
     is the discrete timebase.  If timebase not specified (`dt` = True),
@@ -1119,7 +1119,7 @@ class NyquistResponseData:
         Number of encirclements of the -1 point by the Nyquist curve for
         a system evaluated along the Nyquist contour.
     contour : complex array
-        The Nyquist 'D' contour, with appropriate indendtations to avoid
+        The Nyquist 'D' contour, with appropriate indentations to avoid
         open loop poles and zeros near/on the imaginary axis.
     response : complex array
         The value of the linear system under study along the Nyquist contour.
@@ -1129,7 +1129,7 @@ class NyquistResponseData:
         The name of the system being analyzed.
     return_contour : bool
         If true, when the object is accessed as an iterable return two
-        elements": `count` (number of encirlements) and `contour`.  If
+        elements: `count` (number of encirlements) and `contour`.  If
         false (default), then return only `count`.
 
     """
@@ -1159,6 +1159,11 @@ class NyquistResponseData:
         return 2 if self.return_contour else 1
 
     def plot(self, *args, **kwargs):
+        """Plot a list of Nyquist responses.
+
+        See `nyquist_plot` for details.
+
+        """
         return nyquist_plot(self, *args, **kwargs)
 
 
@@ -1249,7 +1254,7 @@ def nyquist_response(
 
     Notes
     -----
-    If a discrete time model is given, the frequency response is computed
+    If a discrete-time model is given, the frequency response is computed
     along the upper branch of the unit circle, using the mapping ``z =
     exp(1j * omega * dt)`` where `omega` ranges from 0 to pi/`dt` and
     `dt` is the discrete timebase.  If timebase not specified
@@ -1556,7 +1561,7 @@ def nyquist_plot(
 
     Parameters
     ----------
-    data : list of LTI or NyquistResponseData
+    data : list of `LTI` or `NyquistResponseData`
         List of linear input/output systems (single system is OK) or
         Nyquist ersponses (computed using `nyquist_response`).
         Nyquist curves for each system are plotted on the same graph.
@@ -1639,7 +1644,7 @@ def nyquist_plot(
         If present, replace automatically generated label(s) with the given
         label(s).  If sysdata is a list, strings should be specified for each
         system.
-    label_freq : int, optiona
+    label_freq : int, optional
         Label every nth frequency on the plot.  If not specified, no labels
         are generated.
     legend_loc : int or str, optional
@@ -1715,7 +1720,7 @@ def nyquist_plot(
 
     Notes
     -----
-    If a discrete time model is given, the frequency response is computed
+    If a discrete-time model is given, the frequency response is computed
     along the upper branch of the unit circle, using the mapping ``z =
     exp(1j * omega * dt)`` where `omega` ranges from 0 to pi/`dt` and
     `dt` is the discrete timebase.  If timebase not specified
@@ -2294,7 +2299,7 @@ def singular_values_response(
 
     Returns
     -------
-    response : FrequencyResponseData
+    response : `FrequencyResponseData`
         Frequency response with the number of outputs equal to the
         number of singular values in the response, and a single input.
 
@@ -2450,7 +2455,7 @@ def singular_values_plot(
 
     Notes
     -----
-    If `plot` = `False`, the following legacy values are returned:
+    If `plot` = False, the following legacy values are returned:
        * `mag` : ndarray (or list of ndarray if len(data) > 1))
            Magnitude of the response (deprecated).
        * `phase` : ndarray (or list of ndarray if len(data) > 1))
@@ -2629,7 +2634,7 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num,
     _default_frequency_range and tailored for the list of systems syslist, and
     omega_range_given is set to False.
 
-    If omega_in is None but omega_limits is an array-like of 2 elements, then
+    If omega_in is None but omega_limits is an array_like of 2 elements, then
     omega_out is computed with the function np.logspace on omega_num points
     within the interval [min, max] =  [omega_limits[0], omega_limits[1]], and
     omega_range_given is set to True.

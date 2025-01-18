@@ -21,8 +21,8 @@ class LinearFlatSystem(FlatSystem, StateSpace):
 
     Parameters
     ----------
-    linsys : StateSpace
-        LTI StateSpace system to be converted.
+    linsys : `StateSpace`
+        LTI `StateSpace` system to be converted.
     inputs : int, list of str or None, optional
         Description of the system inputs.  This can be given as an integer
         count or as a list of strings that name the individual signals.
@@ -59,7 +59,7 @@ class LinearFlatSystem(FlatSystem, StateSpace):
         # Make sure we can handle the system
         if (not control.isctime(linsys)):
             raise control.ControlNotImplemented(
-                "requires continuous time, linear control system")
+                "requires continuous-time, linear control system")
         elif (not control.issiso(linsys)):
             raise control.ControlNotImplemented(
                 "only single input, single output systems are supported")

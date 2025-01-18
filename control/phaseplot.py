@@ -58,7 +58,7 @@ def phase_plane_plot(
 
     Parameters
     ----------
-    sys : NonlinearIOSystem or callable(t, x, ...)
+    sys : `NonlinearIOSystem` or callable(t, x, ...)
         I/O system or function used to generate phase plane data. If a
         function is given, the remaining arguments are drawn from the
         `params` keyword.
@@ -251,7 +251,7 @@ def vectorfield(
 
     Parameters
     ----------
-    sys : NonlinearIOSystem or callable(t, x, ...)
+    sys : `NonlinearIOSystem` or callable(t, x, ...)
         I/O system or function used to generate phase plane data.  If a
         function is given, the remaining arguments are drawn from the
         `params` keyword.
@@ -344,7 +344,7 @@ def streamlines(
 
     Parameters
     ----------
-    sys : NonlinearIOSystem or callable(t, x, ...)
+    sys : `NonlinearIOSystem` or callable(t, x, ...)
         I/O system or function used to generate phase plane data.  If a
         function is given, the remaining arguments are drawn from the
         `params` keyword.
@@ -473,7 +473,7 @@ def equilpoints(
 
     Parameters
     ----------
-    sys : NonlinearIOSystem or callable(t, x, ...)
+    sys : `NonlinearIOSystem` or callable(t, x, ...)
         I/O system or function used to generate phase plane data. If a
         function is given, the remaining arguments are drawn from the
         `params` keyword.
@@ -558,7 +558,7 @@ def separatrices(
 
     Parameters
     ----------
-    sys : NonlinearIOSystem or callable(t, x, ...)
+    sys : `NonlinearIOSystem` or callable(t, x, ...)
         I/O system or function used to generate phase plane data. If a
         function is given, the remaining arguments are drawn from the
         `params` keyword.
@@ -732,7 +732,7 @@ def boxgrid(xvals, yvals):
 
     Parameters
     ----------
-    xvals, yvals : 1D array-like
+    xvals, yvals : 1D array_like
         Array of points defining the points on the lower and left edges of
         the box.
 
@@ -761,7 +761,7 @@ def meshgrid(xvals, yvals):
 
     Parameters
     ----------
-    xvals, yvals : 1D array-like
+    xvals, yvals : 1D array_like
         Array of points defining the points on the lower and left edges of
         the box.
 
@@ -788,7 +788,7 @@ def circlegrid(centers, radius, num):
 
     Parameters
     ----------
-    centers : 2D array-like
+    centers : 2D array_like
         Array of points with shape (p, 2) defining centers of the circles.
     radius : float
         Radius of the points to be generated around each center.
@@ -1064,7 +1064,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     X0: ndarray of initial conditions, optional
         List of initial conditions from which streamlines are plotted.
         Each initial condition should be a pair of numbers.
-    T: array-like or number, optional
+    T: array_like or number, optional
         Length of time to run simulations that generate streamlines.
         If a single number, the same simulation time is used for all
         initial conditions.  Otherwise, should be a list of length
@@ -1079,7 +1079,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         If a single integer N is given, draw N arrows using equally space
         time points.  If a tuple (N, lambda) is given, draw N arrows using
         exponential time constant lambda
-    timepts : array-like, optional
+    timepts : array_like, optional
         Draw arrows at the given list times [t1, t2, ...]
     tfirst : bool, optional
         If True, call `func` with signature ``func(t, x, ...)``.

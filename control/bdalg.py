@@ -53,7 +53,7 @@ def series(*sys, **kwargs):
         '<subsys_name>.<state_name>' for interconnected nonlinear systems.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
+        name 'sys[id]' is generated with a unique integer id.
 
     Raises
     ------
@@ -124,7 +124,7 @@ def parallel(*sys, **kwargs):
         '<subsys_name>.<state_name>' for interconnected nonlinear systems.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
+        name 'sys[id]' is generated with a unique integer id.
 
     Raises
     ------
@@ -139,7 +139,7 @@ def parallel(*sys, **kwargs):
     Notes
     -----
     This function is a wrapper for the __add__ function in the
-    StateSpace and TransferFunction classes.  The output type is usually
+    `StateSpace` and `TransferFunction` classes.  The output type is usually
     the type of `sys1`.  If `sys1` is a scalar, then the output type is
     the type of `sys2`.
 
@@ -168,8 +168,7 @@ def parallel(*sys, **kwargs):
     return sys
 
 def negate(sys, **kwargs):
-    """
-    Return the negative of a system.
+    """Return the negative of a system.
 
     Parameters
     ----------
@@ -193,7 +192,7 @@ def negate(sys, **kwargs):
         '<subsys_name>.<state_name>' for interconnected nonlinear systems.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
+        name 'sys[id]' is generated with a unique integer id.
 
     See Also
     --------
@@ -201,8 +200,9 @@ def negate(sys, **kwargs):
 
     Notes
     -----
-    This function is a wrapper for the __neg__ function in the StateSpace and
-    TransferFunction classes.  The output type is the same as the input type.
+    This function is a wrapper for the __neg__ function in the `StateSpace`
+    and `TransferFunction` classes.  The output type is the same as the
+    input type.
 
     Examples
     --------
@@ -248,16 +248,16 @@ def feedback(sys1, sys2=1, sign=-1, **kwargs):
         '<subsys_name>.<state_name>' for interconnected nonlinear systems.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
+        name 'sys[id]' is generated with a unique integer id.
 
     Raises
     ------
     ValueError
-        if `sys1` does not have as many inputs as `sys2` has outputs, or if
-        `sys2` does not have as many inputs as `sys1` has outputs
+        If `sys1` does not have as many inputs as `sys2` has outputs, or if
+        `sys2` does not have as many inputs as `sys1` has outputs.
     NotImplementedError
-        if an attempt is made to perform a feedback on a MIMO TransferFunction
-        object
+        If an attempt is made to perform a feedback on a MIMO `TransferFunction`
+        object.
 
     See Also
     --------
@@ -341,7 +341,7 @@ def append(*sys, **kwargs):
         '<subsys_name>.<state_name>' for interconnected nonlinear systems.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
+        name 'sys[id]' is generated with a unique integer id.
 
     See Also
     --------
@@ -472,16 +472,16 @@ def combine_tf(tf_array, **kwargs):
 
     Parameters
     ----------
-    tf_array : list of list of TransferFunction or array_like
+    tf_array : list of list of `TransferFunction` or array_like
         Transfer matrix represented as a two-dimensional array or
-        list-of-lists containing TransferFunction objects. The
+        list-of-lists containing `TransferFunction` objects. The
         `TransferFunction` objects can have multiple outputs and inputs, as
         long as the dimensions are compatible.
 
     Returns
     -------
-    TransferFunction
-        Transfer matrix represented as a single MIMO TransferFunction object.
+    `TransferFunction`
+        Transfer matrix represented as a single MIMO `TransferFunction` object.
 
     Other Parameters
     ----------------
@@ -491,7 +491,7 @@ def combine_tf(tf_array, **kwargs):
         or 'y'). See `InputOutputSystem` for more information.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
+        name 'sys[id]' is generated with a unique integer id.
 
     Raises
     ------
@@ -603,7 +603,7 @@ def split_tf(transfer_function):
 
     Parameters
     ----------
-    transfer_function : TransferFunction
+    transfer_function : `TransferFunction`
         MIMO transfer function to split.
 
     Returns
@@ -658,11 +658,11 @@ def split_tf(transfer_function):
     return np.array(tf_split_lst, dtype=object)
 
 def _ensure_tf(arraylike_or_tf, dt=None):
-    """Convert an array-like to a transfer function.
+    """Convert an array_like to a transfer function.
 
     Parameters
     ----------
-    arraylike_or_tf : TransferFunction or array_like
+    arraylike_or_tf : `TransferFunction` or array_like
         Array-like or transfer function.
     dt : None, True or float, optional
         System timebase. 0 (default) indicates continuous
@@ -673,7 +673,7 @@ def _ensure_tf(arraylike_or_tf, dt=None):
 
     Returns
     -------
-    TransferFunction
+    `TransferFunction`
         Transfer function.
 
     Raises
@@ -707,7 +707,7 @@ def _ensure_tf(arraylike_or_tf, dt=None):
         )
     except TypeError:
         raise ValueError(
-            "`arraylike_or_tf` must only contain array-likes or transfer "
+            "`arraylike_or_tf` must only contain array_likes or transfer "
             "functions."
         )
     return tfn

@@ -60,7 +60,7 @@ _statesp_defaults = {
 class StateSpace(NonlinearIOSystem, LTI):
     r"""StateSpace(A, B, C, D[, dt])
 
-    A class for representing state-space models.
+    State space representation for LIT input/output systems.
 
     The StateSpace class is used to represent state-space realizations of
     linear time-invariant (LTI) systems:
@@ -105,22 +105,22 @@ class StateSpace(NonlinearIOSystem, LTI):
     matrices.  The class also keeps track of the number of states (i.e.,
     the size of A).
 
-    A discrete time system is created by specifying a nonzero 'timebase', dt
+    A discrete-time system is created by specifying a nonzero 'timebase', dt
     when the system is constructed:
 
-    * `dt` = 0: continuous time system (default)
-    * `dt` > 0: discrete time system with sampling period 'dt'
+    * `dt` = 0: continuous-time system (default)
+    * `dt` > 0: discrete-time system with sampling period 'dt'
     * `dt` = True: discrete time with unspecified sampling period
     * `dt` = None: no timebase specified
 
     Systems must have compatible timebases in order to be combined. A
-    discrete time system with unspecified sampling time (`dt` = True) can
+    discrete-time system with unspecified sampling time (`dt` = True) can
     be combined with a system having a specified sampling time; the result
-    will be a discrete time system with the sample time of the latter
+    will be a discrete-time system with the sample time of the other
     system. Similarly, a system with timebase None can be combined with a
     system having any timebase; the result will have the timebase of the
-    latter system.  The default value of dt can be changed by changing the
-    value of `control.config.defaults['control.default_dt']`.
+    other system.  The default value of dt can be changed by changing the
+    value of `config.defaults['control.default_dt']`.
 
     A state space system is callable and returns the value of the transfer
     function evaluated at a point in the complex plane.  See
@@ -139,17 +139,17 @@ class StateSpace(NonlinearIOSystem, LTI):
 
     StateSpace instances have support for IPython HTML/LaTeX output, intended
     for pretty-printing in Jupyter notebooks.  The HTML/LaTeX output can be
-    configured using `control.config.defaults['statesp.latex_num_format']`
-    and `control.config.defaults['statesp.latex_repr_type']`.  The
+    configured using `config.defaults['statesp.latex_num_format']`
+    and `config.defaults['statesp.latex_repr_type']`.  The
     HTML/LaTeX output is tailored for MathJax, as used in Jupyter, and
     may look odd when typeset by non-MathJax LaTeX systems.
 
-    `control.config.defaults['statesp.latex_num_format']` is a format string
+    `config.defaults['statesp.latex_num_format']` is a format string
     fragment, specifically the part of the format string after '{:'
     used to convert floating-point numbers to strings.  By default it
     is '.3g'.
 
-    `control.config.defaults['statesp.latex_repr_type']` must either be
+    `config.defaults['statesp.latex_repr_type']` must either be
     'partitioned' or 'separate'.  If 'partitioned', the A, B, C, D
     matrices are shown as a single, partitioned matrix; if
     'separate', the matrices are shown separately.
@@ -161,7 +161,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         Construct a state space object.
 
         The default constructor is StateSpace(A, B, C, D), where A, B, C, D
-        are matrices or equivalent objects.  To create a discrete time
+        are matrices or equivalent objects.  To create a discrete-time
         system, use StateSpace(A, B, C, D, dt) where `dt` is the sampling
         time (or True for unspecified sampling time).  To call the copy
         constructor, call StateSpace(sys), where sys is a StateSpace
@@ -859,14 +859,24 @@ class StateSpace(NonlinearIOSystem, LTI):
         return out
 
     def horner(self, x, warn_infinite=True):
-        """Evaluate system's transfer function at complex frequency
-        using Laub's or Horner's method.
+        """Evaluate value of transfer function using Horner's method.
 
-        Evaluates ``sys(x)`` where `x` is `s` for continuous-time systems
-        and `z` for discrete-time systems.
+        Evaluates ``sys(x)`` where `x` is a complex number `s` for
+        continuous-time systems and `z` for discrete-time systems.  Expects
+        inputs and outputs to be formatted correctly. Use ``sys(x)`` for a
+        more user-friendly interface.
 
-        Expects inputs and outputs to be formatted correctly. Use ``sys(x)``
-        for a more user-friendly interface.
+        Parameters
+        ----------
+        x : complex
+            Complex frequency at which the transfer function is evaluated.
+
+        warn_infinite : bool, optional
+            If True (default), generate a warning if `x` is a pole.
+
+        Returns
+        -------
+        complex
 
         Notes
         -----
@@ -992,7 +1002,17 @@ class StateSpace(NonlinearIOSystem, LTI):
 
     # Feedback around a state space system
     def feedback(self, other=1, sign=-1):
-        """Feedback interconnection between two LTI systems."""
+        """Feedback interconnection between two LTI objects.
+
+        Parameters
+        ----------
+        other : `InputOutputSystem`
+            System in the feedack path.
+
+        sign : float, optional
+            Gain to use in feedback path.  Defaults to -1.
+
+        """
         # Convert the system to state space, if possible
         try:
             other = _convert_to_statespace(other)
@@ -1147,8 +1167,18 @@ class StateSpace(NonlinearIOSystem, LTI):
         return StateSpace(Ares, Bres, Cres, Dres, dt)
 
     def minreal(self, tol=0.0):
-        """Calculate a minimal realization, removes unobservable and
-        uncontrollable states"""
+        """Remove unobservable and uncontrollable states.
+
+        Calculate a minimal realization for a state space system,
+        removing all unobservable and/or uncontrollable states.
+
+        Parameters
+        ----------
+        tol : float
+            Tolerance for determining whether states are unobservable
+            or uncontrollable.
+
+        """
         if self.nstates:
             try:
                 from slycot import tb01pd
@@ -1183,7 +1213,7 @@ class StateSpace(NonlinearIOSystem, LTI):
                 The timebase `ssobject.dt` cannot be None; it must
                 be continuous (0) or discrete (True or > 0).
             False:
-              If `ssobject.dt` is None, continuous time
+              If `ssobject.dt` is None, continuous-time
               `scipy.signal.lti` objects are returned.
 
         Returns
@@ -1199,7 +1229,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         if self.dt:
             kwdt = {'dt': self.dt}
         else:
-            # scipy convention for continuous time lti systems: call without
+            # scipy convention for continuous-time lti systems: call without
             # dt keyword argument
             kwdt = {}
 
@@ -1220,7 +1250,19 @@ class StateSpace(NonlinearIOSystem, LTI):
         """Append a second model to the present model.
 
         The second model is converted to state-space if necessary, inputs and
-        outputs are appended and their order is preserved"""
+        outputs are appended and their order is preserved
+
+        Parameters
+        ----------
+        other : `StateSpace`
+            System to be appended.
+
+        Returns
+        -------
+        sys : `StateSpace`
+            System model with `other` appended to `self`.
+
+        """
         if not isinstance(other, StateSpace):
             other = _convert_to_statespace(other)
 
@@ -1265,7 +1307,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
     def sample(self, Ts, method='zoh', alpha=None, prewarp_frequency=None,
                name=None, copy_names=True, **kwargs):
-        """Convert a continuous time system to discrete time.
+        """Convert a continuous-time system to discrete time.
 
         Creates a discrete-time system from a continuous-time system by
         sampling.  Multiple methods of conversion are supported.
@@ -1296,7 +1338,7 @@ class StateSpace(NonlinearIOSystem, LTI):
             ignored otherwise.
         name : string, optional
             Set the name of the sampled system.  If not specified and if
-            `copy_names` is False, a generic name <sys[id]> is
+            `copy_names` is False, a generic name 'sys[id]' is
             generated with a unique integer id.  If `copy_names` is
             True, the new system name is determined by adding the
             prefix and suffix strings in
@@ -1309,7 +1351,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         Returns
         -------
-        sysd : StateSpace
+        sysd : `StateSpace`
             Discrete-time system, with sampling rate Ts.
 
         Other Parameters
@@ -1334,7 +1376,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         """
         if not self.isctime():
-            raise ValueError("System must be continuous time system")
+            raise ValueError("System must be continuous-time system")
         if prewarp_frequency is not None:
             if method in ('bilinear', 'tustin') or \
                     (method == 'gbt' and alpha == 0.5):
@@ -1400,7 +1442,7 @@ class StateSpace(NonlinearIOSystem, LTI):
             dx/dt = A x + B u
 
         where A and B are the state-space matrices of the system. If the
-        system is discrete-time, returns the next value of `x`:
+        system is discrete time, returns the next value of `x`:
 
             x[t+dt] = A x[t] + B u[t]
 
@@ -1619,7 +1661,7 @@ def ss(*args, **kwargs):
             x[k+1] &= A x[k] + B u[k] \\
               y[k] &= C x[k] + D u[k]
 
-        The matrices can be given as 2D array-like data types.  For SISO
+        The matrices can be given as 2D array_like data types.  For SISO
         systems, `B` and `C` can be given as 1D arrays and D can be given
         as a scalar.
 
@@ -1629,7 +1671,7 @@ def ss(*args, **kwargs):
 
     Parameters
     ----------
-    sys : StateSpace or TransferFunction
+    sys : `StateSpace` or `TransferFunction`
         A linear system.
     A, B, C, D : array_like or string
         System, control, output, and feed forward matrices.
@@ -1649,7 +1691,7 @@ def ss(*args, **kwargs):
 
     Returns
     -------
-    out : StateSpace
+    out : `StateSpace`
         Linear input/output system.
 
     Other Parameters
@@ -1664,7 +1706,7 @@ def ss(*args, **kwargs):
         'u', 'y', 'x'.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
+        name 'sys[id]' is generated with a unique integer id.
 
     Raises
     ------
@@ -1684,11 +1726,11 @@ def ss(*args, **kwargs):
 
     Examples
     --------
-    Create a Linear I/O system object from matrices.
+    Create a linear I/O system object from matrices:
 
     >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
 
-    Convert a TransferFunction to a StateSpace object.
+    Convert a transfer function to a state space system:
 
     >>> sys_tf = ct.tf([2.], [1., 3])
     >>> sys2 = ct.ss(sys_tf)
@@ -1766,7 +1808,7 @@ def tf2io(*args, **kwargs):
     ``tf2io(sys)``
 
         Convert a linear system into space space form. Always creates
-        a new system, even if sys is already a StateSpace object.
+        a new system, even if sys is already a `StateSpace` object.
 
     ``tf2io(num, den)``
 
@@ -1777,7 +1819,7 @@ def tf2io(*args, **kwargs):
 
     Parameters
     ----------
-    sys : LTI (StateSpace or TransferFunction)
+    sys : `StateSpace` or `TransferFunction`
         A linear system.
     num : array_like, or list of list of array_like
         Polynomial coefficients of the numerator.
@@ -1786,7 +1828,7 @@ def tf2io(*args, **kwargs):
 
     Returns
     -------
-    out : StateSpace
+    out : `StateSpace`
         New I/O system (in state space form).
 
     Other Parameters
@@ -1796,17 +1838,17 @@ def tf2io(*args, **kwargs):
         system.  If not given, the inputs and outputs are the same as the
         original system.
     name : string, optional
-        System name. If unspecified, a generic name <sys[id]> is generated
+        System name. If unspecified, a generic name 'sys[id]' is generated
         with a unique integer id.
 
     Raises
     ------
     ValueError
-        if `num` and `den` have invalid or unequal dimensions, or if an
+        If `num` and `den` have invalid or unequal dimensions, or if an
         invalid number of arguments is passed in.
     TypeError
-        if `num` or `den` are of incorrect type, or if sys is not a
-        TransferFunction object.
+        If `num` or `den` are of incorrect type, or if `sys` is not a
+        `TransferFunction` object.
 
     See Also
     --------
@@ -1849,7 +1891,7 @@ def tf2ss(*args, **kwargs):
 
     Parameters
     ----------
-    sys : LTI (StateSpace or TransferFunction)
+    sys : `StateSpace` or `TransferFunction`
         A linear system.
     num : array_like, or list of list of array_like
         Polynomial coefficients of the numerator.
@@ -1858,7 +1900,7 @@ def tf2ss(*args, **kwargs):
 
     Returns
     -------
-    out : StateSpace
+    out : `StateSpace`
         New linear system in state space form.
 
     Other Parameters
@@ -1868,7 +1910,7 @@ def tf2ss(*args, **kwargs):
         system.  If not given, the inputs and outputs are the same as the
         original system.
     name : string, optional
-        System name. If unspecified, a generic name <sys[id]> is generated
+        System name. If unspecified, a generic name 'sys[id]' is generated
         with a unique integer id.
     method : str, optional
         Set the method used for computing the result.  Current methods are
@@ -1878,11 +1920,11 @@ def tf2ss(*args, **kwargs):
     Raises
     ------
     ValueError
-        if `num` and `den` have invalid or unequal dimensions, or if an
+        If `num` and `den` have invalid or unequal dimensions, or if an
         invalid number of arguments is passed in.
     TypeError
-        if `num` or `den` are of incorrect type, or if sys is not a
-        TransferFunction object.
+        If `num` or `den` are of incorrect type, or if `sys` is not a
+        `TransferFunction` object.
 
     See Also
     --------
@@ -1925,7 +1967,7 @@ def ssdata(sys):
 
     Parameters
     ----------
-    sys : LTI (StateSpace, or TransferFunction)
+    sys : `StateSpace` or `TransferFunction`
         LTI system whose data will be returned.
 
     Returns
@@ -1943,7 +1985,7 @@ def linfnorm(sys, tol=1e-10):
 
     Parameters
     ----------
-    sys : LTI (StateSpace or TransferFunction)
+    sys : `StateSpace` or `TransferFunction`
       System to evalute L-infinity norm of.
     tol : real scalar
       Tolerance on norm estimate.
@@ -2016,17 +2058,17 @@ def rss(states=1, outputs=1, inputs=1, strictly_proper=False, **kwargs):
         indicates unspecified timebase (either continuous or discrete time).
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
+        name 'sys[id]' is generated with a unique integer id.
 
     Returns
     -------
-    sys : StateSpace
+    sys : `StateSpace`
         The randomly created linear system.
 
     Raises
     ------
     ValueError
-        if any input is not a positive integer.
+        If any input is not a positive integer.
 
     Notes
     -----
@@ -2061,7 +2103,7 @@ def drss(*args, **kwargs):
 
     Create a stable, discrete-time, random state space system.
 
-    Create a stable *discrete time* random state space object.  This
+    Create a stable *discrete-time* random state space object.  This
     function calls `rss` using either the `dt` keyword provided by
     the user or `dt` = True if not specified.
 
@@ -2084,7 +2126,7 @@ def drss(*args, **kwargs):
         elif dt is None:
             warn("drss called with unspecified timebase; "
                  "system may be interpreted as continuous time")
-            kwargs['dt'] = True     # force rss to generate discrete time sys
+            kwargs['dt'] = True     # force rss to generate discrete-time sys
     else:
         dt = True
         kwargs['dt'] = True
@@ -2125,7 +2167,7 @@ def summing_junction(
         by the `inputs` and `output` keywords.  Default value is None.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
+        name 'sys[id]' is generated with a unique integer id.
     prefix : string, optional
         If `inputs` is an integer, create the names of the states using the
         given prefix (default = 'u').  The names of the input will be of the
@@ -2133,7 +2175,7 @@ def summing_junction(
 
     Returns
     -------
-    sys : static StateSpace
+    sys : static `StateSpace`
         Linear input/output system object with no states and only a direct
         term that implements the summing junction.
 

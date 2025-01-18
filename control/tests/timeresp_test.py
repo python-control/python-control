@@ -358,7 +358,7 @@ class TestTimeresp:
     def test_step_response_return(self, tsystem):
         """Verify continuous and discrete time use same return conventions."""
         sysc = tsystem.sys
-        sysd = c2d(sysc, 1)            # discrete time system
+        sysd = c2d(sysc, 1)            # discrete-time system
         Tvec = np.linspace(0, 10, 11)  # make sure to use integer times 0..10
         Tc, youtc = step_response(sysc, Tvec, input=0)
         Td, youtd = step_response(sysd, Tvec, input=0)
@@ -530,7 +530,7 @@ class TestTimeresp:
 
     @pytest.mark.parametrize("tsystem", ["siso_tf1"], indirect=True)
     def test_discrete_time_impulse(self, tsystem):
-        # discrete time impulse sampled version should match cont time
+        # discrete-time impulse sampled version should match cont time
         dt = 0.1
         t = np.arange(0, 3, dt)
         sys = tsystem.sys
@@ -539,7 +539,7 @@ class TestTimeresp:
                                              impulse_response(sysdt, t)[1])
 
     def test_discrete_time_impulse_input(self):
-        # discrete time impulse input, Only one active input for each trace
+        # discrete-time impulse input, Only one active input for each trace
         A = [[.5, 0.25],[.0, .5]]
         B = [[1., 0,],[0., 1.]]
         C = [[1., 0.],[0., 1.]]

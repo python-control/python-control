@@ -88,7 +88,7 @@ def test_DLQE(method):
     check_DLQE(L, P, poles, G, QN, RN)
 
 def test_lqe_discrete():
-    """Test overloading of lqe operator for discrete time systems"""
+    """Test overloading of lqe operator for discrete-time systems"""
     csys = ct.rss(2, 1, 1)
     dsys = ct.drss(2, 1, 1)
     Q = np.eye(1)
@@ -101,7 +101,7 @@ def test_lqe_discrete():
     np.testing.assert_almost_equal(S_csys, S_expl)
     np.testing.assert_almost_equal(E_csys, E_expl)
 
-    # Calling lqe() with a discrete time system should call dlqe()
+    # Calling lqe() with a discrete-time system should call dlqe()
     K_lqe, S_lqe, E_lqe = ct.lqe(dsys, Q, R)
     K_dlqe, S_dlqe, E_dlqe = ct.dlqe(dsys, Q, R)
     np.testing.assert_almost_equal(K_lqe, K_dlqe)
@@ -116,7 +116,7 @@ def test_lqe_discrete():
     np.testing.assert_almost_equal(S_asys, S_expl)
     np.testing.assert_almost_equal(E_asys, E_expl)
 
-    # Calling dlqe() with a continuous time system should raise an error
+    # Calling dlqe() with a continuous-time system should raise an error
     with pytest.raises(ControlArgument, match="called with a continuous"):
         K, S, E = ct.dlqe(csys, Q, R)
 

@@ -5,11 +5,11 @@
 Package Configuration Parameters
 ================================
 
-The python-control package can be customized to allow for different default
-values for selected parameters.  This includes the ability to change the
-way system names are created, set the style for various types of plots, and
-determine default solvers and parameters to use in solving optimization
-problems.
+The python-control package can be customized to allow for different
+default values for selected parameters.  This includes the ability to
+change the way system names are created, to set the style for various
+types of plots, and to determine default solvers and parameters to use
+in solving optimization problems.
 
 To set the default value of a configuration parameter, set the appropriate
 element of the `config.defaults` dictionary::
@@ -21,8 +21,8 @@ configuration parameters at the same time::
 
   ct.set_defaults('module', param1=val1, param2=val2, ...]
 
-Finally, there are also functions available to set collections of
-parameters based on standard configurations:
+Several functions available to set collections of parameters based on
+standard configurations:
 
 .. autosummary::
 
@@ -38,6 +38,20 @@ parameters based on standard configurations:
 
 .. currentmodule:: control.config.defaults
 
+Finally, the `config.defaults` object can be used as a context manager
+for temporarily setting default parameters:
+
+.. testsetup::
+
+   import control as ct
+
+.. doctest::
+
+   >>> with ct.config.defaults({'iosys.repr_format': 'info'}):
+   ...     sys = ct.rss(4, 2, 2, name='sys')
+   ...     print(repr(sys))
+   <StateSpace sys: ['u[0]', 'u[1]'] -> ['y[0]', 'y[1]']>
+
 System creation parameters
 --------------------------
 
@@ -47,8 +61,8 @@ System creation parameters
 
    Default value of `dt` when constructing new I/O systems.  If `dt`
    is not specified explicitly this value will be used.  Set to None
-   to leave the timebase unspecified, 0 for continuous time systems,
-   True for discrete time systems.
+   to leave the timebase unspecified, 0 for continuous-time systems,
+   True for discrete-time systems.
 
 .. py:data:: iosys.converted_system_name_prefix
    :type: str
@@ -150,7 +164,7 @@ System display parameters
    Set the default format used by :func:`iosys_repr` to create the
    representation of an :class:`InputOutputSystem`:
 
-     * 'info' : <IOSystemType:sysname:[inputs]->[outputs]
+     * 'info' : <IOSystemType:sysname:[inputs] -> [outputs]>
      * 'eval' : system specific, loadable representation
      * 'latex' : latex representation of the object
 
@@ -346,12 +360,12 @@ Plotting parameters
    :type: bool
    :value: False
 
-    If wrap_phase is False, then the phase will be unwrapped so that it
-    is continuously increasing or decreasing.  If wrap_phase is True the
-    phase will be restricted to the range [-180, 180) (or [:math:`-\pi`,
-    :math:`\pi`) radians). If `wrap_phase` is specified as a float, the
-    phase will be offset by 360 degrees if it falls below the specified
-    value.
+   If wrap_phase is False, then the phase will be unwrapped so that it
+   is continuously increasing or decreasing.  If wrap_phase is True the
+   phase will be restricted to the range [-180, 180) (or [:math:`-\pi`,
+   :math:`\pi`) radians). If `wrap_phase` is specified as a float, the
+   phase will be offset by 360 degrees if it falls below the specified
+   value.
 
 .. py:data:: nichols.grid
    :type: bool
@@ -364,13 +378,7 @@ Plotting parameters
    :type: int
    :value: 2
 
-   Specify the number of arrows for :func:`nyquist_plot`.  If an integer is
-   passed. that number of equally spaced arrows will be plotted on each of
-   the primary segment and the mirror image.  If a 1D array is passed, it
-   should consist of a sorted list of floats between 0 and 1, indicating
-   the location along the curve to plot an arrow.  If a 2D array is passed,
-   the first row will be used to specify arrow locations for the primary
-   curve and the second row will be used for the mirror image.
+   Specify the default number of arrows for :func:`nyquist_plot`.
 
 .. py:data:: nyquist.arrow_size
    :type: float
@@ -429,7 +437,7 @@ Plotting parameters
 
    When plotting scaled portion of the Nyquist plot in
    :func:`nyquist_plot`, increase/decrease the magnitude by this fraction
-   of the max_curve_magnitude to allow any overlaps between the primary and
+   of the `max_curve_magnitude` to allow any overlaps between the primary and
    mirror curves to be avoided.
 
 .. py:data:: nyquist.mirror_style
@@ -439,7 +447,7 @@ Plotting parameters
    Linestyles for mirror image of the Nyquist curve in
    :func:`nyquist_plot`.  The first element is used for unscaled portions
    of the Nyquist curve, the second element is used for portions that are
-   scaled (using max_curve_magnitude).  If False then omit completely.
+   scaled (using `max_curve_magnitude`).  If False then omit completely.
 
 .. py:data:: nyquist.primary_style
    :type: list of str
@@ -502,30 +510,30 @@ Plotting parameters
    :type: float
    :value: 1.05
 
-    The limits of the pole/zero plot generated by :func:`pole_zero_plot`
-    are set based on the location features in the plot, including the
-    location of poles, zeros, and local maxima of root locus curves.  The
-    locations of local maxima are expanded by the buffer factor set by
-    `buffer_factor`.
+   The limits of the pole/zero plot generated by :func:`pole_zero_plot`
+   are set based on the location features in the plot, including the
+   location of poles, zeros, and local maxima of root locus curves.  The
+   locations of local maxima are expanded by the buffer factor set by
+   `buffer_factor`.
 
 .. py:data:: pzmap.expansion_factor
    :type: float
    :value: 1.8
 
-    The final axis limits of the pole/zero plot generated by
-    :func:`pole_zero_plot` are set to by the largest features in the plot
-    multiplied by an expansion factor set by `expansion_factor`.
+   The final axis limits of the pole/zero plot generated by
+   :func:`pole_zero_plot` are set to by the largest features in the plot
+   multiplied by an expansion factor set by `expansion_factor`.
 
 .. py:data:: pzmap.grid
    :type: bool
    :value: False
 
    If True plot omega-damping grid in :func:`pole_zero_plot`. If False
-   or None show imaginary axis for continuous time systems, unit circle for
-   discrete time systems.  If `empty`, do not draw any additonal lines.
+   or None show imaginary axis for continuous-time systems, unit circle for
+   discrete-time systems.  If `empty`, do not draw any additonal lines.
 
    Note: this setting only applies to pole/zero plots.  For root locus
-   plots, the 'rlocus.grid' parameter value is used as teh default.
+   plots, the 'rlocus.grid' parameter value is used as the default.
 
 .. py:data:: pzmap.marker_size
    :type: float
@@ -545,9 +553,9 @@ Plotting parameters
    :type: bool
    :value: True
 
-   If True plot omega-damping grid in :func:`root_locus_plot`. If False
-   or None show imaginary axis for continuous time systems, unit circle for
-   discrete time systems.  If `empty`, do not draw any additonal lines.
+   If True, plot omega-damping grid in :func:`root_locus_plot`. If False
+   or None show imaginary axis for continuous-time systems, unit circle for
+   discrete-time systems.  If `empty`, do not draw any additonal lines.
 
 .. py:data:: sisotool.initial_gain
    :type: float

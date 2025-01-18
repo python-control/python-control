@@ -52,7 +52,7 @@ def time_response_plot(
 
     Parameters
     ----------
-    data : TimeResponseData
+    data : `TimeResponseData`
         Data to be plotted.
     plot_inputs : bool or str, optional
         Sets how and where to plot the inputs:
@@ -751,7 +751,10 @@ def combine_time_responses(response_list, trace_labels=None, title=None):
 
             # Add on trace label and trace type
             if generate_trace_labels:
-                trace_labels.append(response.title)
+                trace_labels.append(
+                    response.title if response.title is not None else
+                    response.sysname if response.sysname is not None else
+                    "unknown")
             trace_types.append(
                 None if response.trace_types is None
                 else response.trace_types[0])

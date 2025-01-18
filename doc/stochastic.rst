@@ -34,11 +34,11 @@ and correlation of random signals:
     correlation function :math:`r_X(\tau)`.
 
 The python-control package has variants of these functions that do
-appropriate processing for continuous time models.
+appropriate processing for continuous-time models.
 
 The :func:`white_noise` function generates a (multi-variable) white
-noise signal of specified intensity as either a sampled continuous time
-signal or a discrete time signal.  A white noise signal along a 1D
+noise signal of specified intensity as either a sampled continuous-time
+signal or a discrete-time signal.  A white noise signal along a 1D
 array of linearly spaced set of times `timepts` can be computing using
 
 .. code::
@@ -64,7 +64,7 @@ Y(t)\}`, where :math:`\mathbb{E}` represents expectation:
   tau, Rtau = ct.correlation(timepts, X[, Y])
 
 The signal `X` (and `Y`, if present) represents a continuous or
-discrete time signal sampled at regularly spaced times `timepts`.  The
+discrete-time signal sampled at regularly spaced times `timepts`.  The
 return value provides the correlation :math:`R_\tau` between
 :math:`X(t+\tau)` and :math:`X(t)` at a set of time offsets
 :math:`\tau` (determined based on the spacing of entries in the
@@ -144,7 +144,7 @@ measurement and process noise.  This estimator is called the linear
 quadratic estimator (LQE) and its gains can be computed using the
 :func:`lqe` function.
 
-We consider a continuous time, state space system
+We consider a continuous-time, state space system
 
 .. math::
 
@@ -182,7 +182,7 @@ called in several forms:
 
 where `sys` is an :class:`LTI` object, and `A`, `G`, `C`, `QN`, `RN`,
 and `NN` are 2D arrays of appropriate dimension.  If `sys` is a
-discrete time system, the first two forms will compute the discrete
+discrete-time system, the first two forms will compute the discrete
 time optimal controller.  For the second two forms, the :func:`dlqr`
 function can be used.  Additional arguments and details are given on
 the :func:`lqr` and :func:`dlqr` documentation pages.
@@ -241,7 +241,7 @@ state :math:`x_\text{d}` and input :math:`u_\text{d}`::
 Maximum Likelihood Estimation
 =============================
 
-Consider a *nonlinear* system with discrete time dynamics of the form
+Consider a *nonlinear* system with discrete-time dynamics of the form
 
 .. math::
   :label: eq_fusion_nlsys-oep
@@ -356,7 +356,7 @@ estimate of the states over the time points can be computed using the
   estim = oep.compute_optimal(Y, U[, X0=x0, initial_guess=(xhat, v)])
   xhat, v, w = estim.states, estim.inputs, estim.outputs
 
-For discrete time systems, the
+For discrete-time systems, the
 :func:`optimal.OptimalEstimationProblem.create_mhe_iosystem` method
 can be used to generate an input/output system that implements a
 moving horizon estimator.

@@ -75,7 +75,7 @@ class TestLTI:
         assert not issiso(sys, strict=True)
 
     def test_damp(self):
-        # Test the continuous time case.
+        # Test the continuous-time case.
         zeta = 0.1
         wn = 42
         p = -wn * zeta + 1j * wn * np.sqrt(1 - zeta**2)
@@ -84,7 +84,7 @@ class TestLTI:
         np.testing.assert_allclose(sys.damp(), expected)
         np.testing.assert_allclose(damp(sys), expected)
 
-        # Also test the discrete time case.
+        # Also test the discrete-time case.
         dt = 0.001
         sys_dt = c2d(sys, dt, method='matched')
         p_zplane = np.exp(p*dt)

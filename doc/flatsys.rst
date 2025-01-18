@@ -189,8 +189,10 @@ final condition::
 
   xd, ud = traj.eval(timepts)
 
-where `timepts` is a list of times on which the trajectory should be evaluated
-(e.g., `timepts = numpy.linspace(0, Tf, M)`.
+where `timepts` is a list of times on which the trajectory should be
+evaluated (e.g., `timepts = numpy.linspace(0, Tf, M)`.  Alternatively,
+the `~flatsys.SystemTrajectory.response` method can be used to return
+a `TimeResponseData` object.
 
 The :func:`~flatsys.point_to_point` function also allows the
 specification of a cost function and/or constraints, in the same
@@ -311,8 +313,7 @@ steering wheel angle :math:`\delta` at the endpoints.
 
     # Create the trajectory
     timepts = np.linspace(0, Tf, 100)
-    xd, ud = traj.eval(timepts)
-    resp_p2p = ct.input_output_response(vehicle_flat, timepts, ud, X0=xd[:, 0])
+    resp_p2p = traj.response(timepts)
 
 Alternatively, we can solve an optimal control problem in which we
 minimize a cost function along the trajectory as well as a terminal
@@ -339,8 +340,7 @@ cost:
         vehicle_flat, evalpts, x0, u0, traj_cost,
 	terminal_cost=term_cost, initial_guess=initial_guess, basis=bspline)
 
-    xd, ud = traj.eval(timepts)
-    resp_ocp = ct.input_output_response(vehicle_flat, timepts, ud, X0=xd[:, 0])
+    resp_ocp = traj.response(timepts)
 
 The results of the two approaches can be shown using the
 `time_response_plot` function:

@@ -574,7 +574,7 @@ class TestStatefbk:
         assert np.all(sgn * (np.abs(L) - 1) > 0)
 
     def test_lqr_discrete(self):
-        """Test overloading of lqr operator for discrete time systems"""
+        """Test overloading of lqr operator for discrete-time systems"""
         csys = ct.rss(2, 1, 1)
         dsys = ct.drss(2, 1, 1)
         Q = np.eye(2)
@@ -587,7 +587,7 @@ class TestStatefbk:
         np.testing.assert_almost_equal(S_csys, S_expl)
         np.testing.assert_almost_equal(E_csys, E_expl)
 
-        # Calling lqr() with a discrete time system should call dlqr()
+        # Calling lqr() with a discrete-time system should call dlqr()
         K_lqr, S_lqr, E_lqr = ct.lqr(dsys, Q, R)
         K_dlqr, S_dlqr, E_dlqr = ct.dlqr(dsys, Q, R)
         np.testing.assert_almost_equal(K_lqr, K_dlqr)
@@ -602,7 +602,7 @@ class TestStatefbk:
         np.testing.assert_almost_equal(S_asys, S_expl)
         np.testing.assert_almost_equal(E_asys, E_expl)
 
-        # Calling dlqr() with a continuous time system should raise an error
+        # Calling dlqr() with a continuous-time system should raise an error
         with pytest.raises(ControlArgument, match="dsys must be discrete"):
             K, S, E = ct.dlqr(csys, Q, R)
 
@@ -783,7 +783,7 @@ class TestStatefbk:
 
 
     def test_lqr_integral_continuous(self):
-        # Generate a continuous time system for testing
+        # Generate a continuous-time system for testing
         sys = ct.rss(4, 4, 2, strictly_proper=True)
         sys.C = np.eye(4)       # reset output to be full state
         C_int = np.eye(2, 4)    # integrate outputs for first two states
@@ -850,7 +850,7 @@ class TestStatefbk:
             assert abs(ctrl_tf(1e-9)[1][1]) > 1e6
 
     def test_lqr_integral_discrete(self):
-        # Generate a discrete time system for testing
+        # Generate a discrete-time system for testing
         sys = ct.drss(4, 4, 2, strictly_proper=True)
         sys.C = np.eye(4)       # reset output to be full state
         C_int = np.eye(2, 4)    # integrate outputs for first two states
@@ -885,7 +885,7 @@ class TestStatefbk:
         "rss_fun, lqr_fun",
         [(ct.rss, lqr), (ct.drss, dlqr)])
     def test_lqr_errors(self, rss_fun, lqr_fun):
-        # Generate a discrete time system for testing
+        # Generate a discrete-time system for testing
         sys = rss_fun(4, 4, 2, strictly_proper=True)
 
         with pytest.raises(ControlArgument, match="must pass an array"):

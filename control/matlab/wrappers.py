@@ -226,11 +226,9 @@ def rlocus(*args, **kwargs):
     gains : array_like, optional
         Gains to use in computing plot of closed-loop poles.
     xlim : tuple or list, optional
-        Set limits of x axis, normally with tuple
-        (see `matplotlib:api/axes_api`).
+        Set limits of x axis (see `matplotlib.axes.Axes.set_xlim`).
     ylim : tuple or list, optional
-        Set limits of y axis, normally with tuple
-        (see `matplotlib:api/axes_api`).
+        Set limits of y axis (see `matplotlib.axes.Axes.set_ylim`).
     plot : bool
         If False, do not generate a plot.
 
@@ -273,7 +271,7 @@ def pzmap(*args, **kwargs):
 
     Parameters
     ----------
-    sys : LTI (StateSpace or TransferFunction)
+    sys : `StateSpace` or `TransferFunction`
         Linear system for which poles and zeros are computed.
     plot : bool, optional
         If True a graph is generated with Matplotlib,
@@ -336,13 +334,13 @@ def dcgain(*args):
 
     Parameters
     ----------
-    A, B, C, D : array-like
+    A, B, C, D : array_like
         A linear system in state space form.
-    Z, P, k : array-like, array-like, number
+    Z, P, k : array_like, array_like, number
         A linear system in zero, pole, gain form.
-    num, den : array-like
+    num, den : array_like
         A linear system in transfer function form.
-    sys : LTI (StateSpace or TransferFunction)
+    sys : `StateSpace` or `TransferFunction`
         A linear system object.
 
     Returns

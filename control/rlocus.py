@@ -49,7 +49,7 @@ def root_locus_map(sysdata, gains=None):
 
     Returns
     -------
-    rldata : PoleZeroData or list of PoleZeroData
+    rldata : `PoleZeroData` or list of `PoleZeroData`
         Root locus data object(s).  The loci of the root locus diagram are
         available in the array `rldata.loci`, indexed by the gain index and
         the locus index, and the gains are in the array `rldata.gains`.
@@ -107,17 +107,15 @@ def root_locus_plot(
         Gains to use in computing plot of closed-loop poles.  If not given,
         gains are chosen to include the main features of the root locus map.
     xlim : tuple or list, optional
-        Set limits of x axis, normally with tuple
-        (see `matplotlib:api/axes_api`).
+        Set limits of x axis (see `matplotlib.axes.Axes.set_xlim`).
     ylim : tuple or list, optional
-        Set limits of y axis, normally with tuple
-        (see `matplotlib:api/axes_api`).
+        Set limits of y axis (see `matplotlib.axes.Axes.set_ylim`).
     plot : bool, optional
         (legacy) If given, `root_locus_plot` returns the legacy return values
         of roots and gains.  If False, just return the values with no plot.
     grid : bool or str, optional
         If True plot omega-damping grid, if False show imaginary axis
-        for continuous time systems, unit circle for discrete time systems.
+        for continuous-time systems, unit circle for discrete-time systems.
         If 'empty', do not draw any additonal lines.  Default value is set
         by `config.defaults['rlocus.grid']`.
     initial_gain : float, optional

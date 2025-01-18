@@ -184,10 +184,10 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
 
     Parameters
     ----------
-    cl_mags : array-like (dB), optional
+    cl_mags : array_like (dB), optional
         Array of closed-loop magnitudes defining the iso-gain lines on a
         custom Nichols chart.
-    cl_phases : array-like (degrees), optional
+    cl_phases : array_like (degrees), optional
         Array of closed-loop phases defining the iso-phase lines on a custom
         Nichols chart. Must be in the range -360 < cl_phases < 0
     line_style : string, optional
@@ -343,9 +343,9 @@ def closed_loop_contours(Gcl_mags, Gcl_phases):
 
     Parameters
     ----------
-    Gcl_mags : array-like
+    Gcl_mags : array_like
         Array of magnitudes of the contours
-    Gcl_phases : array-like
+    Gcl_phases : array_like
         Array of phases in radians of the contours
 
     Returns
@@ -369,7 +369,7 @@ def m_circles(mags, phase_min=-359.75, phase_max=-0.25):
 
     Parameters
     ----------
-    mags : array-like
+    mags : array_like
         Array of magnitudes in dB of the M-circles
     phase_min : degrees
         Minimum phase in degrees of the N-circles
@@ -395,7 +395,7 @@ def n_circles(phases, mag_min=-40.0, mag_max=12.0):
 
     Parameters
     ----------
-    phases : array-like
+    phases : array_like
         Array of phases in degrees of the N-circles
     mag_min : dB
         Minimum magnitude in dB of the N-circles

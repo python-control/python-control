@@ -32,7 +32,7 @@ class BezierFamily(BasisFamily):
         Degree of the Bezier curve.
 
     T : float
-        Final time (used for rescaling).
+        Final time (used for rescaling).  Default value is 1.
 
     """
     def __init__(self, N, T=1):
@@ -42,7 +42,11 @@ class BezierFamily(BasisFamily):
 
     # Compute the kth derivative of the ith basis function at time t
     def eval_deriv(self, i, k, t, var=None):
-        """Evaluate the kth derivative of the ith basis function at time t."""
+        """Evaluate kth derivative of ith basis function at time t.
+
+        See `BasisFamily.eval_deriv` for more information.
+
+        """
         if i >= self.N:
             raise ValueError("Basis function index too high")
         elif k >= self.N:

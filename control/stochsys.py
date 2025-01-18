@@ -38,7 +38,7 @@ def lqe(*args, **kwargs):
 
     Continuous-time linear quadratic estimator (Kalman filter).
 
-    Given the continuous time system
+    Given the continuous-time system
 
     .. math::
 
@@ -72,7 +72,7 @@ def lqe(*args, **kwargs):
     ----------
     A, G, C : 2D array_like
         Dynamics, process noise (disturbance), and output matrices.
-    sys : LTI (StateSpace or TransferFunction)
+    sys : `StateSpace` or `TransferFunction`
         Linear I/O system, with the process noise input taken as the system
         input.
     QN, RN : 2D array_like
@@ -102,7 +102,7 @@ def lqe(*args, **kwargs):
     -----
     If the first argument is an LTI object, then this object will be used
     to define the dynamics, noise and output matrices.  Furthermore, if the
-    LTI object corresponds to a discrete time system, the `dlqe`
+    LTI object corresponds to a discrete-time system, the `dlqe`
     function will be called.
 
     Examples
@@ -126,7 +126,7 @@ def lqe(*args, **kwargs):
     # Process the arguments and figure out what inputs we received
     #
 
-    # If we were passed a discrete time system as the first arg, use dlqe()
+    # If we were passed a discrete-time system as the first arg, use dlqe()
     if isinstance(args[0], LTI) and isdtime(args[0], strict=True):
         # Call dlqe
         return dlqe(*args, **kwargs)
@@ -261,7 +261,7 @@ def dlqe(*args, **kwargs):
 
     # If we were passed a continus time system as the first arg, raise error
     if isinstance(args[0], LTI) and isctime(args[0], strict=True):
-        raise ControlArgument("dlqr() called with a continuous time system")
+        raise ControlArgument("dlqr() called with a continuous-time system")
 
     # If we were passed a state space  system, use that to get system matrices
     if isinstance(args[0], StateSpace):
@@ -316,7 +316,7 @@ def create_estimator_iosystem(
     r"""Create an I/O system implementing a linear quadratic estimator.
 
     This function creates an input/output system that implements a
-    continuous time state estimator of the form
+    continuous-time state estimator of the form
 
     .. math::
 
@@ -324,7 +324,7 @@ def create_estimator_iosystem(
            dP/dt &= A P + P A^T + F Q_N F^T - P C^T R_N^{-1} C P \\
                L &= P C^T R_N^{-1}
 
-    or a discrete time state estimator of the form
+    or a discrete-time state estimator of the form
 
     .. math::
 
@@ -344,7 +344,7 @@ def create_estimator_iosystem(
 
     Parameters
     ----------
-    sys : StateSpace
+    sys : `StateSpace`
         The linear I/O system that represents the process dynamics.
     QN, RN : ndarray
         Disturbance and measurement noise covariance matrices.
@@ -361,7 +361,7 @@ def create_estimator_iosystem(
 
     Returns
     -------
-    estim : InputOutputSystem
+    estim : `InputOutputSystem`
         Input/output system representing the estimator.  This system takes
         the system output y and input u and generates the estimated state
         xhat.
@@ -409,7 +409,7 @@ def create_estimator_iosystem(
         `InputOutputSystem`.  Overrides signal labels.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
+        name 'sys[id]' is generated with a unique integer id.
 
     Notes
     -----
@@ -593,7 +593,7 @@ def white_noise(T, Q, dt=0):
 
     This function generates a (multi-variable) white noise signal of
     specified intensity as either a sampled continous time signal or a
-    discrete time signal.  A white noise signal along a 1D array
+    discrete-time signal.  A white noise signal along a 1D array
     of linearly spaced set of times T can be computing using
 
         V = ct.white_noise(T, Q, dt)
@@ -613,7 +613,7 @@ def white_noise(T, Q, dt=0):
     Q : 2D array_like
         Noise intensity matrix of dimension nxn.
     dt : float, optional
-        If 0, generate continuous time noise signal, otherwise discrete time.
+        If 0, generate continuous-time noise signal, otherwise discrete time.
 
     Returns
     -------
@@ -661,7 +661,7 @@ def correlation(T, X, Y=None, squeeze=True):
       tau, Rtau = correlation(T, X[, Y])
 
     The signal X (and Y, if present) represent a continuous or
-    discrete time signal sampled at times T.  The return value
+    discrete-time signal sampled at times T.  The return value
     provides the correlation Rtau between X(t+tau) and X(t) at a set
     of time offets tau.
 

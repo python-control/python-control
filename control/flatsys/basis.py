@@ -30,6 +30,18 @@ class BasisFamily:
     N : int
         Order of the basis set.
 
+    Attributes
+    ----------
+    nvars : int or None
+        Number of variables represented by the basis (possibly of different
+        order/length).  Default is None (single variable).
+
+    coef_offset : list
+        Coefficient offset for each variable.
+
+    coef_length : list
+        Coefficient length for each variable.
+
     """
     def __init__(self, N):
         """Create a basis family of order N."""
@@ -47,11 +59,39 @@ class BasisFamily:
         return self.eval_deriv(i, 0, t, var=var)
 
     def var_ncoefs(self, var):
-        """Get the number of coefficients for a variable."""
+        """Get the number of coefficients for a variable.
+
+        Parameters
+        ----------
+        var : int
+            Variable offset.
+
+        Returns
+        -------
+        int
+
+        """
         return self.N if self.nvars is None else self.coef_length[var]
 
     def eval(self, coeffs, tlist, var=None):
-        """Compute function values given the coefficients and time points."""
+        """Compute function values given the coefficients and time points.
+
+        Parameters
+        ----------
+        coeffs : array
+            Basis function coefficient values.
+        tlist : array
+            List of times at which to evaluate the function.
+        var : int or None, optional
+            Number of independent variables represented using the basis.
+            If None, then basis represents a single variable.
+
+        Returns
+        -------
+        array
+            Values of the variable(s) at the times in `tlist`.
+
+        """
         if self.nvars is None and var != None:
             raise SystemError("multi-variable call to a scalar basis")
 
@@ -80,6 +120,23 @@ class BasisFamily:
                      for i in range(self.var_ncoefs(var))])
                 for t in tlist])
 
-    def eval_deriv(self, i, j, t, var=None):
-        """Evaluate the kth derivative of the ith basis function at time t."""
+    def eval_deriv(self, i, k, t, var=None):
+        """Evaluate kth derivative of ith basis function at time t.
+
+        Parameters
+        ----------
+        i : int
+            Basis function offset.
+        k : int
+            Derivative order.
+        t : float
+            Time at which to evaluating the derivative.
+        var : int or None, optional
+            Variable offset.
+
+        Returns
+        -------
+        float
+
+        """
         raise NotImplementedError("Internal error; improper basis functions")

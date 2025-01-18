@@ -4,13 +4,13 @@
 # Additional features to add:
 #   * Allow constant inputs for MIMO input_output_response (w/out ones)
 #   * Add unit tests (and example?) for time-varying systems
-#   * Allow time vector for discrete time simulations to be multiples of dt
-#   * Check the way initial outputs for discrete time systems are handled
+#   * Allow time vector for discrete-time simulations to be multiples of dt
+#   * Check the way initial outputs for discrete-time systems are handled
 
 """This module contains the `NonlinearIOSystem` class that
 represents (possibly nonlinear) input/output systems.  The
 `NonlinearIOSystem` class is a general class that defines any
-continuous or discrete time dynamical system.  Input/output systems
+continuous- or discrete-time dynamical system.  Input/output systems
 can be simulated and also used to compute operating points and
 linearizations.
 
@@ -34,11 +34,11 @@ __all__ = ['NonlinearIOSystem', 'InterconnectedSystem', 'nlsys',
 
 
 class NonlinearIOSystem(InputOutputSystem):
-    """Nonlinear I/O system.
+    """Nonlinear input/output system model.
 
     Creates an `InputOutputSystem` for a nonlinear system
     by specifying a state update function and an output function.  The new
-    system can be a continuous or discrete time system. Nonlinear I/O
+    system can be a continuous or discrete-time system. Nonlinear I/O
     systems are usually created with the `nlsys` factory
     function.
 
@@ -49,10 +49,10 @@ class NonlinearIOSystem(InputOutputSystem):
 
             ``updfcn(t, x, u, params) -> array``
 
-        where `x` is a 1-D array with shape (nstates,), `u` is a 1-D array
-        with shape (ninputs,), `t` is a float representing the currrent
-        time, and `params` is a dict containing the values of parameters
-        used by the function.
+        where `t` is a float representing the currrent time, `x` is a 1-D
+        array with shape (nstates,), `u` is a 1-D array with shape
+        (ninputs,), and `params` is a dict containing the values of
+        parameters used by the function.
 
     outfcn : callable
         Function returning the output at the given state
@@ -74,8 +74,8 @@ class NonlinearIOSystem(InputOutputSystem):
         operating in continuous or discrete time.  It can have the
         following values:
 
-        * `dt` = 0: continuous time system (default)
-        * `dt` > 0: discrete time system with sampling period 'dt'
+        * `dt` = 0: continuous-time system (default)
+        * `dt` > 0: discrete-time system with sampling period 'dt'
         * `dt` = True: discrete time with unspecified sampling period
         * `dt` = None: no timebase specified
 
@@ -355,7 +355,7 @@ class NonlinearIOSystem(InputOutputSystem):
         else:
             return NotImplemented
 
-    def _update_params(self, params, warning=False):
+    def _update_params(self, params):
         # Update the current parameter values
         self._current_params = self.params.copy()
         if params:
@@ -376,15 +376,15 @@ class NonlinearIOSystem(InputOutputSystem):
         """Dynamics of a differential or difference equation.
 
         Given time `t`, input `u` and state `x`, returns the value of the
-        right hand side of the dynamical system. If the system is continuous,
-        returns the time derivative::
+        right hand side of the dynamical system. If the system is a
+        continuous-time system, returns the time derivative::
 
-            dx/dt = f(t, x, u[, params])
+            dx/dt = updfcn(t, x, u[, params])
 
-        where `f` is the system's (possibly nonlinear) dynamics function.
-        If the system is discrete-time, returns the next value of `x`::
+        where `updfcn` is the system's (possibly nonlinear) update function.
+        If the system is discrete time, returns the next value of `x`::
 
-            x[t+dt] = f(t, x[t], u[t][, params])
+            x[t+dt] = updfcn(t, x[t], u[t][, params])
 
         where `t` is a scalar.
 
@@ -405,6 +405,7 @@ class NonlinearIOSystem(InputOutputSystem):
         Returns
         -------
         dx/dt or x[t+dt] : ndarray
+
         """
         self._update_params(params)
         return self._rhs(
@@ -435,9 +436,9 @@ class NonlinearIOSystem(InputOutputSystem):
         """Compute the output of the system.
 
         Given time `t`, input `u` and state `x`, returns the output of the
-        system:
+        system::
 
-            y = g(t, x, u[, params])
+            y = outfcn(t, x, u[, params])
 
         The inputs `x` and `u` must be of the correct length.
 
@@ -461,7 +462,26 @@ class NonlinearIOSystem(InputOutputSystem):
             t, np.asarray(x).reshape(-1), np.asarray(u).reshape(-1))
 
     def feedback(self, other=1, sign=-1, params=None):
-        """Feedback interconnection between two input/output systems."""
+        """Feedback interconnection between two I/O systems.
+
+        Parameters
+        ----------
+        other : `InputOutputSystem`
+            System in the feedack path.
+
+        sign : float, optional
+            Gain to use in feedback path.  Defaults to -1.
+
+        params : dict, optional
+            Parameter values for the overall system.  Passed to the
+            evaluation functions for the system as default values,
+            overriding defaults for the individual systems.
+
+        Returns
+        -------
+        `NonlinearIOSystem`
+
+        """
         # Convert sys2 to an I/O system if needed
         other = _convert_static_iosystem(other)
 
@@ -497,7 +517,7 @@ class NonlinearIOSystem(InputOutputSystem):
         """Linearize an input/output system at a given state and input.
 
         Return the linearization of an input/output system at a given
-        operating point (or state and input value) as a StateSpace system.
+        operating point (or state and input value) as a `StateSpace` system.
         See `linearize` for complete documentation.
 
         """
@@ -868,13 +888,13 @@ class InterconnectedSystem(NonlinearIOSystem):
 
         return out
 
-    def _update_params(self, params, warning=False):
+    def _update_params(self, params):
         for sys in self.syslist:
             local = sys.params.copy()   # start with system parameters
             local.update(self.params)   # update with global params
             if params:
                 local.update(params)    # update with locally passed parameters
-            sys._update_params(local, warning=warning)
+            sys._update_params(local)
 
     def _rhs(self, t, x, u):
         # Make sure state and input are vectors
@@ -1205,10 +1225,9 @@ class InterconnectedSystem(NonlinearIOSystem):
                 for sig, isig in sys.output_index.items()
                 if sig == (basename)}
 
-    # TODO: change `warning` to `print_warning` or `warn_unsed`?
     # TODO: change to internal function?  (not sure users need to see this)
     def check_unused_signals(
-            self, ignore_inputs=None, ignore_outputs=None, warning=True):
+            self, ignore_inputs=None, ignore_outputs=None, print_warning=True):
         """Check for unused subsystem inputs and outputs.
 
         Check to see if there are any unused signals and return a list of
@@ -1231,7 +1250,7 @@ class InterconnectedSystem(NonlinearIOSystem):
           If the 'sig' form is used, all subsystem outputs with that
           name are considered ignored.
 
-        warning : bool, optional
+        print_warning : bool, optional
             If True, print a warning listing any unused signals.
 
         Returns
@@ -1290,25 +1309,25 @@ class InterconnectedSystem(NonlinearIOSystem):
         used_ignored_inputs = set(ignore_input_map) - set(unused_inputs)
         used_ignored_outputs = set(ignore_output_map) - set(unused_outputs)
 
-        if warning and dropped_inputs:
+        if print_warning and dropped_inputs:
             msg = ('Unused input(s) in InterconnectedSystem: '
                    + '; '.join(f'{inp}={unused_inputs[inp]}'
                                for inp in dropped_inputs))
             warn(msg)
 
-        if warning and dropped_outputs:
+        if print_warning and dropped_outputs:
             msg = ('Unused output(s) in InterconnectedSystem: '
                    + '; '.join(f'{out} : {unused_outputs[out]}'
                                for out in dropped_outputs))
             warn(msg)
 
-        if warning and used_ignored_inputs:
+        if print_warning and used_ignored_inputs:
             msg = ('Input(s) specified as ignored is (are) used: '
                    + '; '.join(f'{inp} : {ignore_input_map[inp]}'
                                for inp in used_ignored_inputs))
             warn(msg)
 
-        if warning and used_ignored_outputs:
+        if print_warning and used_ignored_outputs:
             msg = ('Output(s) specified as ignored is (are) used: '
                    + '; '.join(f'{out}={ignore_output_map[out]}'
                                for out in used_ignored_outputs))
@@ -1322,11 +1341,11 @@ def nlsys(updfcn, outfcn=None, **kwargs):
 
     Creates an `InputOutputSystem` for a nonlinear system by specifying a
     state update function and an output function.  The new system can be a
-    continuous or discrete time system.
+    continuous or discrete-time system.
 
     Parameters
     ----------
-    updfcn : callable (or StateSpace)
+    updfcn : callable (or `StateSpace`)
         Function returning the state update function
 
             ``updfcn(t, x, u, params) -> array``
@@ -1367,14 +1386,14 @@ def nlsys(updfcn, outfcn=None, **kwargs):
         operating in continuous or discrete time.  It can have the
         following values:
 
-        * `dt` = 0: continuous time system (default)
-        * `dt` > 0: discrete time system with sampling period 'dt'
+        * `dt` = 0: continuous-time system (default)
+        * `dt` > 0: discrete-time system with sampling period 'dt'
         * `dt` = True: discrete time with unspecified sampling period
         * `dt` = None: no timebase specified
 
     name : string, optional
         System name (used for specifying signals). If unspecified, a
-        generic name <sys[id]> is generated with a unique integer id.
+        generic name 'sys[id]' is generated with a unique integer id.
 
     params : dict, optional
         Parameter values for the system.  Passed to the evaluation functions
@@ -1456,15 +1475,15 @@ def input_output_response(
 
     Parameters
     ----------
-    sys : NonlinearIOSystem or list of NonlinearIOSystem
+    sys : `NonlinearIOSystem` or list of `NonlinearIOSystem`
         I/O system(s) for which input/output response is simulated.
-    T : array-like
+    T : array_like
         Time steps at which the input is defined; values must be evenly spaced.
-    U : array-like, list, or number, optional
+    U : array_like, list, or number, optional
         Input array giving input at each time `T` (default = 0).  If a list
         is specified, each element in the list will be treated as a portion
         of the input and broadcast (if necessary) to match the time vector.
-    X0 : array-like, list, or number, optional
+    X0 : array_like, list, or number, optional
         Initial condition (default = 0).  If a list is given, each element
         in the list will be flattened and stacked into the initial
         condition.  If a smaller number of elements are given that the
@@ -1488,7 +1507,7 @@ def input_output_response(
 
     Returns
     -------
-    results : TimeResponseData
+    results : `TimeResponseData`
         Time response represented as a `TimeResponseData` object
         containing the following properties:
 
@@ -1533,7 +1552,7 @@ def input_output_response(
     TypeError
         If the system is not an input/output system.
     ValueError
-        If time step does not match sampling time (for discrete time systems).
+        If time step does not match sampling time (for discrete-time systems).
 
     Notes
     -----
@@ -1804,9 +1823,9 @@ def input_output_response(
 
 
 class OperatingPoint():
-    """Class for representing operating point of nonlinear I/O system.
+    """Operating point of nonlinear I/O system.
 
-    The `OperatingPoint` class stores the operating point of a nonlinear
+    The OperatingPoint class stores the operating point of a nonlinear
     system, consisting of the state and input vectors for the system.  The
     main use for this class is as the return object for the
     `find_operating_point` function and as an input to the
@@ -1895,7 +1914,7 @@ def find_operating_point(
     and uses x0 and u0 as an initial guess to find the equilibrium point.
     If no equilibrium point can be found, the function returns the
     operating point that minimizes the state update (state derivative for
-    continuous time systems, state difference for discrete time systems).
+    continuous-time systems, state difference for discrete-time systems).
 
     More complex operating points can be found by specifying which states,
     inputs, or outputs should be used in computing the operating point, as
@@ -1904,7 +1923,7 @@ def find_operating_point(
 
     Parameters
     ----------
-    sys : NonlinearIOSystem
+    sys : `NonlinearIOSystem`
         I/O system for which the operating point is sought.
     x0 : list of initial state values
         Initial guess for the value of the state near the operating point.
@@ -1955,7 +1974,7 @@ def find_operating_point(
 
     Returns
     -------
-    op_point : OperatingPoint
+    op_point : `OperatingPoint`
         The solution represented as an `OperatingPoint` object.  The main
         attributes are `states` and `inputs`, which represent the state
         and input arrays at the operating point.  See
@@ -1967,9 +1986,9 @@ def find_operating_point(
 
     Notes
     -----
-    For continuous time systems, equilibrium points are defined as points
+    For continuous-time systems, equilibrium points are defined as points
     for which the right hand side of the differential equation is zero:
-    :math:`f(t, x_e, u_e) = 0`. For discrete time systems, equilibrium
+    :math:`f(t, x_e, u_e) = 0`. For discrete-time systems, equilibrium
     points are defined as points for which the right hand side of the
     difference equation returns the current state: :math:`f(t, x_e, u_e) =
     x_e`.
@@ -2197,7 +2216,7 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
 
     Parameters
     ----------
-    sys : InputOutputSystem
+    sys : `InputOutputSystem`
         The system to be linearized.
     xeq : array or `OperatingPoint`
         The state or operating point at which the linearization will be
@@ -2214,7 +2233,7 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
         for the system as default values, overriding internal defaults.
     name : string, optional
         Set the name of the linearized system.  If not specified and
-        if `copy_names` is False, a generic name <sys[id]> is generated
+        if `copy_names` is False, a generic name 'sys[id]' is generated
         with a unique integer id.  If `copy_names` is True, the new system
         name is determined by adding the prefix and suffix strings in
         `config.defaults['iosys.linearized_system_name_prefix']` and
@@ -2226,7 +2245,7 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
 
     Returns
     -------
-    ss_sys : StateSpace
+    ss_sys : `StateSpace`
         The linearization of the system, as a `StateSpace`
         object.
 
@@ -2284,7 +2303,7 @@ def interconnect(
 
     Parameters
     ----------
-    syslist : list of NonlinearIOSystems
+    syslist : list of `NonlinearIOSystem`
         The list of (state-based) input/output systems to be connected.
 
     connections : list of connections, optional
@@ -2388,17 +2407,17 @@ def interconnect(
 
     dt : timebase, optional
         The timebase for the system, used to specify whether the system is
-        operating in continuous or discrete time.  It can have the following
+        operating in continuous or discrete-time.  It can have the following
         values:
 
-        * `dt` = 0: continuous time system (default)
-        * `dt` > 0`: discrete time system with sampling period 'dt'
+        * `dt` = 0: continuous-time system (default)
+        * `dt` > 0`: discrete-time system with sampling period 'dt'
         * `dt` = True: discrete time with unspecified sampling period
         * `dt` = None: no timebase specified
 
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
+        name 'sys[id]' is generated with a unique integer id.
 
     Returns
     -------
@@ -2819,7 +2838,7 @@ def interconnect(
     if add_unused:
         # Get all unused signals
         dropped_inputs, dropped_outputs = newsys.check_unused_signals(
-            ignore_inputs, ignore_outputs, warning=False)
+            ignore_inputs, ignore_outputs, print_warning=False)
 
         # Add on any unused signals that we aren't ignoring
         for isys, isig in dropped_inputs:

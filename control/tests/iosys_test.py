@@ -742,7 +742,7 @@ class TestIOSys:
             ct.series(*args)
 
     def test_discrete(self, tsys):
-        """Test discrete time functionality"""
+        """Test discrete-time functionality"""
         # Create some linear and nonlinear systems to play with
         linsys = ct.StateSpace(
             [[-1, 1], [0, -2]], [[0], [1]], [[1, 0]], [[0]], True)
@@ -774,7 +774,7 @@ class TestIOSys:
         np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
     def test_discrete_iosys(self, tsys):
-        """Create a discrete time system from scratch"""
+        """Create a discrete-time system from scratch"""
         linsys = ct.StateSpace(
             [[-1, 1], [0, -2]], [[0], [1]], [[1, 0]], [[0]], True)
 

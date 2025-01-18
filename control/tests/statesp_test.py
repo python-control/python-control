@@ -1492,8 +1492,8 @@ def test_html_repr_testsize(editsdefaults):
 class TestLinfnorm:
     # these are simple tests; we assume ab13dd is correct
     # python-control specific behaviour is:
-    #   - checking for continuous- and discrete-time
-    #   - scaling fpeak for discrete-time
+    #   - checking for continuous and discrete time
+    #   - scaling fpeak for discrete time
     #   - handling static gains
 
     # the underdamped gpeak and fpeak are found from

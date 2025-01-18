@@ -122,7 +122,7 @@ _ctrlplot_defaults = {'ctrlplot.rcParams': _ctrlplot_rcParams}
 #
 
 class ControlPlot():
-    """A class for representing control figures.
+    """Return class for control platting functions.
 
     This class is used as the return type for control plotting functions.
     It contains the information required to access portions of the plot
@@ -136,17 +136,17 @@ class ControlPlot():
 
     Parameters
     ----------
-    lines : array of list of `matplotlib:Line2D`
+    lines : array of list of `matplotlib.lines.Line2D`
         Array of Line2D objects for each line in the plot.  Generally, the
         shape of the array matches the subplots shape and the value of the
         array is a list of Line2D objects in that subplot.  Some plotting
         functions will return variants of this structure, as described in
         the individual documentation for the functions.
-    axes : 2D array of `matplotlib:Axes`
+    axes : 2D array of `matplotlib.axes.Axes`
         Array of Axes objects for each subplot in the plot.
-    figure : `matplotlib:Figure`
+    figure : `matplotlib.figure.Figure`
         Figure on which the Axes are drawn.
-    legend : `matplotlib:.legend.Legend` (instance or ndarray)
+    legend : `matplotlib.legend.Legend` (instance or ndarray)
         Legend object(s) for the plot.  If more than one legend is
         included, this will be an array with each entry being either None
         (for no legend) or a legend object.
@@ -176,6 +176,7 @@ class ControlPlot():
         self.lines[item] = val
     shape = property(lambda self: self.lines.shape, None)
     def reshape(self, *args):
+        """Reshape lines array (legacy)."""
         return self.lines.reshape(*args)
 
     def set_plot_title(self, title, frame='axes'):
@@ -310,11 +311,11 @@ def pole_zero_subplots(
                 case 'empty', _:        # empty grid
                     ax_array[row, col] = fig.add_subplot(nrows, ncols, index+1)
 
-                case True, True:        # continuous time grid
+                case True, True:        # continuous-time grid
                     ax_array[row, col], _ = sgrid(
                         (nrows, ncols, index+1), scaling=scaling)
 
-                case True, False:       # discrete time grid
+                case True, False:       # discrete-time grid
                     ax_array[row, col] = fig.add_subplot(nrows, ncols, index+1)
                     zgrid(ax=ax_array[row, col], scaling=scaling)
 

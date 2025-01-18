@@ -30,7 +30,7 @@ __all__ = ['FrequencyResponseData', 'FRD', 'frd']
 class FrequencyResponseData(LTI):
     """FrequencyResponseData(response, omega[, smooth])
 
-    A class for models defined by frequency response data (FRD).
+    Input/output model defined by frequency response data (FRD).
 
     The FrequencyResponseData (FRD) class is used to represent systems in
     frequency response data form.  It can be created manually using the
@@ -48,10 +48,10 @@ class FrequencyResponseData(LTI):
     omega : iterable of real frequencies
         List of frequency points for which data are available.
     smooth : bool, optional
-        If True, create an interpolation function that allows the
-        frequency response to be computed at any frequency within the range of
-        frequencies give in `w`.  If False (default), frequency response
-        can only be obtained at the frequencies specified in `w`.
+        If True, create an interpolation function that allows the frequency
+        response to be computed at any frequency within the range of
+        frequencies give in `omega`.  If False (default), frequency response
+        can only be obtained at the frequencies specified in `omega`.
     dt : None, True or float, optional
         System timebase. 0 (default) indicates continuous time, True
         indicates discrete time with unspecified sampling time, positive
@@ -113,12 +113,12 @@ class FrequencyResponseData(LTI):
 
     See Also
     --------
-    frd, InputOutputSystem, TransferFunction, TimeResponseData
+    frd, frequency_response, InputOutputSystem, TransferFunction
 
     Notes
     -----
-    The main data members are 'omega' and 'fresp', where 'omega' is a 1D array
-    of frequency points and and 'fresp' is a 3D array of frequency responses,
+    The main data members are `omega` and `fresp`, where `omega` is a 1D array
+    of frequency points and and `fresp` is a 3D array of frequency responses,
     with the first dimension corresponding to the output index of the FRD, the
     second dimension corresponding to the input index, and the 3rd dimension
     corresponding to the frequency points in omega.  For example,
@@ -133,10 +133,6 @@ class FrequencyResponseData(LTI):
     transfer function evaluated at a point in the complex plane (must be on
     the imaginary axis).  See `FrequencyResponseData.__call__`
     for a more detailed description.
-
-    A state space system is callable and returns the value of the transfer
-    function evaluated at a point in the complex plane.  See
-    `StateSpace.__call__` for a more detailed description.
 
     Subsystem response corresponding to selected input/output pairs can be
     created by indexing the frequency response data object::
@@ -654,7 +650,7 @@ class FrequencyResponseData(LTI):
             If `squeeze` is True then single-dimensional axes are removed.
 
         """
-        omega_array = np.array(omega, ndmin=1)  # array-like version of omega
+        omega_array = np.array(omega, ndmin=1)  # array_like version of omega
 
         # Make sure that we are operating on a simple list
         if len(omega_array.shape) > 1:
@@ -735,9 +731,9 @@ class FrequencyResponseData(LTI):
         Raises
         ------
         ValueError
-            If `s` is not purely imaginary, because
-            `FrequencyResponseData` systems are only defined at
-            imaginary values (corresponding to real frequencies).
+            If `s` is not purely imaginary, because `FrequencyResponseData`
+            systems are only defined at imaginary values (corresponding to
+            real frequencies).
 
         """
         if s is None:
@@ -817,8 +813,17 @@ class FrequencyResponseData(LTI):
         return self.frequency_response(omega)
 
     def feedback(self, other=1, sign=-1):
-        """Feedback interconnection between two FRD objects."""
+        """Feedback interconnection between two FRD objects.
 
+        Parameters
+        ----------
+        other : `LTI`
+            System in the feedack path.
+
+        sign : float, optional
+            Gain to use in feedback path.  Defaults to -1.
+
+        """
         other = _convert_to_frd(other, omega=self.omega)
 
         if (self.noutputs != other.ninputs or self.ninputs != other.noutputs):
@@ -1005,7 +1010,7 @@ def frd(*args, **kwargs):
 
     Parameters
     ----------
-    sys : LTI (StateSpace or TransferFunction)
+    sys : `StateSpace` or `TransferFunction`
         A linear system that will be evaluated for frequency response data.
     response : array_like or LTI system
         Complex vector with the system response or an LTI system that can
@@ -1023,7 +1028,7 @@ def frd(*args, **kwargs):
 
     Returns
     -------
-    sys : FrequencyResponseData
+    sys : `FrequencyResponseData`
         New frequency response data system.
 
     Other Parameters
@@ -1041,7 +1046,7 @@ def frd(*args, **kwargs):
         `config.defaults['iosys.sampled_system_name_prefix']` and
         `config.defaults['iosys.sampled_system_name_suffix']`, with the
         default being to add the suffix '$ampled'.  Otherwise, a generic
-        name <sys[id]> is generated with a unique integer id
+        name 'sys[id]' is generated with a unique integer id
 
     See Also
     --------

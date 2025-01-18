@@ -150,7 +150,7 @@ def nogrid(dt=None, ax=None, scaling=None):
     if ax is None:
         ax = fig.gca()
 
-    # Draw the unit circle for discrete time systems
+    # Draw the unit circle for discrete-time systems
     if isdtime(dt=dt, strict=True):
         s = np.linspace(0, 2*pi, 100)
         ax.plot(np.cos(s), np.sin(s), 'k--', lw=0.5, dashes=(5, 5))
@@ -158,7 +158,7 @@ def nogrid(dt=None, ax=None, scaling=None):
     _final_setup(ax, scaling=scaling)
     return ax, fig
 
-# Grid for discrete time system (drawn, not rendered by AxisArtist)
+# Grid for discrete-time system (drawn, not rendered by AxisArtist)
 # TODO (at some point): think about using customized grid generator?
 def zgrid(zetas=None, wns=None, ax=None, scaling=None):
     """Draws discrete damping and frequency grid"""

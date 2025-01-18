@@ -441,7 +441,7 @@ def test_nyquist_legacy():
 def test_discrete_nyquist():
     # TODO: add tests to make sure plots make sense
 
-    # Make sure we can handle discrete time systems with negative poles
+    # Make sure we can handle discrete-time systems with negative poles
     sys = ct.tf(1, [1, -0.1], dt=1) * ct.tf(1, [1, 0.1], dt=1)
     ct.nyquist_response(sys)
 

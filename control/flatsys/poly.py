@@ -30,7 +30,7 @@ class PolyFamily(BasisFamily):
         Degree of the Bezier curve.
 
     T : float
-        Final time (used for rescaling).
+        Final time (used for rescaling).  Default value is 1.
 
     """
     def __init__(self, N, T=1):
@@ -40,7 +40,11 @@ class PolyFamily(BasisFamily):
 
     # Compute the kth derivative of the ith basis function at time t
     def eval_deriv(self, i, k, t, var=None):
-        """Evaluate the kth derivative of the ith basis function at time t."""
+        """Evaluate kth derivative of ith basis function at time t.
+
+        See `BasisFamily.eval_deriv` for more information.
+
+        """
         if (i < k): return 0 * t        # higher derivative than power
         return factorial(i)/factorial(i-k) * \
             np.power(t/self.T, i-k) / np.power(self.T, k)

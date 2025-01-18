@@ -476,7 +476,7 @@ def margin(*args):
 
     Parameters
     ----------
-    sys : StateSpace or TransferFunction
+    sys : `StateSpace` or `TransferFunction`
         Linear SISO system representing the loop transfer function.
     mag, phase, omega : sequence of array_like
         Input magnitude, phase (in deg.), and frequencies (rad/sec) from

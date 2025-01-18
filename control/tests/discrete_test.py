@@ -1,4 +1,4 @@
-"""discrete_test.py - test discrete time classes
+"""discrete_test.py - test discrete-time classes
 
 RMM, 9 Sep 2012
 """
@@ -22,7 +22,7 @@ class TestDiscrete:
         class Tsys:
             pass
         T = Tsys()
-        # Single input, single output continuous and discrete time systems
+        # Single input, single output continuous and discrete-time systems
         sys = rss(3, 1, 1)
         T.siso_ss1 = StateSpace(sys.A, sys.B, sys.C, sys.D, None)
         T.siso_ss1c = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.0)
@@ -30,7 +30,7 @@ class TestDiscrete:
         T.siso_ss2d = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.2)
         T.siso_ss3d = StateSpace(sys.A, sys.B, sys.C, sys.D, True)
 
-        # Two input, two output continuous time system
+        # Two input, two output continuous-time system
         A = [[-3., 4., 2.], [-1., -3., 0.], [2., 5., 3.]]
         B = [[1., 4.], [-3., -3.], [-2., 1.]]
         C = [[4., 2., -3.], [1., 4., 3.]]
@@ -38,7 +38,7 @@ class TestDiscrete:
         T.mimo_ss1 = StateSpace(A, B, C, D, None)
         T.mimo_ss1c = StateSpace(A, B, C, D, 0)
 
-        # Two input, two output discrete time system
+        # Two input, two output discrete-time system
         T.mimo_ss1d = StateSpace(A, B, C, D, 0.1)
 
         # Same system, but with a different sampling time
@@ -463,7 +463,7 @@ class TestDiscrete:
 
     @pytest.mark.usefixtures("legacy_plot_signature")
     def test_discrete_bode(self, tsys):
-        # Create a simple discrete time system and check the calculation
+        # Create a simple discrete-time system and check the calculation
         sys = TransferFunction([1], [1, 0.5], 1)
         omega = [1, 2, 3]
         mag_out, phase_out, omega_out = bode(sys, omega, plot=True)
@@ -473,7 +473,7 @@ class TestDiscrete:
         np.testing.assert_array_almost_equal(phase_out, np.angle(H_z))
 
     def test_signal_names(self, tsys):
-        "test that signal names are preserved in conversion to discrete-time"
+        "test that signal names are preserved in conversion to discrete time"
         ssc = StateSpace(tsys.siso_ss1c,
             inputs='u', outputs='y', states=['a', 'b', 'c'])
         ssd = ssc.sample(0.1)

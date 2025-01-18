@@ -48,7 +48,7 @@ _xferfcn_defaults = {
 class TransferFunction(LTI):
     """TransferFunction(num, den[, dt])
 
-    A class for representing transfer functions.
+    Transfer function representation for LTI input/output systems.
 
     The TransferFunction class is used to represent systems in transfer
     function form.  Transfer functions are usually created with the
@@ -81,15 +81,15 @@ class TransferFunction(LTI):
         of 1D array objects (of varying length).
     num_list, den_list : 2D list of 1D array
         Numerator and denominator polynomial coefficients as 2D lists
-        of 1D array objects (of varying length)
+        of 1D array objects (of varying length).
     display_format : None, 'poly' or 'zpk'
         Display format used in printing the TransferFunction object.
         Default behavior is polynomial display and can be changed by
         changing `config.defaults['xferfcn.display_format']`.
-    s : TransferFunction
-        Represents the continuous time differential operator.
-    z : TransferFunction
-        Represents the discrete time delay operator.
+    s : `TransferFunction`
+        Represents the continuous-time differential operator.
+    z : `TransferFunction`
+        Represents the discrete-time delay operator.
 
     See Also
     --------
@@ -97,15 +97,15 @@ class TransferFunction(LTI):
 
     Notes
     -----
-    The numerator and denominator polynomials are stored as 2D ndarrays
-    with each element containing a 1D ndarray of coefficients.  These data
+    The numerator and denominator polynomials are stored as 2D arrays
+    with each element containing a 1D array of coefficients.  These data
     structures can be retrieved using `num_array` and `den_array`.  For
     example,
 
     >>> sys.num_array[2, 5]         # doctest: +SKIP
 
     gives the numerator of the transfer function from the 6th input to the
-    3rd output. (Note: a single 3D ndarray structure cannot be used because
+    3rd output. (Note: a single 3D array structure cannot be used because
     the numerators and denominators can have different numbers of
     coefficients in each entry.)
 
@@ -118,22 +118,22 @@ class TransferFunction(LTI):
     For legacy purposes, this list-based representation can also be
     obtained using `num` and `den`.
 
-    A discrete time transfer function is created by specifying a nonzero
+    A discrete-time transfer function is created by specifying a nonzero
     'timebase' dt when the system is constructed:
 
-    * `dt` = 0: continuous time system (default)
-    * `dt` > 0: discrete time system with sampling period 'dt'
+    * `dt` = 0: continuous-time system (default)
+    * `dt` > 0: discrete-time system with sampling period 'dt'
     * `dt` = True: discrete time with unspecified sampling period
     * `dt` = None: no timebase specified
 
     Systems must have compatible timebases in order to be combined. A
-    discrete time system with unspecified sampling time (`dt` = True) can
+    discrete-time system with unspecified sampling time (`dt` = True) can
     be combined with a system having a specified sampling time; the result
-    will be a discrete time system with the sample time of the latter
+    will be a discrete-time system with the sample time of the other
     system. Similarly, a system with timebase None can be combined with a
     system having any timebase; the result will have the timebase of the
-    latter system.  The default value of dt can be changed by changing the
-    value of `control.config.defaults['control.default_dt']`.
+    other system.  The default value of dt can be changed by changing the
+    value of `config.defaults['control.default_dt']`.
 
     A transfer function is callable and returns the value of the transfer
     function evaluated at a point in the complex plane.  See
@@ -154,7 +154,7 @@ class TransferFunction(LTI):
     discrete time.  These can be used to create variables that allow
     algebraic creation of transfer functions.  For example,
 
-    >>> s = ct.TransferFunction.s
+    >>> s = ct.TransferFunction.s  # or ct.tf('s')
     >>> G = (s + 1)/(s**2 + 2*s + 1)
 
     """
@@ -165,7 +165,7 @@ class TransferFunction(LTI):
 
         The default constructor is TransferFunction(num, den), where num and
         den are 2D arrays of arrays containing polynomial coefficients.
-        To create a discrete time transfer funtion, use TransferFunction(num,
+        To create a discrete-time transfer function, use TransferFunction(num,
         den, dt) where 'dt' is the sampling time (or True for unspecified
         sampling time).  To call the copy constructor, call
         TransferFunction(sys), where sys is a TransferFunction object
@@ -382,14 +382,24 @@ class TransferFunction(LTI):
         return _process_frequency_response(self, x, out, squeeze=squeeze)
 
     def horner(self, x, warn_infinite=True):
-        """Evaluate system's transfer function at complex frequency
-        using Horner's method.
+        """Evaluate value of transfer function using Horner's method.
 
-        Evaluates ``sys(x)`` where `x` is `s` for continuous-time systems
-        and `z` for discrete-time systems.
+        Evaluates ``sys(x)`` where `x` is a complex number `s` for
+        continuous-time systems and `z` for discrete-time systems.  Expects
+        inputs and outputs to be formatted correctly. Use ``sys(x)`` for a
+        more user-friendly interface.
 
-        Expects inputs and outputs to be formatted correctly. Use ``sys(x)``
-        for a more user-friendly interface.
+        Parameters
+        ----------
+        x : complex
+            Complex frequency at which the transfer function is evaluated.
+
+        warn_infinite : bool, optional
+            If True (default), generate a warning if `x` is a pole.
+
+        Returns
+        -------
+        complex
 
         """
         # Make sure the argument is a 1D array of complex numbers
@@ -857,7 +867,17 @@ class TransferFunction(LTI):
             return roots(self.num_array[0, 0]).astype(complex)
 
     def feedback(self, other=1, sign=-1):
-        """Feedback interconnection between two LTI objects."""
+        """Feedback interconnection between two LTI objects.
+
+        Parameters
+        ----------
+        other : `InputOutputSystem`
+            System in the feedack path.
+
+        sign : float, optional
+            Gain to use in feedback path.  Defaults to -1.
+
+        """
         other = _convert_to_transfer_function(other)
 
         if (self.ninputs > 1 or self.noutputs > 1 or
@@ -898,7 +918,14 @@ class TransferFunction(LTI):
         return new_tf
 
     def minreal(self, tol=None):
-        """Remove cancelling pole/zero pairs from a transfer function."""
+        """Remove cancelling pole/zero pairs from a transfer function.
+
+        Parameters
+        ----------
+        tol : float
+            Tolerance for determining whether poles and zeros overlap.
+
+        """
         # based on octave minreal
 
         # default accuracy
@@ -955,7 +982,7 @@ class TransferFunction(LTI):
                 The timebase `tfobject.dt` cannot be None; it must be
                 continuous (0) or discrete (True or > 0).
             False:
-                if `tfobject.dt` is None, continuous time
+                if `tfobject.dt` is None, continuous-time
                 `scipy.signal.lti` objects are returned
 
         Returns
@@ -971,7 +998,7 @@ class TransferFunction(LTI):
         if self.dt:
             kwdt = {'dt': self.dt}
         else:
-            # scipy convention for continuous time lti systems: call without
+            # scipy convention for continuous-time lti systems: call without
             # dt keyword argument
             kwdt = {}
 
@@ -1183,7 +1210,7 @@ class TransferFunction(LTI):
             ignored otherwise.
         name : string, optional
             Set the name of the sampled system.  If not specified and if
-            `copy_names` is False, a generic name <sys[id]> is generated with
+            `copy_names` is False, a generic name 'sys[id]' is generated with
             a unique integer id.  If `copy_names` is True, the new system
             name is determined by adding the prefix and suffix strings in
             `config.defaults['iosys.sampled_system_name_prefix']` and
@@ -1196,7 +1223,7 @@ class TransferFunction(LTI):
 
         Returns
         -------
-        sysd : TransferFunction system
+        sysd : `TransferFunction` system
             Discrete-time system, with sample period Ts.
 
         Other Parameters
@@ -1219,7 +1246,7 @@ class TransferFunction(LTI):
 
         """
         if not self.isctime():
-            raise ValueError("System must be continuous time system")
+            raise ValueError("System must be continuous-time system")
         if not self.issiso():
             raise ControlMIMONotImplemented("Not implemented for MIMO systems")
         if method == "matched":
@@ -1302,7 +1329,7 @@ class TransferFunction(LTI):
 
     #: Differentation operator (continuous time).
     #:
-    #: The `s` constant can be used to create continuous time transfer
+    #: The `s` constant can be used to create continuous-time transfer
     #: functions using algebraic expressions.
     #:
     #: Examples
@@ -1315,7 +1342,7 @@ class TransferFunction(LTI):
 
     #: Delay operator (discrete time).
     #:
-    #: The `z` constant can be used to create discrete time transfer
+    #: The `z` constant can be used to create discrete-time transfer
     #: functions using algebraic expressions.
     #:
     #: Examples
@@ -1497,7 +1524,7 @@ def _convert_to_transfer_function(
       [[1., 1., 1.]
        [1., 1., 1.]].
 
-    If `sys` is an array-like type, then it is converted to a constant-gain
+    If `sys` is an array_like type, then it is converted to a constant-gain
     transfer function.
 
     Note: no renaming of inputs and outputs is performed; this should be done
@@ -1570,7 +1597,7 @@ def _convert_to_transfer_function(
     elif isinstance(sys, FrequencyResponseData):
         raise TypeError("Can't convert given FRD to TransferFunction system.")
 
-    # If this is array-like, try to create a constant feedthrough
+    # If this is array_like, try to create a constant feedthrough
     try:
         D = array(sys, ndmin=2)
         outputs, inputs = D.shape
@@ -1592,7 +1619,7 @@ def tf(*args, **kwargs):
     ``tf(sys)``
 
         Convert a linear system into transfer function form. Always creates
-        a new system, even if sys is already a TransferFunction object.
+        a new system, even if sys is already a `TransferFunction` object.
 
     ``tf(num, den)``
 
@@ -1609,7 +1636,7 @@ def tf(*args, **kwargs):
 
     ``tf(num, den, dt)``
 
-        Create a discrete time transfer function system; dt can either be a
+        Create a discrete-time transfer function system; dt can either be a
         positive number indicating the sampling time or 'True' if no
         specific timebase is given.
 
@@ -1625,9 +1652,9 @@ def tf(*args, **kwargs):
 
     Parameters
     ----------
-    sys : LTI (StateSpace or TransferFunction)
+    sys : `LTI` (`StateSpace` or `TransferFunction`)
         A linear system that will be converted to a transfer function.
-    arr : 2D list of TransferFunction
+    arr : 2D list of `TransferFunction`
         2D list of SISO transfer functions to create MIMO transfer function.
     num : array_like, or list of list of array_like
         Polynomial coefficients of the numerator.
@@ -1639,13 +1666,13 @@ def tf(*args, **kwargs):
         number is discrete time with specified sampling time, None indicates
         unspecified timebase (either continuous or discrete time).
     display_format : None, 'poly' or 'zpk'
-        Set the display format used in printing the TransferFunction object.
+        Set the display format used in printing the `TransferFunction` object.
         Default behavior is polynomial display and can be changed by
         changing `config.defaults['xferfcn.display_format']`.
 
     Returns
     -------
-    sys : TransferFunction
+    sys : `TransferFunction`
         The new linear system.
 
     Other Parameters
@@ -1657,7 +1684,7 @@ def tf(*args, **kwargs):
     input_prefix, output_prefix : string, optional
         Set the prefix for input and output signals.  Defaults = 'u', 'y'.
     name : string, optional
-        System name. If unspecified, a generic name <sys[id]> is generated
+        System name. If unspecified, a generic name 'sys[id]' is generated
         with a unique integer id.
 
     Raises
@@ -1696,7 +1723,7 @@ def tf(*args, **kwargs):
     >>> s = ct.tf('s')
     >>> G  = (s + 1)/(s**2 + 2*s + 1)
 
-    >>> # Convert a StateSpace to a TransferFunction object.
+    >>> # Convert a state space system to a transfer function:
     >>> sys_ss = ct.ss([[1, -2], [3, -4]], [[5], [7]], [[6, 8]], 9)
     >>> sys_tf = ct.tf(sys_ss)
 
@@ -1793,9 +1820,9 @@ def zpk(zeros, poles, gain, *args, **kwargs):
         `InputOutputSystem` for more information.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
+        name 'sys[id]' is generated with a unique integer id.
     display_format : None, 'poly' or 'zpk', optional
-        Set the display format used in printing the TransferFunction object.
+        Set the display format used in printing the `TransferFunction` object.
         Default behavior is polynomial display and can be changed by
         changing `config.defaults['xferfcn.display_format']`.
 
@@ -1840,7 +1867,7 @@ def ss2tf(*args, **kwargs):
 
     Parameters
     ----------
-    sys : StateSpace
+    sys : `StateSpace`
         A linear system.
     A : array_like or string
         System matrix.
@@ -1855,7 +1882,7 @@ def ss2tf(*args, **kwargs):
 
     Returns
     -------
-    out : TransferFunction
+    out : `TransferFunction`
         New linear system in transfer function form.
 
     Other Parameters
@@ -1865,16 +1892,16 @@ def ss2tf(*args, **kwargs):
         system.  If not given, the inputs and outputs are the same as the
         original system.
     name : string, optional
-        System name. If unspecified, a generic name <sys[id]> is generated
+        System name. If unspecified, a generic name 'sys[id]' is generated
         with a unique integer id.
 
     Raises
     ------
     ValueError
-        if matrix sizes are not self-consistent, or if an invalid number of
-        arguments is passed in
+        If matrix sizes are not self-consistent, or if an invalid number of
+        arguments is passed in.
     TypeError
-        if `sys` is not a StateSpace object.
+        If `sys` is not a `StateSpace` object.
 
     See Also
     --------
@@ -1924,7 +1951,7 @@ def tfdata(sys):
 
     Parameters
     ----------
-    sys : LTI (StateSpace, or TransferFunction)
+    sys : `StateSpace` or `TransferFunction`
         LTI system whose data will be returned.
 
     Returns
@@ -1940,7 +1967,7 @@ def tfdata(sys):
 def _clean_part(data, name="<unknown>"):
     """
     Return a valid, cleaned up numerator or denominator
-    for the TransferFunction class.
+    for the `TransferFunction` class.
 
     Parameters
     ----------

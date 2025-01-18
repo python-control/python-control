@@ -36,7 +36,7 @@ def hankel_singular_values(sys):
 
     Parameters
     ----------
-    sys : StateSpace
+    sys : `StateSpace`
         State space system.
 
     Returns
@@ -64,7 +64,7 @@ def hankel_singular_values(sys):
     np.float64(0.25)
 
     """
-    # TODO: implement for discrete time systems
+    # TODO: implement for discrete-time systems
     if (isdtime(sys, strict=True)):
         raise NotImplementedError("Function not implemented in discrete time")
 
@@ -99,7 +99,7 @@ def model_reduction(
 
     Parameters
     ----------
-    sys : StateSpace
+    sys : `StateSpace`
         Original system to reduce.
     elim_inputs, elim_outputs, elim_states : array of int or str, optional
         Vector of inputs, outputs, or states to eliminate.  Can be specified
@@ -114,7 +114,7 @@ def model_reduction(
 
     Returns
     -------
-    rsys : StateSpace
+    rsys : `StateSpace`
         Reduced order model.
 
     Raises
@@ -122,7 +122,7 @@ def model_reduction(
     ValueError
         If `method` is not either 'matchdc' or 'truncate'.
     NotImplementedError
-        If the 'matchdc' method is used for a discrete time system.
+        If the 'matchdc' method is used for a discrete-time system.
 
     Warns
     -----
@@ -214,7 +214,7 @@ def model_reduction(
     if method == 'matchdc' and A22.size > 0:
         if sys.isdtime(strict=True):
             raise NotImplementedError(
-                "'matchdc' not (yet) supported for discrete time systems")
+                "'matchdc' not (yet) supported for discrete-time systems")
 
         # if matchdc, residualize
         # Check if the matrix A22 is invertible
@@ -268,7 +268,7 @@ def balanced_reduction(sys, orders, method='truncate', alpha=None):
 
     Parameters
     ----------
-    sys : StateSpace
+    sys : `StateSpace`
         Original system to reduce.
     orders : integer or array of integer
         Desired order of reduced order model (if a vector, returns a vector
@@ -285,7 +285,7 @@ def balanced_reduction(sys, orders, method='truncate', alpha=None):
 
     Returns
     -------
-    rsys : StateSpace
+    rsys : `StateSpace`
         A reduced order model or a list of reduced order models if orders is
         a list.
 
@@ -294,10 +294,9 @@ def balanced_reduction(sys, orders, method='truncate', alpha=None):
     ValueError
         If `method` is not 'truncate' or 'matchdc'.
     ImportError
-        if slycot routine ab09ad, ab09md, or ab09nd is not found.
-
+        If slycot routine ab09ad, ab09md, or ab09nd is not found.
     ValueError
-        if there are more unstable modes than any value in orders
+        If there are more unstable modes than any value in orders.
 
     Examples
     --------
@@ -389,7 +388,7 @@ def minimal_realization(sys, tol=None, verbose=True):
 
     Parameters
     ----------
-    sys : StateSpace or TransferFunction
+    sys : `StateSpace` or `TransferFunction`
         Original system.
     tol : real
         Tolerance.
@@ -398,7 +397,7 @@ def minimal_realization(sys, tol=None, verbose=True):
 
     Returns
     -------
-    rsys : StateSpace or TransferFunction
+    rsys : `StateSpace` or `TransferFunction`
         Cleaned model.
 
     """
@@ -429,7 +428,7 @@ def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
 
     Calculate ERA model based on impulse-response data.
 
-    This function computes a discrete time system
+    This function computes a discrete-time system
 
     .. math::
 
@@ -449,10 +448,10 @@ def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
     Parameters
     ----------
     YY : array_like
-        Impulse response from which the StateSpace model is estimated, 1D
+        Impulse response from which the `StateSpace` model is estimated, 1D
         or 3D array.
-    data : TimeResponseData
-        Impulse response from which the StateSpace model is estimated.
+    data : `TimeResponseData`
+        Impulse response from which the `StateSpace` model is estimated.
     r : integer
         Order of model.
     m : integer, optional
@@ -462,19 +461,19 @@ def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
     dt : True or float, optional
         True indicates discrete time with unspecified sampling time and a
         positive float is discrete time with the specified sampling time.
-        It can be used to scale the StateSpace model in order to match the
+        It can be used to scale the `StateSpace` model in order to match the
         unit-area impulse response of python-control. Default is True.
     transpose : bool, optional
         Assume that input data is transposed relative to the standard
-        :ref:`time-series-convention`. For TimeResponseData this parameter
+        :ref:`time-series-convention`. For `TimeResponseData` this parameter
         is ignored. Default is False.
 
     Returns
     -------
-    sys : StateSpace
-        A reduced order model sys=StateSpace(Ar,Br,Cr,Dr,dt).
+    sys : `StateSpace`
+        State space model of the specified order.
     S : array
-        Singular values of Hankel matrix. Can be used to choose a good r
+        Singular values of Hankel matrix. Can be used to choose a good `r`
         value.
 
     References
@@ -539,7 +538,7 @@ def markov(*args, m=None, transpose=False, dt=None, truncate=False):
     Calculate Markov parameters [D CB CAB ...] from data.
 
     This function computes the the first `m` Markov parameters [D CB CAB
-    ...] for a discrete time system.
+    ...] for a discrete-time system.
 
     .. math::
 
@@ -570,7 +569,7 @@ def markov(*args, m=None, transpose=False, dt=None, truncate=False):
         taken as time points.
     U : array_like
         Input data, arranged in the same way as `Y`.
-    data : TimeResponseData
+    data : `TimeResponseData`
         Response data from which the Markov parameters where estimated.
         Input and output data must be 1D or 2D array.
     m : int, optional
@@ -581,12 +580,12 @@ def markov(*args, m=None, transpose=False, dt=None, truncate=False):
         It can be used to scale the Markov parameters in order to match
         the unit-area impulse response of python-control. Default is True
         for array_like and dt=data.time[1]-data.time[0] for
-        TimeResponseData as input.
+        `TimeResponseData` as input.
     truncate : bool, optional
         Do not use first m equation for least squares. Default is False.
     transpose : bool, optional
         Assume that input data is transposed relative to the standard
-        :ref:`time-series-convention`. For TimeResponseData this parameter
+        :ref:`time-series-convention`. For `TimeResponseData` this parameter
         is ignored. Default is False.
 
     Returns

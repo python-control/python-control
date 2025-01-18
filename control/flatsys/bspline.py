@@ -43,7 +43,7 @@ class BSplineFamily(BasisFamily):
         The number of spline variables.  If specified as None (default),
         then the spline basis describes a single variable, with no indexing.
         If the number of spine variables is > 0, then the spline basis is
-        index using the `var` keyword.
+        indexed using the `var` keyword.
 
     """
     def __init__(self, breakpoints, degree, smoothness=None, vars=None):
@@ -185,7 +185,11 @@ class BSplineFamily(BasisFamily):
 
     # Compute the kth derivative of the ith basis function at time t
     def eval_deriv(self, i, k, t, var=None):
-        """Evaluate the kth derivative of the ith basis function at time t."""
+        """Evaluate kth derivative of ith basis function at time t.
+
+        See `BasisFamily.eval_deriv` for more information.
+
+        """
         if self.nvars is None or (self.nvars == 1 and var is None):
             # Use same variable for all requests
             var = 0

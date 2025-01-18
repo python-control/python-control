@@ -1,22 +1,22 @@
-# dtime.py - functions for manipulating discrete time systems
+# dtime.py - functions for manipulating discrete-time systems
 #
 # Initial author: Richard M. Murray
 # Creation date: 6 October 2012
 
-"""Functions for manipulating discrete time systems."""
+"""Functions for manipulating discrete-time systems."""
 
 from .iosys import isctime
 
 __all__ = ['sample_system', 'c2d']
 
-# Sample a continuous time system
+# Sample a continuous-time system
 def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
         name=None, copy_names=True, **kwargs):
-    """Convert a continuous time system to discrete time by sampling.
+    """Convert a continuous-time system to discrete time by sampling.
 
     Parameters
     ----------
-    sysc : LTI (`StateSpace` or `TransferFunction`)
+    sysc : `StateSpace` or `TransferFunction`
         Continuous time system to be converted.
     Ts : float > 0
         Sampling period.
@@ -33,7 +33,7 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
 
     Returns
     -------
-    sysd : LTI of the same class (StateSpace or TransferFunction)
+    sysd : LTI of the same class (`StateSpace` or `TransferFunction`)
         Discrete time system, with sampling rate Ts.
 
     Other Parameters
@@ -49,7 +49,7 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
         available if the system is `StateSpace`.
     name : string, optional
         Set the name of the sampled system.  If not specified and
-        if `copy_names` is False, a generic name <sys[id]> is generated
+        if `copy_names` is False, a generic name 'sys[id]' is generated
         with a unique integer id.  If `copy_names` is True, the new system
         name is determined by adding the prefix and suffix strings in
         `config.defaults['iosys.sampled_system_name_prefix']` and
@@ -75,9 +75,9 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
 
     """
 
-    # Make sure we have a continuous time system
+    # Make sure we have a continuous-time system
     if not isctime(sysc):
-        raise ValueError("First argument must be continuous time system")
+        raise ValueError("First argument must be continuous-time system")
 
     return sysc.sample(Ts,
         method=method, alpha=alpha, prewarp_frequency=prewarp_frequency,

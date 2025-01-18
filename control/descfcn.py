@@ -49,6 +49,16 @@ class DescribingFunctionNonlinearity():
         describing function for a nonlinearity.  It turns the (complex) value
         of the describing function for sinusoidal input of amplitude `A`.
 
+        Parameters
+        ----------
+        A : float
+            Amplitude of the sinusoidal input to the nonlinearity.
+
+        Returns
+        -------
+        float
+            Value of the describing function at the given amplitude.
+
         """
         raise NotImplementedError(
             "describing function not implemented for this function")
@@ -230,13 +240,13 @@ class DescribingFunctionResponse:
         Frequency response of the linear system component of the system.
     intersections : 1D array of 2-tuples or None
         A list of all amplitudes and frequencies in which
-        :math:`H(j\\omega) N(a) = -1`, where :math:`N(a)` is the describing
+        :math:`H(j\\omega) N(A) = -1`, where :math:`N(A)` is the describing
         function associated with `F`, or None if there are no such
         points.  Each pair represents a potential limit cycle for the
         closed loop system with amplitude given by the first value of the
         tuple and frequency given by the second value.
     N_vals : complex array
-        Complex value of the describing function.
+        Complex value of the describing function, indexed by amplitude.
     positions : list of complex
         Location of the intersections in the complex plane.
 
@@ -601,6 +611,19 @@ class saturation_nonlinearity(DescribingFunctionNonlinearity):
         return True
 
     def describing_function(self, A):
+        """Return the describing function for a saturation nonlinearity.
+
+        Parameters
+        ----------
+        A : float
+            Amplitude of the sinusoidal input to the nonlinearity.
+
+        Returns
+        -------
+        float
+            Value of the describing function at the given amplitude.
+
+        """
         # Check to make sure the amplitude is positive
         if A < 0:
             raise ValueError("cannot evaluate describing function for A < 0")
@@ -678,6 +701,19 @@ class relay_hysteresis_nonlinearity(DescribingFunctionNonlinearity):
         return False
 
     def describing_function(self, A):
+        """Return the describing function for a hysteresis nonlinearity.
+
+        Parameters
+        ----------
+        A : float
+            Amplitude of the sinusoidal input to the nonlinearity.
+
+        Returns
+        -------
+        float
+            Value of the describing function at the given amplitude.
+
+        """
         # Check to make sure the amplitude is positive
         if A < 0:
             raise ValueError("cannot evaluate describing function for A < 0")
@@ -748,6 +784,19 @@ class friction_backlash_nonlinearity(DescribingFunctionNonlinearity):
         return False
 
     def describing_function(self, A):
+        """Return the describing function for a backlash nonlinearity.
+
+        Parameters
+        ----------
+        A : float
+            Amplitude of the sinusoidal input to the nonlinearity.
+
+        Returns
+        -------
+        float
+            Value of the describing function at the given amplitude.
+
+        """
         # Check to make sure the amplitude is positive
         if A < 0:
             raise ValueError("cannot evaluate describing function for A < 0")

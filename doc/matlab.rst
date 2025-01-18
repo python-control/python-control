@@ -9,9 +9,9 @@
    :no-inherited-members:
    :no-special-members:
 
-.. warning:: This module is not closely maintained and some functionality
-             in main control package may not be be available via the MATLAB
-             compatibility module.
+.. warning:: This module is not closely maintained and some
+             functionality in the main python-control package may not
+             be be available via the MATLAB compatibility module.
 
 Creating Linear Models
 ======================

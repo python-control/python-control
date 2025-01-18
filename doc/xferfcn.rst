@@ -49,7 +49,7 @@ chapter.
 Input/output norms
 ------------------
 
-Continuous and discrete time signals can be represented as a normed
+Continuous and discrete-time signals can be represented as a normed
 linear space with the appropriate choice of signal norm.  For
 continous time signals, the three most common norms are the 2-norm and
 the :math:`\infty`-norm:

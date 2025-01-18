@@ -131,9 +131,9 @@ several forms:
   * ``K, S, E = ct.lqr(A, B, Q, R)``
   * ``K, S, E = ct.lqr(A, B, Q, R, N)``
 
-If `sys` is a discrete time system, the first two forms will compute
-the discrete time optimal controller.  For the second two forms, the
-:func:`dlqr` function can be used to compute the discrete time optimal
+If `sys` is a discrete-time system, the first two forms will compute
+the discrete-time optimal controller.  For the second two forms, the
+:func:`dlqr` function can be used to compute the discrete-time optimal
 controller.  Additional arguments and details are given on the
 :func:`lqr` and :func:`dlqr` documentation pages.
 

@@ -5,7 +5,7 @@
 .. autoclass:: {{ objname }}
    :members:
    :show-inheritance:
-   :inherited-members:
+   :inherited-members: list dict
    :special-members:
 
    {% block methods %}

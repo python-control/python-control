@@ -29,7 +29,7 @@ _control_defaults = {
 
 
 class DefaultDict(collections.UserDict):
-    """Map names for settings from older version to their renamed ones.
+    """Default parameters dictionary, with legacy warnings.
 
     If a user wants to write to an old setting, issue a warning and write to
     the renamed setting instead. Accessing the old setting returns the value

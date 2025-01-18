@@ -682,7 +682,7 @@ the plot title:
 .. image:: figures/rlocus-siso_ctime-clicked.png
    :align: center
 
-Root locus diagrams are also supported for discrete time systems, in which
+Root locus diagrams are also supported for discrete-time systems, in which
 case the grid is show inside the unit circle:
 
 .. testcode:: pzmap
@@ -903,7 +903,7 @@ features:
 As this example illustrates, python-control plotting functions and
 Matplotlib plotting functions can generally be intermixed.  One type of
 plot for which this does not currently work is pole/zero plots with a
-continuous time omega-damping grid (including root locus diagrams), due to
+continuous-time omega-damping grid (including root locus diagrams), due to
 the way that axes grids are implemented.  As a workaround, the
 :func:`pole_zero_subplots` command can be used to create an array
 of subplots with different grid types, as illustrated in the following

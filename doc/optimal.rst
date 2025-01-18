@@ -70,7 +70,7 @@ can be on the input, the state, or combinations of input and state,
 depending on the form of :math:`g_i`.  Furthermore, these constraints are
 intended to hold at all instants in time along the trajectory.
 
-For a discrete time system, the same basic formulation applies except
+For a discrete-time system, the same basic formulation applies except
 that the cost function is given by
 
 .. math::

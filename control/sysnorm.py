@@ -110,7 +110,7 @@ def system_norm(system, p=2, tol=1e-6, print_warning=True, method=None):
 
     Notes
     -----
-    Does not yet compute the L-infinity norm for discrete time systems
+    Does not yet compute the L-infinity norm for discrete-time systems
     with pole(s) at the origin unless Slycot is used.
 
     Examples
@@ -268,9 +268,9 @@ def system_norm(system, p=2, tol=1e-6, print_warning=True, method=None):
             # ------------------
             # Discrete time case
             # ------------------
-            # Use inverse bilinear transformation of discrete time system
+            # Use inverse bilinear transformation of discrete-time system
             # to s-plane if no poles on |z|=1 or z=0.  Allows us to use
-            # test for continuous time systems next.
+            # test for continuous-time systems next.
             if G.isdtime():
                 Ad = A
                 Bd = B
@@ -278,7 +278,7 @@ def system_norm(system, p=2, tol=1e-6, print_warning=True, method=None):
                 Dd = D
                 if any(np.isclose(la.eigvals(Ad), 0.0)):
                     raise ct.ControlArgument(
-                        "L-infinity norm computation for discrete time "
+                        "L-infinity norm computation for discrete-time "
                         "system with pole(s) in z=0 currently not supported "
                         "unless Slycot installed.")
 

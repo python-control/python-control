@@ -55,11 +55,11 @@ __all__ = ['forced_response', 'step_response', 'step_info',
 
 
 class TimeResponseData:
-    """A class for returning time responses.
+    """Input/output system time response data.
 
     This class maintains and manipulates the data corresponding to the
     temporal response of an input/output system.  It is used as the return
-    type for time domain simulations (step response, input/output response,
+    type for time domain simulations (`step_response`, `input_output_response`,
     etc).
 
     A time response consists of a time vector, an output vector, and
@@ -143,18 +143,18 @@ class TimeResponseData:
         performs squeeze processing.
     issiso : bool, optional
         Set to True if the system generating the data is single-input,
-        single-output.  If passed as None (default), the input data
-        will be used to set the value.
+        single-output.  If passed as None (default), the input and output
+        data will be used to set the value.
     ninputs, noutputs, nstates : int
         Number of inputs, outputs, and states of the underlying system.
     params : dict, optional
         If system is a nonlinear I/O system, set parameter values.
     ntraces : int, optional
         Number of independent traces represented in the input/output
-        response.  If ntraces is 0 (default) then the data represents a
+        response.  If `ntraces` is 0 (default) then the data represents a
         single trace with the trace index surpressed in the data.
     trace_labels : array of string, optional
-        Labels to use for traces (set to sysname it ntraces is 0)
+        Labels to use for traces (set to sysname it `ntraces` is 0).
     trace_types : array of string, optional
         Type of trace.  Currently only 'step' is supported, which controls
         the way in which the signal is plotted.
@@ -175,7 +175,7 @@ class TimeResponseData:
         assigning to a tuple (default = False).
     plot_inputs : bool, optional
         Whether or not to plot the inputs by default (can be overridden
-        in the plot() method).
+        in the `~TimeResponseData.plot` method).
     multi_trace : bool, optional
         If True, then 2D input array represents multiple traces.  For
         a MIMO system, the `input` attribute should then be set to
@@ -566,7 +566,7 @@ class TimeResponseData:
     def inputs(self):
         """Time response input vector.
 
-        Input(s) to the system, indexed by input (optiona), trace (optional),
+        Input(s) to the system, indexed by input (optional), trace (optional),
         and time.  If a 1D vector is passed, the input corresponds to a
         scalar-valued input.  If a 2D vector is passed, then it can either
         represent multiple single-input traces or a single multi-input trace.
@@ -695,7 +695,7 @@ class TimeResponseData:
         """Plot the time response data objects.
 
         This method calls `time_response_plot`, passing all arguments
-        and keywords.
+        and keywords.  See `time_response_plot` for details.
 
         """
         return time_response_plot(self, *args, **kwargs)
@@ -790,7 +790,7 @@ def _process_labels(labels, signal, length):
     return labels
 
 
-# Helper function for checking array-like parameters
+# Helper function for checking array_like parameters
 def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
                          transpose=False):
 
@@ -925,8 +925,8 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
 
     U : array_like or float, optional
         Input array giving input at each time `T`.  If `U` is None or 0,
-        `T` must be given, even for discrete time systems. In this case,
-        for continuous time systems, a direct calculation of the matrix
+        `T` must be given, even for discrete-time systems. In this case,
+        for continuous-time systems, a direct calculation of the matrix
         exponential is used, which is faster than the general interpolating
         algorithm used otherwise.
 
@@ -941,7 +941,7 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
         compatibility with MATLAB and `scipy.signal.lsim`).
 
     interpolate : bool, default=False
-        If True and system is a discrete time system, the input will
+        If True and system is a discrete-time system, the input will
         be interpolated between the given time steps and the output
         will be given at system sampling rate.  Otherwise, only return
         the output at the times given in `T`.  No effect on continuous
@@ -997,10 +997,10 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
 
     Notes
     -----
-    For discrete time systems, the input/output response is computed
+    For discrete-time systems, the input/output response is computed
     using the `scipy.signal.dlsim` function.
 
-    For continuous time systems, the output is computed using the
+    For continuous-time systems, the output is computed using the
     matrix exponential exp(A t) and assuming linear interpolation
     of the inputs between time points.
 
@@ -1080,10 +1080,10 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
     if U is not None:
         U = np.asarray(U)
     if T is not None:
-        # T must be array-like
+        # T must be array_like
         T = np.asarray(T)
 
-    # Set and/or check time vector in discrete time case
+    # Set and/or check time vector in discrete-time case
     if isdtime(sys):
         if T is None:
             if U is None or (U.ndim == 0 and U == 0.):
@@ -1132,7 +1132,7 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
     xout[:, 0] = X0
     yout = np.zeros((n_outputs, n_steps))
 
-    # Separate out the discrete and continuous time cases
+    # Separate out the discrete and continuous-time cases
     if isctime(sys, strict=True):
         # Solve the differential equation, copied from scipy.signal.ltisys.
 
@@ -1213,7 +1213,7 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
         # Discrete time simulation using signal processing toolbox
         dsys = (A, B, C, D, sys_dt)
 
-        # Use signal processing toolbox for the discrete time simulation
+        # Use signal processing toolbox for the discrete-time simulation
         # Transpose the input to match toolbox convention
         tout, yout, xout = sp.signal.dlsim(dsys, np.transpose(U), spT, X0)
         tout = tout + T[0]
@@ -1332,11 +1332,11 @@ def step_response(
     T : array_like or float, optional
         Time vector, or simulation time duration if a number. If T is not
         provided, an attempt is made to create it automatically from the
-        dynamics of sys. If sys is continuous-time, the time increment dt
+        dynamics of sys. If sys is continuous time, the time increment dt
         is chosen small enough to show the fastest mode, and the simulation
         time period tfinal long enough to show the slowest mode, excluding
         poles at the origin and pole-zero cancellations. If this results in
-        too many time steps (>5000), dt is reduced. If sys is discrete-time,
+        too many time steps (>5000), dt is reduced. If sys is discrete time,
         only tfinal is computed, and final is reduced if it requires too
         many simulation steps.
 
@@ -1358,7 +1358,7 @@ def step_response(
 
     T_num : int, optional
         Number of time steps to use in simulation if T is not provided as an
-        array (autocomputed if not given); ignored if sys is discrete-time.
+        array (autocomputed if not given); ignored if sys is discrete time.
 
     transpose : bool, optional
         If True, transpose all input and output arrays (for backward
@@ -1489,9 +1489,9 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
 
     Parameters
     ----------
-    sysdata : StateSpace or TransferFunction or array_like
-        The system data. Either LTI system to simulate (StateSpace,
-        TransferFunction), or a time series of step response data.
+    sysdata : `StateSpace` or `TransferFunction` or array_like
+        The system data. Either LTI system to simulate (`StateSpace`,
+        `TransferFunction`), or a time series of step response data.
     T : array_like or float, optional
         Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given, see `step_response` for more detail).
@@ -1727,7 +1727,7 @@ def initial_response(
     sysdata : I/O system or list of I/O systems
         I/O system(s) for which initial response is computed.
 
-    sys : StateSpace or TransferFunction
+    sys : `StateSpace` or `TransferFunction`
         LTI system to simulate.
 
     T :  array_like or float, optional
@@ -1744,7 +1744,7 @@ def initial_response(
 
     T_num : int, optional
         Number of time steps to use in simulation if T is not provided as an
-        array (autocomputed if not given); ignored if sys is discrete-time.
+        array (autocomputed if not given); ignored if sys is discrete time.
 
     params : dict, optional
         If system is a nonlinear I/O system, set parameter values.
@@ -1863,7 +1863,7 @@ def impulse_response(
 
     T_num : int, optional
         Number of time steps to use in simulation if T is not provided as an
-        array (autocomputed if not given); ignored if sys is discrete-time.
+        array (autocomputed if not given); ignored if sys is discrete time.
 
     transpose : bool, optional
         If True, transpose all input and output arrays (for backward
@@ -1898,7 +1898,7 @@ def impulse_response(
     Notes
     -----
     This function uses the `forced_response` function to compute the time
-    response. For continuous time systems, the initial condition is altered
+    response. For continuous-time systems, the initial condition is altered
     to account for the initial impulse. For discrete-time aystems, the
     impulse is sized so that it has unit area.  The impulse response for
     nonlinear systems is not implemented.
@@ -2017,7 +2017,7 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
 
     Parameters
     ----------
-    sys : StateSpace or TransferFunction
+    sys : `StateSpace` or `TransferFunction`
         The system whose time response is to be computed
     is_step : bool
         Scales the dc value by the magnitude of the nonzero mode since
@@ -2177,7 +2177,7 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
 
 def _default_time_vector(sysdata, N=None, tfinal=None, is_step=True):
     """Returns a time vector that has a reasonable number of points.
-    if system is discrete-time, N is ignored """
+    if system is discrete time, N is ignored """
     from .lti import LTI
 
     if isinstance(sysdata, (list, tuple)):

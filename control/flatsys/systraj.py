@@ -14,17 +14,17 @@ from ..timeresp import TimeResponseData
 
 
 class SystemTrajectory:
-    """Class representing a trajectory for a flat system.
+    """Trajectory for a differentially flat system.
 
-    The `SystemTrajectory` class is used to represent the
-    trajectory of a (differentially flat) system.  Used by the
-    `point_to_point` function to return a trajectory.
+    The `SystemTrajectory` class is used to represent the trajectory
+    of a (differentially flat) system.  Used by the `point_to_point`
+    and `solve_flat_ocp` functions to return a trajectory.
 
     Parameters
     ----------
-    sys : FlatSystem
+    sys : `FlatSystem`
         Flat system object associated with this trajectory.
-    basis : BasisFamily
+    basis : `BasisFamily`
         Family of basis vectors to use to represent the trajectory.
     coeffs : list of 1D arrays, optional
         For each flat output, define the coefficients of the basis
@@ -96,18 +96,18 @@ class SystemTrajectory:
         return xd, ud
 
     # Return the system trajectory as a TimeResponseData object
-    def response(self, tlist, transpose=False, return_x=False, squeeze=None):
+    def response(self, timepts, transpose=False, return_x=False, squeeze=None):
         """Compute trajectory of a system as a TimeResponseData object.
 
         Evaluate the trajectory at a list of time points, returning the state
         and input vectors for the trajectory:
 
-            response = traj.response(tlist)
+            response = traj.response(timepts)
             time, yd, ud = response.time, response.outputs, response.inputs
 
         Parameters
         ----------
-        tlist : 1D array
+        timepts : 1D array
             List of times to evaluate the trajectory.
 
         transpose : bool, optional
@@ -131,7 +131,7 @@ class SystemTrajectory:
 
         Returns
         -------
-        results : `control.TimeResponseData`
+        response : `control.TimeResponseData`
             Time response represented as a `TimeResponseData` object
             containing the following properties:
 
@@ -157,13 +157,13 @@ class SystemTrajectory:
         """
         # Compute the state and input response using the eval function
         sys = self.system
-        xout, uout = self.eval(tlist)
+        xout, uout = self.eval(timepts)
         yout = np.array([
-            sys.output(tlist[i], xout[:, i], uout[:, i])
-            for i in range(len(tlist))]).transpose()
+            sys.output(timepts[i], xout[:, i], uout[:, i])
+            for i in range(len(timepts))]).transpose()
 
         return TimeResponseData(
-            tlist, yout, xout, uout, issiso=sys.issiso(),
+            timepts, yout, xout, uout, issiso=sys.issiso(),
             input_labels=sys.input_labels, output_labels=sys.output_labels,
-            state_labels=sys.state_labels,
+            state_labels=sys.state_labels, sysname=sys.name,
             transpose=transpose, return_x=return_x, squeeze=squeeze)

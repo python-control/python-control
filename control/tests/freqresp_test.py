@@ -276,7 +276,7 @@ def dsystem_type(request, dsystem_dt):
 @pytest.mark.parametrize("dsystem_type", ['sssiso', 'ssmimo', 'tf'],
                          indirect=True)
 def test_discrete(dsystem_type):
-    """Test discrete time frequency response"""
+    """Test discrete-time frequency response"""
     dsys = dsystem_type
     # Set frequency range to just below Nyquist freq (for Bode)
     omega_ok = np.linspace(10e-4, 0.99, 100) * np.pi / dsys.dt

@@ -28,29 +28,32 @@ help:
 
 # List of the first RST figure of each type in each file that is generated
 figures/flatsys-steering-compare.png: flatsys.rst
+	@$(SPHINXBUILD) -M doctest "$(SOURCEDIR)" "$(BUILDDIR)"
 figures/iosys-predprey-open.png: iosys.rst
+	@$(SPHINXBUILD) -M doctest "$(SOURCEDIR)" "$(BUILDDIR)"
 figures/timeplot-servomech-combined.png: nlsys.rst
+	@$(SPHINXBUILD) -M doctest "$(SOURCEDIR)" "$(BUILDDIR)"
 figures/steering-optimal.png: optimal.rst
+	@$(SPHINXBUILD) -M doctest "$(SOURCEDIR)" "$(BUILDDIR)"
 figures/phaseplot-dampedosc-default.png: phaseplot.rst
-figures/timeplot-mimo_step-default.png: response.rst
-figures/freqplot-siso_bode-default.png: response.rst
-figures/pzmap-siso_ctime-default.png: response.rst
-figures/rlocus-siso_ctime-default.png: response.rst
-figures/ctrlplot-servomech.png: response.rst
+	@$(SPHINXBUILD) -M doctest "$(SOURCEDIR)" "$(BUILDDIR)"
+figures/timeplot-mimo_step-default.png		\
+  figures/freqplot-siso_bode-default.png	\
+  figures/pzmap-siso_ctime-default.png		\
+  figures/rlocus-siso_ctime-default.png		\
+  figures/ctrlplot-servomech.png: response.rst
+	@$(SPHINXBUILD) -M doctest "$(SOURCEDIR)" "$(BUILDDIR)"
+
 figures/stochastic-whitenoise-response.png: stochastic.rst
+	@$(SPHINXBUILD) -M doctest "$(SOURCEDIR)" "$(BUILDDIR)"
 
 # Other figure rules
 figure/classes.pdf: figure/classes.fig
 	make -C figures classes.pdf
 
-# Rule to run `make doctest` once for all figures
-.docfigs: $(RST_FIGS)
-	@$(SPHINXBUILD) -M doctest "$(SOURCEDIR)" "$(BUILDDIR)"
-	touch $@
-
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-html latexpdf doctest clean: Makefile .docfigs $(FIGS)
+html latexpdf doctest clean: Makefile $(FIGS) $(RST_FIGS)
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 distclean: clean

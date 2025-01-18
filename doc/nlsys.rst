@@ -39,7 +39,7 @@ where `x` is a 1-D array with shape (n,), `u` is a 1-D array
 with shape (m,), `t` is a float representing the current time,
 and `params` is a dict containing the values of parameters used by the
 function.  The dynamics of the system can be in continuous or discrete
-time (use the `dt` keyword to create a discrete time system).
+time (use the `dt` keyword to create a discrete-time system).
 
 The output function `outfcn` is used to specify the outputs of the
 system and has the same calling signature as `updfcn`.  If it is not
@@ -140,7 +140,7 @@ on an initial guess `x0`.  The second form fixes the desired output
 values `y0` and uses `x0` and `u0` as an initial guess to find the
 equilibrium point.  If no equilibrium point can be found, the function
 returns the operating point that minimizes the state update (state
-derivative for continuous time systems, state difference for discrete
+derivative for continuous-time systems, state difference for discrete
 time systems).
 
 More complex operating points can be found by specifying which states,

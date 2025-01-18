@@ -56,7 +56,7 @@ def test_continuous_lqr(method, npts):
 
 @pytest.mark.parametrize("method", ['shooting']) # TODO: add 'collocation'
 def test_finite_horizon_simple(method):
-    # Define a (discrete time) linear system with constraints
+    # Define a (discrete-time) linear system with constraints
     # Source: https://www.mpt3.org/UI/RegulationProblem
 
     # LTI prediction model (discrete time)
@@ -216,7 +216,7 @@ def test_mpc_iosystem_aircraft():
 
 
 def test_mpc_iosystem_rename():
-    # Create a discrete time system (double integrator) + cost function
+    # Create a discrete-time system (double integrator) + cost function
     sys = ct.ss([[1, 1], [0, 1]], [[0], [1]], np.eye(2), 0, dt=True)
     cost = opt.quadratic_cost(sys, np.eye(2), np.eye(1))
     timepts = np.arange(0, 5)

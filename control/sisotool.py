@@ -59,10 +59,9 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
         Initial gain to use for plotting root locus. Defaults to 1
         (`config.defaults['sisotool.initial_gain']`).
     xlim_rlocus : tuple or list, optional
-        Control of x-axis range, normally with tuple
-        (see :doc:`matplotlib:api/axes_api`).
+        Control of x-axis range (see `matplotlib.axes.Axes.set_xlim`).
     ylim_rlocus : tuple or list, optional
-        Control of y-axis range.
+        Control of y-axis range (see `matplotlib.axes.Axes.set_ylim`).
     plotstr_rlocus : `matplotlib.pyplot.plot` format string, optional
         Plotting style for the root locus plot(color, linestyle, etc).
     rlocus_grid : boolean (default = False)
@@ -386,7 +385,7 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
         prop  = tf(1, 1, inputs='e', outputs='prop_e')
         integ = tf(1, [1, 0], inputs='e', outputs='int_e')
         deriv = tf([1, 0], [tau, 1], inputs='y', outputs='deriv')
-    else: # discrete-time
+    else: # discrete time
         prop  = tf(1, 1, dt, inputs='e', outputs='prop_e')
         integ = tf([dt/2, dt/2], [1, -1], dt, inputs='e', outputs='int_e')
         deriv = tf([1, -1], [dt, 0], dt, inputs='y', outputs='deriv')

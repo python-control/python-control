@@ -19,7 +19,7 @@ def h2syn(P, nmeas, ncon):
 
     Parameters
     ----------
-    P : StateSpace
+    P : `StateSpace`
         Partitioned LTI plant (state-space system).
     nmeas : int
         Number of measurements (input to controller).
@@ -28,13 +28,13 @@ def h2syn(P, nmeas, ncon):
 
     Returns
     -------
-    K : StateSpace
+    K : `StateSpace`
         Controller to stabilize `P`.
 
     Raises
     ------
     ImportError
-        if slycot routine sb10hd is not loaded
+        If slycot routine sb10hd is not loaded.
 
     See Also
     --------
@@ -91,7 +91,7 @@ def hinfsyn(P, nmeas, ncon):
 
     Parameters
     ----------
-    P : StateSpace
+    P : `StateSpace`
         Partitioned LTI plant (state-space system).
     nmeas : int
         Number of measurements (input to controller).
@@ -100,9 +100,9 @@ def hinfsyn(P, nmeas, ncon):
 
     Returns
     -------
-    K : StateSpace
+    K : `StateSpace`
         Controller to stabilize `P`.
-    CL : StateSpace
+    CL : `StateSpace`
         Closed loop system.
     gam : float
         Infinity norm of closed loop system.
@@ -116,7 +116,7 @@ def hinfsyn(P, nmeas, ncon):
     Raises
     ------
     ImportError
-        if slycot routine sb10ad is not loaded
+        If slycot routine sb10ad is not loaded.
 
     See Also
     --------
@@ -188,15 +188,15 @@ def _size_as_needed(w, wname, n):
 
     Returns
     -------
-    w_: processed weighting function, a StateSpace object:
-        - if w is None, empty StateSpace object
+    w_: processed weighting function, a `StateSpace` object:
+        - if w is None, empty `StateSpace` object
         - if w is scalar, w_ will be w * eye(n)
-        - otherwise, w as StateSpace object
+        - otherwise, w as `StateSpace` object
 
     Raises
     ------
     ValueError
-        - if w is not None or scalar, and doesn't have n inputs
+        If w is not None or scalar, and does not have n inputs.
 
     See Also
     --------
@@ -241,14 +241,14 @@ def augw(g, w1=None, w2=None, w3=None):
 
     Returns
     -------
-    p : StateSpace
+    p : `StateSpace`
         Plant augmented with weightings, suitable for submission to
         `hinfsyn` or `h2syn`.
 
     Raises
     ------
     ValueError
-        If all weightings are None
+        If all weightings are None.
 
     See Also
     --------
@@ -354,9 +354,9 @@ def mixsyn(g, w1=None, w2=None, w3=None):
 
     Returns
     -------
-    k : StateSpace
+    k : `StateSpace`
         Synthesized controller.
-    cl : StateSpace
+    cl : `StateSpace`
         Closed system mapping evaluation inputs to evaluation outputs.
 
         Let p be the augmented plant, with::

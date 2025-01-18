@@ -117,10 +117,9 @@ def test_parameter_docs(module, prefix):
             _info(f"member '{objname}' is outside `control` module", 5)
             continue
 
-        # Skip non-top-level functions without parameter lists
-        if prefix != "" and inspect.getmodule(obj) != module and \
-           doc is not None and doc["Parameters"] == []:
-            _info(f"skipping {objname} [no doc or no Paramaters]", 2)
+        # Skip non-top-level functions without documentation
+        if prefix != "" and inspect.getmodule(obj) != module and doc is None:
+            _info(f"skipping {objname} [no docstring]", 1)
             continue
 
         # If this is a class, recurse through methods
@@ -142,12 +141,14 @@ def test_parameter_docs(module, prefix):
             _info(f"skipping {objname} [inherited, hidden, or checked]", 4)
             continue
 
-        # Skip non-top-level functions without parameter lists
+        # Don't fail on non-top-level functions without parameter lists
+        # TODO: may be able to delete this
         if prefix != "" and inspect.getmodule(obj) != module and \
            doc is not None and doc["Parameters"] == [] and \
            doc["Returns"] == [] and doc["Yields"] == []:
-            _info(f"skipping {prefix}{name} (not top-level, no params)", 2)
-            continue
+            fail_if_missing = False
+        else:
+            fail_if_missing = True
 
         _info(f"Checking function {objname} against numpydoc", 2)
         _check_numpydoc_style(obj, doc)
@@ -191,6 +192,12 @@ def test_parameter_docs(module, prefix):
 
 	# If first argument is *args, try to use docstring instead
         sig = _replace_var_positional_with_docstring(sig, doc)
+
+        # Skip functions whose documentation is found elsewhere
+        if doc["Parameters"] == [] and re.search(
+                r"See[\s]+`[\w.]+`[\s]+(for|and)", doc_extended):
+               _info("skipping {objname}; references another function", 4)
+               continue
 
         # Go through each parameter and make sure it is in the docstring
         for argname, par in sig.parameters.items():
@@ -259,6 +266,11 @@ def test_parameter_docs(module, prefix):
                 _warn(
                     f"{obj} return value '{retname}' "
                     "docstring missing space")
+
+        # Look at the exceptions
+        for exc in doc["Raises"]:
+            _check_numpydoc_param(
+                obj.__name__, exc, noname_ok=True, section="Raises")
 
 
 @pytest.mark.parametrize("module, prefix", [
@@ -669,6 +681,29 @@ def _check_numpydoc_style(obj, doc):
             if re.search(f"`{pyobj}`", text) is not None:
                 _warn(f"{pyobj} appears in {section} for {name} with backticks")
 
+    control_classes = [
+        'InputOutputSystem', 'NonlinearIOSystem', 'StateSpace',
+        'TransferFunction', 'FrequencyResponseData', 'LinearICSystem',
+        'Flatsystem', 'InterconnectedSystem', 'TimeResponseData',
+        'NyquistResponseData', 'PoleZeroData', 'RootLocusData',
+        'ControlPlot', 'OperatingPoint', 'flatsys.Flatsystem']
+    for pyobj in control_classes:
+        if obj.__name__ == pyobj:
+            continue
+        for section in ["Extended Summary", "Notes"]:
+            text = "\n".join(doc[section])
+            if re.search(f"[^`]{pyobj}[^`.]", text) is not None:
+                _warn(f"{pyobj} in {section} for {name} w/o backticks")
+
+        for section in [
+                "Parameters", "Returns", "Additional Parameters", "Yields"]:
+            if section not in doc:
+                continue
+            for arg in doc[section]:
+                text = arg.type + "\n".join(arg.desc)
+                if re.search(f"(^|[^`]){pyobj}([^`.]|$)", text) is not None:
+                    _warn(f"{pyobj} in {section} for {name} w/o backticks")
+
     if inspect.isclass(obj):
         # Specialized checks for classes
         if doc["Returns"] != []:
@@ -684,6 +719,8 @@ def _check_numpydoc_style(obj, doc):
 
     for param in doc["Parameters"] + doc["Other Parameters"]:
         _check_numpydoc_param(name, param, section="Parameters")
+    for param in doc["Attributes"]:
+        _check_numpydoc_param(name, param, section="Attributes")
     for param in doc["Returns"]:
         _check_numpydoc_param(
             name, param, empty_ok=True, noname_ok=True, section="Returns")
@@ -696,7 +733,8 @@ def _check_numpydoc_style(obj, doc):
 def _check_numpydoc_param(
         name, param, empty_ok=False, noname_ok=False, section="??"):
     param_desc = "\n".join(param.desc)
-    param_name = f"{name} '{param.name}'"
+    param_name = f"{name} " + \
+        (f" '{param.name}'" if param.name != '' else f" '{param.type}'")
 
     # Check for empty section
     if param.name == "" and param.type == '':
@@ -780,8 +818,7 @@ def _info(str, level):
         print("  " * level + str)
 
 def _warn(str, level=-1):
-    if verbose > level:
-        print("WARN: " + "  " * level + str)
+    print("WARN: " + "  " * level + str)
     if not standalone:
         warnings.warn(str, stacklevel=2)
 
@@ -831,7 +868,7 @@ doc_ret_nospace = "out: int\n"
      doc_test + doc_returns + doc_ret_nospace, UserWarning, "missing space"),
     (doc_header + doc_returns + doc_ret_nospace,
      Failed, "missing Parameters section"),
-    (doc_header, None, ""),
+    (doc_header + "\nSee `other_function` for details", None, ""),
     (doc_header + "\n.. deprecated::", None, ""),
     (doc_header + "\n\n simple_function() is deprecated",
      UserWarning, "deprecated, but not numpydoc compliant"),

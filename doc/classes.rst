@@ -14,6 +14,14 @@ systems (both linear time-invariant and nonlinear).  They are usually
 created from factory functions such as :func:`tf` and :func:`ss`, so the
 user should normally not need to instantiate these directly.
 
+The following figure illustrates the relationship between the classes and
+some of the functions that can be used to convert objects from one class to
+another:
+
+.. image:: figures/classes.pdf
+   :width: 800
+   :align: center
+
 .. autosummary::
    :toctree: generated/
    :template: custom-class-template.rst
@@ -27,14 +35,6 @@ user should normally not need to instantiate these directly.
    FrequencyResponseData
    InterconnectedSystem
    LinearICSystem
-
-The following figure illustrates the relationship between the classes and
-some of the functions that can be used to convert objects from one class to
-another:
-
-.. image:: figures/classes.pdf
-   :width: 800
-   :align: center
 
 
 Response and Plotting Classes

@@ -294,7 +294,7 @@ response.
 Discrete Time Systems
 =====================
 
-A discrete time system is created by specifying a nonzero "timebase",
+A discrete-time system is created by specifying a nonzero "timebase",
 `dt` when the system is constructed:
 
 .. testsetup:: dtime
@@ -310,21 +310,21 @@ A discrete time system is created by specifying a nonzero "timebase",
 
 The timebase argument is interpreted as follows:
 
-* `dt` = 0: continuous time system (default)
-* `dt` > 0: discrete time system with sampling period 'dt'
+* `dt` = 0: continuous-time system (default)
+* `dt` > 0: discrete-time system with sampling period 'dt'
 * `dt` = True: discrete time with unspecified sampling period
 * `dt` = None: no timebase specified (see below)
 
 Systems must have compatible timebases in order to be combined. A
-discrete time system with unspecified sampling time (`dt` = True)
+discrete-time system with unspecified sampling time (`dt` = True)
 can be combined with a system having a specified sampling time; the
-result will be a discrete time system with the sample time of the
-latter system.  Similarly, a system with timebase None can be combined
+result will be a discrete-time system with the sample time of the
+other system.  Similarly, a system with timebase None can be combined
 with a system having a specified timebase; the result will have the
-timebase of the latter system. For continuous time systems, the
+timebase of the other system. For continuous-time systems, the
 :func:`sample_system` function or the :meth:`StateSpace.sample` and
 :meth:`TransferFunction.sample` methods can be used to create a
-discrete time system from a continuous time system.  See
+discrete-time system from a continuous-time system.  See
 :ref:`utility-and-conversions`. The default value of `dt` can be
 changed by changing the value of `config.defaults['control.default_dt']`.
 
@@ -332,7 +332,7 @@ Functions operating on LTI systems will take into account whether a
 system is continuous time or discrete time when carrying out operations
 that depend on this difference.  For example, the :func:`rss` function
 will place all system eigenvalues within the unit circle when called
-using `dt` corresponding to a discrete time system:
+using `dt` corresponding to a discrete-time system:
 
 .. testsetup::
 
@@ -417,7 +417,7 @@ Conversion of transfer functions to state space form is also possible:
 Time sampling
 -------------
 
-Continuous time systems can be converted to discrete time systems using
+Continuous time systems can be converted to discrete-time systems using
 the :func:`sample_system` function and specifying a sampling time:
 
 .. doctest::
@@ -447,7 +447,7 @@ the :func:`sample_system` function and specifying a sampling time:
   D = [[-0.34680884  0.02138098]
        [ 0.29124186 -0.01476461]]
 
-Note that the system name for the discrete time system is the name of
+Note that the system name for the discrete-time system is the name of
 the original system with the string '$sampled' appended.
 
 Discrete time systems can also be created using the
