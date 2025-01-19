@@ -837,7 +837,6 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
 
     Returns
     -------
-
     out_array : array
         The checked and converted contents of `in_obj`.
 
@@ -950,13 +949,11 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
     return_x : bool, default=None
         Used if the time response data is assigned to a tuple:
 
-        * If False, return only the time and output vectors.
-
-        * If True, also return the the state vector.
-
-        * If None, determine the returned variables by
-          `config.defaults['forced_response.return_x']`, which was True
-          before version 0.9 and is False since then.
+            * If False, return only the time and output vectors.
+            * If True, also return the the state vector.
+            * If None, determine the returned variables by
+              `config.defaults['forced_response.return_x']`, which was True
+              before version 0.9 and is False since then.
 
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then
@@ -970,30 +967,32 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
 
     Returns
     -------
-    results : `TimeResponseData` or `TimeResponseList`
-        Time response represented as a `TimeResponseData` object or
-        list of `TimeResponseData` objects containing the following
-        properties:
-
-        * time (array): Time values of the output.
-
-        * outputs (array): Response of the system.  If the system is SISO and
-          `squeeze` is not True, the array is 1D (indexed by time).  If the
-          system is not SISO or `squeeze` is False, the array is 2D (indexed
-          by output and time).
-
-        * states (array): Time evolution of the state vector, represented as
-          a 2D array indexed by state and time.
-
-        * inputs (array): Input(s) to the system, indexed by input and time.
-
-        The `~TimeResponseData.plot` method can be used to create a plot of
-        the time response(s) (see `time_response_plot` for more
-        information).
+    resp : `TimeResponseData` or `TimeResponseList`
+        Input/output response data object.  When accessed as a tuple,
+        returns ``(time, outputs)`` (default) or ``(time, outputs, states)``
+        if `return_x` is True.  The `~TimeResponseData.plot` method can
+        be used to create a plot of the time response(s) (see
+        `time_response_plot` for more information).  If `sysdata` is a list
+        of systems, a `TimeResponseList` object is returned, which acts as
+        a list of `TimeResponseData` objects with a `~TimeResponseList.plot`
+        method that will plot responses as multiple traces.  See
+        `time_response_plot` for additional information.
+    resp.time : array
+        Time values of the output.
+    resp.outputs : array
+        Response of the system.  If the system is SISO and `squeeze` is not
+        True, the array is 1D (indexed by time).  If the system is not SISO or
+        `squeeze` is False, the array is 2D (indexed by output and time).
+    resp.states : array
+        Time evolution of the state vector, represented as a 2D array indexed by
+        state and time.
+    resp.inputs : array
+        Input(s) to the system, indexed by input and time.
 
     See Also
     --------
-    step_response, initial_response, impulse_response, input_output_response
+    impulse_response, initial_response, input_output_response, \
+    step_response, time_response_plot
 
     Notes
     -----
@@ -1515,32 +1514,22 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
     Returns
     -------
     S : dict or list of list of dict
-        If `sysdata` corresponds to a SISO system, S is a dictionary
+        If `sysdata` corresponds to a SISO system, `S` is a dictionary
         containing:
 
-        RiseTime:
-            Time from 10% to 90% of the steady-state value.
-        SettlingTime:
-            Time to enter inside a default error of 2%
-        SettlingMin:
-            Minimum value after RiseTime
-        SettlingMax:
-            Maximum value after RiseTime
-        Overshoot:
-            Percentage of the Peak relative to steady value
-        Undershoot:
-            Percentage of undershoot
-        Peak:
-            Absolute peak value
-        PeakTime:
-            time of the Peak
-        SteadyStateValue:
-            Steady-state value
+            - 'RiseTime': Time from 10% to 90% of the steady-state value.
+            - 'SettlingTime': Time to enter inside a default error of 2%.
+            - 'SettlingMin': Minimum value after `RiseTime`.
+            - 'SettlingMax': Maximum value after `RiseTime`.
+            - 'Overshoot': Percentage of the peak relative to steady value.
+            - 'Undershoot': Percentage of undershoot.
+            - 'Peak': Absolute peak value.
+            - 'PeakTime': Time that the first peak value is obtained.
+            - 'SteadyStateValue': Steady-state value.
 
         If `sysdata` corresponds to a MIMO system, `S` is a 2D list of dicts.
         To get the step response characteristics from the j-th input to the
         i-th output, access ``S[i][j]``.
-
 
     See Also
     --------

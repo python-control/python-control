@@ -1026,8 +1026,7 @@ class TransferFunction(LTI):
         return out
 
     def _common_den(self, imag_tol=None, allow_nonproper=False):
-        """
-        Compute MIMO common denominators; return them and adjusted numerators.
+        """Compute MIMO common denominators; return them and adjusted numerators.
 
         This function computes the denominators per input containing all
         the poles of sys.den, and reports it as the array den.  The
@@ -1047,23 +1046,21 @@ class TransferFunction(LTI):
         Returns
         -------
         num: array
-            n by n by kd where n = max(sys.noutputs,sys.ninputs)
-                              kd = max(denorder)+1
-            Multi-dimensional array of numerator coefficients. num[i,j]
-            gives the numerator coefficient array for the ith output and jth
-            input; padded for use in td04ad ('C' option); matches the
-            denorder order; highest coefficient starts on the left.
-            If allow_nonproper=True and the order of a numerator exceeds the
-            order of the common denominator, num will be returned as None
-
+            Multi-dimensional array of numerator coefficients with shape
+            (n, n, kd) array, where n = max(sys.noutputs, sys.ninputs), kd
+            = max(denorder) + 1.  `num[i,j]` gives the numerator coefficient
+            array for the ith output and jth input; padded for use in
+            td04ad ('C' option); matches the denorder order; highest
+            coefficient starts on the left.  If `allow_nonproper` = True
+            and the order of a numerator exceeds the order of the common
+            denominator, `num` will be returned as None.
         den: array
-            sys.ninputs by kd
             Multi-dimensional array of coefficients for common denominator
-            polynomial, one row per input. The array is prepared for use in
-            slycot td04ad, the first element is the highest-order polynomial
-            coefficient of s, matching the order in denorder. If denorder <
-            number of columns in den, the den is padded with zeros.
-
+            polynomial with shape (sys.ninputs, kd) (one row per
+            input). The array is prepared for use in slycot td04ad, the
+            first element is the highest-order polynomial coefficient of
+            `s`, matching the order in denorder. If denorder < number of
+            columns in den, the den is padded with zeros.
         denorder: array of int, orders of den, one per input
 
         Examples
@@ -1649,7 +1646,7 @@ def tf(*args, **kwargs):
     ``tf(num, den, dt)``
 
         Create a discrete-time transfer function system; dt can either be a
-        positive number indicating the sampling time or 'True' if no
+        positive number indicating the sampling time or True if no
         specific timebase is given.
 
     ``tf([[G11, ..., G1m], ..., [Gp1, ..., Gpm]][, dt])``
@@ -1968,8 +1965,9 @@ def tfdata(sys):
 
     Returns
     -------
-    (num, den): numerator and denominator arrays
+    num, den : numerator and denominator arrays
         Transfer function coefficients (SISO only).
+
     """
     tf = _convert_to_transfer_function(sys)
 
@@ -1988,6 +1986,7 @@ def _clean_part(data, name="<unknown>"):
     Returns
     -------
     data: list of lists of ndarrays, with int converted to float
+
     """
     valid_types = (int, float, complex, np.number)
     valid_collection = (list, tuple, ndarray)

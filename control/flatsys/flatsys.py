@@ -133,7 +133,7 @@ class FlatSystem(NonlinearIOSystem):
         Returns
         -------
         zflag : list of 1D arrays
-            For each flat output :math:`z_i`, zflag[i] should be an
+            For each flat output :math:`z_i`, `zflag[i]` should be an
             ndarray of length :math:`q_i` that contains the flat
             output and its first :math:`q_i` derivatives.
 

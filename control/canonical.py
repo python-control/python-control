@@ -275,7 +275,10 @@ def _bdschur_defective(blksizes, eigvals):
     -------
     True iff Schur blocks are defective.
 
-    blksizes, eigvals are the 3rd and 4th results returned by mb03rd.
+    Notes
+    -----
+    `blksizes`, `eigvals` are the 3rd and 4th results returned by mb03rd.
+
     """
     if any(blksizes > 2):
         return True
@@ -327,9 +330,10 @@ def _bdschur_condmax_search(aschur, tschur, condmax):
 
     Notes
     -----
-    Outputs as for slycot.mb03rd
+    Outputs as for slycot.mb03rd.
 
-    aschur, tschur are as returned by scipy.linalg.schur.
+    `aschur`, `tschur` are as returned by scipy.linalg.schur.
+
     """
     try:
         from slycot import mb03rd
@@ -428,12 +432,11 @@ def bdschur(a, condmax=None, sort=None):
 
     If `sort` is 'continuous', the blocks are sorted according to
     associated eigenvalues.  The ordering is first by real part of
-    eigenvalue, in descending order, then by absolute value of
-    imaginary part of eigenvalue, also in decreasing order.
+    eigenvalue, in descending order, then by absolute value of imaginary
+    part of eigenvalue, also in decreasing order.
 
-    If `sort` is 'discrete', the blocks are sorted as for
-    'continuous', but applied to log of eigenvalues
-    (i.e., continuous-equivalent eigenvalues).
+    If `sort` is 'discrete', the blocks are sorted as for 'continuous', but
+    applied to log of eigenvalues (i.e., continuous-equivalent eigenvalues).
 
     Examples
     --------
@@ -509,7 +512,7 @@ def modal_form(xsys, condmax=None, sort=False):
     -------
     zsys : `StateSpace` object
         System in modal canonical form, with state z.
-    T : (M, M) array
+    T : (M, M) ndarray
         Coordinate transformation: z = T * x.
 
     Examples

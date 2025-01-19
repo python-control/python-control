@@ -28,7 +28,7 @@ def unwrap(angle, period=2*math.pi):
 
     Returns
     -------
-    angle_out : array_like
+    angle_out : ndarray
         Output array, with jumps of period/2 eliminated.
 
     Examples

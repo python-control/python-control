@@ -34,7 +34,7 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
     Returns
     -------
     sysd : LTI of the same class (`StateSpace` or `TransferFunction`)
-        Discrete time system, with sampling rate Ts.
+        Discrete time system, with sampling rate `Ts`.
 
     Other Parameters
     ----------------

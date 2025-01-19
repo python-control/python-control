@@ -88,27 +88,18 @@ def stepinfo(sysdata, T=None, yfinal=None, SettlingTimeThreshold=0.02,
     Returns
     -------
     S : dict or list of list of dict
-        If `sysdata` corresponds to a SISO system, S is a dictionary
+        If `sysdata` corresponds to a SISO system, `S` is a dictionary
         containing:
 
-        RiseTime:
-            Time from 10% to 90% of the steady-state value.
-        SettlingTime:
-            Time to enter inside a default error of 2%
-        SettlingMin:
-            Minimum value after RiseTime
-        SettlingMax:
-            Maximum value after RiseTime
-        Overshoot:
-            Percentage of the Peak relative to steady value
-        Undershoot:
-            Percentage of undershoot
-        Peak:
-            Absolute peak value
-        PeakTime:
-            time of the Peak
-        SteadyStateValue:
-            Steady-state value
+            - 'RiseTime': Time from 10% to 90% of the steady-state value.
+            - 'SettlingTime': Time to enter inside a default error of 2%.
+            - 'SettlingMin': Minimum value after `RiseTime`.
+            - 'SettlingMax': Maximum value after `RiseTime`.
+            - 'Overshoot': Percentage of the peak relative to steady value.
+            - 'Undershoot': Percentage of undershoot.
+            - 'Peak': Absolute peak value.
+            - 'PeakTime': Time that the first peak value is obtained.
+            - 'SteadyStateValue': Steady-state value.
 
         If `sysdata` corresponds to a MIMO system, `S` is a 2D list of dicts.
         To get the step response characteristics from the j-th input to the

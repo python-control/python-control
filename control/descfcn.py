@@ -124,7 +124,7 @@ def describing_function(
 
     Returns
     -------
-    df : array of complex
+    df : ndarray of complex
         The (complex) value of the describing function at the given amplitudes.
 
     Raises
@@ -312,15 +312,21 @@ def describing_function_response(
     -------
     response : `DescribingFunctionResponse` object
         Response object that contains the result of the describing function
-        analysis.  The following information can be retrieved from this
-        object:
-    response.intersections : 1D array of 2-tuples or None
+        analysis.  The results can plotted using the
+        `~DescribingFunctionResponse.plot` method.
+    response.intersections : 1D ndarray of 2-tuples or None
         A list of all amplitudes and frequencies in which
         :math:`H(j\\omega) N(a) = -1`, where :math:`N(a)` is the describing
         function associated with `F`, or None if there are no such
         points.  Each pair represents a potential limit cycle for the
         closed loop system with amplitude given by the first value of the
         tuple and frequency given by the second value.
+    response.Nvals : complex ndarray
+        Complex value of the describing function, indexed by amplitude.
+
+    See Also
+    --------
+    DescribingFunctionResponse, describing_function_plot
 
     Examples
     --------
@@ -456,20 +462,22 @@ def describing_function_plot(
     Returns
     -------
     cplt : `ControlPlot` object
-        Object containing the data that were plotted:
+        Object containing the data that were plotted.  See `ControlPlot`
+        for more detailed information.
+    cplt.lines : array of `matplotlib.lines.Line2D`
+        Array containing information on each line in the plot.  The first
+        element of the array is a list of lines (typically only one) for
+        the Nyquist plot of the linear I/O system.  The second element of
+        the array is a list of lines (typically only one) for the
+        describing function curve.
+    cplt.axes : 2D array of `matplotlib.axes.Axes`
+        Axes for each subplot.
+    cplt.figure : `matplotlib.figure.Figure`
+        Figure containing the plot.
 
-          * cplt.lines: Array of `matplotlib.lines.Line2D` objects for
-            each line in the plot.  The  first element of the array is
-            a list of lines (typically  only one) for the Nyquist plot
-            of the linear I/O system.  The second element of the array
-            is a list of lines (typically only one) for the describing
-            function curve.
-
-          * cplt.axes: 2D array of `matplotlib.axes.Axes` for the plot.
-
-          * cplt.figure: `matplotlib.figure.Figure` containing the plot.
-
-        See `ControlPlot` for more detailed information.
+    See Also
+    --------
+    DescribingFunctionResponse, describing_function_response
 
     Examples
     --------

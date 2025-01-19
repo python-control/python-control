@@ -364,6 +364,30 @@ Follow numpydoc format with the following additional details:
   form that can be checked by running `make doctest` in the `doc`
   directory.  This is also part of the CI checks.
 
+For functions that return a named tuple, bundle object, or class
+instance, the return documentation should include the primary elements
+of the return value::
+
+  Returns
+  -------
+  resp : `TimeResponseData`
+      Input/output response data object.  When accessed as a tuple, returns
+      ``time, outputs`` (default) or ``time, outputs, states`` if
+      `return_states` is True.  The `~TimeResponseData.plot` method can be
+      used to create a plot of the time response(s) (see `time_response_plot`
+      for more information).
+  resp.time : array
+      Time values of the output.
+  resp.outputs : array
+      Response of the system.  If the system is SISO and `squeeze` is not
+      True, the array is 1D (indexed by time).  If the system is not SISO or
+      `squeeze` is False, the array is 2D (indexed by output and time).
+  resp.states : array
+      Time evolution of the state vector, represented as a 2D array indexed by
+      state and time.
+  resp.inputs : array
+      Input(s) to the system, indexed by input and time.
+
 
 Class docstrings
 ----------------

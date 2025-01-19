@@ -91,20 +91,18 @@ def time_response_plot(
     Returns
     -------
     cplt : `ControlPlot` object
-        Object containing the data that were plotted:
-
-          * cplt.lines: Array of `matplotlib.lines.Line2D` objects
-            for each line in the plot.  The shape of the array matches the
-            subplots shape and the value of the array is a list of Line2D
-            objects in that subplot.
-
-          * cplt.axes: 2D array of `matplotlib.axes.Axes` for the plot.
-
-          * cplt.figure: `matplotlib.figure.Figure` containing the plot.
-
-          * cplt.legend: legend object(s) contained in the plot.
-
-        See `ControlPlot` for more detailed information.
+        Object containing the data that were plotted.  See `ControlPlot`
+        for more detailed information.
+    cplt.lines : 2D array of `matplotlib.lines.Line2D`
+        Array containing information on each line in the plot.  The shape
+        of the array matches the subplots shape and the value of the array
+        is a list of Line2D objects in that subplot.
+    cplt.axes : 2D array of `matplotlib.axes.Axes`
+        Axes for each subplot.
+    cplt.figure : `matplotlib.figure.Figure`
+        Figure containing the plot.
+    cplt.legend : 2D array of `matplotlib.legend.Legend`
+        Legend object(s) contained in the plot.
 
     Other Parameters
     ----------------

@@ -60,7 +60,7 @@ def place(A, B, p):
 
     Returns
     -------
-    K : 2D array (or matrix)
+    K : 2D array
         Gain such that A - B K has eigenvalues given in p.
 
     Notes
@@ -131,7 +131,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
     Returns
     -------
-    K : 2D array (or matrix)
+    K : 2D array
         Gain such that A - B K has eigenvalues given in p.
 
     See Also
@@ -223,7 +223,7 @@ def place_acker(A, B, poles):
 
     Returns
     -------
-    K : 2D array (or matrix)
+    K : 2D array
         Gains such that A - B K has given eigenvalues.
 
     See Also
@@ -300,9 +300,9 @@ def lqr(*args, **kwargs):
 
     Returns
     -------
-    K : 2D array (or matrix)
+    K : 2D array
         State feedback gains.
-    S : 2D array (or matrix)
+    S : 2D array
         Solution to Riccati equation.
     E : 1D array
         Eigenvalues of the closed loop system.
@@ -447,9 +447,9 @@ def dlqr(*args, **kwargs):
 
     Returns
     -------
-    K : 2D array (or matrix)
+    K : 2D array
         State feedback gains.
-    S : 2D array (or matrix)
+    S : 2D array
         Solution to Riccati equation.
     E : 1D array
         Eigenvalues of the closed loop system.
@@ -1043,7 +1043,7 @@ def ctrb(A, B, t=None):
 
     Returns
     -------
-    C : 2D array (or matrix)
+    C : 2D array
         Controllability matrix.
 
     Examples
@@ -1086,7 +1086,7 @@ def obsv(A, C, t=None):
 
     Returns
     -------
-    O : 2D array (or matrix)
+    O : 2D array
         Observability matrix.
 
     Examples
@@ -1131,7 +1131,7 @@ def gram(sys, type):
 
     Returns
     -------
-    gram : 2D array (or matrix)
+    gram : 2D array
         Gramian of system.
 
     Raises

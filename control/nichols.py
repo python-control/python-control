@@ -50,21 +50,18 @@ def nichols_plot(
     Returns
     -------
     cplt : `ControlPlot` object
-        Object containing the data that were plotted:
-
-          * cplt.lines: 1D array of `matplotlib.lines.Line2D` objects.
-            The size of the array matches the number of systems and the
-            value of the array is a list of Line2D objects for that system.
-
-          * cplt.axes: 2D array of `matplotlib.axes.Axes` for the plot.
-
-          * cplt.figure: `matplotlib.figure.Figure` containing the plot.
-
-          * cplt.legend: legend object(s) contained in the plot
-
-        See `ControlPlot` for more detailed information.
-
-      lines : array of Line2D
+        Object containing the data that were plotted.  See `ControlPlot`
+        for more detailed information.
+    cplt.lines : Array of `matplotlib.lines.Line2D` objects
+        Array containing information on each line in the plot.  The shape
+        of the array matches the subplots shape and the value of the array
+        is a list of Line2D objects in that subplot.
+    cplt.axes : 2D ndarray of `matplotlib.axes.Axes`
+        Axes for each subplot.
+    cplt.figure : `matplotlib.figure.Figure`
+        Figure containing the plot.
+    cplt.legend : 2D array of `matplotlib.legend.Legend`
+        Legend object(s) contained in the plot.
 
     Other Parameters
     ----------------
@@ -352,6 +349,7 @@ def closed_loop_contours(Gcl_mags, Gcl_phases):
     -------
     contours : complex array
         Array of complex numbers corresponding to the contours.
+
     """
     # Compute the contours in Gcl-space. Since we're given closed-loop
     # magnitudes and phases, this is just a case of converting them into
@@ -380,6 +378,7 @@ def m_circles(mags, phase_min=-359.75, phase_max=-0.25):
     -------
     contours : complex array
         Array of complex numbers corresponding to the contours.
+
     """
     # Convert magnitudes and phase range into a grid suitable for
     # building contours
@@ -406,6 +405,7 @@ def n_circles(phases, mag_min=-40.0, mag_max=12.0):
     -------
     contours : complex array
         Array of complex numbers corresponding to the contours.
+
     """
     # Convert phases and magnitude range into a grid suitable for
     # building contours

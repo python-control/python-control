@@ -89,7 +89,7 @@ def lqe(*args, **kwargs):
     L : 2D array
         Kalman estimator gain.
     P : 2D array
-        Solution to Riccati equation.
+        Solution to Riccati equation:
 
         .. math::
 

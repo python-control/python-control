@@ -200,6 +200,7 @@ def get_output_fb_index(sys):
     -------
     float
         The OFP index.
+
     """
     sol = solve_passivity_LMI(sys, nu=0.0)
     if sol is None:

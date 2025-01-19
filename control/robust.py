@@ -365,13 +365,11 @@ def mixsyn(g, w1=None, w2=None, w3=None):
             [y]   [p21   g] [u]
 
         then cl is the system from w -> z with u = -k*y.
-
     info : tuple
         Two-tuple (`gamma`, `rcond`) containing additional information:
-
-        * `gamma` (scalar): H-infinity norm of cl.
-        * `rcond` (array): Estimates of reciprocal condition numbers computed
-          during synthesis.  See hinfsyn for details.
+            - `gamma` (scalar): H-infinity norm of cl.
+            - `rcond` (array): Estimates of reciprocal condition numbers
+               computed during synthesis.  See hinfsyn for details.
 
     See Also
     --------

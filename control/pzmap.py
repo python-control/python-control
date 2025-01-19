@@ -136,7 +136,7 @@ def pole_zero_map(sysdata):
 
     Returns
     -------
-    pzmap_data : PoleZeroMap
+    pzmap_data : `PoleZeroMap`
         Pole/zero map containing the poles and zeros of the system.  Use
         ``pzmap_data.plot()`` or ``pole_zero_plot(pzmap_data)`` to plot the
         pole/zero map.
@@ -193,25 +193,22 @@ def pole_zero_plot(
     Returns
     -------
     cplt : `ControlPlot` object
-        Object containing the data that were plotted:
+        Object containing the data that were plotted.  See `ControlPlot`
+        for more detailed information.
+    cplt.lines : array of list of `matplotlib.lines.Line2D`
+        The shape of the array is given by (nsys, 2) where nsys is the number
+        of systems or responses passed to the function.  The second index
+        specifies the pzmap object type:
 
-          * cplt.lines: Array of `matplotlib.lines.Line2D` objects
-            for each set of markers in the plot. The shape of the array is
-            given by (nsys, 2) where nsys is the number of systems or
-            responses passed to the function.  The second index specifies
-            the pzmap object type:
+            - lines[idx, 0]: poles
+            - lines[idx, 1]: zeros
 
-              - lines[idx, 0]: poles
-              - lines[idx, 1]: zeros
-
-          * cplt.axes: 2D array of `matplotlib.axes.Axes` for the plot.
-
-          * cplt.figure: `matplotlib.figure.Figure` containing the plot.
-
-          * cplt.legend: legend object(s) contained in the plot
-
-        See `ControlPlot` for more detailed information.
-
+    cplt.axes : 2D array of `matplotlib.axes.Axes`
+        Axes for each subplot.
+    cplt.figure : `matplotlib.figure.Figure`
+        Figure containing the plot.
+    cplt.legend : 2D array of `matplotlib.legend.Legend`
+        Legend object(s) contained in the plot.
     poles, zeros : list of arrays
         (legacy) If the `plot` keyword is given, the system poles and zeros
         are returned.

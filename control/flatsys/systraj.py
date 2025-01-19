@@ -131,28 +131,27 @@ class SystemTrajectory:
 
         Returns
         -------
-        response : `control.TimeResponseData`
-            Time response represented as a `TimeResponseData` object
-            containing the following properties:
-
-            * time (array): Time values of the output.
-
-            * outputs (array): Response of the system.  If the system is
-              SISO and squeeze is not True, the array is 1D (indexed by
-              time).  If the system is not SISO or `squeeze` is False,
-              the array is 3D (indexed by the output, trace, and time).
-
-            * states (array): Time evolution of the state vector,
-              represented as either a 2D array indexed by state and time
-              (if SISO) or a 3D array indexed by state, trace, and time.
-              Not affected by `squeeze`.
-
-            * inputs (array): Input(s) to the system, indexed in the same
-              manner as `outputs`.
-
-            The return value of the system can also be accessed by assigning
-            the function to a tuple of length 2 (time, output) or of length 3
-            (time, output, state) if `return_x` is True.
+        response : `TimeResponseData`
+            Time response data object representing the input/output response.
+            When accessed as a tuple, returns ``(time, outputs)`` or ``(time,
+            outputs, states`` if `return_x` is True.  If the input/output
+            system signals are named, these names will be used as labels for
+            the time response.  If `sys` is a list of systems, returns a
+            `TimeResponseList` object.  Results can be plotted using the
+            `~TimeResponseData.plot` method.  See `TimeResponseData` for more
+            detailed information.
+        response.time : array
+            Time values of the output.
+        response.outputs : array
+            Response of the system.  If the system is SISO and `squeeze` is
+            not True, the array is 1D (indexed by time).  If the system is not
+            SISO or `squeeze` is False, the array is 2D (indexed by output and
+            time).
+        response.states : array
+            Time evolution of the state vector, represented as a 2D array
+            indexed by state and time.
+        response.inputs : array
+            Input(s) to the system, indexed by input and time.
 
         """
         # Compute the state and input response using the eval function

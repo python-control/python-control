@@ -456,6 +456,7 @@ class NonlinearIOSystem(InputOutputSystem):
         Returns
         -------
         y : ndarray
+
         """
         self._update_params(params)
         return self._out(
@@ -1507,37 +1508,35 @@ def input_output_response(
 
     Returns
     -------
-    results : `TimeResponseData`
-        Time response represented as a `TimeResponseData` object
-        containing the following properties:
-
-        * time (array): Time values of the output.
-
-        * outputs (array): Response of the system.  If the system is SISO and
-          `squeeze` is not True, the array is 1D (indexed by time).  If the
-          system is not SISO or `squeeze` is False, the array is 2D (indexed
-          by output and time).
-
-        * states (array): Time evolution of the state vector, represented as
-          a 2D array indexed by state and time.
-
-        * inputs (array): Input(s) to the system, indexed by input and time.
-
-        * params (dict): Parameters values used for the simulation.
-
-        The return value of the system can also be accessed by assigning the
-        function to a tuple of length 2 (time, output) or of length 3 (time,
-        output, state) if `return_x` is True.  If the input/output
-        system signals are named, these names will be used as labels for the
-        time response.
+    response : `TimeResponseData`
+        Time response data object representing the input/output response.
+        When accessed as a tuple, returns ``(time, outputs)`` or ``(time,
+        outputs, states`` if `return_x` is True.  If the input/output system
+        signals are named, these names will be used as labels for the time
+        response.  If `sys` is a list of systems, returns a `TimeResponseList`
+        object.  Results can be plotted using the `~TimeResponseData.plot`
+        method.  See `TimeResponseData` for more detailed information.
+    response.time : array
+        Time values of the output.
+    response.output : array
+        Response of the system.  If the system is SISO and `squeeze` is not
+        True, the array is 1D (indexed by time).  If the system is not SISO
+        or `squeeze` is False, the array is 2D (indexed by output and time).
+    response.states : array
+        Time evolution of the state vector, represented as a 2D array
+        indexed by state and time.
+    response.inputs : array
+        Input(s) to the system, indexed by input and time.
+    response.params : dict
+        Parameters values used for the simulation.
 
     Other Parameters
     ----------------
     ignore_errors : bool, optional
         If False (default), errors during computation of the trajectory
         will raise a `RuntimeError` exception.  If True, do not raise
-        an exception and instead set `results.success` to False and
-        place an error message in `results.message`.
+        an exception and instead set `response.success` to False and
+        place an error message in `response.message`.
     solve_ivp_method : str, optional
         Set the method used by `scipy.integrate.solve_ivp`.  Defaults
         to 'RK45'.
@@ -1976,13 +1975,17 @@ def find_operating_point(
     -------
     op_point : `OperatingPoint`
         The solution represented as an `OperatingPoint` object.  The main
-        attributes are `states` and `inputs`, which represent the state
-        and input arrays at the operating point.  See
-        `OperatingPoint` for a description of other attributes.
-
-        If accessed as a tuple, returns `states`, `inputs`, and optionally
-        `outputs` and `result` based on the `return_outputs` and
-        `return_result` parameters.
+        attributes are `states` and `inputs`, which represent the state and
+        input arrays at the operating point.  If accessed as a tuple, returns
+        `states`, `inputs`, and optionally `outputs` and `result` based on the
+        `return_outputs` and `return_result` parameters.  See `OperatingPoint`
+        for a description of other attributes.
+    op_point.states : array
+        State vector at the operating point.
+    op_point.inputs : array
+        Input vector at the operating point.
+    op_point.outputs : array, optional
+        Output vector at the operating point.
 
     Notes
     -----
@@ -2421,7 +2424,7 @@ def interconnect(
 
     Returns
     -------
-    sys : InterconnectedSystem
+    sys : `InterconnectedSystem`
         `NonlinearIOSystem` consisting of the interconnected subsystems.
 
     Other Parameters

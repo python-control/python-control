@@ -97,21 +97,19 @@ def phase_plane_plot(
     Returns
     -------
     cplt : `ControlPlot` object
-        Object containing the data that were plotted:
+        Object containing the data that were plotted.  See `ControlPlot`
+        for more detailed information.
+    cplt.lines : array of list of `matplotlib.lines.Line2D`
+        Array of list of `matplotlib.artist.Artist` objects:
 
-          * cplt.lines: array of list of `matplotlib.artist.Artist`
-            objects:
+            - lines[0] = list of Line2D objects (streamlines, separatrices).
+            - lines[1] = Quiver object (vector field arrows).
+            - lines[2] = list of Line2D objects (equilibrium points).
 
-              - lines[0] = list of Line2D objects (streamlines, separatrices).
-              - lines[1] = Quiver object (vector field arrows).
-              - lines[2] = list of Line2D objects (equilibrium points).
-
-          * cplt.axes: 2D array of `matplotlib.axes.Axes` for the plot.
-
-          * cplt.figure: `matplotlib.figure.Figure` containing the plot.
-
-        See `ControlPlot` for more detailed information.
-
+    cplt.axes : 2D array of `matplotlib.axes.Axes`
+        Axes for each subplot.
+    cplt.figure : `matplotlib.figure.Figure`
+        Figure containing the plot.
 
     Other Parameters
     ----------------
@@ -1317,6 +1315,8 @@ def box_grid(xlimp, ylimp):
 # TODO: rename to something more useful (or remove??)
 def _find(condition):
     """Returns indices where ravel(a) is true.
-    Private implementation of deprecated matplotlib.mlab.find
+
+    Private implementation of deprecated `matplotlib.mlab.find`.
+
     """
     return np.nonzero(np.ravel(condition))[0]

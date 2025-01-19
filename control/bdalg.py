@@ -38,7 +38,7 @@ def series(*sys, **kwargs):
 
     Returns
     -------
-    out : scalar, array, or `InputOutputSystem`
+    out : `InputOutputSystem`
         Series interconnection of the systems.
 
     Other Parameters
@@ -109,7 +109,7 @@ def parallel(*sys, **kwargs):
 
     Returns
     -------
-    out : scalar, array, or `InputOutputSystem`
+    out : `InputOutputSystem`
         Parallel interconnection of the systems.
 
     Other Parameters
@@ -177,7 +177,7 @@ def negate(sys, **kwargs):
 
     Returns
     -------
-    out : scalar, array, or `InputOutputSystem`
+    out : `InputOutputSystem`
         Negated system.
 
     Other Parameters
@@ -233,7 +233,7 @@ def feedback(sys1, sys2=1, sign=-1, **kwargs):
 
     Returns
     -------
-    out : scalar, array, or `InputOutputSystem`
+    out : `InputOutputSystem`
         Feedback interconnection of the systems.
 
     Other Parameters
@@ -608,7 +608,7 @@ def split_tf(transfer_function):
 
     Returns
     -------
-    np.ndarray
+    ndarray
         NumPy array of SISO transfer functions.
 
     Examples

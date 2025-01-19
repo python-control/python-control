@@ -239,13 +239,13 @@ def get_plot_axes(line_array):
 
     Parameters
     ----------
-    line_array : array of list of Line2D
+    line_array : array of list of `matplotlib.lines.Line2D`
         A 2D array with elements corresponding to a list of lines appearing
         in an axes, matching the return type of a time response data plot.
 
     Returns
     -------
-    axes_array : array of list of Axes
+    axes_array : array of list of `matplotlib.axes.Axes`
         A 2D array with elements corresponding to the Axes associated with
         the lines in `line_array`.
 
@@ -287,7 +287,7 @@ def pole_zero_subplots(
 
     Returns
     -------
-    ax_array : array
+    ax_array : ndarray
         2D array of axes.
 
     """
@@ -612,8 +612,10 @@ def _add_arrows_to_line2D(
 
     Returns
     -------
-    arrows: list of arrows
+    arrows : list of arrows
 
+    Notes
+    -----
     Based on https://stackoverflow.com/questions/26911898/
 
     """

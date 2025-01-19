@@ -127,24 +127,23 @@ def root_locus_plot(
     Returns
     -------
     cplt : `ControlPlot` object
-        Object containing the data that were plotted:
-
-          * cplt.lines: Array of `matplotlib.lines.Line2D` objects
-            for each set of markers in the plot. The shape of the array is
-            given by (nsys, 3) where nsys is the number of systems or
-            responses passed to the function.  The second index specifies
-            the object type:
+        Object containing the data that were plotted.  See `ControlPlot`
+        for more detailed information.
+    cplt.lines : array of list of `matplotlib.lines.Line2D`
+        The shape of the array is given by (nsys, 3) where nsys is the number
+        of systems or responses passed to the function.  The second index
+        specifies the object type:
 
               - lines[idx, 0]: poles
               - lines[idx, 1]: zeros
               - lines[idx, 2]: loci
 
-          * cplt.axes: 2D array of `matplotlib.axes.Axes` for the plot.
-
-          * cplt.figure: `matplotlib.figure.Figure` containing the plot.
-
-        See `ControlPlot` for more detailed information.
-
+    cplt.axes : 2D array of `matplotlib.axes.Axes`
+        Axes for each subplot.
+    cplt.figure : `matplotlib.figure.Figure`
+        Figure containing the plot.
+    cplt.legend : 2D array of `matplotlib.legend.Legend`
+        Legend object(s) contained in the plot.
     roots, gains : ndarray
         (legacy) If the `plot` keyword is given, returns the closed-loop
         root locations, arranged such that each row corresponds to a gain,

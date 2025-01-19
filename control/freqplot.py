@@ -133,20 +133,18 @@ def bode_plot(
     Returns
     -------
     cplt : `ControlPlot` object
-        Object containing the data that were plotted:
-
-          * cplt.lines: Array of `matplotlib.lines.Line2D` objects
-            for each line in the plot.  The shape of the array matches the
-            subplots shape and the value of the array is a list of Line2D
-            objects in that subplot.
-
-          * cplt.axes: 2D array of `matplotlib.axes.Axes` for the plot.
-
-          * cplt.figure: `matplotlib.figure.Figure` containing the plot.
-
-          * cplt.legend: legend object(s) contained in the plot
-
-        See `ControlPlot` for more detailed information.
+        Object containing the data that were plotted.  See `ControlPlot`
+        for more detailed information.
+    cplt.lines : Array of `matplotlib.lines.Line2D` objects
+        Array containing information on each line in the plot.  The shape
+        of the array matches the subplots shape and the value of the array
+        is a list of Line2D objects in that subplot.
+    cplt.axes : 2D ndarray of `matplotlib.axes.Axes`
+        Axes for each subplot.
+    cplt.figure : `matplotlib.figure.Figure`
+        Figure containing the plot.
+    cplt.legend : 2D array of `matplotlib.legend.Legend`
+        Legend object(s) contained in the plot.
 
     Other Parameters
     ----------------
@@ -1128,9 +1126,9 @@ class NyquistResponseData:
     sysname : str
         The name of the system being analyzed.
     return_contour : bool
-        If true, when the object is accessed as an iterable return two
-        elements: `count` (number of encirlements) and `contour`.  If
-        false (default), then return only `count`.
+        If True, when the object is accessed as an iterable return two
+        elements: `count` (number of encirclements) and `contour`.  If
+        False (default), then return only `count`.
 
     """
     def __init__(
@@ -1212,7 +1210,7 @@ def nyquist_response(
     responses : list of `NyquistResponseData`
         For each system, a Nyquist response data object is returned.  If
         `sysdata` is a single system, a single elemeent is returned (not a
-        list).  For each response, the following information is available:
+        list).
     response.count : int
         Number of encirclements of the point -1 by the Nyquist curve.  If
         multiple systems are given, an array of counts is returned.
@@ -1247,9 +1245,9 @@ def nyquist_response(
         Number of samples to use for the frequeny range.  Defaults to
         `config.defaults['freqplot.number_of_samples']`.
     warn_nyquist : bool, optional
-        If set to 'False', turn off warnings about frequencies above Nyquist.
+        If set to False, turn off warnings about frequencies above Nyquist.
     warn_encirclements : bool, optional
-        If set to 'False', turn off warnings about number of encirclements not
+        If set to False, turn off warnings about number of encirclements not
         meeting the Nyquist criterion.
 
     Notes
@@ -1276,8 +1274,8 @@ def nyquist_response(
     image use a dashdot line style.
 
     If the legacy keyword `return_contour` is specified as True, the
-    response object can be iterated over to return `count, contour`.  This
-    behavior is deprecated and will be removed in a future release.
+    response object can be iterated over to return ``(count, contour)``.
+    This behavior is deprecated and will be removed in a future release.
 
     See Also
     --------
@@ -1584,26 +1582,25 @@ def nyquist_plot(
     Returns
     -------
     cplt : `ControlPlot` object
-        Object containing the data that were plotted:
+        Object containing the data that were plotted.  See `ControlPlot`
+        for more detailed information.
+    cplt.lines : 2D array of `matplotlib.lines.Line2D`
+        Array containing information on each line in the plot.  The shape
+        of the array is given by (nsys, 4) where nsys is the number of
+        systems or Nyquist responses passed to the function.  The second
+        index specifies the segment type:
 
-          * cplt.lines: 2D array of `matplotlib.lines.Line2D`
-            objects for each line in the plot.  The shape of the array is
-            given by (nsys, 4) where nsys is the number of systems or
-            Nyquist responses passed to the function.  The second index
-            specifies the segment type:
+            - lines[idx, 0]: unscaled portion of the primary curve
+            - lines[idx, 1]: scaled portion of the primary curve
+            - lines[idx, 2]: unscaled portion of the mirror curve
+            - lines[idx, 3]: scaled portion of the mirror curve
 
-              - lines[idx, 0]: unscaled portion of the primary curve
-              - lines[idx, 1]: scaled portion of the primary curve
-              - lines[idx, 2]: unscaled portion of the mirror curve
-              - lines[idx, 3]: scaled portion of the mirror curve
-
-          * cplt.axes: 2D array of `matplotlib.axes.Axes` for the plot.
-
-          * cplt.figure: `matplotlib.figure.Figure` containing the plot.
-
-          * cplt.legend: legend object(s) contained in the plot
-
-        See `ControlPlot` for more detailed information.
+    cplt.axes : 2D array of `matplotlib.axes.Axes`
+        Axes for each subplot.
+    cplt.figure : `matplotlib.figure.Figure`
+        Figure containing the plot.
+    cplt.legend : 2D array of `matplotlib.legend.Legend`
+        Legend object(s) contained in the plot.
 
     Other Parameters
     ----------------
@@ -1688,7 +1685,7 @@ def nyquist_plot(
         Override the default parameters used for generating plots.
         Default is set by `config.defaults['ctrlplot.rcParams']`.
     return_contour : bool, optional
-        (legacy) If 'True', return the encirclement count and Nyquist
+        (legacy) If True, return the encirclement count and Nyquist
         contour used to generate the Nyquist plot.
     show_legend : bool, optional
         Force legend to be shown if True or hidden if False.  If
@@ -1709,9 +1706,9 @@ def nyquist_plot(
         centered relative to the axes.  If set to 'figure', it will be
         centered with respect to the figure (faster execution).
     warn_nyquist : bool, optional
-        If set to 'False', turn off warnings about frequencies above Nyquist.
+        If set to False, turn off warnings about frequencies above Nyquist.
     warn_encirclements : bool, optional
-        If set to 'False', turn off warnings about number of encirclements not
+        If set to False, turn off warnings about number of encirclements not
         meeting the Nyquist criterion.
 
     See Also
@@ -2244,19 +2241,17 @@ def gangof4_plot(
     Returns
     -------
     cplt : `ControlPlot` object
-        Object containing the data that were plotted:
-
-          * cplt.lines: 2x2 array of `matplotlib.lines.Line2D`
-            objects for each line in the plot.  The value of each array
-            entry is a list of Line2D objects in that subplot.
-
-          * cplt.axes: 2D array of `matplotlib.axes.Axes` for the plot.
-
-          * cplt.figure: `matplotlib.figure.Figure` containing the plot.
-
-          * cplt.legend: legend object(s) contained in the plot
-
-        See `ControlPlot` for more detailed information.
+        Object containing the data that were plotted.  See `ControlPlot`
+        for more detailed information.
+    cplt.lines : 2x2 array of `matplotlib.lines.Line2D`
+        Array containing information on each line in the plot.  The value
+        of each array entry is a list of Line2D objects in that subplot.
+    cplt.axes : 2D array of `matplotlib.axes.Axes`
+        Axes for each subplot.
+    cplt.figure : `matplotlib.figure.Figure`
+        Figure containing the plot.
+    cplt.legend : 2D array of `matplotlib.legend.Legend`
+        Legend object(s) contained in the plot.
 
     """
     if len(args) == 1 and isinstance(args[0], FrequencyResponseData):
@@ -2390,19 +2385,18 @@ def singular_values_plot(
     Returns
     -------
     cplt : `ControlPlot` object
-        Object containing the data that were plotted:
-
-          * cplt.lines: 1-D array of `matplotlib.lines.Line2D` objects.
-            The size of the array matches the number of systems and the
-            value of the array is a list of Line2D objects for that system.
-
-          * cplt.axes: 2D array of `matplotlib.axes.Axes` for the plot.
-
-          * cplt.figure: `matplotlib.figure.Figure` containing the plot.
-
-          * cplt.legend: legend object(s) contained in the plot
-
-        See `ControlPlot` for more detailed information.
+        Object containing the data that were plotted.  See `ControlPlot`
+        for more detailed information.
+    cplt.lines : array of `matplotlib.lines.Line2D`
+        Array containing information on each line in the plot.  The size of
+        the array matches the number of systems and the value of the array
+        is a list of Line2D objects for that system.
+    cplt.axes : 2D array of `matplotlib.axes.Axes`
+        Axes for each subplot.
+    cplt.figure : `matplotlib.figure.Figure`
+        Figure containing the plot.
+    cplt.legend : 2D array of `matplotlib.legend.Legend`
+        Legend object(s) contained in the plot.
 
     Other Parameters
     ----------------

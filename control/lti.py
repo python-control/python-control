@@ -38,6 +38,15 @@ class LTI(InputOutputSystem):
         super().__init__(
             name=name, inputs=inputs, outputs=outputs, states=states, **kwargs)
 
+    # TODO: update ss, tf docstrings to use this one as the primary
+    def __call__(self, x, squeeze=None, warn_infinite=True):
+        """Evaluate system's frequency response at complex frequencies.
+
+        See `StateSpace.__call__` and `TransferFunction.__call__` for details.
+
+        """
+        raise NotImplementedError("not implemented in subclass")
+
     def damp(self):
         '''Natural frequency, damping ratio of system poles.
 
@@ -80,51 +89,7 @@ class LTI(InputOutputSystem):
     def frequency_response(self, omega=None, squeeze=None):
         """Evaluate LTI system response at an array of frequencies.
 
-        For continuous-time systems with transfer function G, computes
-        the frequency response as
-
-             G(j*omega) = mag * exp(j*phase)
-
-        For discrete-time systems, the response is evaluated around the
-        unit circle such that
-
-             G(exp(j*omega*dt)) = mag * exp(j*phase).
-
-        In general the system may be multiple input, multiple output (MIMO),
-        where ``m = self.ninputs`` number of inputs and ``p = self.noutputs``
-        number of outputs.
-
-        Parameters
-        ----------
-        omega : float or 1D array_like, optional
-            A list, tuple, array, or scalar value of frequencies in
-            radians/sec at which the system will be evaluated.  If None (default),
-            a set of frequencies is computed based on the system dynamics.
-        squeeze : bool, optional
-            If `squeeze` = True, remove single-dimensional entries from the
-            shape of the output even if the system is not SISO. If
-            `squeeze` = False, keep all indices (output, input and, if
-            omega is array_like, frequency) even if the system is SISO. The
-            default value can be set using
-            `config.defaults['control.squeeze_frequency_response']`.
-
-        Returns
-        -------
-        response : `FrequencyResponseData`
-            Frequency response data object representing the frequency
-            response.  This object can be assigned to a tuple using
-
-                mag, phase, omega = response
-
-            where `mag` is the magnitude (absolute value, not dB or log10)
-            of the system frequency response, `phase` is the wrapped phase
-            in radians of the system frequency response, and `omega` is
-            the (sorted) frequencies at which the response was evaluated.
-            If the system is SISO and squeeze is not True, `magnitude` and
-            `phase` are 1D, indexed by frequency.  If the system is not
-            SISO or squeeze is False, the array is 3D, indexed by the
-            output, input, and, if omega is array_like, frequency.  If
-            `squeeze` is True then single-dimensional axes are removed.
+        See `frequency_response` for more detailed information.
 
         """
         from .frdata import FrequencyResponseData
@@ -438,6 +403,7 @@ def damp(sys, doprint=True):
     return wn, zeta, poles
 
 
+# TODO: deprecate this function
 def evalfr(sys, x, squeeze=None):
     """Evaluate transfer function of LTI system at complex frequency.
 
@@ -500,20 +466,30 @@ def frequency_response(
         Hz=None, squeeze=None):
     """Frequency response of an LTI system.
 
-    Computes the frequency response of an LTI system at a list of
-    frequencies.  In general the system may be multiple input, multiple
-    output (MIMO), where ``m = sys.ninputs`` number of inputs and ``p =
-    sys.noutputs`` number of outputs.
+    For continuous-time systems with transfer function G, computes the
+    frequency response as
+
+         G(j*omega) = mag * exp(j*phase)
+
+    For discrete-time systems, the response is evaluated around the unit
+    circle such that
+
+         G(exp(j*omega*dt)) = mag * exp(j*phase).
+
+    In general the system may be multiple input, multiple output (MIMO),
+    where ``m = self.ninputs`` number of inputs and ``p = self.noutputs``
+    number of outputs.
 
     Parameters
     ----------
     sysdata : LTI system or list of LTI systems
         Linear system(s) for which frequency response is computed.
     omega : float or 1D array_like, optional
-        Frequencies in radians/sec at which the system should be
-        evaluated. Can be a single frequency or array of frequencies, which
-        will be sorted before evaluation.  If None (default), a common set
-        of frequencies that works across all given systems is computed.
+        A list, tuple, array, or scalar value of frequencies in radians/sec
+        at which the system will be evaluated.  Can be a single frequency
+        or array of frequencies, which will be sorted before evaluation.
+        If None (default), a common set of frequencies that works across
+        all given systems is computed.
     omega_limits : array_like of two values, optional
         Limits to the range of frequencies, in rad/sec. Specifying
         `omega` as a list of two elements is equivalent to providing
@@ -526,23 +502,23 @@ def frequency_response(
     Returns
     -------
     response : `FrequencyResponseData`
-        Frequency response data object representing the frequency response.
-        This object can be assigned to a tuple using
-
-            mag, phase, omega = response
-
-        where `mag` is the magnitude (absolute value, not dB or log10) of
-        the system frequency response, `phase` is the wrapped phase in
-        radians of the system frequency response, and `omega` is the
-        (sorted) frequencies at which the response was evaluated.  If the
-        system is SISO and squeeze is not False, `magnitude` and `phase`
-        are 1D, indexed by frequency.  If the system is not SISO or squeeze
-        is False, the array is 3D, indexed by the output, input, and
-        frequency.  If `squeeze` is True then single-dimensional axes are
-        removed.
-
-        Returns a list of `FrequencyResponseData` objects if `sys` is
-        a list of systems.
+        Frequency response data object representing the frequency
+        response.  When accessed as a tuple, returns ``(magnitude,
+        phase, omega)``.  If `sysdata` is a list of systems, returns a
+        `FrequencyResponseList` object.  Results can be plotted using
+        the `~FrequencyResponseData.plot` method.  See
+        `FrequencyResponseData` for more detailed information.
+    response.magnitude : array
+        Magnitude of the frequency response (absolute value, not dB or
+        log10).  If the system is SISO and squeeze is not True, the
+        array is 1D, indexed by frequency.  If the system is not SISO
+        or squeeze is False, the array is 3D, indexed by the output,
+        input, and, if omega is array_like, frequency.  If `squeeze` is
+        True then single-dimensional axes are removed.
+    response.phase : array
+        Wrapped phase, in radians, with same shape as `magnitude`.
+    response.omega : array
+        Sorted list of frequencies at which response was evaluated.
 
     Other Parameters
     ----------------
@@ -560,7 +536,7 @@ def frequency_response(
 
     See Also
     --------
-    evalfr, bode_plot
+    LTI.__call__, bode_plot
 
     Notes
     -----
