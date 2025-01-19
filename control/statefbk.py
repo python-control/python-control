@@ -47,12 +47,12 @@ import scipy as sp
 from . import statesp
 from .config import _process_legacy_keyword
 from .exception import ControlArgument, ControlDimension, \
-    ControlNotImplemented, ControlSlycot
+    ControlSlycot
 from .iosys import _process_indices, _process_labels, isctime, isdtime
 from .lti import LTI
 from .mateqn import _check_shape, care, dare
 from .nlsys import NonlinearIOSystem, interconnect
-from .statesp import StateSpace, _convert_to_statespace, _ssmatrix, ss
+from .statesp import StateSpace, _ssmatrix, ss
 
 # Make sure we have access to the right slycot routines
 try:

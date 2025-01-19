@@ -7,10 +7,10 @@ import numpy as np
 import pytest
 import itertools
 import warnings
-from math import pi, atan
+from math import pi
 
 import control as ct
-from control import lqe, dlqe, poles, rss, ss, tf
+from control import poles, rss, ss, tf
 from control.exception import ControlDimension, ControlSlycot, \
     ControlArgument, slycot_check
 from control.mateqn import care, dare
@@ -969,7 +969,6 @@ def unicycle():
         states=['x_', 'y_', 'theta_'],
         params={'a': 1})        # only used for testing params
 
-from math import pi
 
 @pytest.mark.parametrize("method", ['nearest', 'linear', 'cubic'])
 def test_gainsched_unicycle(unicycle, method):
