@@ -259,12 +259,13 @@ def balanced_reduction(sys, orders, method='truncate', alpha=None):
 
     States are eliminated based on Hankel singular value.  If `sys` has
     unstable modes, they are removed, the balanced realization is done on
-    the stable part, then reinserted in accordance with the reference
-    below.
+    the stable part, then reinserted in accordance with [1]_.
 
-    Reference: Hsu,C.S., and Hou,D., 1991,
-    Reducing unstable linear control systems via real Schur transformation.
-    Electronics Letters, 27, 984-986.
+    References
+    ----------
+    .. [1] C. S. Hsu and D. Hou, "Reducing unstable linear control
+       systems via real Schur transformation".  Electronics Letters,
+       27, 984-986, 1991.
 
     Parameters
     ----------
@@ -479,8 +480,7 @@ def eigensys_realization(arg, r, m=None, n=None, dt=True, transpose=False):
     References
     ----------
     .. [1] Samet Oymak and Necmiye Ozay, Non-asymptotic Identification of
-       LTI Systems from a Single Trajectory.
-       https://arxiv.org/abs/1806.05722
+       LTI Systems from a Single Trajectory. https://arxiv.org/abs/1806.05722
 
     Examples
     --------

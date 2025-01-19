@@ -293,9 +293,11 @@ def ispassive(sys, ofp_index=0, ifp_index=0):
 
     References
     ----------
-    .. [1] McCourt, Michael J., and Panos J. Antsaklis
-          "Demonstrating passivity and dissipativity using computational
-          methods."
+
+    .. [1] McCourt, Michael J., and Panos J. Antsaklis "Demonstrating
+       passivity and dissipativity using computational methods."
+       Technical Report of the ISIS Group at the University of Notre
+       Dame.  ISIS-2013-008, Aug. 2013.
 
     """
     return solve_passivity_LMI(sys, rho=ofp_index, nu=ifp_index) is not None

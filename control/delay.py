@@ -26,16 +26,20 @@ def pade(T, n=1, numdeg=None):
 
     Returns
     -------
-    num, den : array
+    num, den : ndarray
         Polynomial coefficients of the delay model, in descending powers of s.
 
     Notes
     -----
-    Based on:
-      1. Algorithm 11.3.1 in Golub and van Loan, "Matrix Computation" 3rd.
-         Ed. pp. 572-574
-      2. M. Vajta, "Some remarks on Padé-approximations",
-         3rd TEMPUS-INTCOM Symposium
+    Based on [1]_ and [2]_.
+
+    References
+    ----------
+    .. [1] Algorithm 11.3.1 in Golub and van Loan, "Matrix Computation" 3rd.
+         Ed. pp. 572-574.
+
+    .. [2] M. Vajta, "Some remarks on Padé-approximations",
+         3rd TEMPUS-INTCOM Symposium.
 
     Examples
     --------

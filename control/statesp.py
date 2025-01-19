@@ -1069,23 +1069,29 @@ class StateSpace(NonlinearIOSystem, LTI):
         return StateSpace(A, B, C, D, dt)
 
     def lft(self, other, nu=-1, ny=-1):
-        """Return the Linear Fractional Transformation.
+        """Return the linear fractional transformation.
 
         A definition of the LFT operator can be found in Appendix A.7,
-        page 512 in the 2nd Edition, Multivariable Feedback Control by
-        Sigurd Skogestad.
-
-        An alternative definition can be found here:
+        page 512 in [1]_.  An alternative definition can be found here:
         https://www.mathworks.com/help/control/ref/lft.html
 
         Parameters
         ----------
-        other : LTI
+        other : `StateSpace`
             The lower LTI system.
         ny : int, optional
             Dimension of (plant) measurement output.
         nu : int, optional
             Dimension of (plant) control input.
+
+        Returns
+        -------
+        `StateSpace`
+
+        References
+        ----------
+        .. [1] S. Skogestad, Multivariable Feedback Control.  Second
+           edition, 2005.
 
         """
         other = _convert_to_statespace(other)

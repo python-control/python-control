@@ -218,8 +218,8 @@ def _default_gains(num, den, xlim, ylim):
 
     References
     ----------
-    Ogata, K. (2002). Modern control engineering (4th ed.). Upper
-    Saddle River, NJ : New Delhi: Prentice Hall..
+    .. [1] Ogata, K. (2002). Modern control engineering (4th
+       ed.). Upper Saddle River, NJ : New Delhi: Prentice Hall..
 
     """
     # Compute the break points on the real axis for the root locus plot

@@ -1747,7 +1747,7 @@ def initial_response(
         Number of time steps to use in simulation if `T` is not provided as
         an array (autocomputed if not given); ignored if the system is
         discrete time.
-    
+
     params : dict, optional
         If system is a nonlinear I/O system, set parameter values.
 
