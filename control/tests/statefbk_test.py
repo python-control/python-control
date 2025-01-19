@@ -57,6 +57,23 @@ class TestStatefbk:
         Wc = ctrb(A, B, t=t)
         np.testing.assert_array_almost_equal(Wc, Wctrue)
 
+    def testCtrbNdim1(self):
+        # gh-1097: treat 1-dim B as nx1
+        A = np.array([[1., 2.], [3., 4.]])
+        B = np.array([5., 7.])
+        Wctrue = np.array([[5., 19.], [7., 43.]])
+        Wc = ctrb(A, B)
+        np.testing.assert_array_almost_equal(Wc, Wctrue)
+
+    def testCtrbRejectMismatch(self):
+        # gh-1097: check A, B for compatible shapes
+        with pytest.raises(ControlDimension, match='A must be a square matrix'):
+            ctrb([[1,2]],[1])
+        with pytest.raises(ControlDimension, match='Incompatible dimensions of B matrix'):
+            ctrb([[1,2],[2,3]], 1)
+        with pytest.raises(ControlDimension, match='Incompatible dimensions of B matrix'):
+            ctrb([[1,2],[2,3]], [[1,2]])
+
     def testObsvSISO(self):
         A = np.array([[1., 2.], [3., 4.]])
         C = np.array([[5., 7.]])
@@ -78,6 +95,23 @@ class TestStatefbk:
         Wotrue = np.array([[5., 6.], [7., 8.]])
         Wo = obsv(A, C, t=t)
         np.testing.assert_array_almost_equal(Wo, Wotrue)
+
+    def testObsvNdim1(self):
+        # gh-1097: treat 1-dim C as 1xn
+        A = np.array([[1., 2.], [3., 4.]])
+        C = np.array([5., 7.])
+        Wotrue = np.array([[5., 7.], [26., 38.]])
+        Wo = obsv(A, C)
+        np.testing.assert_array_almost_equal(Wo, Wotrue)
+
+    def testObsvRejectMismatch(self):
+        # gh-1097: check A, B for compatible shapes
+        with pytest.raises(ControlDimension, match='A must be a square matrix'):
+            obsv([[1,2]],[1])
+        with pytest.raises(ControlDimension, match='Incompatible dimensions of C matrix'):
+            obsv([[1,2],[2,3]], 1)
+        with pytest.raises(ControlDimension, match='Incompatible dimensions of C matrix'):
+            obsv([[1,2],[2,3]], [[1],[2]])
 
     def testCtrbObsvDuality(self):
         A = np.array([[1.2, -2.3], [3.4, -4.5]])
