@@ -163,13 +163,13 @@ class TransferFunction(LTI):
 
         Construct a transfer function.
 
-        The default constructor is TransferFunction(num, den), where num and
-        den are 2D arrays of arrays containing polynomial coefficients.
-        To create a discrete-time transfer function, use TransferFunction(num,
-        den, dt) where 'dt' is the sampling time (or True for unspecified
-        sampling time).  To call the copy constructor, call
-        TransferFunction(sys), where sys is a TransferFunction object
-        (continuous or discrete).
+        The default constructor is TransferFunction(num, den), where num
+        and den are 2D arrays of arrays containing polynomial coefficients.
+        To create a discrete-time transfer function, use
+        ``TransferFunction(num, den, dt)`` where `dt` is the sampling time
+        (or True for unspecified sampling time).  To call the copy
+        constructor, call ``TransferFunction(sys)``, where `sys` is a
+        TransferFunction object (continuous or discrete).
 
         See `TransferFunction` and `tf` for more information.
 
@@ -1631,7 +1631,7 @@ def tf(*args, **kwargs):
     ``tf(sys)``
 
         Convert a linear system into transfer function form. Always creates
-        a new system, even if sys is already a `TransferFunction` object.
+        a new system, even if `sys` is already a `TransferFunction` object.
 
     ``tf(num, den)``
 

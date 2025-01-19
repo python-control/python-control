@@ -107,6 +107,9 @@ intersphinx_mapping = \
      'python': ('https://docs.python.org/3/', None),
      }
 
+# Don't generate external links to (local) keywords
+intersphinx_disabled_reftypes = ["py:keyword"]
+
 # If this is True, todo and todolist produce output, else they produce nothing.
 # The default is False.
 todo_include_todos = True
@@ -220,7 +223,7 @@ def linkcode_resolve(domain, info):
     else:                       # specific version
         return base_url + "%s/control/%s%s" % (version, fn, linespec)
 
-# Don't automaticall show all members of class in Methods & Attributes section
+# Don't automatically show all members of class in Methods & Attributes section
 numpydoc_show_class_members = False
 
 # Don't create a Sphinx TOC for the lists of class methods and attributes
@@ -294,3 +297,16 @@ import control.flatsys as fs
 import control.phaseplot as pp
 ct.reset_defaults()
 """
+
+# -- Customization for python-control ----------------------------------------
+#
+# This code does custom processing of docstrings for the python-control
+# package.
+
+def process_docstring(app, what, name, obj, options, lines):
+    # Loop through each line in docstring and replace `sys` with :code:`sys`
+    for i in range(len(lines)):
+        lines[i] = lines[i].replace("`sys`", ":code:`sys`")
+
+def setup(app):
+    app.connect('autodoc-process-docstring', process_docstring)

@@ -188,7 +188,8 @@ System-creating commands:
 
 System arguments:
 
-* `sys` when an argument is a single input/output system (e.g. `bandwidth`).
+* :code:`sys` when an argument is a single input/output system
+  (e.g. `bandwidth`).
 
 * `syslist` when an argument is a list of systems (e.g.,
   `interconnect`).  A single system should also be OK.
@@ -252,6 +253,14 @@ guidelines:
     objects and is configured so that linked objects will appear in a
     bolder type, so that it is easier to see what things you can click
     on to get more information.
+
+  - By default, the string \`sys\` in docstrings would normally
+    generate a link to the :mod:`sys` Python module.  To avoid this,
+    `conf.py` includes code that converts \`sys\` in docstrings to
+    \:code\:\`sys`, which renders as :code:`sys` (code style, with no
+    link).  In ``.rst`` files, this construction should be done
+    manually, since ``.rst`` files are not pre-processed as a
+    docstring.
 
 * Use double backticks for inline code, such as a Python code fragments.
 

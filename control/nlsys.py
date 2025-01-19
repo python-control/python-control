@@ -584,7 +584,7 @@ class InterconnectedSystem(NonlinearIOSystem):
     """Interconnection of a set of input/output systems.
 
     This class is used to implement a system that is an interconnection of
-    input/output systems.  The sys consists of a collection of subsystems
+    input/output systems.  The system consists of a collection of subsystems
     whose inputs and outputs are connected via a connection map.  The overall
     system inputs and outputs are subsets of the subsystem inputs and outputs.
 

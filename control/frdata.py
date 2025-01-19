@@ -938,12 +938,12 @@ FRD = FrequencyResponseData
 def _convert_to_frd(sys, omega, inputs=1, outputs=1):
     """Convert a system to frequency response data form (if needed).
 
-    If sys is already an frd, and its frequency range matches or
-    overlaps the range given in omega then it is returned.  If sys is
-    another LTI object or a transfer function, then it is converted to
-    a frequency response data at the specified omega. If sys is a
-    scalar, then the number of inputs and outputs can be specified
-    manually, as in:
+    If `sys` is already a frequency response data object, and its
+    frequency range matches or overlaps the range given in omega then
+    it is returned.  If `sys` is another LTI object or a transfer
+    function, then it is converted to a frequency response data at the
+    specified omega. If `sys` is a scalar, then the number of inputs and
+    outputs can be specified manually, as in:
 
     >>> import numpy as np
     >>> from control.frdata import _convert_to_frd

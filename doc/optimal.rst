@@ -131,7 +131,7 @@ by using the :func:`~optimal.solve_ocp` function::
 
   res = opt.solve_ocp(sys, timepts, X0, cost, constraints)
 
-The `sys` parameter should be an :class:`InputOutputSystem` and the
+The :code:`sys` parameter should be an :class:`InputOutputSystem` and the
 `timepts` parameter should represent a time vector that gives the list
 of times at which the cost and constraints should be evaluated (the
 time points need not be uniformly spaced).

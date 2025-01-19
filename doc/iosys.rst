@@ -653,7 +653,7 @@ can be created with the command::
 
   ctrl, clsys = ct.create_statefbk_iosystem(sys, K)
 
-where `sys` is the process dynamics and `K` is the state feedback gain
+where :code:`sys` is the process dynamics and `K` is the state feedback gain
 (e.g., from LQR).  The function returns the controller `ctrl` and the
 closed loop systems `clsys`, both as I/O systems.  The input to the
 controller is the vector of desired states :math:`x_\text{d}`, desired

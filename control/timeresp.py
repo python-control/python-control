@@ -1330,15 +1330,15 @@ def step_response(
         I/O system(s) for which step response is computed.
 
     T : array_like or float, optional
-        Time vector, or simulation time duration if a number. If T is not
+        Time vector, or simulation time duration if a number. If `T` is not
         provided, an attempt is made to create it automatically from the
-        dynamics of sys. If sys is continuous time, the time increment dt
-        is chosen small enough to show the fastest mode, and the simulation
-        time period tfinal long enough to show the slowest mode, excluding
-        poles at the origin and pole-zero cancellations. If this results in
-        too many time steps (>5000), dt is reduced. If sys is discrete time,
-        only tfinal is computed, and final is reduced if it requires too
-        many simulation steps.
+        dynamics of the system. If the system continuous time, the time
+        increment dt is chosen small enough to show the fastest mode, and
+        the simulation time period tfinal long enough to show the slowest
+        mode, excluding poles at the origin and pole-zero cancellations. If
+        this results in too many time steps (>5000), dt is reduced. If the
+        system is discrete time, only tfinal is computed, and final is
+        reduced if it requires too many simulation steps.
 
     X0 : array_like or float, optional
         Initial condition (default = 0).  This can be used for a nonlinear
@@ -1357,8 +1357,9 @@ def step_response(
         If system is a nonlinear I/O system, set parameter values.
 
     T_num : int, optional
-        Number of time steps to use in simulation if T is not provided as an
-        array (autocomputed if not given); ignored if sys is discrete time.
+        Number of time steps to use in simulation if `T` is not provided as
+        an array (autocomputed if not given); ignored if the system is
+        discrete time.
 
     transpose : bool, optional
         If True, transpose all input and output arrays (for backward
@@ -1484,8 +1485,7 @@ def step_response(
 
 def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
               SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1, 0.9)):
-    """
-    Step response characteristics (rise time, settling time, etc).
+    """Step response characteristics (rise time, settling time, etc).
 
     Parameters
     ----------
@@ -1497,8 +1497,8 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
         autocomputed if not given, see `step_response` for more detail).
         Required, if sysdata is a time series of response data.
     T_num : int, optional
-        Number of time steps to use in simulation if T is not provided as an
-        array; autocomputed if not given; ignored if sysdata is a
+        Number of time steps to use in simulation if `T` is not provided as
+        an array; autocomputed if not given; ignored if sysdata is a
         discrete-time system or a time series or response data.
     yfinal : scalar or array_like, optional
         Steady-state response. If not given, sysdata.dcgain() is used for
@@ -1586,6 +1586,7 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
     Peak: 1.209
     PeakTime: 4.242
     SteadyStateValue: -1.0
+
     """
     from .nlsys import NonlinearIOSystem
     from .statesp import StateSpace
@@ -1743,9 +1744,10 @@ def initial_response(
         to None to not trim outputs.
 
     T_num : int, optional
-        Number of time steps to use in simulation if T is not provided as an
-        array (autocomputed if not given); ignored if sys is discrete time.
-
+        Number of time steps to use in simulation if `T` is not provided as
+        an array (autocomputed if not given); ignored if the system is
+        discrete time.
+    
     params : dict, optional
         If system is a nonlinear I/O system, set parameter values.
 
@@ -1862,8 +1864,9 @@ def impulse_response(
         specified, all outputs are reported.
 
     T_num : int, optional
-        Number of time steps to use in simulation if T is not provided as an
-        array (autocomputed if not given); ignored if sys is discrete time.
+        Number of time steps to use in simulation if `T` is not provided as
+        an array (autocomputed if not given); ignored if the system is
+        discrete time.
 
     transpose : bool, optional
         If True, transpose all input and output arrays (for backward

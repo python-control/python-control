@@ -180,8 +180,8 @@ called in several forms:
   * ``L, P, E = lqe(A, G, C, QN, RN)``
   * ``L, P, E = lqe(A, G, C, QN, RN, NN)``
 
-where `sys` is an :class:`LTI` object, and `A`, `G`, `C`, `QN`, `RN`,
-and `NN` are 2D arrays of appropriate dimension.  If `sys` is a
+where :code:`sys` is an :class:`LTI` object, and `A`, `G`, `C`, `QN`, `RN`,
+and `NN` are 2D arrays of appropriate dimension.  If :code:`sys` is a
 discrete-time system, the first two forms will compute the discrete
 time optimal controller.  For the second two forms, the :func:`dlqr`
 function can be used.  Additional arguments and details are given on

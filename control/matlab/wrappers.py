@@ -29,7 +29,7 @@ def bode(*args, **kwargs):
     sys : LTI, or list of LTI
         System for which the Bode response is plotted and give. Optionally
         a list of systems can be entered, or several systems can be
-        specified (i.e. several parameters). The sys arguments may also be
+        specified (i.e. several parameters). The `sys` arguments may also be
         interspersed with format strings. A frequency argument (array_like)
         may also be added (see Examples).
     omega : array

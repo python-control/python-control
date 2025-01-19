@@ -41,19 +41,19 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
     Parameters
     ----------
     sys : LTI object
-        Linear input/output systems. If sys is SISO, use the same system for
-        the root locus and step response. If it is desired to see a different
-        step response than feedback(K*sys,1), such as a disturbance response,
-        sys can be provided as a two-input, two-output system (e.g. by using
-        `bdgalg.connect' or `iosys.interconnect`). For two-input,
-        two-output system, sisotool inserts the negative of the selected gain
-        K between the first output and first input and uses the second input
-        and output for computing the step response. To see the disturbance
-        response, configure your plant to have as its second input the
-        disturbance input.  To view the step response with a feedforward
-        controller, give your plant two identical inputs, and sum your
-        feedback controller and your feedforward controller and multiply them
-        into your plant's second input. It is also possible to accomodate a
+        Linear input/output systems. If `sys` is SISO, use the same system
+        for the root locus and step response. If it is desired to see a
+        different step response than ``feedback(K*sys, 1)``, such as a
+        disturbance response, `sys` can be provided as a two-input,
+        two-output system. For two-input, two-output system, sisotool
+        inserts the negative of the selected gain `K` between the first
+        output and first input and uses the second input and output for
+        computing the step response. To see the disturbance response,
+        configure your plant to have as its second input the disturbance
+        input.  To view the step response with a feedforward controller,
+        give your plant two identical inputs, and sum your feedback
+        controller and your feedforward controller and multiply them into
+        your plant's second input. It is also possible to accomodate a
         system with a gain in the feedback.
     initial_gain : float, optional
         Initial gain to use for plotting root locus. Defaults to 1

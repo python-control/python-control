@@ -164,7 +164,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         are matrices or equivalent objects.  To create a discrete-time
         system, use StateSpace(A, B, C, D, dt) where `dt` is the sampling
         time (or True for unspecified sampling time).  To call the copy
-        constructor, call StateSpace(sys), where sys is a StateSpace
+        constructor, call ``StateSpace(sys)``, where `sys` is a `StateSpace`
         object.
 
         See `StateSpace` and `ss` for more information.
@@ -1639,7 +1639,7 @@ def ss(*args, **kwargs):
     ``ss(sys)``
 
         Convert a linear system into space system form. Always creates a
-        new system, even if sys is already a state space system.
+        new system, even if `sys` is already a state space system.
 
     ``ss(A, B, C, D)``
 
@@ -1808,7 +1808,7 @@ def tf2io(*args, **kwargs):
     ``tf2io(sys)``
 
         Convert a linear system into space space form. Always creates
-        a new system, even if sys is already a `StateSpace` object.
+        a new system, even if `sys` is already a `StateSpace` object.
 
     ``tf2io(num, den)``
 
@@ -2371,9 +2371,9 @@ def _f2s(f):
 def _convert_to_statespace(sys, use_prefix_suffix=False, method=None):
     """Convert a system to state space form (if needed).
 
-    If sys is already a state space, then it is returned.  If sys is a
-    transfer function object, then it is converted to a state space and
-    returned.
+    If `sys` is already a state space object, then it is returned.  If
+    `sys` is a transfer function object, then it is converted to a state
+    space and returned.
 
     Note: no renaming of inputs and outputs is performed; this should be done
     by the calling function.

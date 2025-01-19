@@ -541,7 +541,7 @@ def frequency_response(
         frequency.  If `squeeze` is True then single-dimensional axes are
         removed.
 
-        Returns a list of `FrequencyResponseData` objects if sys is
+        Returns a list of `FrequencyResponseData` objects if `sys` is
         a list of systems.
 
     Other Parameters

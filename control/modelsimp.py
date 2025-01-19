@@ -255,12 +255,12 @@ def model_reduction(
 
 
 def balanced_reduction(sys, orders, method='truncate', alpha=None):
-    """Balanced reduced order model of sys of a given order.
+    """Balanced reduced order model of system of a given order.
 
-    States are eliminated based on Hankel singular value.
-    If sys has unstable modes, they are removed, the
-    balanced realization is done on the stable part, then
-    reinserted in accordance with the reference below.
+    States are eliminated based on Hankel singular value.  If `sys` has
+    unstable modes, they are removed, the balanced realization is done on
+    the stable part, then reinserted in accordance with the reference
+    below.
 
     Reference: Hsu,C.S., and Hou,D., 1991,
     Reducing unstable linear control systems via real Schur transformation.
