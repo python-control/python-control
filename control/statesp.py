@@ -30,6 +30,7 @@ from scipy.signal import StateSpace as signalStateSpace
 from scipy.signal import cont2discrete
 
 from . import config
+from . import bdalg
 from .exception import ControlMIMONotImplemented, ControlSlycot, slycot_check
 from .frdata import FrequencyResponseData
 from .iosys import InputOutputSystem, NamedSignal, _process_dt_keyword, \
@@ -572,6 +573,9 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         elif isinstance(other, np.ndarray):
             other = np.atleast_2d(other)
+            # Special case for SISO
+            if self.issiso():
+                self = np.ones_like(other) * self
             if self.ninputs != other.shape[0]:
                 raise ValueError("array has incompatible shape")
             A, B, C = self.A, self.B, self.C
@@ -582,6 +586,12 @@ class StateSpace(NonlinearIOSystem, LTI):
             return NotImplemented       # let other.__rmul__ handle it
 
         else:
+            # Promote SISO object to compatible dimension
+            if self.issiso() and not other.issiso():
+                self = np.ones((other.noutputs, other.ninputs)) * self
+            elif not self.issiso() and other.issiso():
+                other = np.ones((self.noutputs, self.ninputs)) * other
+
             # Check to make sure the dimensions are OK
             if ((self.ninputs != other.ninputs) or
                     (self.noutputs != other.noutputs)):
@@ -636,6 +646,10 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         elif isinstance(other, np.ndarray):
             other = np.atleast_2d(other)
+            # Special case for SISO
+            if self.issiso():
+                self = bdalg.append(*([self] * other.shape[0]))
+            # Dimension check after broadcasting
             if self.ninputs != other.shape[0]:
                 raise ValueError("array has incompatible shape")
             A, C = self.A, self.C
@@ -647,6 +661,12 @@ class StateSpace(NonlinearIOSystem, LTI):
             return NotImplemented       # let other.__rmul__ handle it
 
         else:
+            # Promote SISO object to compatible dimension
+            if self.issiso() and not other.issiso():
+                self = bdalg.append(*([self] * other.noutputs))
+            elif not self.issiso() and other.issiso():
+                other = bdalg.append(*([other] * self.ninputs))
+
             # Check to make sure the dimensions are OK
             if self.ninputs != other.noutputs:
                 raise ValueError(
@@ -686,22 +706,66 @@ class StateSpace(NonlinearIOSystem, LTI):
             return StateSpace(self.A, B, self.C, D, self.dt)
 
         elif isinstance(other, np.ndarray):
-            C = np.atleast_2d(other) @ self.C
-            D = np.atleast_2d(other) @ self.D
+            other = np.atleast_2d(other)
+            # Special case for SISO transfer function
+            if self.issiso():
+                self = bdalg.append(*([self] * other.shape[1]))
+            # Dimension check after broadcasting
+            if self.noutputs != other.shape[1]:
+                raise ValueError("array has incompatible shape")
+            C = other @ self.C
+            D = other @ self.D
             return StateSpace(self.A, self.B, C, D, self.dt)
 
         if not isinstance(other, StateSpace):
             return NotImplemented
+
+        # Promote SISO object to compatible dimension
+        if self.issiso() and not other.issiso():
+            self = bdalg.append(*([self] * other.ninputs))
+        elif not self.issiso() and other.issiso():
+            other = bdalg.append(*([other] * self.noutputs))
 
         return other * self
 
     # TODO: general __truediv__ requires descriptor system support
     def __truediv__(self, other):
         """Division of state space systems by TFs, FRDs, scalars, and arrays"""
-        if not isinstance(other, (LTI, InputOutputSystem)):
-            return self * (1/other)
-        else:
+        # Let ``other.__rtruediv__`` handle it
+        try:
+            return self * (1 / other)
+        except ValueError:
             return NotImplemented
+
+    def __rtruediv__(self, other):
+        """Division by state space system"""
+        return other * self**-1
+
+    def __pow__(self, other):
+        """Power of a state space system"""
+        if not type(other) == int:
+            raise ValueError("Exponent must be an integer")
+        if self.ninputs != self.noutputs:
+            # System must have same number of inputs and outputs
+            return NotImplemented
+        if other < -1:
+            return (self**-1)**(-other)
+        elif other == -1:
+            try:
+                Di = scipy.linalg.inv(self.D)
+            except scipy.linalg.LinAlgError:
+                # D matrix must be nonsingular
+                return NotImplemented
+            Ai = self.A - self.B @ Di @ self.C
+            Bi = self.B @ Di
+            Ci = -Di @ self.C
+            return StateSpace(Ai, Bi, Ci, Di, self.dt)
+        elif other == 0:
+            return StateSpace([], [], [], np.eye(self.ninputs), self.dt)
+        elif other == 1:
+            return self
+        elif other > 1:
+            return self * (self**(other - 1))
 
     def __call__(self, x, squeeze=None, warn_infinite=True):
         """Evaluate system's frequency response at complex frequencies.
@@ -1107,7 +1171,7 @@ class StateSpace(NonlinearIOSystem, LTI):
                 A, B, C, nr = tb01pd(self.nstates, self.ninputs, self.noutputs,
                                      self.A, B, C, tol=tol)
                 return StateSpace(A[:nr, :nr], B[:nr, :self.ninputs],
-                                  C[:self.noutputs, :nr], self.D)
+                                  C[:self.noutputs, :nr], self.D, self.dt)
             except ImportError:
                 raise TypeError("minreal requires slycot tb01pd")
         else:

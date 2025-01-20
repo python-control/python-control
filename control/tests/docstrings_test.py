@@ -28,7 +28,7 @@ function_skiplist = [
 
 # Checksums to use for checking whether a docstring has changed
 function_docstring_hash = {
-    control.append:                     '48548c4c4e0083312b3ea9e56174b0b5',
+    control.append:                     '1bddbac0fe932755c85e9fb0bfb97d88',
     control.describing_function_plot:   '95f894706b1d3eeb3b854934596af09f',
     control.dlqe:                       '9db995ed95c2214ce97074b0616a3191',
     control.dlqr:                       '896cfa651dbbd80e417635904d13c9d6',
@@ -37,7 +37,7 @@ function_docstring_hash = {
     control.margin:                     'f02b3034f5f1d44ce26f916cc3e51600',
     control.parallel:                   'bfc470aef75dbb923f9c6fb8bf3c9b43',
     control.series:                     '9aede1459667738f05cf4fc46603a4f6',
-    control.ss2tf:                      '48ff25d22d28e7b396e686dd5eb58831',
+    control.ss2tf:                      'e779b8d70205bc1218cc2a4556a66e4b',
     control.tf2ss:                      '086a3692659b7321c2af126f79f4bc11',
     control.markov:                     'a4199c54cb50f07c0163d3790739eafe',
     control.gangof4:                    '0e52eb6cf7ce024f9a41f3ae3ebf04f7',

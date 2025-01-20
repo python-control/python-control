@@ -37,6 +37,8 @@ System interconnections
     parallel
     series
     connection_table
+    combine_tf
+    split_tf
 
 
 Frequency domain plotting

@@ -187,6 +187,56 @@ class TestFRD:
                         [[1.0, 0], [0, 1]], [[0.0], [0.0]])
         # h2.feedback([[0.3, 0.2], [0.1, 0.1]])
 
+    def testAppendSiso(self):
+        # Create frequency responses
+        d1 = np.array([1 + 2j, 1 - 2j, 1 + 4j, 1 - 4j, 1 + 6j, 1 - 6j])
+        d2 = d1 + 2
+        d3 = d1 - 1j
+        w = np.arange(d1.shape[-1])
+        frd1 = FrequencyResponseData(d1, w)
+        frd2 = FrequencyResponseData(d2, w)
+        frd3 = FrequencyResponseData(d3, w)
+        # Create appended frequency responses
+        d_app_1 = np.zeros((2, 2, d1.shape[-1]), dtype=complex)
+        d_app_1[0, 0, :] = d1
+        d_app_1[1, 1, :] = d2
+        d_app_2 = np.zeros((3, 3, d1.shape[-1]), dtype=complex)
+        d_app_2[0, 0, :] = d1
+        d_app_2[1, 1, :] = d2
+        d_app_2[2, 2, :] = d3
+        # Test appending two FRDs
+        frd_app_1 = frd1.append(frd2)
+        np.testing.assert_allclose(d_app_1, frd_app_1.fresp)
+        # Test appending three FRDs
+        frd_app_2 = frd1.append(frd2).append(frd3)
+        np.testing.assert_allclose(d_app_2, frd_app_2.fresp)
+
+    def testAppendMimo(self):
+        # Create frequency responses
+        rng = np.random.default_rng(1234)
+        n = 100
+        w = np.arange(n)
+        d1 = rng.uniform(size=(2, 2, n)) + 1j * rng.uniform(size=(2, 2, n))
+        d2 = rng.uniform(size=(3, 1, n)) + 1j * rng.uniform(size=(3, 1, n))
+        d3 = rng.uniform(size=(1, 2, n)) + 1j * rng.uniform(size=(1, 2, n))
+        frd1 = FrequencyResponseData(d1, w)
+        frd2 = FrequencyResponseData(d2, w)
+        frd3 = FrequencyResponseData(d3, w)
+        # Create appended frequency responses
+        d_app_1 = np.zeros((5, 3, d1.shape[-1]), dtype=complex)
+        d_app_1[:2, :2, :] = d1
+        d_app_1[2:, 2:, :] = d2
+        d_app_2 = np.zeros((6, 5, d1.shape[-1]), dtype=complex)
+        d_app_2[:2, :2, :] = d1
+        d_app_2[2:5, 2:3, :] = d2
+        d_app_2[5:, 3:, :] = d3
+        # Test appending two FRDs
+        frd_app_1 = frd1.append(frd2)
+        np.testing.assert_allclose(d_app_1, frd_app_1.fresp)
+        # Test appending three FRDs
+        frd_app_2 = frd1.append(frd2).append(frd3)
+        np.testing.assert_allclose(d_app_2, frd_app_2.fresp)
+
     def testAuto(self):
         omega = np.logspace(-1, 2, 10)
         f1 = _convert_to_frd(1, omega)
@@ -424,14 +474,237 @@ class TestFRD:
         np.testing.assert_array_almost_equal(sys_add.omega, chk_add.omega)
         np.testing.assert_array_almost_equal(sys_add.fresp, chk_add.fresp)
 
+        # Test broadcasting with SISO system
+        sys_tf_mimo = TransferFunction([1], [1, 0]) * np.eye(2)
+        frd_tf_mimo = frd(sys_tf_mimo, np.logspace(-1, 1, 10))
+        result = FrequencyResponseData.__rmul__(frd_tf, frd_tf_mimo)
+        expected = frd(sys_tf_mimo * sys_tf, np.logspace(-1, 1, 10))
+        np.testing.assert_array_almost_equal(expected.omega, result.omega)
+        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+
         # Input/output mismatch size mismatch in rmul
         sys1 = frd(ct.rss(2, 2, 2), np.logspace(-1, 1, 10))
+        sys2 = frd(ct.rss(3, 3, 3), np.logspace(-1, 1, 10))
         with pytest.raises(ValueError):
-            FrequencyResponseData.__rmul__(frd_2, sys1)
+            FrequencyResponseData.__rmul__(sys2, sys1)
 
         # Make sure conversion of something random generates exception
         with pytest.raises(TypeError):
             FrequencyResponseData.__add__(frd_tf, 'string')
+
+    def test_add_sub_mimo_siso(self):
+        omega = np.logspace(-1, 1, 10)
+        sys_mimo = frd(ct.rss(2, 2, 2), omega)
+        sys_siso = frd(ct.rss(2, 1, 1), omega)
+
+        for op, expected_fresp in [
+            (FrequencyResponseData.__add__, sys_mimo.fresp + sys_siso.fresp),
+            (FrequencyResponseData.__radd__, sys_mimo.fresp + sys_siso.fresp),
+            (FrequencyResponseData.__sub__, sys_mimo.fresp - sys_siso.fresp),
+            (FrequencyResponseData.__rsub__, -sys_mimo.fresp + sys_siso.fresp),
+        ]:
+            result = op(sys_mimo, sys_siso)
+            np.testing.assert_array_almost_equal(omega, result.omega)
+            np.testing.assert_array_almost_equal(expected_fresp, result.fresp)
+
+    @pytest.mark.parametrize(
+        "left, right, expected",
+        [
+            (
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[2], [1]],
+                        [[-1], [4]],
+                    ],
+                    [
+                        [[10, 1], [20, 1]],
+                        [[20, 1], [30, 1]],
+                    ],
+                ),
+                TransferFunction(
+                    [
+                        [[4], [2]],
+                        [[-2], [8]],
+                    ],
+                    [
+                        [[10, 1, 0], [20, 1, 0]],
+                        [[20, 1, 0], [30, 1, 0]],
+                    ],
+                ),
+            ),
+            (
+                TransferFunction(
+                    [
+                        [[2], [1]],
+                        [[-1], [4]],
+                    ],
+                    [
+                        [[10, 1], [20, 1]],
+                        [[20, 1], [30, 1]],
+                    ],
+                ),
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[4], [2]],
+                        [[-2], [8]],
+                    ],
+                    [
+                        [[10, 1, 0], [20, 1, 0]],
+                        [[20, 1, 0], [30, 1, 0]],
+                    ],
+                ),
+            ),
+            (
+                TransferFunction([2], [1, 0]),
+                np.eye(3),
+                TransferFunction(
+                    [
+                        [[2], [0], [0]],
+                        [[0], [2], [0]],
+                        [[0], [0], [2]],
+                    ],
+                    [
+                        [[1, 0], [1], [1]],
+                        [[1], [1, 0], [1]],
+                        [[1], [1], [1, 0]],
+                    ],
+                ),
+            ),
+        ]
+    )
+    def test_mul_mimo_siso(self, left, right, expected):
+        result = frd(left, np.logspace(-1, 1, 10)).__mul__(right)
+        expected_frd = frd(expected, np.logspace(-1, 1, 10))
+        np.testing.assert_array_almost_equal(expected_frd.omega, result.omega)
+        np.testing.assert_array_almost_equal(expected_frd.fresp, result.fresp)
+
+    @slycotonly
+    def test_truediv_mimo_siso(self):
+        omega = np.logspace(-1, 1, 10)
+        tf_mimo = TransferFunction([1], [1, 0]) * np.eye(2)
+        frd_mimo = frd(tf_mimo, omega)
+        ss_mimo = ct.tf2ss(tf_mimo)
+        tf_siso = TransferFunction([1], [1, 1])
+        frd_siso = frd(tf_siso, omega)
+        expected = frd(tf_mimo.__truediv__(tf_siso), omega)
+        ss_siso = ct.tf2ss(tf_siso)
+
+        # Test division of MIMO FRD by SISO FRD
+        result = frd_mimo.__truediv__(frd_siso)
+        np.testing.assert_array_almost_equal(expected.omega, result.omega)
+        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+
+        # Test division of MIMO FRD by SISO TF
+        result = frd_mimo.__truediv__(tf_siso)
+        np.testing.assert_array_almost_equal(expected.omega, result.omega)
+        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+
+        # Test division of MIMO FRD by SISO TF
+        result = frd_mimo.__truediv__(ss_siso)
+        np.testing.assert_array_almost_equal(expected.omega, result.omega)
+        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+
+    @slycotonly
+    def test_rtruediv_mimo_siso(self):
+        omega = np.logspace(-1, 1, 10)
+        tf_mimo = TransferFunction([1], [1, 0]) * np.eye(2)
+        frd_mimo = frd(tf_mimo, omega)
+        ss_mimo = ct.tf2ss(tf_mimo)
+        tf_siso = TransferFunction([1], [1, 1])
+        frd_siso = frd(tf_siso, omega)
+        ss_siso = ct.tf2ss(tf_siso)
+        expected = frd(tf_siso.__rtruediv__(tf_mimo), omega)
+
+        # Test division of MIMO FRD by SISO FRD
+        result = frd_siso.__rtruediv__(frd_mimo)
+        np.testing.assert_array_almost_equal(expected.omega, result.omega)
+        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+
+        # Test division of MIMO TF by SISO FRD
+        result = frd_siso.__rtruediv__(tf_mimo)
+        np.testing.assert_array_almost_equal(expected.omega, result.omega)
+        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+
+        # Test division of MIMO SS by SISO FRD
+        result = frd_siso.__rtruediv__(ss_mimo)
+        np.testing.assert_array_almost_equal(expected.omega, result.omega)
+        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+
+
+    @pytest.mark.parametrize(
+        "left, right, expected",
+        [
+            (
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[2], [1]],
+                        [[-1], [4]],
+                    ],
+                    [
+                        [[10, 1], [20, 1]],
+                        [[20, 1], [30, 1]],
+                    ],
+                ),
+                TransferFunction(
+                    [
+                        [[4], [2]],
+                        [[-2], [8]],
+                    ],
+                    [
+                        [[10, 1, 0], [20, 1, 0]],
+                        [[20, 1, 0], [30, 1, 0]],
+                    ],
+                ),
+            ),
+            (
+                TransferFunction(
+                    [
+                        [[2], [1]],
+                        [[-1], [4]],
+                    ],
+                    [
+                        [[10, 1], [20, 1]],
+                        [[20, 1], [30, 1]],
+                    ],
+                ),
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[4], [2]],
+                        [[-2], [8]],
+                    ],
+                    [
+                        [[10, 1, 0], [20, 1, 0]],
+                        [[20, 1, 0], [30, 1, 0]],
+                    ],
+                ),
+            ),
+            (
+                np.eye(3),
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[2], [0], [0]],
+                        [[0], [2], [0]],
+                        [[0], [0], [2]],
+                    ],
+                    [
+                        [[1, 0], [1], [1]],
+                        [[1], [1, 0], [1]],
+                        [[1], [1], [1, 0]],
+                    ],
+                ),
+            ),
+        ]
+    )
+    def test_rmul_mimo_siso(self, left, right, expected):
+        result = frd(right, np.logspace(-1, 1, 10)).__rmul__(left)
+        expected_frd = frd(expected, np.logspace(-1, 1, 10))
+        np.testing.assert_array_almost_equal(expected_frd.omega, result.omega)
+        np.testing.assert_array_almost_equal(expected_frd.fresp, result.fresp)
 
     def test_eval(self):
         sys_tf = ct.tf([1], [1, 2, 1])

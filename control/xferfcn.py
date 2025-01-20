@@ -29,6 +29,7 @@ from scipy.signal import TransferFunction as signalTransferFunction
 from scipy.signal import cont2discrete, tf2zpk, zpk2tf
 
 from . import config
+from . import bdalg
 from .exception import ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
 from .iosys import InputOutputSystem, NamedSignal, _process_iosys_keywords, \
@@ -582,6 +583,12 @@ class TransferFunction(LTI):
         if not isinstance(other, TransferFunction):
             return NotImplemented
 
+        # Promote SISO object to compatible dimension
+        if self.issiso() and not other.issiso():
+            self = np.ones((other.noutputs, other.ninputs)) * self
+        elif not self.issiso() and other.issiso():
+            other = np.ones((self.noutputs, self.ninputs)) * other
+
         # Check that the input-output sizes are consistent.
         if self.ninputs != other.ninputs:
             raise ValueError(
@@ -631,6 +638,12 @@ class TransferFunction(LTI):
         if not isinstance(other, TransferFunction):
             return NotImplemented
 
+        # Promote SISO object to compatible dimension
+        if self.issiso() and not other.issiso():
+            self = bdalg.append(*([self] * other.noutputs))
+        elif not self.issiso() and other.issiso():
+            other = bdalg.append(*([other] * self.ninputs))
+
         # Check that the input-output sizes are consistent.
         if self.ninputs != other.noutputs:
             raise ValueError(
@@ -673,6 +686,12 @@ class TransferFunction(LTI):
             other = _convert_to_transfer_function(np.eye(self.noutputs) * other)
         else:
             other = _convert_to_transfer_function(other)
+
+        # Promote SISO object to compatible dimension
+        if self.issiso() and not other.issiso():
+            self = bdalg.append(*([self] * other.ninputs))
+        elif not self.issiso() and other.issiso():
+            other = bdalg.append(*([other] * self.noutputs))
 
         # Check that the input-output sizes are consistent.
         if other.ninputs != self.noutputs:
@@ -718,12 +737,16 @@ class TransferFunction(LTI):
         else:
             other = _convert_to_transfer_function(other)
 
+        # Special case for SISO ``other``
+        if not self.issiso() and other.issiso():
+            other = bdalg.append(*([other**-1] * self.noutputs))
+            return self * other
+
         if (self.ninputs > 1 or self.noutputs > 1 or
                 other.ninputs > 1 or other.noutputs > 1):
-            raise NotImplementedError(
-                "TransferFunction.__truediv__ is currently \
-                implemented only for SISO systems.")
-
+            # TransferFunction.__truediv__ is currently implemented only for
+            # SISO systems.
+            return NotImplemented
         dt = common_timebase(self.dt, other.dt)
 
         num = polymul(self.num_array[0, 0], other.den_array[0, 0])
@@ -741,11 +764,16 @@ class TransferFunction(LTI):
         else:
             other = _convert_to_transfer_function(other)
 
+        # Special case for SISO ``self``
+        if self.issiso() and not other.issiso():
+            self = bdalg.append(*([self**-1] * other.ninputs))
+            return other * self
+
         if (self.ninputs > 1 or self.noutputs > 1 or
                 other.ninputs > 1 or other.noutputs > 1):
-            raise NotImplementedError(
-                "TransferFunction.__rtruediv__ is currently implemented only "
-                "for SISO systems.")
+            # TransferFunction.__rtruediv__ is currently implemented only for
+            # SISO systems
+            return NotImplemented
 
         return other / self
 
@@ -849,6 +877,20 @@ class TransferFunction(LTI):
         #     self / (1 - sign * other * self)
         # But this does not work correctly because the state size will be too
         # large.
+
+    def append(self, other):
+        """Append a second model to the present model.
+
+        The second model is converted to a transfer function if necessary,
+        inputs and outputs are appended and their order is preserved"""
+        other = _convert_to_transfer_function(other)
+
+        new_tf = bdalg.combine_tf([
+            [self, np.zeros((self.noutputs, other.ninputs))],
+            [np.zeros((other.noutputs, self.ninputs)), other],
+        ])
+
+        return new_tf
 
     def minreal(self, tol=None):
         """Remove cancelling pole/zero pairs from a transfer function."""
@@ -1751,7 +1793,7 @@ def zpk(zeros, poles, gain, *args, **kwargs):
 
     Returns
     -------
-    out: `TransferFunction`
+    out : `TransferFunction`
         Transfer function with given zeros, poles, and gain.
 
     Examples
@@ -1803,7 +1845,7 @@ def ss2tf(*args, **kwargs):
 
     Returns
     -------
-    out: TransferFunction
+    out : TransferFunction
         New linear system in transfer function form
 
     Other Parameters
@@ -1966,6 +2008,53 @@ TransferFunction.z.__doc__ = "Delay operator (discrete time)."
 def _float2str(value):
     _num_format = config.defaults.get('xferfcn.floating_point_format', ':.4g')
     return f"{value:{_num_format}}"
+
+
+def _tf_close_coeff(tf_a, tf_b, rtol=1e-5, atol=1e-8):
+    """Check if two transfer functions have close coefficients.
+
+    Parameters
+    ----------
+    tf_a : TransferFunction
+        First transfer function.
+    tf_b : TransferFunction
+        Second transfer function.
+    rtol : float
+        Relative tolerance for ``np.allclose``.
+    atol : float
+        Absolute tolerance for ``np.allclose``.
+
+    Returns
+    -------
+    bool
+        True if transfer function cofficients are all close.
+    """
+    # Check number of outputs and inputs
+    if tf_a.noutputs != tf_b.noutputs:
+        return False
+    if tf_a.ninputs != tf_b.ninputs:
+        return False
+    # Check timestep
+    if tf_a.dt != tf_b.dt:
+        return False
+    # Check coefficient arrays
+    for i in range(tf_a.noutputs):
+        for j in range(tf_a.ninputs):
+            if not np.allclose(
+                tf_a.num[i][j],
+                tf_b.num[i][j],
+                rtol=rtol,
+                atol=atol,
+            ):
+                return False
+            if not np.allclose(
+                tf_a.den[i][j],
+                tf_b.den[i][j],
+                rtol=rtol,
+                atol=atol,
+            ):
+                return False
+    return True
 
 
 def _create_poly_array(shape, default=None):
