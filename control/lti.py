@@ -40,7 +40,7 @@ class LTI(InputOutputSystem):
 
     # TODO: update ss, tf docstrings to use this one as the primary
     def __call__(self, x, squeeze=None, warn_infinite=True):
-        """Evaluate system's frequency response at complex frequencies.
+        """Evaluate system transfer function at point in complex plane.
 
         See `StateSpace.__call__` and `TransferFunction.__call__` for details.
 
@@ -443,7 +443,8 @@ def evalfr(sys, x, squeeze=None):
 
     See Also
     --------
-    frequency_response, bode_plot
+    StateSpace.__call__, TransferFunction.__call__, frequency_response, \
+    bode_plot
 
     Notes
     -----
@@ -454,8 +455,6 @@ def evalfr(sys, x, squeeze=None):
     --------
     >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
     >>> fresp = ct.evalfr(G, 1j)  # evaluate at s = 1j
-
-    .. todo:: Add example with MIMO system
 
     """
     return sys(x, squeeze=squeeze)

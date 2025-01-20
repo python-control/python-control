@@ -679,37 +679,38 @@ class FrequencyResponseData(LTI):
 
         return _process_frequency_response(self, omega, out, squeeze=squeeze)
 
-    def __call__(self, s=None, squeeze=None, return_magphase=None):
-        """Evaluate system's transfer function at complex frequencies.
+    def __call__(self, x=None, squeeze=None, return_magphase=None):
+        """Evaluate system transfer function at point in complex plane.
 
-        Returns the complex frequency response ``sys(s)`` of system `sys`
-        with ``m = sys.ninputs`` number of inputs and ``p = sys.noutputs``
-        number of outputs.
+        Returns the value of the system's transfer function at a point `x`
+        in the complex plane, where `x` is `s` for continuous-time systems
+        and `z` for discrete-time systems.  For a frequency response data
+        object, the argument should be an imaginary number (since only the
+        frequency response is defined) and only the imaginary component of
+        `x` will be used.
 
-        To evaluate at a frequency omega in radians per second, enter
-        ``s = omega * 1j`` or use ``sys.eval(omega)``.
+        By default, a (complex) scalar will be returned for SISO systems
+        and a p x m array will be return for MIMO systems with m inputs and
+        p outputs.  This can be changed using the `squeeze` keyword.
 
-        For a frequency response data object, the argument must be an
-        imaginary number (since only the frequency response is defined).
+        To evaluate at a frequency `omega` in radians per second, enter ``x
+        = omega * 1j`` for continuous-time systems, ``x = exp(1j * omega *
+        dt)`` for discrete-time systems, or use the
+        `~LTI.frequency_response` method.
 
-        If `s` is not given, this function creates a copy of a frequency
+        If `x` is not given, this function creates a copy of a frequency
         response data object with a different set of output settings.
 
         Parameters
         ----------
-        s : complex scalar or 1D array_like
-            Complex frequencies.  If not specified, return a copy of the
-            frequency response data object with updated settings for output
-            processing (`squeeze`, `return_magphase`).
-
+        x : complex scalar or 1D array_like
+            Imaginary value(s) at which frequency response will be evaluated.
+            The real component of `x` is ignored.  If not specified, return
+            a copy of the frequency response data object with updated
+            settings for output processing (`squeeze`, `return_magphase`).
         squeeze : bool, optional
-            If `squeeze` = True, remove single-dimensional entries from the
-            shape of the output even if the system is not SISO. If
-            `squeeze` = False, keep all indices (output, input and, if
-            omega is array_like, frequency) even if the system is SISO. The
-            default value can be set using
-            `config.defaults['control.squeeze_frequency_response']`.
-
+            Squeeze output, as described below.  Default value can be set
+            using `config.defaults['control.squeeze_frequency_response']`.
         return_magphase : bool, optional
             If True, then a frequency response data object will
             enumerate as a tuple of the form ``(mag, phase, omega)`` where
@@ -721,12 +722,12 @@ class FrequencyResponseData(LTI):
         Returns
         -------
         fresp : complex ndarray
-            The frequency response of the system.  If the system is SISO and
-            squeeze is not True, the shape of the array matches the shape of
-            omega.  If the system is not SISO or squeeze is False, the first
-            two dimensions of the array are indices for the output and input
-            and the remaining dimensions match omega.  If `squeeze` is True
-            then single-dimensional axes are removed.
+            The value of the system transfer function at `x`.  If the system
+            is SISO and `squeeze` is not True, the shape of the array matches
+            the shape of `x`.  If the system is not SISO or `squeeze` is
+            False, the first two dimensions of the array are indices for the
+            output and input and the remaining dimensions match `x`.  If
+            `squeeze` is True then single-dimensional axes are removed.
 
         Raises
         ------
@@ -736,7 +737,7 @@ class FrequencyResponseData(LTI):
             real frequencies).
 
         """
-        if s is None:
+        if x is None:
             # Create a copy of the response with new keywords
             response = copy(self)
 
@@ -748,18 +749,18 @@ class FrequencyResponseData(LTI):
             return response
 
         # Make sure that we are operating on a simple list
-        if len(np.atleast_1d(s).shape) > 1:
+        if len(np.atleast_1d(x).shape) > 1:
             raise ValueError("input list must be 1D")
 
-        if any(abs(np.atleast_1d(s).real) > 0):
+        if any(abs(np.atleast_1d(x).real) > 0):
             raise ValueError("__call__: FRD systems can only accept "
                              "purely imaginary frequencies")
 
         # need to preserve array or scalar status
-        if hasattr(s, '__len__'):
-            return self.eval(np.asarray(s).imag, squeeze=squeeze)
+        if hasattr(x, '__len__'):
+            return self.eval(np.asarray(x).imag, squeeze=squeeze)
         else:
-            return self.eval(complex(s).imag, squeeze=squeeze)
+            return self.eval(complex(x).imag, squeeze=squeeze)
 
     # Implement iter to allow assigning to a tuple
     def __iter__(self):
@@ -800,7 +801,7 @@ class FrequencyResponseData(LTI):
         """(deprecated) Evaluate transfer function at complex frequencies.
 
         .. deprecated::0.9.0
-            Method has been given the more pythonic name
+            Method has been given the more Pythonic name
             `FrequencyResponseData.frequency_response`. Or use
             `freqresp` in the MATLAB compatibility module.
 
@@ -818,7 +819,7 @@ class FrequencyResponseData(LTI):
         Parameters
         ----------
         other : `LTI`
-            System in the feedack path.
+            System in the feedback path.
 
         sign : float, optional
             Gain to use in feedback path.  Defaults to -1.
@@ -928,8 +929,8 @@ class FrequencyResponseData(LTI):
 # Note: This class was initially given the name "FRD", but this caused
 # problems with documentation on MacOS platforms, since files were generated
 # for control.frd and control.FRD, which are not differentiated on most MacOS
-# filesystems, which are case insensitive.  Renaming the FRD class to be
-# FrequenceResponseData and then assigning FRD to point to the same object
+# file systems, which are case insensitive.  Renaming the FRD class to be
+# FrequencyResponseData and then assigning FRD to point to the same object
 # fixes this problem.
 #
 FRD = FrequencyResponseData
@@ -1026,7 +1027,7 @@ def frd(*args, **kwargs):
         A linear system that will be evaluated for frequency response data.
     response : array_like or LTI system
         Complex vector with the system response or an LTI system that can
-        be used to copmute the frequency response at a list of frequencies.
+        be used to compute the frequency response at a list of frequencies.
     omega : array_like
         Vector of frequencies at which the response is evaluated.
     dt : float, True, or None
@@ -1057,7 +1058,7 @@ def frd(*args, **kwargs):
         by adding the prefix and suffix strings in
         `config.defaults['iosys.sampled_system_name_prefix']` and
         `config.defaults['iosys.sampled_system_name_suffix']`, with the
-        default being to add the suffix '$ampled'.  Otherwise, a generic
+        default being to add the suffix '$sampled'.  Otherwise, a generic
         name 'sys[id]' is generated with a unique integer id
 
     See Also

@@ -309,12 +309,12 @@ class TransferFunction(LTI):
     #: :meta hide-value:
     noutputs = 1
 
-    #: Numerator polynomial coefficients as a 2D array of 1D coefficents.
+    #: Numerator polynomial coefficients as a 2D array of 1D coefficients.
     #:
     #: :meta hide-value:
     num_array = None
 
-    #: Denominator polynomial coefficients as a 2D array of 1D coefficents.
+    #: Denominator polynomial coefficients as a 2D array of 1D coefficients.
     #:
     #: :meta hide-value:
     den_array = None
@@ -334,48 +334,40 @@ class TransferFunction(LTI):
     num, den = num_list, den_list
 
     def __call__(self, x, squeeze=None, warn_infinite=True):
-        """Evaluate system's transfer function at complex frequencies.
+        """Evaluate system transfer function at point in complex plane.
 
-        Returns the complex frequency response ``sys(x)`` where `x` is `s`
-        for continuous-time systems and `z` for discrete-time systems.
+        Returns the value of the system's transfer function at a point `x`
+        in the complex plane, where `x` is `s` for continuous-time systems
+        and `z` for discrete-time systems.
 
-        In general the system may be multiple input, multiple output
-        (MIMO), where ``m = self.ninputs`` number of inputs and ``p =
-        self.noutputs`` number of outputs.
+        By default, a (complex) scalar will be returned for SISO systems
+        and a p x m array will be return for MIMO systems with m inputs and
+        p outputs.  This can be changed using the `squeeze` keyword.
 
-        To evaluate at a frequency omega in radians per second, enter
-        ``x = omega * 1j``, for continuous-time systems, or
-        ``x = exp(1j * omega * dt)`` for discrete-time systems. Or use
-        `TransferFunction.frequency_response`.
+        To evaluate at a frequency `omega` in radians per second,
+        enter ``x = omega * 1j`` for continuous-time systems,
+        ``x = exp(1j * omega * dt)`` for discrete-time systems, or
+        use the `~LTI.frequency_response` method.
 
         Parameters
         ----------
         x : complex or complex 1D array_like
-            Complex frequencies
+            Complex value(s) at which transfer function will be evaluated.
         squeeze : bool, optional
-            If `squeeze` = True, remove single-dimensional entries from the
-            shape of the output even if the system is not SISO. If
-            `squeeze` = False, keep all indices (output, input and, if
-            omega is array_like, frequency) even if the system is SISO. The
-            default value can be set using
-            `config.defaults['control.squeeze_frequency_response']`.  If
-            True and the system is single-input single-output (SISO),
-            return a 1D array rather than a 3D array.  Default value
-            (True) set by
-            `config.defaults['control.squeeze_frequency_response']`.
-            warn_infinite : bool, optional If set to False, turn off
-            divide by zero warning.
+            Squeeze output, as described below.  Default value can be set
+            using `config.defaults['control.squeeze_frequency_response']`.
+        warn_infinite : bool, optional
+            If set to False, turn off divide by zero warning.
 
         Returns
         -------
         fresp : complex ndarray
-            The frequency response of the system.  If the system is SISO
-            and squeeze is not True, the shape of the array matches the
-            shape of omega.  If the system is not SISO or squeeze is
-            False, the first two dimensions of the array are indices
-            for the output and input and the remaining dimensions match
-            omega.  If `squeeze` is True then single-dimensional axes
-            are removed.
+            The value of the system transfer function at `x`.  If the system
+            is SISO and `squeeze` is not True, the shape of the array matches
+            the shape of `x`.  If the system is not SISO or `squeeze` is
+            False, the first two dimensions of the array are indices for the
+            output and input and the remaining dimensions match `x`.  If
+            `squeeze` is True then single-dimensional axes are removed.
 
         """
         out = self.horner(x, warn_infinite=warn_infinite)
@@ -817,7 +809,7 @@ class TransferFunction(LTI):
         inpdx, inputs = _process_subsys_index(
             indices[1], self.input_labels, slice_to_list=True)
 
-        # Construct the transfer function for the subsyste
+        # Construct the transfer function for the subsystem
         num = _create_poly_array((len(outputs), len(inputs)))
         den = _create_poly_array(num.shape)
         for row, i in enumerate(outdx):
@@ -838,7 +830,7 @@ class TransferFunction(LTI):
         """Evaluate transfer function at complex frequencies.
 
         .. deprecated::0.9.0
-            Method has been given the more pythonic name
+            Method has been given the more Pythonic name
             `TransferFunction.frequency_response`. Or use
             `freqresp` in the MATLAB compatibility module.
         """
@@ -872,7 +864,7 @@ class TransferFunction(LTI):
         Parameters
         ----------
         other : `InputOutputSystem`
-            System in the feedack path.
+            System in the feedback path.
 
         sign : float, optional
             Gain to use in feedback path.  Defaults to -1.
@@ -930,7 +922,7 @@ class TransferFunction(LTI):
         return new_tf
 
     def minreal(self, tol=None):
-        """Remove cancelling pole/zero pairs from a transfer function.
+        """Remove canceling pole/zero pairs from a transfer function.
 
         Parameters
         ----------
@@ -1010,7 +1002,7 @@ class TransferFunction(LTI):
         if self.dt:
             kwdt = {'dt': self.dt}
         else:
-            # scipy convention for continuous-time lti systems: call without
+            # scipy convention for continuous-time LTI systems: call without
             # dt keyword argument
             kwdt = {}
 
@@ -1162,7 +1154,7 @@ class TransferFunction(LTI):
                     numpoly = poleset[i][j][2] * np.atleast_1d(poly(nwzeros))
 
                     # td04ad expects a proper transfer function. If the
-                    # numerater has a higher order than the denominator, the
+                    # numerator has a higher order than the denominator, the
                     # padding will fail
                     if len(numpoly) > maxindex + 1:
                         if allow_nonproper:
@@ -1286,7 +1278,7 @@ class TransferFunction(LTI):
     def dcgain(self, warn_infinite=False):
         """Return the zero-frequency ("DC") gain.
 
-        For a continous-time transfer function G(s), the DC gain is G(0)
+        For a continuous-time transfer function G(s), the DC gain is G(0)
         For a discrete-time transfer function G(z), the DC gain is G(1)
 
         Parameters
@@ -1336,7 +1328,7 @@ class TransferFunction(LTI):
     # of the class attributes are set at the bottom of the file to avoid
     # problems with recursive calls.
 
-    #: Differentation operator (continuous time).
+    #: Differentiation operator (continuous time).
     #:
     #: The `s` constant can be used to create continuous-time transfer
     #: functions using algebraic expressions.
@@ -1570,7 +1562,7 @@ def _convert_to_transfer_function(
 
             try:
                 # Use Slycot to make the transformation
-                # Make sure to convert system matrices to numpy arrays
+                # Make sure to convert system matrices to NumPy arrays
                 from slycot import tb04ad
                 tfout = tb04ad(
                     sys.nstates, sys.ninputs, sys.noutputs, array(sys.A),
@@ -1651,7 +1643,7 @@ def tf(*args, **kwargs):
 
     ``tf([[G11, ..., G1m], ..., [Gp1, ..., Gpm]][, dt])``
 
-        Create a pxm MIMO system from SISO transfer functions Gij.  See
+        Create a p x m MIMO system from SISO transfer functions Gij.  See
         `combine_tf` for more details.
 
     ``tf('s')`` or ``tf('z')``
@@ -1709,7 +1701,7 @@ def tf(*args, **kwargs):
 
     Notes
     -----
-    MIMO transfer functions are created by passing a 2D array of coeffients:
+    MIMO transfer functions are created by passing a 2D array of coefficients:
     ``num[i][j]`` contains the polynomial coefficients of the numerator
     for the transfer function from the (j+1)st input to the (i+1)st output,
     and ``den[i][j]`` works the same way.
@@ -1781,7 +1773,7 @@ def tf(*args, **kwargs):
     #
     # Process the numerator and denominator arguments
     #
-    # If we got through to here, we have two argume nts (num, den) and
+    # If we got through to here, we have two arguments (num, den) and
     # the keywords (including dt).  The only thing left to do is look
     # for some special cases, like having a common denominator.
     #
@@ -2045,7 +2037,7 @@ def _clean_part(data, name="<unknown>"):
 # a method instead of a property/attribute.
 
 TransferFunction.s = TransferFunction([1, 0], [1], 0, name='s')
-TransferFunction.s.__doc__ = "Differentation operator (continuous time)."
+TransferFunction.s.__doc__ = "Differentiation operator (continuous time)."
 
 TransferFunction.z = TransferFunction([1, 0], [1], True, name='z')
 TransferFunction.z.__doc__ = "Delay operator (discrete time)."

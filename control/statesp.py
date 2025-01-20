@@ -768,39 +768,45 @@ class StateSpace(NonlinearIOSystem, LTI):
             return self * (self**(other - 1))
 
     def __call__(self, x, squeeze=None, warn_infinite=True):
-        """Evaluate system's frequency response at complex frequencies.
+        """Evaluate system transfer function at point in complex plane.
 
-        Returns the complex frequency response ``sys(x)`` where `x` is `s` for
-        continuous-time systems and `z` for discrete-time systems.
+        Returns the value of the system's transfer function at a point `x`
+        in the complex plane, where `x` is `s` for continuous-time systems
+        and `z` for discrete-time systems.
 
-        To evaluate at a frequency omega in radians per second, enter
-        ``x = omega * 1j``, for continuous-time systems, or
-        ``x = exp(1j * omega * dt)`` for discrete-time systems. Or use
-        `StateSpace.frequency_response`.
+        By default, a (complex) scalar will be returned for SISO systems
+        and a p x m array will be return for MIMO systems with m inputs and
+        p outputs.  This can be changed using the `squeeze` keyword.
+
+        To evaluate at a frequency `omega` in radians per second,
+        enter ``x = omega * 1j`` for continuous-time systems,
+        ``x = exp(1j * omega * dt)`` for discrete-time systems, or
+        use the `~LTI.frequency_response` method.
 
         Parameters
         ----------
         x : complex or complex 1D array_like
-            Complex frequencies
+            Complex value(s) at which transfer function will be evaluated.
         squeeze : bool, optional
-            If `squeeze` = True, remove single-dimensional entries from the
-            shape of the output even if the system is not SISO. If
-            `squeeze` = False, keep all indices (output, input and, if
-            omega is array_like, frequency) even if the system is SISO. The
-            default value can be set using
-            `config.defaults['control.squeeze_frequency_response']`.
-        warn_infinite : bool, optional
-            If set to False, don't warn if frequency response is infinite.
+            Squeeze output, as described below.  Default value can be set
+            using `config.defaults['control.squeeze_frequency_response']`.
+        warn_infinite : bool, optional If set to False, turn off
+            divide by zero warning.
 
         Returns
         -------
         fresp : complex ndarray
-            The frequency response of the system.  If the system is SISO and
-            squeeze is not True, the shape of the array matches the shape of
-            omega.  If the system is not SISO or squeeze is False, the first
-            two dimensions of the array are indices for the output and input
-            and the remaining dimensions match omega.  If `squeeze` is True
-            then single-dimensional axes are removed.
+            The value of the system transfer function at `x`.  If the system
+            is SISO and `squeeze` is not True, the shape of the array matches
+            the shape of `x`.  If the system is not SISO or `squeeze` is
+            False, the first two dimensions of the array are indices for the
+            output and input and the remaining dimensions match `x`.  If
+            `squeeze` is True then single-dimensional axes are removed.
+
+        Examples
+        --------
+        >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
+        >>> fresp = G(1j)  # evaluate at s = 1j
 
         """
         # Use Slycot if available
@@ -926,7 +932,7 @@ class StateSpace(NonlinearIOSystem, LTI):
                     xr = solve(x_idx * eye(self.nstates) - self.A, self.B)
                     out[:, :, idx] = self.C @ xr + self.D
                 except LinAlgError:
-                    # Issue a warning messsage, for consistency with xferfcn
+                    # Issue a warning message, for consistency with xferfcn
                     if warn_infinite:
                         warn("singular matrix in frequency response",
                              RuntimeWarning)
@@ -944,7 +950,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         """(deprecated) Evaluate transfer function at complex frequencies.
 
         .. deprecated::0.9.0
-            Method has been given the more pythonic name
+            Method has been given the more Pythonic name
             `StateSpace.frequency_response`. Or use
             `freqresp` in the MATLAB compatibility module.
         """
@@ -978,11 +984,11 @@ class StateSpace(NonlinearIOSystem, LTI):
             if nu == 0:
                 return np.array([])
             else:
-                # Use SciPy generalized eigenvalue fucntion
+                # Use SciPy generalized eigenvalue function
                 return sp.linalg.eigvals(out[8][0:nu, 0:nu],
                                          out[9][0:nu, 0:nu]).astype(complex)
 
-        except ImportError:  # Slycot unavailable. Fall back to scipy.
+        except ImportError:  # Slycot unavailable. Fall back to SciPy.
             if self.C.shape[0] != self.D.shape[1]:
                 raise NotImplementedError(
                     "StateSpace.zero only supports systems with the same "
@@ -1013,7 +1019,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         Parameters
         ----------
         other : `InputOutputSystem`
-            System in the feedack path.
+            System in the feedback path.
 
         sign : float, optional
             Gain to use in feedback path.  Defaults to -1.
@@ -1136,7 +1142,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         # well-posed check
         F = np.block([[np.eye(ny), -D22], [-Dbar11, np.eye(nu)]])
         if matrix_rank(F) != ny + nu:
-            raise ValueError("lft not well-posed to working precision.")
+            raise ValueError("LFT not well-posed to working precision.")
 
         # solve for the resulting ss by solving for [y, u] using [x,
         # xbar] and [w1, w2].
@@ -1242,7 +1248,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         if self.dt:
             kwdt = {'dt': self.dt}
         else:
-            # scipy convention for continuous-time lti systems: call without
+            # SciPy convention for continuous-time LTI systems: call without
             # dt keyword argument
             kwdt = {}
 
@@ -1371,7 +1377,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         ----------------
         inputs : int, list of str or None, optional
             Description of the system inputs.  If not specified, the
-            origional system inputs are used.  See `InputOutputSystem` for
+            original system inputs are used.  See `InputOutputSystem` for
             more information.
         outputs : int, list of str or None, optional
             Description of the system outputs.  Same format as `inputs`.
@@ -1464,7 +1470,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         The first argument `t` is ignored because `StateSpace` systems
         are time-invariant. It is included so that the dynamics can be passed
         to numerical integrators, such as `scipy.integrate.solve_ivp`
-        and for consistency with `IOSystem` systems.
+        and for consistency with `InputOutputSystem` models.
 
         Parameters
         ----------
@@ -1508,8 +1514,8 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         The first argument `t` is ignored because `StateSpace` systems
         are time-invariant. It is included so that the dynamics can be passed
-        to most numerical integrators, such as scipy's `integrate.solve_ivp`
-        and for consistency with `IOSystem` systems.
+        to most numerical integrators, such as SciPy's `integrate.solve_ivp`
+        and for consistency with `InputOutputSystem` models.
 
         The inputs `x` and `u` must be of the correct length for the system.
 
@@ -1543,7 +1549,7 @@ class StateSpace(NonlinearIOSystem, LTI):
             return (self.C @ x).reshape((-1,)) \
                 + (self.D @ u).reshape((-1,))  # return as row vector
 
-    # convenience aliase, import needs to go over the submodule to avoid circular imports
+    # convenience alias, import needs to go over the submodule to avoid circular imports
     initial_response = control.timeresp.initial_response
 
 
@@ -1566,7 +1572,7 @@ class LinearICSystem(InterconnectedSystem, StateSpace):
         # Because this is a "hybrid" object, the initialization proceeds in
         # stages.  We first create an empty InputOutputSystem of the
         # appropriate size, then copy over the elements of the
-        # InterconnectedIOSystem class.  From there we compute the
+        # InterconnectedSystem class.  From there we compute the
         # linearization of the system (if needed) and then populate the
         # StateSpace parameters.
         #
@@ -1587,7 +1593,7 @@ class LinearICSystem(InterconnectedSystem, StateSpace):
         self.params = io_sys.params
         self.connection_type = connection_type
 
-        # If we didnt' get a state space system, linearize the full system
+        # If we didn't' get a state space system, linearize the full system
         if ss_sys is None:
             ss_sys = self.linearize(0, 0)
 
@@ -1631,7 +1637,7 @@ class LinearICSystem(InterconnectedSystem, StateSpace):
                     cfg=config.defaults['statesp.latex_repr_type']))
 
     # The following text needs to be replicated from StateSpace in order for
-    # this entry to show up properly in sphinx doccumentation (not sure why,
+    # this entry to show up properly in sphinx documentation (not sure why,
     # but it was the only way to get it to work).
     #
     #: Deprecated attribute; use `nstates` instead.
@@ -2001,7 +2007,7 @@ def linfnorm(sys, tol=1e-10):
     Parameters
     ----------
     sys : `StateSpace` or `TransferFunction`
-      System to evalute L-infinity norm of.
+      System to evaluate L-infinity norm of.
     tol : real scalar
       Tolerance on norm estimate.
 
@@ -2038,7 +2044,7 @@ def linfnorm(sys, tol=1e-10):
         # ab13dd doesn't accept empty A, B, C, D;
         # static gain case is easy enough to compute
         gpeak = scipy.linalg.svdvals(d)[0]
-        # max svd is constant with freq; arbitrarily choose 0 as peak
+        # max SVD is constant with freq; arbitrarily choose 0 as peak
         fpeak = 0
         return gpeak, fpeak
 
@@ -2090,10 +2096,10 @@ def rss(states=1, outputs=1, inputs=1, strictly_proper=False, **kwargs):
     Notes
     -----
     If the number of states, inputs, or outputs is not specified, then the
-    missing numbers are assumed to be 1.  If dt is not specified or is given
-    as 0 or None, the poles of the returned system will always have a
-    negative real part.  If dt is True or a postive float, the poles of the
-    returned system will have magnitude less than 1.
+    missing numbers are assumed to be 1.  If `dt` is not specified or is
+    given as 0 or None, the poles of the returned system will always have a
+    negative real part.  If `dt` is True or a positive float, the poles of
+    the returned system will have magnitude less than 1.
 
     """
     # Process keyword arguments
@@ -2432,7 +2438,7 @@ def _convert_to_statespace(sys, use_prefix_suffix=False, method=None):
                 ssout[3][:sys.noutputs, :states], ssout[4], sys.dt)
 
         elif method in [None, 'scipy']:
-            # Scipy tf->ss can't handle MIMO, but SISO is OK
+            # SciPy tf->ss can't handle MIMO, but SISO is OK
             maxn = max(max(len(n) for n in nrow)
                        for nrow in sys.num)
             maxd = max(max(len(d) for d in drow)
