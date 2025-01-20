@@ -187,33 +187,49 @@ time optimal controller.  For the second two forms, the :func:`dlqr`
 function can be used.  Additional arguments and details are given on
 the :func:`lqr` and :func:`dlqr` documentation pages.
 
-.. todo::
-   Convert the following code to testcode
+.. testsetup:: kalman
+
+   sys = ct.rss(2, 2, 2)
+   Qu = np.eye(2)
+   Qv = np.eye(2)
+   Qw = np.eye(2)
+   Qx = np.eye(2)
+
+   timepts = np.linspace(0, 10)
+   U = ct.white_noise(timepts, Qv)
+   Y = ct.white_noise(timepts, Qw)
+
+   X0 = np.zeros(2)
+   P0 = np.eye(2)
 
 The :func:`create_estimator_iosystem` function can be used to create
 an I/O system implementing a Kalman filter, including integration of
 the Riccati ODE.  The command has the form
 
-.. code::
+.. testcode:: kalman
 
   estim = ct.create_estimator_iosystem(sys, Qv, Qw)
 
 The input to the estimator is the measured outputs `Y` and the system
 input `U`.  To run the estimator on a noisy signal, use the command
 
-.. code::
+.. testcode:: kalman
 
-  resp = ct.input_output_response(est, timepts, [Y, U], [X0, P0])
+  resp = ct.input_output_response(estim, timepts, [Y, U], [X0, P0])
 
 If desired, the :func:`correct` parameter can be set to False
-to allow prediction with no additional sensor information::
+to allow prediction with no additional sensor information:
+
+.. testcode:: kalman
 
   resp = ct.input_output_response(
-      estim, timepts, 0, [X0, P0], param={'correct': False})
+      estim, timepts, 0, [X0, P0], params={'correct': False})
 
 The :func:`create_estimator_iosystem` and
 :func:`create_statefbk_iosystem` functions can be used to combine an
-estimator with a state feedback controller::
+estimator with a state feedback controller:
+
+.. testcode:: kalman
 
   K, _, _ = ct.lqr(sys, Qx, Qu)
   estim = ct.create_estimator_iosystem(sys, Qv, Qw, P0)
@@ -229,13 +245,19 @@ estimated state :math:`\hat x` (output of `estim`):
 
 The closed loop controller `clsys` includes both the state
 feedback and the estimator dynamics and takes as its input the desired
-state :math:`x_\text{d}` and input :math:`u_\text{d}`::
+state :math:`x_\text{d}` and input :math:`u_\text{d}`:
+
+.. testcode:: kalman
+   :hide:
+
+   Xd = np.zeros((2, timepts.size))
+   Ud = np.zeros((2, timepts.size))
+
+.. testcode:: kalman
 
   resp = ct.input_output_response(
       clsys, timepts, [Xd, Ud], [X0, np.zeros_like(X0), P0])
 
-.. todo::
-   Add example (with plots?)
 
 
 Maximum Likelihood Estimation
@@ -374,5 +396,17 @@ problems:
    optimal.gaussian_likelihood_cost
    optimal.disturbance_range_constraint
 
-.. todo::
-   Add example: LQE vs MHE (from CDS 112)
+Examples
+========
+
+The following examples illustrate the use of tools from the stochastic
+systems module.  Background information for these examples can be
+found in the FBS2e supplement on `Optimization-Based Control
+<https://fbswiki.org/wiki/index.php/OBC>`_).
+
+.. toctree::
+   :maxdepth: 1
+
+   Kalman filter (kinematic car) <examples/kincar-fusion>
+   (Extended) Kalman filtering (PVTOL) <examples/kalman-pvtol>
+   Moving horizon estimation (PVTOL) <examples/mhe-pvtol>

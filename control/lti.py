@@ -558,19 +558,12 @@ def frequency_response(
     >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
     >>> mag, phase, omega = ct.frequency_response(G, [0.1, 1., 10.])
 
-    .. todo::
-        Add example with MIMO system
-
-        #>>> sys = rss(3, 2, 2)
-        #>>> mag, phase, omega = freqresp(sys, [0.1, 1., 10.])
-        #>>> mag[0, 1, :]
-        #array([ 55.43747231,  42.47766549,   1.97225895])
-        #>>> phase[1, 0, :]
-        #array([-0.12611087, -1.14294316,  2.5764547 ])
-        #>>> # This is the magnitude of the frequency response from the 2nd
-        #>>> # input to the 1st output, and the phase (in radians) of the
-        #>>> # frequency response from the 1st input to the 2nd output, for
-        #>>> # s = 0.1i, i, 10i.
+    >>> sys = ct.rss(3, 2, 2)
+    >>> mag, phase, omega = ct.frequency_response(sys, [0.1, 1., 10.])
+    >>> mag[0, 1, :]    # Magnitude of second input to first output
+    array([..., ..., ...])
+    >>> phase[1, 0, :]  # Phase of first input to second output
+    array([..., ..., ...])
 
     """
     from .frdata import FrequencyResponseData

@@ -54,16 +54,6 @@ def bode(*args, **kwargs):
 
     >>> sys = ss([[1, -2], [3, -4]], [[5], [7]], [[6, 8]], 9)
     >>> mag, phase, omega = bode(sys)
-
-    .. todo::
-
-        Document these use cases
-
-        * >>> bode(sys, w)                                      # doctest: +SKIP
-        * >>> bode(sys1, sys2, ..., sysN)                       # doctest: +SKIP
-        * >>> bode(sys1, sys2, ..., sysN, w)                    # doctest: +SKIP
-        * >>> bode(sys1, 'plotstyle1', ..., sysN, 'plotstyleN') # doctest: +SKIP
-
     >>> bode(sys, w)                  # one system, freq vector # doctest: +SKIP
     >>> bode(sys1, sys2, ..., sysN)   # several systems         # doctest: +SKIP
     >>> bode(sys1, sys2, ..., sysN, w)                          # doctest: +SKIP

@@ -56,8 +56,6 @@ online sources.
    examples/cruise
    examples/describing_functions
    examples/interconnect_tutorial
-   examples/kincar-fusion
-   examples/mhe-pvtol
    examples/mpc_aircraft
    examples/pvtol-lqr-nested
    examples/pvtol-outputfbk
