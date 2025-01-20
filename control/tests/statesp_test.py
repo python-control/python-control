@@ -8,6 +8,7 @@ BG,  26 Jul 2020 merge statesp_array_test.py differences into statesp_test.py
 """
 
 import operator
+import platform
 
 import numpy as np
 import pytest

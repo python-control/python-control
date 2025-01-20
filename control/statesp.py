@@ -1273,7 +1273,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         Parameters
         ----------
-        other : `StateSpace`
+        other : `StateSpace` or `TransferFunction`
             System to be appended.
 
         Returns
