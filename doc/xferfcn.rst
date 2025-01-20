@@ -38,6 +38,7 @@ domain properties of a linear systems:
    frequency_response
    phase_crossover_frequencies
    singular_values_response
+   stability_margins
    tfdata
 
 These functions work on both state space and transfer function models.
