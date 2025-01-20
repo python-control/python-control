@@ -105,7 +105,7 @@ class TestStatefbk:
         np.testing.assert_array_almost_equal(Wo, Wotrue)
 
     def testObsvRejectMismatch(self):
-        # gh-1097: check A, B for compatible shapes
+        # gh-1097: check A, C for compatible shapes
         with pytest.raises(ControlDimension, match='A must be a square matrix'):
             obsv([[1,2]],[1])
         with pytest.raises(ControlDimension, match='Incompatible dimensions of C matrix'):
