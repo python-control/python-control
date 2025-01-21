@@ -783,12 +783,12 @@ def create_statefbk_iosystem(
     if integral_action is not None:
         if not isinstance(integral_action, np.ndarray):
             raise ControlArgument("Integral action must pass an array")
-        elif integral_action.shape[1] != sys_nstates:
+
+        C = np.atleast_2d(integral_action)
+        if C.shape[1] != sys_nstates:
             raise ControlArgument(
                 "Integral gain size must match system state size")
-        else:
-            nintegrators = integral_action.shape[0]
-            C = integral_action
+        nintegrators = C.shape[0]
     else:
         # Create a C matrix with no outputs, just in case update gets called
         C = np.zeros((0, sys_nstates))

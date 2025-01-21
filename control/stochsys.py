@@ -321,7 +321,7 @@ def create_estimator_iosystem(
     .. math::
 
         d \hat{x}/dt &= A \hat{x} + B u - L (C \hat{x} - y) \\
-           dP/dt &= A P + P A^T + F Q_N F^T - P C^T R_N^{-1} C P \\
+           dP/dt &= A P + P A^T + G Q_N G^T - P C^T R_N^{-1} C P \\
                L &= P C^T R_N^{-1}
 
     or a discrete-time state estimator of the form
@@ -329,7 +329,7 @@ def create_estimator_iosystem(
     .. math::
 
         \hat{x}[k+1] &= A \hat{x}[k] + B u[k] - L (C \hat{x}[k] - y[k]) \\
-               P[k+1] &= A P A^T + F Q_N F^T - A P C^T R_e^{-1} C P A \\
+               P[k+1] &= A P A^T + G Q_N G^T - A P C^T R_e^{-1} C P A \\
                     L &= A P C^T R_e^{-1}
 
     where :math:`R_e = R_N + C P C^T`.  It can be called in the form::
@@ -353,7 +353,7 @@ def create_estimator_iosystem(
         state covariance.
     G : ndarray, optional
         Disturbance matrix describing how the disturbances enters the
-        dynamics.  Defaults to sys.B.
+        dynamics.  Defaults to `sys.B`.
     C : ndarray, optional
         If the system has full state output, define the measured values to
         be used by the estimator.  Otherwise, use the system output as the
@@ -430,6 +430,11 @@ def create_estimator_iosystem(
         resp = ct.input_output_response(
            est, T, 0, [X0, P0], param={'correct': False)
 
+    References
+    ----------
+    .. [1] R. M. Murray, `Optimization-Based Control
+       <https://fbswiki.org/OBC`_, 2013.
+
     """
 
     # Make sure that we were passed an I/O system as an input
@@ -480,11 +485,13 @@ def create_estimator_iosystem(
     # Generate the disturbance matrix (G)
     if G is None:
         G = sys.B if len(dist_idx) == 0 else sys.B[:, dist_idx]
+    G = _check_shape(G, sys.nstates, len(dist_idx), name='G')
 
     # Initialize the covariance matrix
     if P0 is None:
         # Initalize P0 to the steady state value
         _, P0, _ = lqe(A, G, C, QN, RN)
+    P0 = _check_shape(P0, sys.nstates, sys.nstates, symmetric=True, name='P0')
 
     # Figure out the labels to use
     estimate_labels = _process_labels(
@@ -506,6 +513,10 @@ def create_estimator_iosystem(
         [sys.input_labels[i] for i in ctrl_idx])
     inputs = measurement_labels + control_labels if inputs is None \
         else inputs
+
+    # Process the disturbance covariances and check size
+    QN = _check_shape(QN, G.shape[1], G.shape[1], square=True, name='QN')
+    RN = _check_shape(RN, C.shape[0], C.shape[0], square=True, name='RN')
 
     if isinstance(covariance_labels, str):
         # Generate the list of labels using the argument as a format string

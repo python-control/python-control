@@ -1608,7 +1608,7 @@ class LinearICSystem(InterconnectedSystem, StateSpace):
         return StateSpace.__call__(self, *args, **kwargs)
 
     def __str__(self):
-        string = InterconnectedSystem.__str__(self) + "\n"
+        string = InterconnectedSystem.__str__(self) + "\n\n"
         string += "\n\n".join([
             "{} = {}".format(Mvar,
                                "\n    ".join(str(M).splitlines()))

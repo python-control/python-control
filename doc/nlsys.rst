@@ -23,6 +23,8 @@ Discrete time systems are also supported and have dynamics of the form
    y[t] &= h(t, x[t], u[t], \theta).
 
 
+.. _sec-nonlinear-models:
+
 Creating nonlinear models
 -------------------------
 

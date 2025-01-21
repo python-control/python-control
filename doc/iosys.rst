@@ -687,20 +687,143 @@ described in Section 8.5 (State Space Controller Design).
 Adding state estimation
 -----------------------
 
-.. todo::
-   Add `create_estimator_iosystem`
-
 If the full system state is not available, the output of a state
 estimator can be used to construct the controller using the command::
 
   ctrl, clsys = ct.create_statefbk_iosystem(sys, K, estimator=estim)
 
-where `estim` is the state estimator I/O system.  The controller will
+where `estim` is a state estimator I/O system.  The controller will
 have the same form as above, but with the system state :math:`x`
 replaced by the estimated state :math:`\hat x` (output of `estim`).
 The closed loop controller will include both the state feedback and
 the estimator.
 
+An estimator for a linear system should use the process inputs
+:math:`u` and outputs :math:`y` to generate an estimate :math:`\hat x`
+of the process state.  An optimal estimator (Kalman) filter can be
+constructed using the :func:`create_estimator_iosystem` command::
+
+  estim = ct.create_estimator_iosystem(sys, QN, RN)
+
+where `QN` is covariance matrix for the process disturbances (assumed
+by default to enter at the process inputs) and `RN` is the covariance
+matrix for the measurement noise.
+
+As an example, consider a simple double integrator linear system with
+an LQR controller:
+
+.. testsetup:: statefbk
+
+  import numpy as np
+  import control as ct
+
+.. testcode:: statefbk
+
+  # System
+  sys = ct.ss([[0, 1], [0, 0]], [[0], [1]], [[1, 0]], 0, name='sys')
+
+  # Controller
+  K, _, _ = ct.lqr(sys, np.eye(2), np.eye(1))
+
+We construct an estimator for the system assuming disturbance and
+noise intensity of 0.1:
+
+.. testcode:: statefbk
+
+  # Estimator
+  estim = ct.create_estimator_iosystem(sys, 0.01, 0.01, name='estim')
+
+resulting in the following dynamics:
+
+.. doctest:: statefbk
+
+  >>> print(estim)
+  <NonlinearIOSystem>: estim
+  Inputs (2): ['y[0]', 'u[0]']
+  Outputs (2): ['xhat[0]', 'xhat[1]']
+  States (6): ['xhat[0]', 'xhat[1]', 'P[0,0]', 'P[0,1]', 'P[1,0]', 'P[1,1]']
+  <BLANKLINE>
+  Update: <function create_estimator_iosystem.<locals>._estim_update at 0x...>
+  Output: <function create_estimator_iosystem.<locals>._estim_output at 0x...>
+
+The estimator is a nonlinear system with states consisting of the
+estimates of the process states (:math:`\hat x`) and the entries of
+the covariance of the state error (:math:`P`).  The estimator dynamics
+are given by
+
+.. math::
+
+  \dot {\hat x} &= A \hat x + B u - L (C \hat x - y), \\
+  \dot P &= A P + P A^\mathsf{T}
+    - P C^\mathsf{T} Q_w^{-1} C P + F Q_v F^\mathsf{T},
+
+where :math:`L` is the estimator gain and :math:`F` is the mapping
+from disturbance signals to the state dynamics (see
+`create_estimator_iosystem` and `Optimization-Based Control
+<https://fbswiki.org/OBC>`_, Chapter 6 [Kalman Filtering] for more
+detailed information).
+
+We can now create the entire closed loop system using the estimated state:
+
+.. testcode:: statefbk
+
+  # Estimation-based controller
+  ctrl, clsys = ct.create_statefbk_iosystem(
+      sys, K, estimator=estim, name='ctrl')
+
+The resulting controller is given by
+
+.. doctest:: statefbk
+
+  >>> print(ctrl)
+  <StateSpace>: ctrl
+  Inputs (5): ['xd[0]', 'xd[1]', 'ud[0]', 'xhat[0]', 'xhat[1]']
+  Outputs (1): ['u[0]']
+  States (0): []
+  <BLANKLINE>
+  A = []
+  <BLANKLINE>
+  B = []
+  <BLANKLINE>
+  C = []
+  <BLANKLINE>
+  D = [[ 1.          1.73205081  1.         -1.         -1.73205081]]
+
+Note that controller input signals have automatically been named to
+match the estimator output signals.  The full closed loop system is
+given by
+
+.. doctest:: statefbk
+
+  >>> print(clsys)
+  <InterconnectedSystem>: sys_ctrl
+  Inputs (3): ['xd[0]', 'xd[1]', 'ud[0]']
+  Outputs (2): ['y[0]', 'u[0]']
+  States (8): ['sys_x[0]', 'sys_x[1]', 'estim_xhat[0]', 'estim_xhat[1]', 'estim_P[0,0]', 'estim_P[0,1]', 'estim_P[1,0]', 'estim_P[1,1]']
+  <BLANKLINE>
+  Subsystems (3):
+   * <StateSpace sys: ['u[0]'] -> ['y[0]']>
+   * <StateSpace ctrl: ['xd[0]', 'xd[1]', 'ud[0]', 'xhat[0]', 'xhat[1]'] ->
+      ['u[0]']>
+   * <NonlinearIOSystem estim: ['y[0]', 'u[0]'] -> ['xhat[0]', 'xhat[1]']>
+  <BLANKLINE>
+  Connections:
+   * sys.u[0] <- ctrl.u[0]
+   * ctrl.xd[0] <- xd[0]
+   * ctrl.xd[1] <- xd[1]
+   * ctrl.ud[0] <- ud[0]
+   * ctrl.xhat[0] <- estim.xhat[0]
+   * ctrl.xhat[1] <- estim.xhat[1]
+   * estim.y[0] <- sys.y[0]
+   * estim.u[0] <- ctrl.u[0]
+  <BLANKLINE>
+  Outputs:
+   * y[0] <- sys.y[0]
+   * u[0] <- ctrl.u[0]
+
+We see that the state of the full closed loop system consists of the
+process states as well as the estimated states and the entries of the
+covariance matrix.
 
 Adding integral action
 ----------------------
@@ -731,6 +854,91 @@ must match the number of additional columns in the `K` matrix.  If an
 estimator is specified, :math:`\hat x` will be used in place of
 :math:`x`.
 
+As an example, consider the servo-mechanism model `servomech`
+described in the :ref:`sec-nonlinear-models`.  We construct a state
+space controller by linearizing the system around an equilibrium
+point, augmenting the model with an integrator, and computing a state
+feedback that optimizes a quadratic cost function:
+
+.. testsetup:: integral_action
+
+  import numpy as np
+  import control as ct
+
+  # Parameter values
+  servomech_params = {
+      'J': 100,             # Moment of inertia of the motor
+      'b': 10,              # Angular damping of the arm
+      'k': 1,               # Spring constant
+      'r': 1,               # Location of spring contact on arm
+      'l': 2,               # Distance to the read head
+      'eps': 0.01,          # Magnitude of velocity-dependent perturbation
+  }
+
+  # State derivative
+  def servomech_update(t, x, u, params):
+      # Extract the configuration and velocity variables from the state vector
+      theta = x[0]                # Angular position of the disk drive arm
+      thetadot = x[1]             # Angular velocity of the disk drive arm
+      tau = u[0]                  # Torque applied at the base of the arm
+
+      # Get the parameter values
+      J, b, k, r = map(params.get, ['J', 'b', 'k', 'r'])
+
+      # Compute the angular acceleration
+      dthetadot = 1/J * (
+          -b * thetadot - k * r * np.sin(theta) + tau)
+
+      # Return the state update law
+      return np.array([thetadot, dthetadot])
+
+.. testcode:: integral_action
+
+  # System dynamics (with full state output)
+  servomech = ct.nlsys(
+      servomech_update, None, name='servomech',
+      params=servomech_params, states=['theta', 'thdot'],
+      outputs=['theta', 'thdot'], inputs=['tau'])
+
+  # Find operating point with output angle pi/4
+  xeq, ueq = ct.find_operating_point(
+      servomech, [0, 0], 0, y0=[np.pi/4, 0], iy=0)
+
+  # Compute linearization and augment with an integrator on angle
+  A, B, _, _ = ct.ssdata(servomech.linearize(xeq, ueq))
+  C = np.array([[1, 0]])  # theta
+  A_aug = np.block([
+      [A, np.zeros((2, 1))],
+      [C, np.zeros((1, 1))]
+  ])
+  B_aug = np.block([[B], [0]])
+
+  # Compute LQR controller
+  K, _, _ = ct.lqr(A_aug, B_aug, np.diag([1, 1, 0.1]), 1)
+
+  # Create controller with integral action
+  ctrl, _ = ct.create_statefbk_iosystem(
+      servomech, K, integral_action=C, name='ctrl')
+
+The resulting controller now has internal dynamics corresponding to
+the integral action:
+
+.. doctest:: integral_action
+
+  >>> print(ctrl)
+  <StateSpace>: ctrl
+  Inputs (5): ['xd[0]', 'xd[1]', 'ud[0]', 'theta', 'thdot']
+  Outputs (1): ['tau']
+  States (1): ['x[0]']
+  <BLANKLINE>
+  A = [[0.]]
+  <BLANKLINE>
+  B = [[-1.  0.  0.  1.  0.]]
+  <BLANKLINE>
+  C = [[-0.31622777]]
+  <BLANKLINE>
+  D = [[  3.76244547  19.21453568   1.          -3.76244547 -19.21453568]]
+
 
 Adding gain scheduling
 ----------------------
@@ -758,8 +966,74 @@ where :math:`\mu` represents the scheduling variables.  See
 scheduled controller (in the alternative formulation section at the
 bottom of the file).
 
+As an example, consider the following simple model of a mobile robot
+("unicycle" model), which has dynamics given by
+
+.. math::
+
+   \frac{dx}{dt} &= v \cos\theta \\
+   \frac{dy}{dt} &= v \sin\theta \\
+   \frac{d\theta}{dt} &= \omega
+
+where :math:`x`, :math:`y` is the position of the robot in the plane,
+:math:`\theta` is the angle with respect to the :math:`x` axis,
+:math:`v` is the commanded velocity, and :math:`\omega` is the
+commanded angular rate.
+
+We define the nonlinear dynamics as follows:
+
+.. testsetup:: gainsched
+
+  import itertools
+  import numpy as np
+  import control as ct
+
+.. testcode:: gainsched
+
+  def unicycle_update(t, x, u, params):
+      return np.array([u[0] * np.cos(x[2]), u[0] * np.sin(x[2]), u[1]])
+
+  unicycle = ct.nlsys(
+      unicycle_update, None, name='unicycle', states=3,
+      inputs=['v', 'omega'], outputs=['x', 'y', 'theta'])
+
+We construct a gain-scheduled controller by linearizing the dynamics
+about a range of different speeds :math:`v` and angles :math:`\theta`:
+
+.. testcode:: gainsched
+
+  # Speeds and angles at which to compute the gains
+  speeds = [1, 5, 10]
+  angles = np.linspace(0, np.pi/2, 4)
+  points = list(itertools.product(speeds, angles))
+
+  # Gains for each speed (using LQR controller)
+  Q = np.identity(unicycle.nstates)
+  R = np.identity(unicycle.ninputs)
+  gains = [np.array(ct.lqr(unicycle.linearize(
+      [0, 0, angle], [speed, 0]), Q, R)[0]) for speed, angle in points]
+
+  # Create gain scheduled controller
+  ctrl, clsys = ct.create_statefbk_iosystem(
+      unicycle, (gains, points), gainsched_indices=['v_d', 'th_d'], name='ctrl',
+      inputs=['x_d', 'y_d', 'th_d', 'v_d', 'omega_d', 'x', 'y', 'theta'])
+
+The resulting controller has the following structure:
+
+.. doctest:: gainsched
+
+  >>> print(ctrl)
+  <NonlinearIOSystem>: ctrl
+  Inputs (8): ['x_d', 'y_d', 'th_d', 'v_d', 'omega_d', 'x', 'y', 'theta']
+  Outputs (2): ['v', 'omega']
+  States (0): []
+  <BLANKLINE>
+  Update: <function create_statefbk_iosystem.<locals>._control_update at 0x...>
+  Output: <function create_statefbk_iosystem.<locals>._control_output at 0x...>
+
+This is a static, nonlinear controller, with the gains scheduled based
+on the values of :math:`v_\text{d}` (index 3) and
+:math:`\theta_\text{d}` (index 2).
+
 Integral action and state estimation can also be used with gain
 scheduled controllers.
-
-.. todo::
-   Add example?

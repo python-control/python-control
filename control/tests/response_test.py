@@ -61,7 +61,7 @@ def test_response_plot(respfcn, plotfcn, respargs):
     else:
         # Single argument is enough
         args = (ct.rss(4, 1, 1, strictly_proper=True), )
-    
+
     # Standard calling pattern - generate response, then plot
     plt.figure()
     resp = respfcn(*args, **respargs)
