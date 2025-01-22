@@ -153,7 +153,8 @@ class TestControlMatlab:
         t, y = impulse(sys, T)
         plot(t, y, label='t=0..2')
 
-        #Test system with direct feed-though, the function should print a warning.
+        # Test system with direct feedthough, the function should
+        # print a warning.
         D = [[0.5]]
         sys_ft = ss(A, B, C, D)
         with pytest.warns(UserWarning, match="has direct feedthrough"):

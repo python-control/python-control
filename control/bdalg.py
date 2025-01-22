@@ -496,7 +496,7 @@ def combine_tf(tf_array, **kwargs):
     Raises
     ------
     ValueError
-        If timesteps of transfer functions do not match.
+        If timebase of transfer functions do not match.
     ValueError
         If `tf_array` has incorrect dimensions.
     ValueError
@@ -548,7 +548,7 @@ def combine_tf(tf_array, **kwargs):
     dt_set = set(dt_list)
     dt_set.discard(None)
     if len(dt_set) > 1:
-        raise ValueError("Timesteps of transfer functions are "
+        raise ValueError("Time steps of transfer functions are "
                          f"mismatched: {dt_set}")
     elif len(dt_set) == 0:
         dt = None
@@ -665,11 +665,11 @@ def _ensure_tf(arraylike_or_tf, dt=None):
     arraylike_or_tf : `TransferFunction` or array_like
         Array-like or transfer function.
     dt : None, True or float, optional
-        System timebase. 0 (default) indicates continuous
-        time, True indicates discrete time with unspecified sampling
-        time, positive number is discrete time with specified
-        sampling time, None indicates unspecified timebase (either
-        continuous or discrete time). If None, timestep is not validated.
+        System timebase. 0 (default) indicates continuous time, True
+        indicates discrete time with unspecified sampling time, positive
+        number is discrete time with specified sampling time, None
+        indicates unspecified timebase (either continuous or discrete
+        time). If None, timebase is not validated.
 
     Returns
     -------
@@ -681,11 +681,12 @@ def _ensure_tf(arraylike_or_tf, dt=None):
     ValueError
         If input cannot be converted to a transfer function.
     ValueError
-        If the timesteps do not match.
+        If the timebases do not match.
+
     """
     # If the input is already a transfer function, return it right away
     if isinstance(arraylike_or_tf, tf.TransferFunction):
-        # If timesteps don't match, raise an exception
+        # If timebases don't match, raise an exception
         if (dt is not None) and (arraylike_or_tf.dt != dt):
             raise ValueError(
                 f"`arraylike_or_tf.dt={arraylike_or_tf.dt}` does not match "

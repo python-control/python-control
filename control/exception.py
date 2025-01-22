@@ -29,10 +29,10 @@ class ControlNotImplemented(NotImplementedError):
     """Functionality is not yet implemented."""
     pass
 
-# Utility function to see if slycot is installed
+# Utility function to see if Slycot is installed
 slycot_installed = None
 def slycot_check():
-    """Return True if slycot is installed, otherwise False."""
+    """Return True if Slycot is installed, otherwise False."""
     global slycot_installed
     if slycot_installed is None:
         try:

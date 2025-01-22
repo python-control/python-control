@@ -1,7 +1,7 @@
 # config.py - package defaults
 # RMM, 4 Nov 2012
 #
-# TODO: add ability to read/write configuration files (ala Matplotlib)
+# TODO: add ability to read/write configuration files (ala matplotlib)
 
 """Functions to access default parameter values.
 
@@ -133,7 +133,7 @@ def set_defaults(module, **keywords):
         defaults[module + '.' + key] = val
 
 
-# TODO: allow individual modules and individaul parameters to be reset
+# TODO: allow individual modules and individual parameters to be reset
 def reset_defaults():
     """Reset configuration values to their default (initial) values.
 
@@ -207,7 +207,7 @@ def _get_param(module, param, argval=None, defval=None, pop=False, last=False):
     module : str
         Name of the module whose parameters are being requested.
     param : str
-        Name of the parameter value to be determeind.
+        Name of the parameter value to be determined.
     argval : object or dict
         Value of the parameter as passed to the function.  This can either be
         an object or a dictionary (i.e. the keyword list from the function
@@ -219,11 +219,11 @@ def _get_param(module, param, argval=None, defval=None, pop=False, last=False):
         None.
     pop : bool, optional
         If True and if argval is a dict, then pop the remove the parameter
-        entry from the argval dict after retreiving it.  This allows the use
+        entry from the argval dict after retrieving it.  This allows the use
         of a keyword argument list to be passed through to other functions
         internal to the function being called.
     last : bool, optional
-        If True, check to make sure dictionary is empy after processing.
+        If True, check to make sure dictionary is empty after processing.
 
     """
 
@@ -270,7 +270,7 @@ def use_matlab_defaults():
 def use_fbs_defaults():
     """Use Feedback Systems (FBS) compatible settings.
 
-    The following conventions fomr `Feedback Systems <http://fbsbook.org>`_
+    The following conventions from `Feedback Systems <http://fbsbook.org>`_
     are used:
 
         * Bode plots plot gain in powers of ten, phase in degrees,
@@ -352,7 +352,7 @@ def use_legacy_defaults(version):
         # switched to 'array' as default for state space objects
         warnings.warn("NumPy matrix class no longer supported")
 
-        # switched to 0 (=continuous) as default timestep
+        # switched to 0 (=continuous) as default timebase
         set_defaults('control', default_dt=None)
 
         # changed iosys naming conventions
@@ -388,7 +388,7 @@ def _process_legacy_keyword(kwargs, oldkey, newkey, newval, warn_oldkey=True):
     Parameters
     ----------
     kwargs : dict
-        Dictionary of keword arguments (from function call).
+        Dictionary of keyword arguments (from function call).
     oldkey : str
         Old (legacy) parameter name.
     newkey : str

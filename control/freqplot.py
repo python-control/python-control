@@ -107,9 +107,9 @@ def bode_plot(
     data : list of `FrequencyResponseData` or `LTI`
         List of LTI systems or `FrequencyResponseData` objects.  A
         single system or frequency response can also be passed.
-    omega : array_like, optoinal
+    omega : array_like, optional
         Set of frequencies in rad/sec to plot over.  If not specified, this
-        will be determined from the proporties of the systems.  Ignored if
+        will be determined from the properties of the systems.  Ignored if
         `data` is not a list of systems.
     *fmt : `matplotlib.pyplot.plot` format string, optional
         Passed to `matplotlib` as the format string for all lines in the plot.
@@ -186,7 +186,7 @@ def bode_plot(
         elements is equivalent to providing `omega_limits`. Ignored if
         data is not a list of systems.
     omega_num : int
-        Number of samples to use for the frequeny range.  Defaults to
+        Number of samples to use for the frequency range.  Defaults to
         `config.defaults['freqplot.number_of_samples']`.  Ignored if data is
         not a list of systems.
     overlay_inputs, overlay_outputs : bool, optional
@@ -1014,7 +1014,7 @@ def bode_plot(
     # Create legends
     #
     # Legends can be placed manually by passing a legend_map array that
-    # matches the shape of the suplots, with each item being a string
+    # matches the shape of the sublots, with each item being a string
     # indicating the location of the legend for that axes (or None for no
     # legend).
     #
@@ -1059,7 +1059,7 @@ def bode_plot(
         legend_array = None
 
     #
-    # Legacy return pocessing
+    # Legacy return processing
     #
     if plot is True:            # legacy usage; remove in future release
         # Process the data to match what we were sent
@@ -1190,7 +1190,7 @@ def nyquist_response(
 
     Computes a Nyquist contour for the system over a (optional) frequency
     range and evaluates the number of net encirclements.  The curve is
-    computed by evaluating the Nyqist segment along the positive imaginary
+    computed by evaluating the Nyquist segment along the positive imaginary
     axis, with a mirror image generated to reflect the negative imaginary
     axis.  Poles on or near the imaginary axis are avoided using a small
     indentation.  The portion of the Nyquist contour at infinity is not
@@ -1209,7 +1209,7 @@ def nyquist_response(
     -------
     responses : list of `NyquistResponseData`
         For each system, a Nyquist response data object is returned.  If
-        `sysdata` is a single system, a single elemeent is returned (not a
+        `sysdata` is a single system, a single element is returned (not a
         list).
     response.count : int
         Number of encirclements of the point -1 by the Nyquist curve.  If
@@ -1242,7 +1242,7 @@ def nyquist_response(
         in Hz otherwise in rad/s.  Specifying `omega` as a list of two
         elements is equivalent to providing `omega_limits`.
     omega_num : int, optional
-        Number of samples to use for the frequeny range.  Defaults to
+        Number of samples to use for the frequency range.  Defaults to
         `config.defaults['freqplot.number_of_samples']`.
     warn_nyquist : bool, optional
         If set to False, turn off warnings about frequencies above Nyquist.
@@ -1267,7 +1267,7 @@ def nyquist_response(
     to 'none' will turn off indentation.
 
     For those portions of the Nyquist plot in which the contour is indented
-    to avoid poles, resuling in a scaling of the Nyquist plot, the line
+    to avoid poles, resulting in a scaling of the Nyquist plot, the line
     styles are according to the settings of the `primary_style` and
     `mirror_style` keywords.  By default the scaled portions of the primary
     curve use a dotted line style and the scaled portion of the mirror
@@ -1440,7 +1440,7 @@ def nyquist_response(
                     splane_contour[last_point:]))
 
             # Indent points that are too close to a pole
-            if len(splane_poles) > 0: # accomodate no splane poles if dtime sys
+            if len(splane_poles) > 0: # accommodate no splane poles if dtime sys
                 for i, s in enumerate(splane_contour):
                     # Find the nearest pole
                     p = splane_poles[(np.abs(splane_poles - s)).argmin()]
@@ -1496,10 +1496,10 @@ def nyquist_response(
                 " frequency range that does not include zero.")
 
         #
-        # Make sure that the enciriclements match the Nyquist criterion
+        # Make sure that the encirclements match the Nyquist criterion
         #
         # If the user specifies the frequency points to use, it is possible
-        # to miss enciriclements, so we check here to make sure that the
+        # to miss encirclements, so we check here to make sure that the
         # Nyquist criterion is actually satisfied.
         #
         if isinstance(sys, (StateSpace, TransferFunction)):
@@ -1550,7 +1550,7 @@ def nyquist_plot(
     """Nyquist plot for a system.
 
     Generates a Nyquist plot for the system over a (optional) frequency
-    range.  The curve is computed by evaluating the Nyqist segment along
+    range.  The curve is computed by evaluating the Nyquist segment along
     the positive imaginary axis, with a mirror image generated to reflect
     the negative imaginary axis.  Poles on or near the imaginary axis are
     avoided using a small indentation.  The portion of the Nyquist contour
@@ -1561,7 +1561,7 @@ def nyquist_plot(
     ----------
     data : list of `LTI` or `NyquistResponseData`
         List of linear input/output systems (single system is OK) or
-        Nyquist ersponses (computed using `nyquist_response`).
+        Nyquist responses (computed using `nyquist_response`).
         Nyquist curves for each system are plotted on the same graph.
     omega : array_like, optional
         Set of frequencies to be evaluated, in rad/sec. Specifying
@@ -1669,7 +1669,7 @@ def nyquist_plot(
         in Hz otherwise in rad/s.  Specifying `omega` as a list of two
         elements is equivalent to providing `omega_limits`.
     omega_num : int, optional
-        Number of samples to use for the frequeny range.  Defaults to
+        Number of samples to use for the frequency range.  Defaults to
         `config.defaults['freqplot.number_of_samples']`.  Ignored if data is
         not a list of systems.
     plot : bool, optional
@@ -1733,7 +1733,7 @@ def nyquist_plot(
     the exact contour used for evaluation is returned.
 
     For those portions of the Nyquist plot in which the contour is indented
-    to avoid poles, resuling in a scaling of the Nyquist plot, the line
+    to avoid poles, resulting in a scaling of the Nyquist plot, the line
     styles are according to the settings of the `primary_style` and
     `mirror_style` keywords.  By default the scaled portions of the primary
     curve use a dotted line style and the scaled portion of the mirror
@@ -1848,7 +1848,7 @@ def nyquist_plot(
         contours = [response.contour for response in nyquist_responses]
 
     if plot is False:
-        # Make sure we used all of the keywrods
+        # Make sure we used all of the keywords
         if kwargs:
             raise TypeError("unrecognized keywords: ", str(kwargs))
 
@@ -2054,7 +2054,7 @@ def nyquist_plot(
             title, fig=fig, rcParams=rcParams, frame=title_frame,
             use_existing=False)
 
-    # Legacy return pocessing
+    # Legacy return processing
     if plot is True or return_contour is not None:
         if len(data) == 1:
             counts, contours = counts[0], contours[0]
@@ -2080,7 +2080,7 @@ def _compute_curve_offset(resp, mask, max_offset):
     offset = np.zeros(resp.size)
     arclen = np.zeros(resp.size)
 
-    # Walk through the response and keep track of each continous component
+    # Walk through the response and keep track of each continuous component
     i, nsegs = 0, 0
     while i < resp.size:
         # Skip the regular segment
@@ -2144,7 +2144,7 @@ def gangof4_response(
         elements is equivalent to providing `omega_limits`. Ignored if
         data is not a list of systems.
     omega_num : int
-        Number of samples to use for the frequeny range.  Defaults to
+        Number of samples to use for the frequency range.  Defaults to
         `config.defaults['freqplot.number_of_samples']`.  Ignored if data is
         not a list of systems.
     Hz : bool, optional
@@ -2170,7 +2170,7 @@ def gangof4_response(
         raise ControlMIMONotImplemented(
             "Gang of four is currently only implemented for SISO systems.")
 
-    # Compute the senstivity functions
+    # Compute the sensitivity functions
     L = P * C
     S = feedback(1, L)
     T = L * S
@@ -2231,7 +2231,7 @@ def gangof4_plot(
         elements is equivalent to providing `omega_limits`. Ignored if
         data is not a list of systems.
     omega_num : int
-        Number of samples to use for the frequeny range.  Defaults to
+        Number of samples to use for the frequency range.  Defaults to
         `config.defaults['freqplot.number_of_samples']`.  Ignored if data is
         not a list of systems.
     Hz : bool, optional
@@ -2305,7 +2305,7 @@ def singular_values_response(
         in Hz otherwise in rad/s.  Specifying `omega` as a list of two
         elements is equivalent to providing `omega_limits`.
     omega_num : int, optional
-        Number of samples to use for the frequeny range.  Defaults to
+        Number of samples to use for the frequency range.  Defaults to
         `config.defaults['freqplot.number_of_samples']`.
 
     See Also
@@ -2421,7 +2421,7 @@ def singular_values_plot(
         in Hz otherwise in rad/s.  Specifying `omega` as a list of two
         elements is equivalent to providing `omega_limits`.
     omega_num : int, optional
-        Number of samples to use for the frequeny range.  Defaults to
+        Number of samples to use for the frequency range.  Defaults to
         `config.defaults['freqplot.number_of_samples']`.  Ignored if data is
         not a list of systems.
     plot : bool, optional
@@ -2779,7 +2779,7 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
                     (np.abs(sys.poles()), np.abs(sys.zeros())))
                 # Get rid of poles and zeros on the real axis (imag==0)
                 # * origin and real < 0
-                # * at 1.: would result in omega=0. (logaritmic plot!)
+                # * at 1.: would result in omega=0. (logarithmic plot!)
                 toreplace = np.isclose(features_.imag, 0.0) & (
                                     (features_.real <= 0.) |
                                     (np.abs(features_.real - 1.0) < 1.e-10))
@@ -2830,7 +2830,7 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
 #
 
 def get_pow1000(num):
-    """Determine exponent for which significand of a number is within the
+    """Determine exponent for which significance of a number is within the
     range [1, 1000).
     """
     # Based on algorithm from http://www.mail-archive.com/

@@ -53,7 +53,7 @@ def hankel_singular_values(sys):
     The Hankel singular values are the singular values of the Hankel operator.
     In practice, we compute the square root of the eigenvalues of the matrix
     formed by taking the product of the observability and controllability
-    gramians.  There are other (more efficient) methods based on solving the
+    Gramians.  There are other (more efficient) methods based on solving the
     Lyapunov equation in a particular way (more details soon).
 
     Examples
@@ -295,7 +295,7 @@ def balanced_reduction(sys, orders, method='truncate', alpha=None):
     ValueError
         If `method` is not 'truncate' or 'matchdc'.
     ImportError
-        If slycot routine ab09ad, ab09md, or ab09nd is not found.
+        If Slycot routine ab09ad, ab09md, or ab09nd is not found.
     ValueError
         If there are more unstable modes than any value in orders.
 
@@ -314,16 +314,16 @@ def balanced_reduction(sys, orders, method='truncate', alpha=None):
             from slycot import ab09ad, ab09md
         except ImportError:
             raise ControlSlycot(
-                "can't find slycot subroutine ab09md or ab09ad")
+                "can't find Slycot subroutine ab09md or ab09ad")
     elif method == 'matchdc':
         try:
             from slycot import ab09nd
         except ImportError:
-            raise ControlSlycot("can't find slycot subroutine ab09nd")
+            raise ControlSlycot("can't find Slycot subroutine ab09nd")
 
     # Check for ss system object, need a utility for this?
 
-    # TODO: Check for continous or discrete, only continuous supported for now
+    # TODO: Check for continuous or discrete, only continuous supported for now
     #   if isCont():
     #       dico = 'C'
     #   elif isDisc():
@@ -380,12 +380,12 @@ def balanced_reduction(sys, orders, method='truncate', alpha=None):
 
 
 def minimal_realization(sys, tol=None, verbose=True):
-    """ Eliminate uncontrollable or unobservable states.
+    """Eliminate uncontrollable or unobservable states.
 
     Eliminates uncontrollable or unobservable states in state-space
-    models or cancelling pole-zero pairs in transfer functions. The
-    output sysr has minimal order and the same response
-    characteristics as the original model sys.
+    models or canceling pole-zero pairs in transfer functions. The
+    output `sysr` has minimal order and the same response
+    characteristics as the original model `sys`.
 
     Parameters
     ----------
@@ -647,7 +647,7 @@ def markov(*args, m=None, transpose=False, dt=None, truncate=False):
     # Make sure the number of time points match
     if Umat.shape[1] != Ymat.shape[1]:
         raise ControlDimension(
-            "Input and output data are of differnent lengths")
+            "Input and output data are of different lengths")
     l = Umat.shape[1]
 
     # If number of desired parameters was not given, set to size of input data

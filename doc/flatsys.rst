@@ -5,9 +5,9 @@
 Differentially Flat Systems
 ===========================
 
-The `flatsys` sub-package contains a set of classes and functions to
+The `flatsys` subpackage contains a set of classes and functions to
 compute trajectories for differentially flat systems.  The objects in
-this sub-package must be explictly imported::
+this subpackage must be explictly imported::
 
   import control as ct
   import control.flatsys as fs
@@ -364,7 +364,7 @@ The results of the two approaches can be shown using the
 Sub-package classes and functions
 ---------------------------------
 
-The flat systems sub-package `flatsys` utilizes a number of classes to
+The flat systems subpackage `flatsys` utilizes a number of classes to
 define the flatsystem, the basis functions, and the system trajetory:
 
 .. autosummary::

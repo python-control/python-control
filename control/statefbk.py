@@ -19,7 +19,7 @@ from .mateqn import care, dare
 from .nlsys import NonlinearIOSystem, interconnect
 from .statesp import StateSpace, _ssmatrix, ss
 
-# Make sure we have access to the right slycot routines
+# Make sure we have access to the right Slycot routines
 try:
     from slycot import sb03md57
 
@@ -140,7 +140,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
     Notes
     -----
-    This function is a wrapper for the slycot function sb01bd, which
+    This function is a wrapper for the Slycot function sb01bd, which
     implements the pole placement algorithm of Varga [1]_. In contrast
     to the algorithm used by `place`, the Varga algorithm can place
     multiple poles at the same location. The placement, however, may
@@ -159,7 +159,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
     """
 
-    # Make sure that SLICOT is installed
+    # Make sure that Slycot is installed
     try:
         from slycot import sb01bd
     except ImportError:
@@ -184,21 +184,21 @@ def place_varga(A, B, p, dtime=False, alpha=None):
         # (if DICO='C') or with modulus less than alpha
         # (if DICO = 'D').
         if dtime:
-            # For discrete time, slycot only cares about modulus, so just make
+            # For discrete time, Slycot only cares about modulus, so just make
             # alpha the smallest it can be.
             alpha = 0.0
         else:
             # Choosing alpha=min_eig is insufficient and can lead to an
             # error or not having all the eigenvalues placed that we wanted.
             # Evidently, what python thinks are the eigs is not precisely
-            # the same as what slicot thinks are the eigs. So we need some
+            # the same as what Slycot thinks are the eigs. So we need some
             # numerical breathing room. The following is pretty heuristic,
             # but does the trick
             alpha = -2*abs(min(system_eigs.real))
     elif dtime and alpha < 0.0:
         raise ValueError("Discrete time systems require alpha > 0")
 
-    # Call SLICOT routine to place the eigenvalues
+    # Call Slycot routine to place the eigenvalues
     A_z, w, nfp, nap, nup, F, Z = \
         sb01bd(B_mat.shape[0], B_mat.shape[1], len(placed_eigs), alpha,
                A_mat, B_mat, placed_eigs, DICO)
@@ -472,7 +472,7 @@ def dlqr(*args, **kwargs):
     if (len(args) < 3):
         raise ControlArgument("not enough input arguments")
 
-    # If we were passed a continus time system as the first arg, raise error
+    # If we were passed a continues time system as the first arg, raise error
     if isinstance(args[0], LTI) and isctime(args[0], strict=True):
         raise ControlArgument("dsys must be discrete time (dt != 0)")
 
@@ -1197,7 +1197,7 @@ def gram(sys, type):
         return gram
 
     elif type == 'cf' or type == 'of':
-        # Compute cholesky factored gramian from slycot routine sb03od
+        # Compute Cholesky factored Gramian from Slycot routine sb03od
         if sb03od is None:
             raise ControlSlycot("can't find slycot module 'sb03od'")
         tra = 'N'

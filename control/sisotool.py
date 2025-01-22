@@ -53,7 +53,7 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
         input.  To view the step response with a feedforward controller,
         give your plant two identical inputs, and sum your feedback
         controller and your feedforward controller and multiply them into
-        your plant's second input. It is also possible to accomodate a
+        your plant's second input. It is also possible to accommodate a
         system with a gain in the feedback.
     initial_gain : float, optional
         Initial gain to use for plotting root locus. Defaults to 1
@@ -85,7 +85,7 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
     margins_bode : boolean
         If True, plot gain and phase margin in the bode plot.
     tvect : list or ndarray, optional
-        List of timesteps to use for closed loop step response.
+        List of time steps to use for closed loop step response.
 
     Examples
     --------
@@ -192,7 +192,7 @@ def _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect=None):
 
     sys_loop = sys if sys.issiso() else sys[0,0]
 
-    # Update the bodeplot
+    # Update the Bode plot
     bode_plot_params['data'] = frequency_response(sys_loop*K.real)
     bode_plot(**bode_plot_params, title=False)
 
@@ -276,7 +276,7 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     different gain, e.g. 'I', make sure to add your chosen `deltaK` to
     the previous gain you you were tuning.
 
-    Example: to examine the effect of varying `Kp` starting from an intial
+    Example: to examine the effect of varying `Kp` starting from an initial
     value of 10, use the arguments ``gain='P', Kp0=10`` and try varying values
     of `deltaK`. Suppose a `deltaK` of 5 gives satisfactory performance. Then,
     to tune the derivative gain, add your selected `deltaK` to `Kp0` in the
@@ -293,7 +293,7 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     deactivate magnification mode when you are done by clicking the magnifying
     glass. Otherwise you will not be able to be able to choose a gain on the
     root locus plot. When you are done, ``%matplotlib inline`` returns to
-    inline, non-interactive ploting.
+    inline, non-interactive plotting.
 
     By default, all three PID terms are in the forward path C_f in the
     diagram shown below, that is,
@@ -339,7 +339,7 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
         Initial values for proportional, integral, and derivative gains,
         respectively.
     deltaK : float, optional
-        Perturbation value for gain specified by the `gain` keywoard.
+        Perturbation value for gain specified by the `gain` keyword.
     tau : float, optional
         The time constant associated with the pole in the continuous-time
         derivative term. This is required to make the derivative transfer

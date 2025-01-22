@@ -1,7 +1,7 @@
 # poly.m - simple set of polynomial basis functions
 # RMM, 10 Nov 2012
 #
-# TODO: rename this as taylor.m
+# TODO: rename this as taylor.m?
 
 """Simple set of polynomial basis functions.
 
@@ -27,7 +27,7 @@ class PolyFamily(BasisFamily):
     Parameters
     ----------
     N : int
-        Degree of the Bezier curve.
+        Degree of the polynomial.
 
     T : float
         Final time (used for rescaling).  Default value is 1.

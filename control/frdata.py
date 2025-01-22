@@ -999,7 +999,7 @@ def _convert_to_frd(sys, omega, inputs=1, outputs=1):
     except Exception:
         pass
 
-    raise TypeError('''Can't convert given type "%s" to FRD system.''' %
+    raise TypeError("Can't convert given type '%s' to FRD system." %
                     sys.__class__)
 
 

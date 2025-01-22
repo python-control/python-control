@@ -23,7 +23,7 @@ from .iosys import isdtime
 
 
 class FormatterDMS():
-    '''Transforms angle ticks to damping ratios'''
+    """Transforms angle ticks to damping ratios."""
     def __call__(self, direction, factor, values):
         angles_deg = np.asarray(values)/factor
         damping_ratios = np.cos((180-angles_deg) * np.pi/180)
@@ -32,10 +32,10 @@ class FormatterDMS():
 
 
 class ModifiedExtremeFinderCycle(angle_helper.ExtremeFinderCycle):
-    '''Changed to allow only left hand-side polar grid
+    """Changed to allow only left hand-side polar grid.
 
     https://matplotlib.org/_modules/mpl_toolkits/axisartist/angle_helper.html#ExtremeFinderCycle.__call__
-    '''
+    """
     def __call__(self, transform_xy, x1, y1, x2, y2):
         x, y = np.meshgrid(
             np.linspace(x1, x2, self.nx), np.linspace(y1, y2, self.ny))
@@ -176,11 +176,11 @@ def zgrid(zetas=None, wns=None, ax=None, scaling=None):
         x = linspace(0, sqrt(1-zeta**2), 200)
         ang = pi*x
         mag = exp(-pi*factor*x)
-        # Draw upper part in retangular coordinates
+        # Draw upper part in rectangular coordinates
         xret = mag*cos(ang)
         yret = mag*sin(ang)
         ax.plot(xret, yret, ':', color='grey', lw=0.75)
-        # Draw lower part in retangular coordinates
+        # Draw lower part in rectangular coordinates
         xret = mag*cos(-ang)
         yret = mag*sin(-ang)
         ax.plot(xret, yret, ':', color='grey', lw=0.75)
@@ -199,7 +199,7 @@ def zgrid(zetas=None, wns=None, ax=None, scaling=None):
         x = linspace(-pi/2, pi/2, 200)
         ang = pi*a*sin(x)
         mag = exp(-pi*a*cos(x))
-        # Draw in retangular coordinates
+        # Draw in rectangular coordinates
         xret = mag*cos(ang)
         yret = mag*sin(ang)
         ax.plot(xret, yret, ':', color='grey', lw=0.75)

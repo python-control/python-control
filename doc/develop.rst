@@ -49,11 +49,10 @@ GitHub repository file and directory layout:
 
       + optimal.py - optimal control module
 
-      + **flatsys/** - flat systems sub-package
+      + **flatsys/** - flat systems subpackage
 
-        - __init__.py, basis.py, bezier.py, bspline.py,
-          flatsys.py, linflat.py, poly.py, systraj.py -
-          sub-package files
+        - __init__.py, basis.py, bezier.py, bspline.py, flatsys.py,
+          linflat.py, poly.py, systraj.py - subpackage files
 
       + **matlab/** - MATLAB compatibility subpackage
 
@@ -439,7 +438,7 @@ the `include` directive (see `nlsys.py` for an example).
 Sphinx files guidelines:
 
 * Each file should declare the `currentmodule` at or near the top of
-  the file.  Except for sub-packages (`control.flatsys`) and modules
+  the file.  Except for subpackages (`control.flatsys`) and modules
   that need to be imported separately (`control.optimal`),
   `currentmodule` should be set to control.
 
@@ -482,10 +481,10 @@ The reference manual should provide a fairly comprehensive description
 of every class, function and configuration variable in the package.
 
 
-Modules and sub-packages
-------------------------
+Modules and subpackages
+-----------------------
 
-When documenting (independent) modules and sub-packages (refered to
+When documenting (independent) modules and subpackages (refered to
 here collectively as modules), use the following guidelines for
 documentatation:
 

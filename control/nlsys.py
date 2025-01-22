@@ -49,7 +49,7 @@ class NonlinearIOSystem(InputOutputSystem):
 
             ``updfcn(t, x, u, params) -> array``
 
-        where `t` is a float representing the currrent time, `x` is a 1-D
+        where `t` is a float representing the current time, `x` is a 1-D
         array with shape (nstates,), `u` is a 1-D array with shape
         (ninputs,), and `params` is a dict containing the values of
         parameters used by the function.
@@ -59,7 +59,7 @@ class NonlinearIOSystem(InputOutputSystem):
 
             `outfcn(t, x, u, params) -> array`
 
-        where the arguments are the same as for `upfcn`.
+        where the arguments are the same as for `updfcn`.
 
     inputs, outputs, states : int, list of str or None, optional
         Description of the system inputs, outputs, and states.  See
@@ -96,7 +96,7 @@ class NonlinearIOSystem(InputOutputSystem):
 
     Notes
     -----
-    The `InputOuputSystem` class (and its subclasses) makes use of two
+    The `InputOutputSystem` class (and its subclasses) makes use of two
     special methods for implementing much of the work of the class:
 
     * _rhs(t, x, u): compute the right hand side of the differential or
@@ -312,7 +312,7 @@ class NonlinearIOSystem(InputOutputSystem):
         # Make sure number of input and outputs match
         if self.ninputs != other.ninputs or self.noutputs != other.noutputs:
             raise ValueError(
-                "can't substract systems with incompatible numbers of "
+                "can't subtract systems with incompatible numbers of "
                 "inputs or outputs")
         ninputs = self.ninputs
         noutputs = self.noutputs
@@ -339,7 +339,7 @@ class NonlinearIOSystem(InputOutputSystem):
         if self.ninputs is None or self.noutputs is None:
             raise ValueError("Can't determine number of inputs or outputs")
 
-        # Create a new selftem to hold the negation
+        # Create a new system to hold the negation
         inplist = [(0, i) for i in range(self.ninputs)]
         outlist = [(0, i, -1) for i in range(self.noutputs)]
         newsys = InterconnectedSystem(
@@ -468,7 +468,7 @@ class NonlinearIOSystem(InputOutputSystem):
         Parameters
         ----------
         other : `InputOutputSystem`
-            System in the feedack path.
+            System in the feedback path.
 
         sign : float, optional
             Gain to use in feedback path.  Defaults to -1.
@@ -502,7 +502,7 @@ class NonlinearIOSystem(InputOutputSystem):
             (self, other), inplist=inplist, outlist=outlist,
             params=params, dt=dt)
 
-        #  Set up the connecton map manually
+        #  Set up the connection map manually
         newsys.set_connect_map(np.block(
             [[np.zeros((self.ninputs, self.noutputs)),
               sign * np.eye(self.ninputs, other.noutputs)],
@@ -595,7 +595,7 @@ class InterconnectedSystem(NonlinearIOSystem):
 
     Parameters
     ----------
-    syslist : list of NonlinearIOsystem
+    syslist : list of `NonlinearIOSystem`
         List of state space systems to interconnect.
     connections : list of connections
         Description of the internal connections between the subsystem.  See
@@ -630,7 +630,7 @@ class InterconnectedSystem(NonlinearIOSystem):
     input_labels, output_labels, state_labels : list of str
         Names for the input, output, and state variables.
     input_offset, output_offset, state_offset : list of int
-        Offset to the subsystem inputs, outputs, and states in the overal
+        Offset to the subsystem inputs, outputs, and states in the overall
         system input, output, and state arrays.
     syslist_index : dict
         Index of the subsystem with key given by the name of the subsystem.
@@ -1352,7 +1352,7 @@ def nlsys(updfcn, outfcn=None, **kwargs):
             ``updfcn(t, x, u, params) -> array``
 
         where `x` is a 1-D array with shape (nstates,), `u` is a 1-D array
-        with shape (ninputs,), `t` is a float representing the currrent
+        with shape (ninputs,), `t` is a float representing the current
         time, and `params` is a dict containing the values of parameters
         used by the function.
 
@@ -1365,7 +1365,7 @@ def nlsys(updfcn, outfcn=None, **kwargs):
 
             ``outfcn(t, x, u, params) -> array``
 
-        where the arguments are the same as for `upfcn`.
+        where the arguments are the same as for `updfcn`.
 
     inputs : int, list of str or None, optional
         Description of the system inputs.  This can be given as an integer
@@ -1637,7 +1637,7 @@ def input_output_response(
     if isinstance(U, (tuple, list)) and len(U) != ntimepts:
         U_elements = []
         for i, u in enumerate(U):
-            u = np.array(u)     # convert everyting to an array
+            u = np.array(u)     # convert everything to an array
             # Process this input
             if u.ndim == 0 or (u.ndim == 1 and u.shape[0] != T.shape[0]):
                 # Broadcast array to the length of the time input
@@ -2226,7 +2226,7 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
         evaluated (does not need to be an equilibrium state).
     ueq : array, optional
         The input at which the linearization will be evaluated (does not need
-        to correspond to an equlibrium state).  Can be omitted if `xeq` is
+        to correspond to an equilibrium state).  Can be omitted if `xeq` is
         an `OperatingPoint`.  Defaults to 0.
     t : float, optional
         The time at which the linearization will be computed (for time-varying
@@ -2339,9 +2339,9 @@ def interconnect(
         subsystem are used.  If systems and signals are given names, then
         the form 'sys.sig', ('sys', 'sig') or ('sys', 'sig', gain) are also
         recognized, and the special form '-sys.sig' can be used to specify
-        a signal with gain -1.  Lists, slices, and base namess can also be
+        a signal with gain -1.  Lists, slices, and base names can also be
         used, as long as the number of elements for each output spec
-        mataches the input spec.
+        matches the input spec.
 
         If omitted, the `interconnect` function will attempt to create the
         interconnection map by connecting all signals with the same base
@@ -2680,7 +2680,7 @@ def interconnect(
                         new_connection.append((isys, isig, gain))
 
                     if len(new_connections) == 0:
-                        # First time we have seen this signal => initalize
+                        # First time we have seen this signal => initialize
                         for cnx in new_connection:
                             new_connections.append([cnx])
                         if inplist_none:
@@ -2945,7 +2945,7 @@ def _convert_static_iosystem(sys):
 def connection_table(sys, show_names=False, column_width=32):
     """Print table of connections inside interconnected system.
 
-    Intended primarily for `InterconnectedSystems` that have been
+    Intended primarily for `InterconnectedSystem`'s that have been
     connected implicitly using signal names.
 
     Parameters

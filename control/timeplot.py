@@ -5,7 +5,7 @@
 
 This module contains routines for plotting out time responses.  These
 functions can be called either as standalone functions or access from
-the TimeDataResponse class.
+the TimeResponseData class.
 
 """
 
@@ -115,7 +115,7 @@ def time_response_plot(
         figure with the correct number and shape of axes, a new figure is
         created.  The shape of the array must match the shape of the
         plotted data.
-    input_props : array of dicts
+    input_props : array of dict
         List of line properties to use when plotting combined inputs.  The
         default values are set by `config.defaults['timeplot.input_props']`.
     label : str or array_like of str, optional
@@ -131,7 +131,7 @@ def time_response_plot(
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'center right',
         with no legend for a single response.  Use False to suppress legend.
-    output_props : array of dicts, optional
+    output_props : array of dict, optional
         List of line properties to use when plotting combined outputs.  The
         default values are set by `config.defaults['timeplot.output_props']`.
     rcParams : dict
@@ -151,7 +151,7 @@ def time_response_plot(
         Set the title of the plot.  Defaults to plot type and system name(s).
     trace_labels : list of str, optional
         Replace the default trace labels with the given labels.
-    trace_props : array of dicts
+    trace_props : array of dict
         List of line properties to use when plotting multiple traces.  The
         default values are set by `config.defaults['timeplot.trace_props']`.
 
@@ -562,7 +562,7 @@ def time_response_plot(
     # Create legends
     #
     # Legends can be placed manually by passing a legend_map array that
-    # matches the shape of the suplots, with each item being a string
+    # matches the shape of the subplots, with each item being a string
     # indicating the location of the legend for that axes (or None for no
     # legend).
     #
@@ -677,7 +677,7 @@ def combine_time_responses(response_list, trace_labels=None, title=None):
     Parameters
     ----------
     response_list : list of `TimeResponseData` objects
-        Reponses to be combined.
+        Responses to be combined.
     trace_labels : list of str, optional
         List of labels for each trace.  If not specified, trace names are
         taken from the input data or set to None.

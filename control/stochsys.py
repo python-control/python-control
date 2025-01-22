@@ -259,7 +259,7 @@ def dlqe(*args, **kwargs):
     if (len(args) < 3):
         raise ControlArgument("not enough input arguments")
 
-    # If we were passed a continus time system as the first arg, raise error
+    # If we were passed a continuous time system as the first arg, raise error
     if isinstance(args[0], LTI) and isctime(args[0], strict=True):
         raise ControlArgument("dlqr() called with a continuous-time system")
 
@@ -292,7 +292,7 @@ def dlqe(*args, **kwargs):
     # NG = G @ NN
     if len(args) > index + 2:
         # NN = np.array(args[index+2], ndmin=2, dtype=float)
-        raise ControlNotImplemented("cross-covariance not yet implememented")
+        raise ControlNotImplemented("cross-covariance not yet implemented")
 
     # Check dimensions of G (needed before calling care())
     _check_shape(QN, G.shape[1], G.shape[1], name="QN")
@@ -402,7 +402,7 @@ def create_estimator_iosystem(
         string using the variable `i` as an index.  Otherwise, a list of
         strings matching the size of the system inputs and outputs should be
         used.  Default is the signal names for the system measurements and
-        known control inputs. These settings can also be overriden using the
+        known control inputs. These settings can also be overridden using the
         `inputs` keyword.
     inputs, outputs, states : int or list of str, optional
         Set the names of the inputs, outputs, and states, as described in
@@ -428,12 +428,12 @@ def create_estimator_iosystem(
     prediction with no additional measurement information::
 
         resp = ct.input_output_response(
-           est, T, 0, [X0, P0], param={'correct': False)
+           est, T, 0, [X0, P0], params={'correct': False)
 
     References
     ----------
     .. [1] R. M. Murray, `Optimization-Based Control
-       <https://fbswiki.org/OBC>`_, 2013.
+       <https://fbswiki.org/OBC>`_, 2023.
 
     """
 
@@ -489,7 +489,7 @@ def create_estimator_iosystem(
 
     # Initialize the covariance matrix
     if P0 is None:
-        # Initalize P0 to the steady state value
+        # Initialize P0 to the steady state value
         _, P0, _ = lqe(A, G, C, QN, RN)
     P0 = _check_shape(P0, sys.nstates, sys.nstates, symmetric=True, name='P0')
 
@@ -603,7 +603,7 @@ def white_noise(T, Q, dt=0):
     """Generate a white noise signal with specified intensity.
 
     This function generates a (multi-variable) white noise signal of
-    specified intensity as either a sampled continous time signal or a
+    specified intensity as either a sampled continuous time signal or a
     discrete-time signal.  A white noise signal along a 1D array
     of linearly spaced set of times T can be computing using
 
@@ -672,9 +672,9 @@ def correlation(T, X, Y=None, squeeze=True):
       tau, Rtau = correlation(T, X[, Y])
 
     The signal X (and Y, if present) represent a continuous or
-    discrete-time signal sampled at times T.  The return value
-    provides the correlation Rtau between X(t+tau) and X(t) at a set
-    of time offets tau.
+    discrete-time signal sampled at times T.  The return value provides the
+    correlation Rtau between X(t+tau) and X(t) at a set of time offsets
+    tau.
 
     Parameters
     ----------

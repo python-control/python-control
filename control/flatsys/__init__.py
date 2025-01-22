@@ -3,9 +3,9 @@
 # Author: Richard M. Murray
 # Date: 1 Jul 2019
 
-r"""Flat systems sub-package.
+r"""Flat systems subpackage.
 
-This sub-package contains a set of classes and functions to compute
+This subpackage contains a set of classes and functions to compute
 trajectories for differentially flat systems.
 
 A differentially flat system is defined by creating an object using the

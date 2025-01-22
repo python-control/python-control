@@ -177,7 +177,7 @@ class InputOutputSystem():
         String representation format.  See `control.iosys_repr`.
 
     """
-    # Allow NDarray * IOSystem to give IOSystem._rmul_() priority
+    # Allow ndarray * IOSystem to give IOSystem._rmul_() priority
     # https://docs.scipy.org/doc/numpy/reference/arrays.classes.html
     __array_priority__ = 20
 
@@ -797,7 +797,7 @@ def timebase(sys, strict=True):
     elif not isinstance(sys, InputOutputSystem):
         raise ValueError("Timebase not defined")
 
-    # Return the sample time, with converstion to float if strict is false
+    # Return the sample time, with conversion to float if strict is false
     if sys.dt == None:
         return None
     elif strict:
@@ -831,7 +831,7 @@ def common_timebase(dt1, dt2):
     # if either dt is None, they are compatible with anything
     # if either dt is True (discrete with unspecified time base),
     #   use the timebase of the other, if it is also discrete
-    # otherwise both dts must be equal
+    # otherwise both dt's must be equal
     if hasattr(dt1, 'dt'):
         dt1 = dt1.dt
     if hasattr(dt2, 'dt'):

@@ -350,7 +350,7 @@ def _process_ax_keyword(
     current figure and axes are returned.  Otherwise a new figure is
     created with axes of the desired shape.
 
-    If `create_axes` is False and a new/empty figure is returned, then axs
+    If `create_axes` is False and a new/empty figure is returned, then `axs`
     is an array of the proper shape but None for each element.  This allows
     the calling function to do the actual axis creation (needed for
     curvilinear grids that use the AxisArtist module).
@@ -630,13 +630,13 @@ def _add_arrows_to_line2D(
     color = line.get_color()
     use_multicolor_lines = isinstance(color, np.ndarray)
     if use_multicolor_lines:
-        raise NotImplementedError("multicolor lines not supported")
+        raise NotImplementedError("multi-color lines not supported")
     else:
         arrow_kw['color'] = color
 
     linewidth = line.get_linewidth()
     if isinstance(linewidth, np.ndarray):
-        raise NotImplementedError("multiwidth lines not supported")
+        raise NotImplementedError("multi-width lines not supported")
     else:
         arrow_kw['linewidth'] = linewidth
 
@@ -717,7 +717,7 @@ def _get_color(
     """Get color to use for plotting line.
 
     This function returns the color to be used for the line to be drawn (or
-    None if the detault color cycle for the axes should be used).
+    None if the default color cycle for the axes should be used).
 
     Parameters
     ----------

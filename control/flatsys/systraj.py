@@ -3,7 +3,7 @@
 
 """SystemTrajectory class.
 
-The SystemTrajetory class is used to store a feasible trajectory for
+The SystemTrajectory class is used to store a feasible trajectory for
 the state and input of a (nonlinear) control system.
 
 """
@@ -30,7 +30,7 @@ class SystemTrajectory:
         For each flat output, define the coefficients of the basis
         functions used to represent the trajectory.  Defaults to an empty
         list.
-    flaglen : list of ints, optional
+    flaglen : list of int, optional
         For each flat output, the number of derivatives of the flat
         output used to define the trajectory.  Defaults to an empty
         list.
@@ -40,7 +40,7 @@ class SystemTrajectory:
     """
 
     def __init__(self, sys, basis, coeffs=[], flaglen=[], params=None):
-        """Initilize a system trajectory object."""
+        """Initialize a system trajectory object."""
         self.nstates = sys.nstates
         self.ninputs = sys.ninputs
         self.system = sys

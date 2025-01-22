@@ -57,7 +57,7 @@ class FlatSystem(NonlinearIOSystem):
     -----
     The class must implement two functions:
 
-    ``zflag = flatsys.foward(x, u, params)``
+    ``zflag = flatsys.forward(x, u, params)``
 
         This function computes the flag (derivatives) of the flat output.
         The inputs to this function are the state `x` and inputs `u` (both
@@ -84,11 +84,11 @@ class FlatSystem(NonlinearIOSystem):
     """
     def __init__(self,
                  forward, reverse,              # flat system
-                 updfcn=None, outfcn=None,      # nonlinar I/O system
+                 updfcn=None, outfcn=None,      # nonlinear I/O system
                  **kwargs):                     # I/O system
         """Create a differentially flat I/O system.
 
-        The FlatIOSystem constructor is used to create an input/output system
+        The `FlatSystem` constructor is used to create an input/output system
         object that also represents a differentially flat system.
 
         """
@@ -186,7 +186,7 @@ def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
 
     ``fs.flatsys(forward, reverse)``
 
-        Create a flat system with mapings to/from flat flag.
+        Create a flat system with mappings to/from flat flag.
 
     ``fs.flatsys(forward, reverse, updfcn[, outfcn])``
 
@@ -207,20 +207,20 @@ def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
     updfcn : callable, optional
         Function returning the state update function
 
-            ``updfcn(t, x, u[, param]) -> array``
+            ``updfcn(t, x, u[, params]) -> array``
 
         where `x` is a 1-D array with shape (nstates,), `u` is a 1-D array
-        with shape (ninputs,), `t` is a float representing the currrent
-        time, and `param` is an optional dict containing the values of
+        with shape (ninputs,), `t` is a float representing the current
+        time, and `params` is an optional dict containing the values of
         parameters used by the function.  If not specified, the state
         space update will be computed using the flat system coordinates.
 
     outfcn : callable, optional
         Function returning the output at the given state
 
-            ``outfcn(t, x, u[, param]) -> array``
+            ``outfcn(t, x, u[, params]) -> array``
 
-        where the arguments are the same as for `upfcn`.  If not
+        where the arguments are the same as for `updfcn`.  If not
         specified, the output will be the flat outputs.
 
     inputs : int, list of str, or None
@@ -339,7 +339,7 @@ def point_to_point(
         define a function `~FlatSystem.forward` that takes the system state
         and produces the flag of flat outputs and a function
         `~FlatSystem.reverse` that takes the flag of the flat output and
-        prodes the state and input.
+        produces the state and input.
 
     timepts : float or 1D array_like
         The list of points for evaluating cost and constraints, as well as
@@ -516,7 +516,7 @@ def point_to_point(
         warnings.warn("basis too small; solution may not exist")
 
     if cost is not None or trajectory_constraints is not None:
-        # Make sure that we have enough timepoints to evaluate
+        # Make sure that we have enough time points to evaluate
         if timepts.size < 3:
             raise ControlArgument(
                 "There must be at least three time points if trajectory"
@@ -662,7 +662,7 @@ def solve_flat_optimal(
         initial_guess=None, params=None, **kwargs):
     """Compute trajectory between an initial and final conditions.
 
-    Compute an optimial trajectory for a differentially flat system starting
+    Compute an optimal trajectory for a differentially flat system starting
     from an initial state and input value.
 
     Parameters
@@ -672,7 +672,7 @@ def solve_flat_optimal(
         define a function `~FlatSystem.forward` that takes the system state
         and produces the flag of flat outputs and a function
         `~FlatSystem.reverse` that takes the flag of the flat output and
-        prodes the state and input.
+        produces the state and input.
 
     timepts : float or 1D array_like
         The list of points for evaluating cost and constraints, as well as

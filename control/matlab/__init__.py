@@ -2,9 +2,9 @@
 # Creation date: 29 May 09
 # Pre-2014 revisions: Kevin K. Chen, Dec 2010
 
-"""MATLAB compatibility sub-package.
+"""MATLAB compatibility subpackage.
 
-This sub-package contains a number of functions that emulate some of
+This subpackage contains a number of functions that emulate some of
 the functionality of MATLAB.  The intent of these functions is to
 provide a simple interface to the python control systems library
 (python-control) for people who are familiar with the MATLAB Control

@@ -235,7 +235,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
           interpolation of a `FrequencyResponseData` representation
           of the system if passed a `LTI` system.
         * 'best': use the 'poly' method if possible, reverting to 'frd' if
-          it is detected that numerical inaccuracy is likey to arise in the
+          it is detected that numerical inaccuracy is likely to arise in the
           'poly' method for for discrete-time systems.
 
     Returns

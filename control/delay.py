@@ -73,7 +73,7 @@ def pade(T, n=1, numdeg=None):
         num[-1] = 1.
         cn = 1.
         for k in range(1, numdeg+1):
-            # derived from Gloub and van Loan eq. for Dpq(z) on p. 572
+            # derived from Golub and van Loan eq. for Dpq(z) on p. 572
             # this accumulative style follows Alg 11.3.1
             cn *= -T * (numdeg - k + 1)/(numdeg + n - k + 1)/k
             num[numdeg-k] = cn

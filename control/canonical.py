@@ -58,7 +58,7 @@ def canonical_form(xsys, form='reachable'):
 
     """
 
-    # Call the appropriate tranformation function
+    # Call the appropriate transformation function
     if form == 'reachable':
         return reachable_form(xsys)
     elif form == 'observable':

@@ -290,7 +290,7 @@ class OptimalControlProblem():
 
         # Log information
         if log:
-            logging.info("New optimal control problem initailized")
+            logging.info("New optimal control problem initialized")
 
     #
     # Cost function
@@ -547,7 +547,7 @@ class OptimalControlProblem():
     #
     # The functions below are used to process the initial guess, which can
     # either consist of an input only (for shooting methods) or an input
-    # and/or state trajectory (for collocaiton methods).
+    # and/or state trajectory (for collocation methods).
     #
     # Note: The initial input guess is passed as the inputs at the given time
     # vector.  If a basis is specified, this is converted to coefficient
@@ -701,7 +701,7 @@ class OptimalControlProblem():
     # Compute the states and inputs from the coefficient vector
     #
     # These internal functions return the states and inputs at the
-    # collocation points given the ceofficient (optimizer state) vector.
+    # collocation points given the coefficient (optimizer state) vector.
     # They keep track of whether a shooting method is being used or not and
     # simulate the dynamics if needed.
     #
@@ -736,7 +736,7 @@ class OptimalControlProblem():
 
         return states, inputs
 
-    # Simulate the system dynamis to retrieve the state
+    # Simulate the system dynamics to retrieve the state
     def _simulate_states(self, x0, inputs):
         if self.log:
             logging.debug(
@@ -817,13 +817,13 @@ class OptimalControlProblem():
         # Store the initial state (for use in _constraint_function)
         self.x = x
 
-        # Allow the initial guess to be overriden
+        # Allow the initial guess to be overridden
         if initial_guess is None:
             initial_guess = self.initial_guess
         else:
             initial_guess = self._process_initial_guess(initial_guess)
 
-        # Call ScipPy optimizer
+        # Call SciPy optimizer
         res = sp.optimize.minimize(
             self._cost_function, initial_guess,
             constraints=self.constraints, **self.minimize_kwargs)
@@ -903,7 +903,7 @@ class OptimalControlProblem():
         def _update(t, x, u, params={}):
             coeffs = x.reshape((self.system.ninputs, -1))
             if self.basis:
-                # Keep the coeffecients unchanged
+                # Keep the coefficients unchanged
                 # TODO: could compute input vector, shift, and re-project (?)
                 self.initial_guess = coeffs
             else:
@@ -971,7 +971,7 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
     eqconst_evaluations : int
         Number of system simulations and evaluations of the cost function,
         (inequality) constraint function, and equality constraint function
-        performed during the optimzation.
+        performed during the optimization.
     cost_process_time, constraint_process_time, eqconst_process_time : float
         If logging was enabled, the amount of time spent evaluating the cost
         and constraint functions.
@@ -1026,7 +1026,7 @@ def solve_optimal_trajectory(
     r"""Compute the solution to an optimal control problem.
 
     The optimal trajectory (states and inputs) is computed so as to
-    approximately mimimize a cost function of the following form (for
+    approximately minimize a cost function of the following form (for
     continuous-time systems):
 
       J(x(.), u(.)) = \int_0^T L(x(t), u(t)) dt + V(x(T)),
@@ -1257,7 +1257,7 @@ def create_mpc_iosystem(
     Notes
     -----
     Additional keyword parameters can be used to fine-tune the behavior of
-    the underlying optimization and integrations functions.  See
+    the underlying optimization and integration functions.  See
     `OptimalControlProblem` for more information.
 
     """
@@ -1299,7 +1299,7 @@ class OptimalEstimationProblem():
     integral_cost : callable
         Function that returns the integral cost given the estimated state,
         system inputs, and output error.  Called as integral_cost(xhat, u,
-        v, w) where xhat is the estimated state, u is the appplied input to
+        v, w) where xhat is the estimated state, u is the applied input to
         the system, v is the estimated disturbance input, and w is the
         difference between the measured and the estimated output.
     trajectory_constraints : list of constraints, optional
@@ -1325,8 +1325,8 @@ class OptimalEstimationProblem():
         Specify the indices in the system input vector that correspond to
         the process disturbances.  If value is an integer `m`, the last `m`
         system inputs are used.  Otherwise, the value should be a slice or
-        a list of indices, as describedf for `control_indices`.  If not
-        specified, defaults to the complement of the control indicies (see
+        a list of indices, as described for `control_indices`.  If not
+        specified, defaults to the complement of the control indices (see
         also notes below).
 
     Attributes
@@ -1792,7 +1792,7 @@ class OptimalEstimationProblem():
         # Process the initial guess
         initial_guess = self._process_initial_guess(initial_guess)
 
-        # Call ScipPy optimizer
+        # Call SciPy optimizer
         res = sp.optimize.minimize(
             self._cost_function, initial_guess,
             constraints=self.constraints, **self.minimize_kwargs)
@@ -1827,7 +1827,7 @@ class OptimalEstimationProblem():
             should be a format string using the variable `i` as an index.
             Otherwise, a list of strings matching the size of the estimated
             state should be used.  Default is "xhat[{i}]".  These settings
-            can also be overriden using the `outputs` keyword.
+            can also be overridden using the `outputs` keyword.
         measurement_labels, control_labels : str or list of str, optional
             Set the names of the measurement and control signal names
             (estimator inputs).  If a single string is specified, it should
@@ -1835,7 +1835,7 @@ class OptimalEstimationProblem():
             Otherwise, a list of strings matching the size of the system
             inputs and outputs should be used.  Default is the signal names
             for the system outputs and control inputs. These settings can
-            also be overriden using the `inputs` keyword.
+            also be overridden using the `inputs` keyword.
         **kwargs, optional
             Additional keyword arguments to set system, input, and output
             signal names; see `InputOutputSystem`.
@@ -1936,7 +1936,7 @@ class OptimalEstimationProblem():
 
 # Optimal estimation result
 class OptimalEstimationResult(sp.optimize.OptimizeResult):
-    """Result from solving an optimal estimationproblem.
+    """Result from solving an optimal estimation problem.
 
     This class is a subclass of `scipy.optimize.OptimizeResult` with
     additional attributes associated with solving optimal estimation
@@ -1963,7 +1963,7 @@ class OptimalEstimationResult(sp.optimize.OptimizeResult):
     inputs : ndarray
         The disturbances associated with the estimated state trajectory.
     outputs :
-        The error between measured outputs and estiamted outputs.
+        The error between measured outputs and estimated outputs.
     success : bool
         Whether or not the optimizer exited successful.
     problem : OptimalControlProblem
@@ -1973,7 +1973,7 @@ class OptimalEstimationResult(sp.optimize.OptimizeResult):
     system_simulations, {cost, constraint, eqconst}_evaluations : int
         Number of system simulations and evaluations of the cost function,
         (inequality) constraint function, and equality constraint function
-        performed during the optimzation.
+        performed during the optimization.
     cost_process_time, constraint_process_time, eqconst_process_time : float
         If logging was enabled, the amount of time spent evaluating the cost
         and constraint functions.
@@ -2030,7 +2030,7 @@ def solve_optimal_estimate(
     This function computes the maximum likelihood estimate of a system
     state given the input and output over a fixed horizon.  The likelihood
     is evaluated according to a cost function whose value is minimized
-    to compute the maximum likelhood estimate.
+    to compute the maximum likelihood estimate.
 
     Parameters
     ----------
@@ -2110,7 +2110,7 @@ def solve_optimal_estimate(
 #
 # Since a quadratic function is common as a cost function, we provide a
 # function that will take a Q and R matrix and return a callable that
-# evaluates to associted quadratic cost.  This is compatible with the way that
+# evaluates to associated quadratic cost.  This is compatible with the way that
 # the `_cost_function` evaluates the cost at each point in the trajectory.
 #
 def quadratic_cost(sys, Q, R, x0=0, u0=0):
@@ -2477,9 +2477,9 @@ def disturbance_range_constraint(sys, lb, ub):
     sys : `InputOutputSystem`
         I/O system for which the constraint is being defined.
     lb : 1D array
-        Lower bound for each of the disturbancs.
+        Lower bound for each of the disturbance.
     ub : 1D array
-        Upper bound for each of the disturbances.
+        Upper bound for each of the disturbance.
 
     Returns
     -------

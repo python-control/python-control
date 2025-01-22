@@ -34,7 +34,7 @@ class DescribingFunctionNonlinearity():
 
     """
     def __init__(self):
-        """Initailize a describing function nonlinearity (optional)."""
+        """Initialize a describing function nonlinearity (optional)."""
         pass
 
     def __call__(self, A):
@@ -208,7 +208,7 @@ def describing_function(
         # Evaluate the function along a sinusoid
         F_eval = np.array([F(x) for x in a*sin_theta]).squeeze()
 
-        # Compute the prjections onto sine and cosine
+        # Compute the projections onto sine and cosine
         df_real = (F_eval @ sin_theta) * scale     # = M_1 \cos\phi / a
         df_imag = (F_eval @ cos_theta) * scale     # = M_1 \sin\phi / a
 

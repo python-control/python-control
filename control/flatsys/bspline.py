@@ -125,7 +125,7 @@ class BSplineFamily(BasisFamily):
             smoothness, nvars, (int), name='smoothness', minimum=0,
             default=[d - 1 for d in degree])
 
-        # Make sure degree is sufficent for the level of smoothness
+        # Make sure degree is sufficient for the level of smoothness
         if any([degree[i] - smoothness[i] < 1 for i in range(nvars)]):
             raise ValueError("degree must be greater than smoothness")
 

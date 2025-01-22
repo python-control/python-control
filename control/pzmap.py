@@ -181,11 +181,11 @@ def pole_zero_plot(
     grid : bool or str, optional
         If True plot omega-damping grid, if False show imaginary
         axis for continuous-time systems, unit circle for discrete-time
-        systems.  If 'empty', do not draw any additonal lines.  Default
+        systems.  If 'empty', do not draw any additional lines.  Default
         value is set by `config.defaults['pzmap.grid']` or
         `config.defaults['rlocus.grid']`.
     plot : bool, optional
-        (legacy) If True a graph is generated with Matplotlib,
+        (legacy) If True a graph is generated with matplotlib,
         otherwise the poles and zeros are only computed and returned.
         If this argument is present, the legacy value of poles and
         zeros is returned.
@@ -476,7 +476,7 @@ def pole_zero_plot(
             title, fig, rcParams=rcParams, frame='figure',
             use_existing=False)
 
-    # Add dispather to handle choosing a point on the diagram
+    # Add dispatcher to handle choosing a point on the diagram
     if interactive:
         if len(pzmap_responses) > 1:
             raise NotImplementedError(
@@ -560,7 +560,7 @@ def _mark_root_locus_gain(ax, sys, K):
             line.remove()
             del line
 
-    # Visualise clicked point, displaying all roots
+    # Visualize clicked point, displaying all roots
     # TODO: allow marker parameters to be set
     nump, denp = _systopoly1d(sys)
     root_array = _RLFindRoots(nump, denp, K.real)

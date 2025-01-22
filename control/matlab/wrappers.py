@@ -193,7 +193,7 @@ def _parse_freqplot_args(*args):
     if len(syslist) == 0:
         raise ControlArgument("no systems specified")
     elif len(syslist) == 1:
-    # If only one system given, retun just that system (not a list)
+    # If only one system given, return just that system (not a list)
         syslist = syslist[0]
 
     return syslist, omega, plotstyle, other
@@ -264,7 +264,7 @@ def pzmap(*args, **kwargs):
     sys : `StateSpace` or `TransferFunction`
         Linear system for which poles and zeros are computed.
     plot : bool, optional
-        If True a graph is generated with Matplotlib,
+        If True a graph is generated with matplotlib,
         otherwise the poles and zeros are only computed and returned.
     grid : boolean (default = False)
         If True, plot omega-damping grid.
@@ -308,7 +308,7 @@ ngrid.__doc__ = nichols_grid.__doc__
 
 
 def dcgain(*args):
-    '''dcgain(sys) \
+    """dcgain(sys) \
       dcgain(num, den) \
       dcgain(Z, P, k) \
       dcgain(A, B, C, D)
@@ -348,7 +348,7 @@ def dcgain(*args):
     computes:
 
     .. math:: gain = - C \\cdot A^{-1} \\cdot B + D
-    '''
+    """
     #Convert the parameters to state space form
     if len(args) == 4:
         A, B, C, D = args

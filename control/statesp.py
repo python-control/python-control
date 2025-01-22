@@ -1182,7 +1182,7 @@ class StateSpace(NonlinearIOSystem, LTI):
                 return StateSpace(A[:nr, :nr], B[:nr, :self.ninputs],
                                   C[:self.noutputs, :nr], self.D, self.dt)
             except ImportError:
-                raise TypeError("minreal requires slycot tb01pd")
+                raise TypeError("minreal requires Slycot tb01pd")
         else:
             return StateSpace(self)
 
@@ -1312,10 +1312,10 @@ class StateSpace(NonlinearIOSystem, LTI):
             Method to use for sampling:
 
             * 'gbt': generalized bilinear transformation
-            * 'backward_diff': Backwards differencing ('gbt' with alpha=1.0)
+            * 'backward_diff': Backwards difference ('gbt' with alpha=1.0)
             * 'bilinear' (or 'tustin'): Tustin's approximation ('gbt' with
               alpha=0.5)
-            * 'euler': Euler (or forward differencing) method ('gbt' with
+            * 'euler': Euler (or forward difference) method ('gbt' with
               alpha=0)
             * 'zoh': zero-order hold (default)
         alpha : float within [0, 1]
@@ -2346,7 +2346,7 @@ def _f2s(f):
     """
     fmt = "{:" + config.defaults['statesp.latex_num_format'] + "}"
     sraw = fmt.format(f)
-    # significand-exponent
+    # significant-exponent
     se = sraw.lower().split('e')
     # whole-fraction
     wf = se[0].split('.')

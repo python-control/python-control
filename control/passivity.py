@@ -21,7 +21,7 @@ __all__ = ["get_output_fb_index", "get_input_ff_index",  "ispassive",
 
 
 def solve_passivity_LMI(sys, rho=None, nu=None):
-    """Compute passivity indices and/or solves feasiblity via a LMI.
+    """Compute passivity indices and/or solves feasibility via a LMI.
 
     Constructs a linear matrix inequality (LMI) such that if a solution
     exists and the last element of the solution is positive, the system
@@ -31,16 +31,6 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
     bilinear matrix inequality.) The last element of the output `solution`
     is either the output or input passivity index, for `rho` = None and
     `nu` = None, respectively.
-
-    The sources for the algorithm are:
-
-    McCourt, Michael J., and Panos J. Antsaklis
-        "Demonstrating passivity and dissipativity using computational
-        methods."
-
-    Nicholas Kottenstette and Panos J. Antsaklis
-        "Relationships Between Positive Real, Passive Dissipative, & Positive
-        Systems", equation 36.
 
     Parameters
     ----------
@@ -55,6 +45,15 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
     -------
     solution : ndarray
         The LMI solution.
+
+    References
+    ----------
+    .. [1] McCourt, Michael J., and Panos J. Antsaklis, "Demonstrating
+        passivity and dissipativity using computational methods."
+
+    .. [2] Nicholas Kottenstette and Panos J. Antsaklis,
+        "Relationships Between Positive Real, Passive Dissipative, &
+        Positive Systems", equation 36.
 
     """
     if cvx is None:
@@ -101,7 +100,7 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
         """Make list of matrix constraints for passivity LMI.
 
         Utility function to make basis matrices for a LMI from a
-        symmetric matrix P of size n by n representing a parametrized
+        symmetric matrix P of size n by n representing a parameterized
         symbolic matrix.
 
         """
@@ -125,7 +124,7 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
         """Make a list of matrix constraints for P >= 0.
 
         Utility function to make basis matrices for a LMI that ensures
-        parametrized symbolic matrix of size n by n is positive definite
+        parameterized symbolic matrix of size n by n is positive definite
         """
         matrix_list = []
         for i in range(0, n):
@@ -141,7 +140,7 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
 
     n = sys.nstates
 
-    # coefficents for passivity indices and feasibility matrix
+    # coefficients for passivity indices and feasibility matrix
     sys_matrix_list = make_P_basis_matrices(n, rho, nu)
 
     # get constants for numerical values of rho and nu

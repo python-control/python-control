@@ -1165,10 +1165,10 @@ class TransferFunction(LTI):
             Method to use for sampling:
 
             * 'gbt': generalized bilinear transformation
-            * 'backward_diff': Backwards differencing ('gbt' with alpha=1.0)
+            * 'backward_diff': Backwards difference ('gbt' with alpha=1.0)
             * 'bilinear' (or 'tustin'): Tustin's approximation ('gbt' with
               alpha=0.5)
-            * 'euler': Euler (or forward differencing) method ('gbt' with
+            * 'euler': Euler (or forward difference) method ('gbt' with
               alpha=0)
             * 'matched': pole-zero match method
             * 'zoh': zero-order hold (default)

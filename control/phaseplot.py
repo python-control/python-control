@@ -584,11 +584,11 @@ def separatrices(
         a dict of parameters and values. For a callable, `params` should be
         dict with key 'args' and value given by a tuple (passed to callable).
     color : matplotlib color spec, optional
-        Plot the separatrics in the given color.  If a single color
+        Plot the separatrices in the given color.  If a single color
         specification is given, this is used for both stable and unstable
         separatrices.  If a tuple is given, the first element is used as
         the color specification for stable separatrices and the second
-        elmeent for unstable separatrices.
+        element for unstable separatrices.
     ax : matplotlib.axes.Axes
         Use the given axes for the plot, otherwise use the current axes.
 
@@ -607,7 +607,7 @@ def separatrices(
     Notes
     -----
     The value of `config.defaults['separatrices_radius']` is used to set the
-    offset from the equlibrium point to the starting point of the separatix
+    offset from the equilibrium point to the starting point of the separatix
     traces, in the direction of the eigenvectors evaluated at that
     equilibrium point.
 
@@ -974,7 +974,7 @@ def _parse_arrow_keywords(kwargs):
 def _create_trajectory(
         sys, revsys, timepts, X0, params, dir, suppress_warnings=False,
         gridtype=None, gridspec=None, xlim=None, ylim=None):
-    # Comput ethe forward trajectory
+    # Compute the forward trajectory
     if dir == 'forward' or dir == 'both':
         fwdresp = input_output_response(
             sys, timepts, X0=X0, params=params, ignore_errors=True)

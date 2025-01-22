@@ -5,10 +5,11 @@
 #
 # RMM, 17 June 2010: modified to be a standalone piece of code
 #
-# RMM, 2 April 2011: modified to work with new LTI structure (see ChangeLog)
+# RMM, 2 April 2011: modified to work with new LTI structure
 #
-# Sawyer B. Fuller (minster@uw.edu) 21 May 2020:
-#   * added compatibility with discrete-time systems.
+# Sawyer B. Fuller (minster@uw.edu) 21 May 2020: added compatibility
+# with discrete-time systems.
+#   
 
 """Code for computing a root locus plot."""
 
@@ -116,7 +117,7 @@ def root_locus_plot(
     grid : bool or str, optional
         If True plot omega-damping grid, if False show imaginary axis
         for continuous-time systems, unit circle for discrete-time systems.
-        If 'empty', do not draw any additonal lines.  Default value is set
+        If 'empty', do not draw any additional lines.  Default value is set
         by `config.defaults['rlocus.grid']`.
     initial_gain : float, optional
         Mark the point on the root locus diagram corresponding to the
@@ -192,7 +193,7 @@ def root_locus_plot(
     # Process `plot` keyword
     #
     # See bode_plot for a description of how this keyword is handled to
-    # support legacy implementatoins of root_locus.
+    # support legacy implementations of root_locus.
     #
     if plot is not None:
         warnings.warn(
@@ -394,7 +395,7 @@ def _k_max(num, den, real_break_points, k_break_points):
 
 
 def _systopoly1d(sys):
-    """Extract numerator and denominator polynomails for a system"""
+    """Extract numerator and denominator polynomials for a system"""
     # Allow inputs from the signal processing toolbox
     if (isinstance(sys, scipy.signal.lti)):
         nump = sys.num

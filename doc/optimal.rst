@@ -357,7 +357,7 @@ solutions do not seem close to optimal, here are a few things to try:
   points, you can specify a set of basis functions using the `basis`
   keyword in :func:`~optimal.solve_optimal_trajectory` and then
   parameterize the controller by linear combination of the basis
-  functions.  The :ref:`flatsys sub-package <flatsys-module>` defines
+  functions.  The :ref:`flatsys subpackage <flatsys-module>` defines
   several sets of basis functions that can be used.
 
 * Tweak the optimizer: by using the `minimize_method`,

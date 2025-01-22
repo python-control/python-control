@@ -20,7 +20,7 @@ from scipy.linalg import eigvals, solve
 from .exception import ControlArgument, ControlDimension, ControlSlycot, \
     slycot_check
 
-# Make sure we have access to the right slycot routines
+# Make sure we have access to the right Slycot routines
 try:
     from slycot.exceptions import SlycotResultWarning
 except ImportError:
@@ -108,9 +108,9 @@ def lyap(A, Q, C=None, E=None, method=None):
     method = _slycot_or_scipy(method)
     if method == 'slycot':
         if sb03md is None:
-            raise ControlSlycot("Can't find slycot module 'sb03md'")
+            raise ControlSlycot("Can't find Slycot module 'sb03md'")
         if sb04md is None:
-            raise ControlSlycot("Can't find slycot module 'sb04md'")
+            raise ControlSlycot("Can't find Slycot module 'sb04md'")
 
     # Reshape input arrays
     A = np.array(A, ndmin=2)
@@ -165,12 +165,12 @@ def lyap(A, Q, C=None, E=None, method=None):
             raise ControlArgument(
                 "method='scipy' not valid for generalized Lyapunov equation")
 
-        # Make sure we have access to the write slicot routine
+        # Make sure we have access to the write Slycot routine
         try:
             from slycot import sg03ad
 
         except ImportError:
-            raise ControlSlycot("Can't find slycot module 'sg03ad'")
+            raise ControlSlycot("Can't find Slycot module 'sg03ad'")
 
         # Solve the generalized Lyapunov equation by calling Slycot
         # function sg03ad
@@ -236,11 +236,11 @@ def dlyap(A, Q, C=None, E=None, method=None):
     if method == 'slycot':
         # Make sure we have access to the right slycot routines
         if sb03md is None:
-            raise ControlSlycot("Can't find slycot module 'sb03md'")
+            raise ControlSlycot("Can't find Slycot module 'sb03md'")
         if sb04qd is None:
-            raise ControlSlycot("Can't find slycot module 'sb04qd'")
+            raise ControlSlycot("Can't find Slycot module 'sb04qd'")
         if sg03ad is None:
-            raise ControlSlycot("Can't find slycot module 'sg03ad'")
+            raise ControlSlycot("Can't find Slycot module 'sg03ad'")
 
     # Reshape input arrays
     A = np.array(A, ndmin=2)
@@ -356,7 +356,7 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
     Returns
     -------
     X : 2D array (or matrix)
-        Solution to the Ricatti equation.
+        Solution to the Riccati equation.
     L : 1D array
         Closed loop eigenvalues.
     G : 2D array (or matrix)
@@ -399,16 +399,16 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
             E, _ = np.linalg.eig(A - B @ K)
             return X, E, K
 
-        # Make sure we can import required slycot routines
+        # Make sure we can import required Slycot routines
         try:
             from slycot import sb02md
         except ImportError:
-            raise ControlSlycot("Can't find slycot module 'sb02md'")
+            raise ControlSlycot("Can't find Slycot module 'sb02md'")
 
         try:
             from slycot import sb02mt
         except ImportError:
-            raise ControlSlycot("Can't find slycot module 'sb02mt'")
+            raise ControlSlycot("Can't find Slycot module 'sb02mt'")
 
         # Solve the standard algebraic Riccati equation by calling Slycot
         # functions sb02mt and sb02md
@@ -445,11 +445,11 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
             eigs, _ = sp.linalg.eig(A - B @ K, E)
             return X, eigs, K
 
-        # Make sure we can find the required slycot routine
+        # Make sure we can find the required Slycot routine
         try:
             from slycot import sg02ad
         except ImportError:
-            raise ControlSlycot("Can't find slycot module 'sg02ad'")
+            raise ControlSlycot("Can't find Slycot module 'sg02ad'")
 
         # Solve the generalized algebraic Riccati equation by calling the
         # Slycot function sg02ad
@@ -512,7 +512,7 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
     Returns
     -------
     X : 2D array (or matrix)
-        Solution to the Ricatti equation.
+        Solution to the Riccati equation.
     L : 1D array
         Closed loop eigenvalues.
     G : 2D array (or matrix)
@@ -564,11 +564,11 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
 
         return X, L, G
 
-    # Make sure we can import required slycot routine
+    # Make sure we can import required Slycot routine
     try:
         from slycot import sg02ad
     except ImportError:
-        raise ControlSlycot("Can't find slycot module 'sg02ad'")
+        raise ControlSlycot("Can't find Slycot module 'sg02ad'")
 
     # Initialize optional matrices
     S = np.zeros((n, m)) if S is None else np.array(S, ndmin=2)

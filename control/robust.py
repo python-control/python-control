@@ -34,7 +34,7 @@ def h2syn(P, nmeas, ncon):
     Raises
     ------
     ImportError
-        If slycot routine sb10hd is not loaded.
+        If Slycot routine sb10hd is not loaded.
 
     See Also
     --------
@@ -42,7 +42,7 @@ def h2syn(P, nmeas, ncon):
 
     Examples
     --------
-    >>> # Unstable first order SISI system
+    >>> # Unstable first order SISO system
     >>> G = ct.tf([1], [1, -1], inputs=['u'], outputs=['y'])
     >>> all(G.poles() < 0)  # Is G stable?
     False
@@ -124,7 +124,7 @@ def hinfsyn(P, nmeas, ncon):
 
     Examples
     --------
-    >>> # Unstable first order SISI system
+    >>> # Unstable first order SISO system
     >>> G = ct.tf([1], [1,-1], inputs=['u'], outputs=['y'])
     >>> all(G.poles() < 0)
     False

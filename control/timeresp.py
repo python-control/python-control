@@ -102,7 +102,7 @@ class TimeResponseData:
         a multi-input system) or trace and time (for a single-input,
         multi-trace response), or a 3D array indexed by input, trace, and
         time.
-    title : str, optonal
+    title : str, optional
         Title of the data set (used as figure title in plotting).
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then
@@ -152,7 +152,7 @@ class TimeResponseData:
     ntraces : int, optional
         Number of independent traces represented in the input/output
         response.  If `ntraces` is 0 (default) then the data represents a
-        single trace with the trace index surpressed in the data.
+        single trace with the trace index suppressed in the data.
     trace_labels : array of string, optional
         Labels to use for traces (set to sysname it `ntraces` is 0).
     trace_types : array of string, optional
@@ -229,7 +229,7 @@ class TimeResponseData:
     The default settings for `return_x`, `squeeze` and `transpose`
     can be changed by calling the class instance and passing new values::
 
-         response(tranpose=True).input
+         response(transpose=True).input
 
     See `TimeResponseData.__call__` for more information.
 
@@ -369,7 +369,7 @@ class TimeResponseData:
             self.u = np.array(inputs)
             self.plot_inputs = plot_inputs
 
-            # Make sure the shape is OK and figure out the nuumber of inputs
+            # Make sure the shape is OK and figure out the number of inputs
             if multi_trace and self.u.ndim == 3 and \
                self.u.shape[1] == self.ntraces:
                 self.ninputs = self.u.shape[0]
@@ -1203,7 +1203,7 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
             # https://github.com/scipyscipy/blob/v1.6.1/scipy/signal/ltisys.py#L3462
             scipy_out_samples = int(np.floor(spT[-1] / sys_dt)) + 1
             if scipy_out_samples < n_steps:
-                # parantheses: order of evaluation is important
+                # parentheses: order of evaluation is important
                 spT[-1] = spT[-1] * (n_steps / (spT[-1] / sys_dt + 1))
 
         else:
@@ -1357,7 +1357,7 @@ def step_response(
 
     T_num : int, optional
         Number of time steps to use in simulation if `T` is not provided as
-        an array (autocomputed if not given); ignored if the system is
+        an array (auto-computed if not given); ignored if the system is
         discrete time.
 
     transpose : bool, optional
@@ -1493,11 +1493,11 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
         `TransferFunction`), or a time series of step response data.
     T : array_like or float, optional
         Time vector, or simulation time duration if a number (time vector is
-        autocomputed if not given, see `step_response` for more detail).
+        auto-computed if not given, see `step_response` for more detail).
         Required, if sysdata is a time series of response data.
     T_num : int, optional
         Number of time steps to use in simulation if `T` is not provided as
-        an array; autocomputed if not given; ignored if sysdata is a
+        an array; auto-computed if not given; ignored if sysdata is a
         discrete-time system or a time series or response data.
     yfinal : scalar or array_like, optional
         Steady-state response. If not given, sysdata.dcgain() is used for
@@ -1508,7 +1508,7 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
         If system is a nonlinear I/O system, set parameter values.
     SettlingTimeThreshold : float, optional
         Defines the error to compute settling time (default = 0.02).
-    RiseTimeLimits : tuple (lower_threshold, upper_theshold)
+    RiseTimeLimits : tuple (lower_threshold, upper_threshold)
         Defines the lower and upper threshold for RiseTime computation.
 
     Returns
@@ -1528,8 +1528,8 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
             - 'SteadyStateValue': Steady-state value.
 
         If `sysdata` corresponds to a MIMO system, `S` is a 2D list of dicts.
-        To get the step response characteristics from the j-th input to the
-        i-th output, access ``S[i][j]``.
+        To get the step response characteristics from the jth input to the
+        ith output, access ``S[i][j]``.
 
     See Also
     --------
@@ -1722,7 +1722,7 @@ def initial_response(
 
     T :  array_like or float, optional
         Time vector, or simulation time duration if a number (time vector is
-        autocomputed if not given; see  `step_response` for more detail).
+        auto-computed if not given; see  `step_response` for more detail).
 
     X0 : array_like or float, optional
         Initial condition (default = 0).  Numbers are converted to constant
@@ -1734,7 +1734,7 @@ def initial_response(
 
     T_num : int, optional
         Number of time steps to use in simulation if `T` is not provided as
-        an array (autocomputed if not given); ignored if the system is
+        an array (auto-computed if not given); ignored if the system is
         discrete time.
 
     params : dict, optional
@@ -1837,11 +1837,11 @@ def impulse_response(
     Parameters
     ----------
     sysdata : I/O system or list of I/O systems
-        I/O system(s) for which impluse response is computed.
+        I/O system(s) for which impulse response is computed.
 
     T : array_like or float, optional
         Time vector, or simulation time duration if a scalar (time vector is
-        autocomputed if not given; see `step_response` for more detail).
+        auto-computed if not given; see `step_response` for more detail).
 
     input : int, optional
         Only compute the impulse response for the listed input.  If not
@@ -1854,7 +1854,7 @@ def impulse_response(
 
     T_num : int, optional
         Number of time steps to use in simulation if `T` is not provided as
-        an array (autocomputed if not given); ignored if the system is
+        an array (auto-computed if not given); ignored if the system is
         discrete time.
 
     transpose : bool, optional
@@ -1891,7 +1891,7 @@ def impulse_response(
     -----
     This function uses the `forced_response` function to compute the time
     response. For continuous-time systems, the initial condition is altered
-    to account for the initial impulse. For discrete-time aystems, the
+    to account for the initial impulse. For discrete-time systems, the
     impulse is sized so that it has unit area.  The impulse response for
     nonlinear systems is not implemented.
 
@@ -1971,7 +1971,7 @@ def impulse_response(
             U = np.zeros((sys.ninputs, T.size))
             U[i, 0] = 1./sys.dt         # unit area impulse
 
-        # Simulate the impulse response fo this input
+        # Simulate the impulse response for this input
         response = forced_response(sys, T, U, X0)
 
         # Store the output (and states)
@@ -2077,7 +2077,7 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         # zero - negligible effect on tfinal
         m_z = np.abs(p) < sqrt_eps
         p = p[~m_z]
-        # Negative reals- treated as oscillary mode
+        # Negative reals- treated as oscillatory mode
         m_nr = (p.real < 0) & (np.abs(p.imag) < sqrt_eps)
         p_nr, p = p[m_nr], p[~m_nr]
         if p_nr.size > 0:
