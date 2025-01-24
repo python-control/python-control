@@ -379,10 +379,8 @@ def bode_plot(
         else:
             raise ValueError("initial_phase must be a number.")
 
-        # Reshape the phase to allow standard indexing
-        phase = response.phase.copy().reshape((noutputs, ninputs, -1))
-
         # Shift and wrap the phase
+        phase = np.angle(response.frdata)               # 3D array
         for i, j in itertools.product(range(noutputs), range(ninputs)):
             # Shift the phase if needed
             if abs(phase[i, j, 0] - initial_phase_value) > math.pi:
@@ -405,12 +403,9 @@ def bode_plot(
             else:
                 raise ValueError("wrap_phase must be bool or float.")
 
-        # Put the phase back into the original shape
-        phase = phase.reshape(response.magnitude.shape)
-
-        # Save the data for later use (legacy return values)
-        mag_data.append(response.magnitude.reshape(noutputs, ninputs, -1))
-        phase_data.append(phase.reshape(noutputs, ninputs, -1))
+        # Save the data for later use
+        mag_data.append(np.abs(response.frdata))
+        phase_data.append(phase)
         omega_data.append(response.omega)
 
     #
@@ -685,8 +680,8 @@ def bode_plot(
 
     for index, response in enumerate(data):
         # Get the (pre-processed) data in fully indexed form
-        mag = mag_data[index].reshape((noutputs, ninputs, -1))
-        phase = phase_data[index].reshape((noutputs, ninputs, -1))
+        mag = mag_data[index]
+        phase = phase_data[index]
         omega_sys, sysname = omega_data[index], response.sysname
 
         for i, j in itertools.product(range(noutputs), range(ninputs)):
