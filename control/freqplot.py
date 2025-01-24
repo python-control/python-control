@@ -50,6 +50,7 @@ _freqplot_defaults = {
     'freqplot.grid': True,  # Turn on grid for gain and phase
     'freqplot.wrap_phase': False,  # Wrap the phase plot at a given value
     'freqplot.freq_label': "Frequency [{units}]",
+    'freqplot.magnitude_label': "Magnitude",
     'freqplot.share_magnitude': 'row',
     'freqplot.share_phase': 'row',
     'freqplot.share_frequency': 'col',
@@ -289,7 +290,9 @@ def bode_plot(
     freq_label = config._get_param(
         'freqplot', 'freq_label', kwargs, _freqplot_defaults, pop=True)
     if magnitude_label is None:
-        magnitude_label = "Magnitude [dB]" if dB else "Magnitude"
+        magnitude_label = config._get_param(
+            'freqplot', 'magnitude_label', kwargs,
+            _freqplot_defaults, pop=True) + (" [dB]" if dB else "")
     if phase_label is None:
         phase_label = "Phase [deg]" if deg else "Phase [rad]"
 
@@ -406,8 +409,8 @@ def bode_plot(
         phase = phase.reshape(response.magnitude.shape)
 
         # Save the data for later use (legacy return values)
-        mag_data.append(response.magnitude)
-        phase_data.append(phase)
+        mag_data.append(response.magnitude.reshape(noutputs, ninputs, -1))
+        phase_data.append(phase.reshape(noutputs, ninputs, -1))
         omega_data.append(response.omega)
 
     #
@@ -1286,7 +1289,7 @@ def nyquist_response(
     >>> G = ct.zpk([], [-1, -2, -3], gain=100)
     >>> response = ct.nyquist_response(G)
     >>> count = response.count
-    >>> lines = response.plot()
+    >>> cplt = response.plot()
 
     """
     # Create unified list of keyword arguments
@@ -2162,7 +2165,7 @@ def gangof4_response(
     >>> P = ct.tf([1], [1, 1])
     >>> C = ct.tf([2], [1])
     >>> response = ct.gangof4_response(P, C)
-    >>> lines = response.plot()
+    >>> cplt = response.plot()
 
     """
     if not P.issiso() or not C.issiso():
@@ -2336,7 +2339,7 @@ def singular_values_response(
     svd_responses = []
     for response in responses:
         # Compute the singular values (permute indices to make things work)
-        fresp_permuted = response.fresp.transpose((2, 0, 1))
+        fresp_permuted = response.frdata.transpose((2, 0, 1))
         sigma = np.linalg.svd(fresp_permuted, compute_uv=False).transpose()
         sigma_fresp = sigma.reshape(sigma.shape[0], 1, sigma.shape[1])
 
@@ -2503,12 +2506,12 @@ def singular_values_plot(
             "deprecated; use singular_values_response()", FutureWarning)
 
     # Warn the user if we got past something that is not real-valued
-    if any([not np.allclose(np.imag(response.fresp[:, 0, :]), 0)
+    if any([not np.allclose(np.imag(response.frdata[:, 0, :]), 0)
             for response in responses]):
         warnings.warn("data has non-zero imaginary component")
 
     # Extract the data we need for plotting
-    sigmas = [np.real(response.fresp[:, 0, :]) for response in responses]
+    sigmas = [np.real(response.frdata[:, 0, :]) for response in responses]
     omegas = [response.omega for response in responses]
 
     # Legacy processing for no plotting case

@@ -256,6 +256,7 @@ def use_matlab_defaults():
     The following conventions are used:
         * Bode plots plot gain in dB, phase in degrees, frequency in
           rad/sec, with grids
+        * Frequency plots use the label "Magnitude" for the system gain.
 
     Examples
     --------
@@ -264,6 +265,7 @@ def use_matlab_defaults():
 
     """
     set_defaults('freqplot', dB=True, deg=True, Hz=False, grid=True)
+    set_defaults('freqplot', magnitude_label="Magnitude")
 
 
 # Set defaults to match FBS (Astrom and Murray)
@@ -275,6 +277,7 @@ def use_fbs_defaults():
 
         * Bode plots plot gain in powers of ten, phase in degrees,
           frequency in rad/sec, no grid
+        * Frequency plots use the label "Gain" for the system gain.
         * Nyquist plots use dashed lines for mirror image of Nyquist curve
 
     Examples
@@ -284,6 +287,7 @@ def use_fbs_defaults():
 
     """
     set_defaults('freqplot', dB=False, deg=True, Hz=False, grid=False)
+    set_defaults('freqplot', magnitude_label="Gain")
     set_defaults('nyquist', mirror_style='--')
 
 

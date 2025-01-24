@@ -206,10 +206,10 @@ class TestFRD:
         d_app_2[2, 2, :] = d3
         # Test appending two FRDs
         frd_app_1 = frd1.append(frd2)
-        np.testing.assert_allclose(d_app_1, frd_app_1.fresp)
+        np.testing.assert_allclose(d_app_1, frd_app_1.frdata)
         # Test appending three FRDs
         frd_app_2 = frd1.append(frd2).append(frd3)
-        np.testing.assert_allclose(d_app_2, frd_app_2.fresp)
+        np.testing.assert_allclose(d_app_2, frd_app_2.frdata)
 
     def testAppendMimo(self):
         # Create frequency responses
@@ -232,10 +232,10 @@ class TestFRD:
         d_app_2[5:, 3:, :] = d3
         # Test appending two FRDs
         frd_app_1 = frd1.append(frd2)
-        np.testing.assert_allclose(d_app_1, frd_app_1.fresp)
+        np.testing.assert_allclose(d_app_1, frd_app_1.frdata)
         # Test appending three FRDs
         frd_app_2 = frd1.append(frd2).append(frd3)
-        np.testing.assert_allclose(d_app_2, frd_app_2.fresp)
+        np.testing.assert_allclose(d_app_2, frd_app_2.frdata)
 
     def testAuto(self):
         omega = np.logspace(-1, 2, 10)
@@ -417,47 +417,47 @@ class TestFRD:
         sys_add = frd_tf + 2
         chk_add = frd_tf + frd_2
         np.testing.assert_array_almost_equal(sys_add.omega, chk_add.omega)
-        np.testing.assert_array_almost_equal(sys_add.fresp, chk_add.fresp)
+        np.testing.assert_array_almost_equal(sys_add.frdata, chk_add.frdata)
 
         sys_radd = 2 + frd_tf
         chk_radd = frd_2 + frd_tf
         np.testing.assert_array_almost_equal(sys_radd.omega, chk_radd.omega)
-        np.testing.assert_array_almost_equal(sys_radd.fresp, chk_radd.fresp)
+        np.testing.assert_array_almost_equal(sys_radd.frdata, chk_radd.frdata)
 
         sys_sub = frd_tf - 2
         chk_sub = frd_tf - frd_2
         np.testing.assert_array_almost_equal(sys_sub.omega, chk_sub.omega)
-        np.testing.assert_array_almost_equal(sys_sub.fresp, chk_sub.fresp)
+        np.testing.assert_array_almost_equal(sys_sub.frdata, chk_sub.frdata)
 
         sys_rsub = 2 - frd_tf
         chk_rsub = frd_2 - frd_tf
         np.testing.assert_array_almost_equal(sys_rsub.omega, chk_rsub.omega)
-        np.testing.assert_array_almost_equal(sys_rsub.fresp, chk_rsub.fresp)
+        np.testing.assert_array_almost_equal(sys_rsub.frdata, chk_rsub.frdata)
 
         sys_mul = frd_tf * 2
         chk_mul = frd_tf * frd_2
         np.testing.assert_array_almost_equal(sys_mul.omega, chk_mul.omega)
-        np.testing.assert_array_almost_equal(sys_mul.fresp, chk_mul.fresp)
+        np.testing.assert_array_almost_equal(sys_mul.frdata, chk_mul.frdata)
 
         sys_rmul = 2 * frd_tf
         chk_rmul = frd_2 * frd_tf
         np.testing.assert_array_almost_equal(sys_rmul.omega, chk_rmul.omega)
-        np.testing.assert_array_almost_equal(sys_rmul.fresp, chk_rmul.fresp)
+        np.testing.assert_array_almost_equal(sys_rmul.frdata, chk_rmul.frdata)
 
         sys_rdiv = 2 / frd_tf
         chk_rdiv = frd_2 / frd_tf
         np.testing.assert_array_almost_equal(sys_rdiv.omega, chk_rdiv.omega)
-        np.testing.assert_array_almost_equal(sys_rdiv.fresp, chk_rdiv.fresp)
+        np.testing.assert_array_almost_equal(sys_rdiv.frdata, chk_rdiv.frdata)
 
         sys_pow = frd_tf**2
         chk_pow = frd(sys_tf**2, np.logspace(-1, 1, 10))
         np.testing.assert_array_almost_equal(sys_pow.omega, chk_pow.omega)
-        np.testing.assert_array_almost_equal(sys_pow.fresp, chk_pow.fresp)
+        np.testing.assert_array_almost_equal(sys_pow.frdata, chk_pow.frdata)
 
         sys_pow = frd_tf**-2
         chk_pow = frd(sys_tf**-2, np.logspace(-1, 1, 10))
         np.testing.assert_array_almost_equal(sys_pow.omega, chk_pow.omega)
-        np.testing.assert_array_almost_equal(sys_pow.fresp, chk_pow.fresp)
+        np.testing.assert_array_almost_equal(sys_pow.frdata, chk_pow.frdata)
 
         # Assertion error if we try to raise to a non-integer power
         with pytest.raises(ValueError):
@@ -467,7 +467,7 @@ class TestFRD:
         sys_add = frd_2 + sys_tf
         chk_add = frd_2 + frd_tf
         np.testing.assert_array_almost_equal(sys_add.omega, chk_add.omega)
-        np.testing.assert_array_almost_equal(sys_add.fresp, chk_add.fresp)
+        np.testing.assert_array_almost_equal(sys_add.frdata, chk_add.frdata)
 
         # Test broadcasting with SISO system
         sys_tf_mimo = TransferFunction([1], [1, 0]) * np.eye(2)
@@ -475,7 +475,7 @@ class TestFRD:
         result = FrequencyResponseData.__rmul__(frd_tf, frd_tf_mimo)
         expected = frd(sys_tf_mimo * sys_tf, np.logspace(-1, 1, 10))
         np.testing.assert_array_almost_equal(expected.omega, result.omega)
-        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+        np.testing.assert_array_almost_equal(expected.frdata, result.frdata)
 
         # Input/output mismatch size mismatch in rmul
         sys1 = frd(ct.rss(2, 2, 2), np.logspace(-1, 1, 10))
@@ -493,14 +493,14 @@ class TestFRD:
         sys_siso = frd(ct.rss(2, 1, 1), omega)
 
         for op, expected_fresp in [
-            (FrequencyResponseData.__add__, sys_mimo.fresp + sys_siso.fresp),
-            (FrequencyResponseData.__radd__, sys_mimo.fresp + sys_siso.fresp),
-            (FrequencyResponseData.__sub__, sys_mimo.fresp - sys_siso.fresp),
-            (FrequencyResponseData.__rsub__, -sys_mimo.fresp + sys_siso.fresp),
+            (FrequencyResponseData.__add__, sys_mimo.frdata + sys_siso.frdata),
+            (FrequencyResponseData.__radd__, sys_mimo.frdata + sys_siso.frdata),
+            (FrequencyResponseData.__sub__, sys_mimo.frdata - sys_siso.frdata),
+            (FrequencyResponseData.__rsub__, -sys_mimo.frdata + sys_siso.frdata),
         ]:
             result = op(sys_mimo, sys_siso)
             np.testing.assert_array_almost_equal(omega, result.omega)
-            np.testing.assert_array_almost_equal(expected_fresp, result.fresp)
+            np.testing.assert_array_almost_equal(expected_fresp, result.frdata)
 
     @pytest.mark.parametrize(
         "left, right, expected",
@@ -573,7 +573,7 @@ class TestFRD:
         result = frd(left, np.logspace(-1, 1, 10)).__mul__(right)
         expected_frd = frd(expected, np.logspace(-1, 1, 10))
         np.testing.assert_array_almost_equal(expected_frd.omega, result.omega)
-        np.testing.assert_array_almost_equal(expected_frd.fresp, result.fresp)
+        np.testing.assert_array_almost_equal(expected_frd.frdata, result.frdata)
 
     @slycotonly
     def test_truediv_mimo_siso(self):
@@ -589,17 +589,17 @@ class TestFRD:
         # Test division of MIMO FRD by SISO FRD
         result = frd_mimo.__truediv__(frd_siso)
         np.testing.assert_array_almost_equal(expected.omega, result.omega)
-        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+        np.testing.assert_array_almost_equal(expected.frdata, result.frdata)
 
         # Test division of MIMO FRD by SISO TF
         result = frd_mimo.__truediv__(tf_siso)
         np.testing.assert_array_almost_equal(expected.omega, result.omega)
-        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+        np.testing.assert_array_almost_equal(expected.frdata, result.frdata)
 
         # Test division of MIMO FRD by SISO TF
         result = frd_mimo.__truediv__(ss_siso)
         np.testing.assert_array_almost_equal(expected.omega, result.omega)
-        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+        np.testing.assert_array_almost_equal(expected.frdata, result.frdata)
 
     @slycotonly
     def test_rtruediv_mimo_siso(self):
@@ -615,17 +615,17 @@ class TestFRD:
         # Test division of MIMO FRD by SISO FRD
         result = frd_siso.__rtruediv__(frd_mimo)
         np.testing.assert_array_almost_equal(expected.omega, result.omega)
-        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+        np.testing.assert_array_almost_equal(expected.frdata, result.frdata)
 
         # Test division of MIMO TF by SISO FRD
         result = frd_siso.__rtruediv__(tf_mimo)
         np.testing.assert_array_almost_equal(expected.omega, result.omega)
-        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+        np.testing.assert_array_almost_equal(expected.frdata, result.frdata)
 
         # Test division of MIMO SS by SISO FRD
         result = frd_siso.__rtruediv__(ss_mimo)
         np.testing.assert_array_almost_equal(expected.omega, result.omega)
-        np.testing.assert_array_almost_equal(expected.fresp, result.fresp)
+        np.testing.assert_array_almost_equal(expected.frdata, result.frdata)
 
 
     @pytest.mark.parametrize(
@@ -699,7 +699,7 @@ class TestFRD:
         result = frd(right, np.logspace(-1, 1, 10)).__rmul__(left)
         expected_frd = frd(expected, np.logspace(-1, 1, 10))
         np.testing.assert_array_almost_equal(expected_frd.omega, result.omega)
-        np.testing.assert_array_almost_equal(expected_frd.fresp, result.fresp)
+        np.testing.assert_array_almost_equal(expected_frd.frdata, result.frdata)
 
     def test_eval(self):
         sys_tf = ct.tf([1], [1, 2, 1])
@@ -725,6 +725,12 @@ class TestFRD:
         with pytest.warns(FutureWarning):
             frd_tf.freqresp(1.)
 
+        with pytest.warns(FutureWarning, match="use complex"):
+            np.testing.assert_equal(frd_tf.response, frd_tf.complex)
+
+        with pytest.warns(FutureWarning, match="use frdata"):
+            np.testing.assert_equal(frd_tf.fresp, frd_tf.frdata)
+
     def test_repr_str(self):
         # repr printing
         array = np.array
@@ -732,7 +738,7 @@ class TestFRD:
             [1.0, 0.9+0.1j, 0.1+2j, 0.05+3j],
             [0.1, 1.0, 10.0, 100.0], name='sys0')
         sys1 = ct.frd(
-            sys0.fresp, sys0.omega, smooth=True, name='sys1')
+            sys0.frdata, sys0.omega, smooth=True, name='sys1')
         ref_common = "FrequencyResponseData(\n" \
             "array([[[1.  +0.j , 0.9 +0.1j, 0.1 +2.j , 0.05+3.j ]]]),\n" \
             "array([  0.1,   1. ,  10. , 100. ]),"
@@ -740,17 +746,17 @@ class TestFRD:
         ref1 = ref_common + " smooth=True," + \
             "\nname='sys1', outputs=1, inputs=1)"
         sysm = ct.frd(
-            np.matmul(array([[1], [2]]), sys0.fresp), sys0.omega, name='sysm')
+            np.matmul(array([[1], [2]]), sys0.frdata), sys0.omega, name='sysm')
 
         assert ct.iosys_repr(sys0, format='eval') == ref0
         assert ct.iosys_repr(sys1, format='eval') == ref1
 
         sys0r = eval(ct.iosys_repr(sys0, format='eval'))
-        np.testing.assert_array_almost_equal(sys0r.fresp, sys0.fresp)
+        np.testing.assert_array_almost_equal(sys0r.frdata, sys0.frdata)
         np.testing.assert_array_almost_equal(sys0r.omega, sys0.omega)
 
         sys1r = eval(ct.iosys_repr(sys1, format='eval'))
-        np.testing.assert_array_almost_equal(sys1r.fresp, sys1.fresp)
+        np.testing.assert_array_almost_equal(sys1r.frdata, sys1.frdata)
         np.testing.assert_array_almost_equal(sys1r.omega, sys1.omega)
         assert(sys1._ifunc is not None)
 
@@ -837,7 +843,7 @@ def test_to_pandas():
 
     # Check to make sure the data make senses
     np.testing.assert_equal(df['omega'], resp.omega)
-    np.testing.assert_equal(df['H_{y[0], u[0]}'], resp.fresp[0, 0])
+    np.testing.assert_equal(df['H_{y[0], u[0]}'], resp.frdata[0, 0])
 
 
 def test_frequency_response():
@@ -891,9 +897,9 @@ def test_signal_labels():
 
     # Make sure access via strings works
     np.testing.assert_equal(
-        fresp.magnitude['y[0]'], fresp.magnitude[0])
+        fresp.magnitude['y[0]'], fresp.magnitude)
     np.testing.assert_equal(
-        fresp.phase['y[0]'], fresp.phase[0])
+        fresp.phase['y[0]'], fresp.phase)
 
     # Make sure errors are generated if key is unknown
     with pytest.raises(ValueError, match="unknown signal name 'bad'"):
@@ -911,20 +917,20 @@ def test_signal_labels():
         fresp.phase['y[0]', 'u[1]'],
         fresp.phase[0, 1])
     np.testing.assert_equal(
-        fresp.response['y[0]', 'u[1]'],
-        fresp.response[0, 1])
+        fresp.complex['y[0]', 'u[1]'],
+        fresp.complex[0, 1])
 
     # Make sure access via lists of strings works
     np.testing.assert_equal(
-        fresp.response[['y[1]', 'y[0]'], 'u[0]'],
-        fresp.response[[1, 0], 0])
+        fresp.complex[['y[1]', 'y[0]'], 'u[0]'],
+        fresp.complex[[1, 0], 0])
 
     # Make sure errors are generated if key is unknown
     with pytest.raises(ValueError, match="unknown signal name 'bad'"):
         fresp.magnitude['bad']
 
     with pytest.raises(ValueError, match="unknown signal name 'bad'"):
-        fresp.response[['y[1]', 'bad']]
+        fresp.complex[['y[1]', 'bad']]
 
     with pytest.raises(ValueError, match=r"unknown signal name 'y\[0\]'"):
-        fresp.response['y[1]', 'y[0]']         # second index = input name
+        fresp.complex['y[1]', 'y[0]']         # second index = input name

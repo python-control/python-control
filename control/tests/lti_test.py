@@ -342,7 +342,7 @@ def test_subsys_indexing(fcn, outdx, inpdx, key):
     match fcn:
         case ct.frd:
             np.testing.assert_almost_equal(
-                subsys_fcn.response, subsys_chk.response)
+                subsys_fcn.complex, subsys_chk.complex)
         case ct.ss:
             np.testing.assert_almost_equal(subsys_fcn.A, subsys_chk.A)
             np.testing.assert_almost_equal(subsys_fcn.B, subsys_chk.B)
@@ -351,8 +351,8 @@ def test_subsys_indexing(fcn, outdx, inpdx, key):
         case ct.tf:
             omega = np.logspace(-1, 1)
             np.testing.assert_almost_equal(
-                subsys_fcn.frequency_response(omega).response,
-                subsys_chk.frequency_response(omega).response)
+                subsys_fcn.frequency_response(omega).complex,
+                subsys_chk.frequency_response(omega).complex)
 
 
 @pytest.mark.parametrize("op", [

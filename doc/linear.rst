@@ -156,8 +156,8 @@ Frequency response data (FRD) systems
 
 The :class:`FrequencyResponseData` (FRD) class is used to represent
 systems in frequency response data form.  The main data attributes are
-`omega` and `fresp`, where `omega` is a 1D array of frequencies and
-`fresp` is the (complex-value) value of the transfer function at each
+`omega` and `frdata`, where `omega` is a 1D array of frequencies and
+`frdata` is the (complex-value) value of the transfer function at each
 frequency point.
 
 FRD systems can be created with the :func:`frd` factory function:
@@ -166,19 +166,19 @@ FRD systems can be created with the :func:`frd` factory function:
 
   sys_lti = ct.rss(2, 2, 2)
   lti_resp = ct.frequency_response(sys_lti)
-  fresp = lti_resp.response
-  freqpts = lti_resp.frequency
+  frdata = lti_resp.complex
+  omega = lti_resp.frequency
 
 .. testcode:: frdata
 
-  sys = ct.frd(fresp, freqpts)
+  sys = ct.frd(frdata, omega)
 
 FRD systems can also be created by evaluating an LTI system at a given
 set of frequencies:
 
 .. testcode:: frdata
 
-  frd_sys = ct.frd(sys_lti, freqpts)
+  frd_sys = ct.frd(sys_lti, omega)
 
 Frequency response data systems have a somewhat more limited set of
 functions that are available, although all of the standard algebraic
@@ -283,9 +283,9 @@ response.
 
 	    mag, phase, omega = response(squeeze=False)
 
-.. note:: The `fresp` data member is stored as a NumPy array and
+.. note:: The `frdata` data member is stored as a NumPy array and
 	  cannot be accessed with signal names.  Use
-	  `response.response` to access the complex frequency response
+	  `response.complex` to access the complex frequency response
 	  using signal names.
 
 

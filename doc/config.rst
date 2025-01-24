@@ -314,6 +314,13 @@ Plotting parameters
 
    If True, use Hertz for frequency response plots (otherwise rad/sec).
 
+.. py:data:: freqplot.magnitude_label
+   :type: str
+   :value: 'Magnitude'
+
+   Label to use on the magnitude portion of a frequeny plot.  Set to
+   'Gain' by `use_fbs_defaults()`.
+
 .. py:data:: freqplot.number_of_samples
    :type: int
    :value: 1000

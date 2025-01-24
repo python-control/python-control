@@ -340,7 +340,7 @@ ct = control
 fs = control.flatsys
 
 # Dictionary of factory functions associated with primary classes
-class_factory_function = {
+iosys_class_factory_function = {
     fs.FlatSystem: fs.flatsys,
     ct.FrequencyResponseData: ct.frd,
     ct.InterconnectedSystem: ct.interconnect,
@@ -357,9 +357,9 @@ class_factory_function = {
 # arguments should be documented in the factory functions and do not need
 # to be duplicated in the class documentation (=> don't list here).
 #
-class_args = {
+iosys_class_args = {
     fs.FlatSystem: ['forward', 'reverse'],
-    ct.FrequencyResponseData: ['response', 'omega', 'dt'],
+    ct.FrequencyResponseData: ['frdata', 'omega', 'dt'],
     ct.NonlinearIOSystem: [
         'updfcn', 'outfcn', 'inputs', 'outputs', 'states', 'params', 'dt'],
     ct.StateSpace: ['A', 'B', 'C', 'D', 'dt'],
@@ -376,16 +376,16 @@ class_args = {
 # in the class docstring.
 #
 # Attributes that are part of all I/O system classes should be listed in
-# `std_class_attributes`.  Attributes that are not commonly needed are
+# `std_iosys_class_attributes`.  Attributes that are not commonly needed are
 # defined as part of a parent class can just be documented there, and
 # should be listed in `iosys_parent_attributes` (these will be searched
 # using the MRO).
 
-std_class_attributes = [
+std_iosys_class_attributes = [
     'ninputs', 'noutputs', 'input_labels', 'output_labels', 'name', 'shape']
 
 # List of attributes defined for specific I/O systems
-class_attributes = {
+iosys_class_attributes = {
     fs.FlatSystem: [],
     ct.FrequencyResponseData: [],
     ct.NonlinearIOSystem: ['nstates', 'state_labels'],
@@ -428,8 +428,8 @@ factory_args = {
 
 @pytest.mark.parametrize(
     "cls, fcn, args",
-    [(cls, class_factory_function[cls], class_args[cls])
-     for cls in class_args.keys()])
+    [(cls, iosys_class_factory_function[cls], iosys_class_args[cls])
+     for cls in iosys_class_args.keys()])
 def test_iosys_primary_classes(cls, fcn, args):
     docstring = inspect.getdoc(cls)
     with warnings.catch_warnings():
@@ -438,7 +438,8 @@ def test_iosys_primary_classes(cls, fcn, args):
     _check_numpydoc_style(cls, doc)
 
     # Make sure the typical arguments are there
-    for argname in args + std_class_attributes + class_attributes[cls]:
+    for argname in args + std_iosys_class_attributes + \
+            iosys_class_attributes[cls]:
         _check_parameter_docs(cls.__name__, argname, docstring)
 
     # Make sure we reference the factory function
@@ -473,9 +474,9 @@ def test_iosys_primary_classes(cls, fcn, args):
                 f"'{argname}'")
 
 
-@pytest.mark.parametrize("cls", class_args.keys())
+@pytest.mark.parametrize("cls", iosys_class_args.keys())
 def test_iosys_attribute_lists(cls, ignore_future_warning):
-    fcn = class_factory_function[cls]
+    fcn = iosys_class_factory_function[cls]
 
     # Create a system that we can scan for attributes
     sys = ct.rss(2, 1, 1)
@@ -487,6 +488,7 @@ def test_iosys_attribute_lists(cls, ignore_future_warning):
         case ct.frd:
             sys = ct.frd(sys, [0.1, 1, 10])
             ignore_args = ['state_labels']
+            ignore_args += ['fresp', 'response']        # deprecated
         case ct.interconnect:
             sys = ct.nlsys(sys, name='sys')
             sys = ct.interconnect([sys], inplist='sys.u', outlist='sys.y')
@@ -497,15 +499,18 @@ def test_iosys_attribute_lists(cls, ignore_future_warning):
             sys = fs.flatsys(sys.forward, sys.reverse)
 
     docstring = inspect.getdoc(cls)
-    for name, obj in inspect.getmembers(sys):
+    for name, value in inspect.getmembers(sys):
+        if name.startswith('_') or name in ignore_args or \
+           inspect.ismethod(value):
+            # Skip hidden and ignored attributes; methods checked elsewhere
+            continue
+
+        # Get the object associated with this attribute
+        obj = getattr(cls, name, getattr(sys, name))
         if getattr(obj, '__module__', None):
             objname = ".".join([obj.__module__.removeprefix("control."), name])
         else:
             objname = name
-
-        if name.startswith('_') or inspect.ismethod(obj) or name in ignore_args:
-            # Skip hidden variables; class methods are checked elsewhere
-            continue
 
         # Try to find documentation in primary class
         if _check_parameter_docs(
@@ -583,15 +588,15 @@ def test_iosys_factory_functions(fcn):
         doc = npd.FunctionDoc(fcn)
     _check_numpydoc_style(fcn, doc)
 
-    cls = list(class_factory_function.keys())[
-        list(class_factory_function.values()).index(fcn)]
+    cls = list(iosys_class_factory_function.keys())[
+        list(iosys_class_factory_function.values()).index(fcn)]
 
     # Make sure we reference parameters in class and factory function docstring
-    for argname in class_args[cls] + std_factory_args + factory_args[fcn]:
+    for argname in iosys_class_args[cls] + std_factory_args + factory_args[fcn]:
         _check_parameter_docs(fcn.__name__, argname, docstring)
 
     # Make sure we don't reference any class attributes
-    for argname in std_class_attributes + class_attributes[cls]:
+    for argname in std_iosys_class_attributes + iosys_class_attributes[cls]:
         if argname in std_factory_args:
             continue
         if re.search(f"[\\s]+{argname}(, .*)*[\\s]*:", docstring) is not None:
@@ -900,12 +905,12 @@ if __name__ == "__main__":
         test_deprecated_functions
 
     for cls, fcn, args in [
-            (cls, class_factory_function[cls], class_args[cls])
-            for cls in class_args.keys()]:
+            (cls, iosys_class_factory_function[cls], iosys_class_args[cls])
+            for cls in iosys_class_args.keys()]:
         _info(f"--- test_iosys_primary_classes(): {cls.__name__} ----", 0)
         test_iosys_primary_classes(cls, fcn, args)
 
-    for cls in class_args.keys():
+    for cls in iosys_class_args.keys():
         _info(f"--- test_iosys_attribute_lists(): {cls.__name__} ----", 0)
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', FutureWarning)

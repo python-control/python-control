@@ -9,7 +9,6 @@
 #
 # Sawyer B. Fuller (minster@uw.edu) 21 May 2020: added compatibility
 # with discrete-time systems.
-#   
 
 """Code for computing a root locus plot."""
 

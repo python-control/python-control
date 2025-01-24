@@ -70,7 +70,8 @@ class NamedSignal(np.ndarray):
             if isinstance(key, str):
                 key = labels.index(item := key)
                 if level == 0 and len(self.data_shape) < 2:
-                    raise ControlIndexError
+                    # This is the only signal => use it
+                    return ()
             elif isinstance(key, list):
                 keylist = []
                 for item in key:        # use for loop to save item for error

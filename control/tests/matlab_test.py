@@ -692,7 +692,7 @@ class TestMatlab:
         omega = np.logspace(-1, 2, 10)
         frd1 = frd(h, omega)
         assert isinstance(frd1, FRD)
-        frd2 = frd(frd1.fresp[0, 0, :], omega)
+        frd2 = frd(frd1.frdata[0, 0, :], omega)
         assert isinstance(frd2, FRD)
 
     @slycotonly

@@ -673,7 +673,7 @@ def test_singular_values_plot(tsystem):
     sys = tsystem.sys
     for omega_ref, sigma_ref in zip(tsystem.omegas, tsystem.sigmas):
         response = singular_values_response(sys, omega_ref)
-        sigma = np.real(response.fresp[:, 0, :])
+        sigma = np.real(response.frdata[:, 0, :])
         np.testing.assert_almost_equal(sigma, sigma_ref)
 
 

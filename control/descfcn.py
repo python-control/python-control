@@ -336,7 +336,7 @@ def describing_function_response(
     >>> response = ct.describing_function_response(H_simple, F_saturation, amp)
     >>> response.intersections  # doctest: +SKIP
     [(3.343844998258643, 1.4142293090899216)]
-    >>> lines = response.plot()
+    >>> cplt = response.plot()
 
     """
     # Decide whether to turn on warnings or not
@@ -484,7 +484,7 @@ def describing_function_plot(
     >>> H_simple = ct.tf([8], [1, 2, 2, 1])
     >>> F_saturation = ct.saturation_nonlinearity(1)
     >>> amp = np.linspace(1, 4, 10)
-    >>> lines = ct.describing_function_plot(H_simple, F_saturation, amp)
+    >>> cplt = ct.describing_function_plot(H_simple, F_saturation, amp)
 
     """
     # Process keywords
@@ -521,8 +521,8 @@ def describing_function_plot(
     lines = np.empty(2, dtype=object)
 
     # Plot the Nyquist response
-    cfig = dfresp.response.plot(**kwargs)
-    lines[0] = cfig.lines[0]    # Return Nyquist lines for first system
+    cplt = dfresp.response.plot(**kwargs)
+    lines[0] = cplt.lines[0]    # Return Nyquist lines for first system
 
     # Add the describing function curve to the plot
     lines[1] = plt.plot(dfresp.N_vals.real, dfresp.N_vals.imag)
@@ -533,7 +533,7 @@ def describing_function_plot(
             # Add labels to the intersection points
             plt.text(pos.real, pos.imag, point_label % (a, omega))
 
-    return ControlPlot(lines, cfig.axes, cfig.figure)
+    return ControlPlot(lines, cplt.axes, cplt.figure)
 
 
 # Utility function to figure out whether two line segments intersection

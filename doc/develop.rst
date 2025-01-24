@@ -204,6 +204,102 @@ Signal arguments:
   either the number of each signal or a list of labels for the
   signals.
 
+Order of arguments for functions taking inputs, outputs, state, time,
+frequency, etc:
+
+* The default order for providing arguments in state space models is
+  ``(t, x, u, params)``.  This is the generic order that should be
+  used in functions that take signals as parameters, but permuted so
+  that required arguments go first, common arguments go next (as
+  keywords, in the order listed above if they also work as positional
+  arguments), and infrequent arguments go last (in order listed
+  above).  For example::
+
+    def model_update(t, x, u, params)
+    resp = initial_response(sys, timepts, x0)             # x0 required
+    resp = input_output_response(sys, timepts, u, x0=x0)  # u required
+    resp = TimeResponseData(
+        timepts, outputs, states=states, inputs=inputs)
+
+  In the last command, note that states precedes inputs because not
+  all TimeResponseData elements have inputs (eg, `initial_response`).
+
+* The default order for providing arguments in the frequency domain is
+  system/response first, then frequency::
+
+    resp = frequency_response(sys, omega)
+    sys_frd = frd(sys_tf, omega)
+    sys = frd(response, omega)
+
+Time and frequency responses:
+
+* Use `timepts` for lists of times and `omega` for lists of
+  frequencies at which systems are evaluated.  For example::
+
+    ioresp = ct.input_output_response(sys, timepts, U)
+    cplt = ct.bode_plot(sys, omega)
+
+* Use `inputs`, `outputs`, `states`, `time` for time response data
+  attributes.  These should be used as parameter names when creating
+  `TimeResponseData` objects and also as attributes when retrieving
+  response data (with dimensions dependent on `squeeze` processing).
+  These are stored internally in non-squeezed form using `u`, `y`,
+  `x`, and `t`, but the internal data should generally not be accessed
+  directly.  For example::
+
+    plt.plot(ioresp.time, ioresp.outputs[0])
+    tresp = ct.TimeResponseData(time, outputs, states, ...)  # (internal call)
+
+  - Note that the use of `inputs`, `outputs`, and `states` for both
+    factory function specifications as well as response function
+    attributes is a bit confusing.
+
+* Use `frdata`, `omega` for frequency response data attributes.  These
+  should be used as parameter names when creating
+  `FrequencyResponseData` objects and also as attributes when
+  retreiving response data.  The `frdata` attribute is stored as a 3D
+  array indexed by outputs, inputs, frequency.
+
+* Use `complex`, `magnitude`, `phase` for frequency response
+  data attributes with squeeze processing.   For example::
+
+    ax = plt.subplots(2, 1)
+    ax[0].loglog(fresp.omega, fresp.magnitude)
+    ax[1].semilogx(fresp.omega, fresp.phase)
+
+  - The frequency response is stored internally in non-squeezed form
+    as `fresp`, but this is generally not accessed directly by users.
+
+  - Note that when creating time response data the independent
+    variable (time) is the first argument wherease for frequency
+    response data the independent variable (omega) is the second
+    argument.  This is because we also create frequency response data
+    from a linear system using a call ``frd(sys, omega)``, and
+    rename frequency response data using a call ``frd(sys,
+    name='newname')``, so the system/data need to be the first
+    argument.  For time response data we use the convention that we
+    start with time and then list the arguments in the most frequently
+    used order.
+
+* Use `response` for generic response objects (time, frequency,
+  describing function, Nyquist, etc).
+
+  - Note that when responses are evaluated as tuples, the ordering of
+    the dependent and independent variables switches between time and
+    frequency domain::
+
+      t, y = ct.step_response(sys)
+      mag, phase, omega = ct.frequency_response(sys)
+
+    To avoid confusion, it is better to use response objects::
+
+      tresp = ct.step_response(sys)
+      t, y = tresp.time, tresp.outputs
+
+      fresp = ct.frequency_response(sys)
+      omega, response = fresp.omega, fresp.response
+      mag, phase, omega = fresp.magnitude, fresp.phase, fresp.omega
+
 
 Documentation Guidelines
 ========================
