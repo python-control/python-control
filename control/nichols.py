@@ -21,7 +21,6 @@ from . import config
 from .ctrlplot import ControlPlot, _get_line_labels, _process_ax_keyword, \
     _process_legend_keywords, _process_line_labels, _update_plot_title
 from .ctrlutil import unwrap
-from .freqplot import _default_frequency_range, _freqplot_defaults
 from .lti import frequency_response
 from .statesp import StateSpace
 from .xferfcn import TransferFunction

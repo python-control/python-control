@@ -72,6 +72,7 @@ def slycot_check():
     if slycot_installed is None:
         try:
             import slycot
+            slycot # pyflakes
             slycot_installed = True
         except:
             slycot_installed = False
@@ -86,6 +87,7 @@ def pandas_check():
     if pandas_installed is None:
         try:
             import pandas
+            pandas # pyflakes
             pandas_installed = True
         except:
             pandas_installed = False
@@ -99,6 +101,7 @@ def cvxopt_check():
     if cvxopt_installed is None:
         try:
             import cvxopt
+            cvxopt # pyflakes
             cvxopt_installed = True
         except:
             cvxopt_installed = False

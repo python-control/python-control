@@ -23,8 +23,7 @@ import logging
 import time
 
 from . import config
-from .exception import ControlNotImplemented
-from .iosys import _process_indices, _process_labels, \
+from .iosys import _process_labels, \
     _process_control_disturbance_indices
 
 

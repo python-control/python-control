@@ -16,17 +16,14 @@
 #
 
 import warnings
-from functools import partial
 
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy.signal  # signal processing toolbox
-from numpy import array, imag, poly1d, real, vstack, zeros_like
+from numpy import poly1d, vstack, zeros_like
 
 from . import config
 from .ctrlplot import ControlPlot
 from .exception import ControlMIMONotImplemented
-from .iosys import isdtime
 from .lti import LTI
 from .xferfcn import _convert_to_transfer_function
 

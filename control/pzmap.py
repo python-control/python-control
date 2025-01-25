@@ -11,21 +11,18 @@
 
 import itertools
 import warnings
-from math import pi
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy import cos, exp, imag, linspace, real, sin, sqrt
+from numpy import imag, real
 
 from . import config
 from .config import _process_legacy_keyword
 from .ctrlplot import ControlPlot, _get_color, _get_color_offset, \
     _get_line_labels, _process_ax_keyword, _process_legend_keywords, \
     _process_line_labels, _update_plot_title
-from .freqplot import _freqplot_defaults
 from .grid import nogrid, sgrid, zgrid
 from .iosys import isctime, isdtime
-from .lti import LTI
 from .statesp import StateSpace
 from .xferfcn import TransferFunction
 

@@ -8,9 +8,8 @@ from .statefbk import ctrb, obsv
 
 import numpy as np
 
-from numpy import zeros, zeros_like, shape, poly, iscomplex, vstack, hstack, \
-    transpose, empty, finfo, float64
-from numpy.linalg import solve, matrix_rank, eig
+from numpy import zeros_like, poly, transpose
+from numpy.linalg import solve, matrix_rank
 
 from scipy.linalg import schur
 

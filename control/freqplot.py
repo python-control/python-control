@@ -11,7 +11,6 @@
 import itertools
 import math
 import warnings
-from os.path import commonprefix
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt

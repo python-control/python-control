@@ -18,7 +18,6 @@ points and linearizations.
 
 """
 
-import copy
 from warnings import warn
 
 import numpy as np
@@ -26,7 +25,7 @@ import scipy as sp
 
 from . import config
 from .iosys import InputOutputSystem, _parse_spec, _process_iosys_keywords, \
-    _process_signal_list, common_timebase, iosys_repr, isctime, isdtime
+    common_timebase, iosys_repr, isctime, isdtime
 from .timeresp import _check_convert_array, _process_time_response, \
     TimeResponseData, TimeResponseList
 
@@ -2474,8 +2473,7 @@ def interconnect(
     `outputs`, for more natural naming of SISO systems.
 
     """
-    from .statesp import LinearICSystem, StateSpace, _convert_to_statespace
-    from .xferfcn import TransferFunction
+    from .statesp import LinearICSystem, StateSpace
 
     dt = kwargs.pop('dt', None)         # bypass normal 'dt' processing
     name, inputs, outputs, states, _ = _process_iosys_keywords(kwargs)

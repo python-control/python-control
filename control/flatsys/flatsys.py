@@ -245,7 +245,6 @@ def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
     """
     from .linflat import LinearFlatSystem
     from ..statesp import StateSpace
-    from ..iosys import _process_iosys_keywords
 
     if len(args) == 1 and isinstance(args[0], StateSpace):
         # We were passed a linear system, so call linflat

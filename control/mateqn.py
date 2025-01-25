@@ -37,7 +37,7 @@
 
 import warnings
 import numpy as np
-from numpy import copy, eye, dot, finfo, inexact, atleast_2d
+from numpy import eye, finfo, inexact
 
 import scipy as sp
 from scipy.linalg import eigvals, solve

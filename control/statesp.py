@@ -16,14 +16,14 @@ python-control library.
 import math
 import sys
 from collections.abc import Iterable
-from copy import deepcopy
 from warnings import warn
 
 import numpy as np
 import scipy as sp
 import scipy.linalg
+# todo: check override of built-in any
 from numpy import any, array, asarray, concatenate, cos, delete, empty, \
-    exp, eye, isinf, ones, pad, sin, squeeze, zeros
+    exp, eye, isinf, pad, sin, squeeze, zeros
 from numpy.linalg import LinAlgError, eigvals, matrix_rank, solve
 from numpy.random import rand, randn
 from scipy.signal import StateSpace as signalStateSpace
@@ -33,12 +33,14 @@ from . import config
 from . import bdalg
 from .exception import ControlMIMONotImplemented, ControlSlycot, slycot_check
 from .frdata import FrequencyResponseData
-from .iosys import InputOutputSystem, NamedSignal, _process_dt_keyword, \
+from .iosys import InputOutputSystem, NamedSignal, \
     _process_iosys_keywords, _process_signal_list, _process_subsys_index, \
-    common_timebase, iosys_repr, isdtime, issiso
+    common_timebase, issiso
 from .lti import LTI, _process_frequency_response
 from .nlsys import InterconnectedSystem, NonlinearIOSystem
 import control
+
+array # pyflakes
 
 try:
     from slycot import ab13dd

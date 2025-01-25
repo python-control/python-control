@@ -22,8 +22,8 @@ from warnings import warn
 
 import numpy as np
 import scipy as sp
-from numpy import angle, array, delete, empty, exp, finfo, float64, ndarray, \
-    nonzero, ones, pi, poly, polyadd, polymul, polyval, real, roots, sqrt, \
+from numpy import array, delete, empty, exp, finfo, float64, ndarray, \
+    nonzero, ones, poly, polyadd, polymul, polyval, real, roots, sqrt, \
     squeeze, where, zeros
 from scipy.signal import TransferFunction as signalTransferFunction
 from scipy.signal import cont2discrete, tf2zpk, zpk2tf
@@ -33,8 +33,10 @@ from . import bdalg
 from .exception import ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
 from .iosys import InputOutputSystem, NamedSignal, _process_iosys_keywords, \
-    _process_subsys_index, common_timebase, isdtime
+    _process_subsys_index, common_timebase
 from .lti import LTI, _process_frequency_response
+
+float64 # pyflakes
 
 __all__ = ['TransferFunction', 'tf', 'zpk', 'ss2tf', 'tfdata']
 

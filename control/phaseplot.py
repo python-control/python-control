@@ -38,7 +38,6 @@ from scipy.integrate import odeint
 from . import config
 from .ctrlplot import ControlPlot, _add_arrows_to_line2D, _get_color, \
     _process_ax_keyword, _update_plot_title
-from .exception import ControlNotImplemented
 from .nlsys import NonlinearIOSystem, find_operating_point, \
     input_output_response
 

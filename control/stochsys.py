@@ -16,14 +16,15 @@ __license__ = "BSD"
 __maintainer__ = "Richard Murray"
 __email__ = "murray@cds.caltech.edu"
 
+import warnings
+
 import numpy as np
 import scipy as sp
 from math import sqrt
 
-from .statesp import StateSpace
 from .lti import LTI
-from .iosys import InputOutputSystem, isctime, isdtime, _process_indices, \
-    _process_labels, _process_control_disturbance_indices
+from .iosys import (isctime, isdtime, _process_labels,
+                    _process_control_disturbance_indices)
 from .nlsys import NonlinearIOSystem
 from .mateqn import care, dare, _check_shape
 from .statesp import StateSpace, _ssmatrix
@@ -460,7 +461,7 @@ def create_estimator_iosystem(
     # Set the input and direct matrices
     B = sys.B[:, ctrl_idx]
     if not np.allclose(sys.D, 0):
-        raise NotImplemented("nonzero 'D' matrix not yet implemented")
+        raise NotImplementedError("nonzero 'D' matrix not yet implemented")
 
     # Set the output matrices
     if C is not None:

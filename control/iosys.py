@@ -8,7 +8,6 @@
 
 import re
 from copy import deepcopy
-from warnings import warn
 
 import numpy as np
 
