@@ -62,7 +62,8 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
     Notes
     -----
     See `StateSpace.sample` or `TransferFunction.sample` for further
-    details.
+    details on implementation for state space and transfer function
+    systems, including available methods.
 
     Examples
     --------
