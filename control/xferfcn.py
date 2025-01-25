@@ -122,7 +122,7 @@ class TransferFunction(LTI):
     'timebase' dt when the system is constructed:
 
     * `dt` = 0: continuous-time system (default)
-    * `dt` > 0: discrete-time system with sampling period 'dt'
+    * `dt` > 0: discrete-time system with sampling period `dt`
     * `dt` = True: discrete time with unspecified sampling period
     * `dt` = None: no timebase specified
 

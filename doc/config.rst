@@ -126,14 +126,16 @@ System creation parameters
    :value: ''
 
    Prefix to add to system name when sampling a system at a set of
-   frequency points in :func:`frd`.
+   frequency points in :func:`frd` or converting a continuous-time
+   system to discrete time in :func:`sample_system`.
 
 .. py:data:: iosys.sampled_system_name_suffix
    :type: str
    :value: '$sampled'
 
    Suffix to add to system name when sampling a system at a set of
-   frequency points in :func:`frd`.
+   frequency points in :func:`frd` or converting a continuous-time
+   system to discrete time in :func:`sample_system`.
 
 .. py:data:: iosys.state_name_delim
    :type: str
@@ -318,7 +320,7 @@ Plotting parameters
    :type: str
    :value: 'Magnitude'
 
-   Label to use on the magnitude portion of a frequeny plot.  Set to
+   Label to use on the magnitude portion of a frequency plot.  Set to
    'Gain' by `use_fbs_defaults()`.
 
 .. py:data:: freqplot.number_of_samples
@@ -367,10 +369,10 @@ Plotting parameters
    :type: bool
    :value: False
 
-   If wrap_phase is False, then the phase will be unwrapped so that it
-   is continuously increasing or decreasing.  If wrap_phase is True the
+   If `wrap_phase` is False, then the phase will be unwrapped so that it
+   is continuously increasing or decreasing.  If `wrap_phase` is True the
    phase will be restricted to the range [-180, 180) (or [:math:`-\pi`,
-   :math:`\pi`) radians). If `wrap_phase` is specified as a float, the
+   :math:`\pi`) radians). If ``wrap_phase`` is specified as a float, the
    phase will be offset by 360 degrees if it falls below the specified
    value.
 
@@ -452,9 +454,10 @@ Plotting parameters
    :value: ['--', ':']
 
    Linestyles for mirror image of the Nyquist curve in
-   :func:`nyquist_plot`.  The first element is used for unscaled portions
-   of the Nyquist curve, the second element is used for portions that are
-   scaled (using `max_curve_magnitude`).  If False then omit completely.
+   :func:`nyquist_plot`.  The first element is used for unscaled
+   portions of the Nyquist curve, the second element is used for
+   portions that are scaled (using `max_curve_magnitude`).  If False
+   then omit the mirror image curve completely.
 
 .. py:data:: nyquist.primary_style
    :type: list of str
@@ -509,7 +512,7 @@ Plotting parameters
    :type: float
    :value: 0.1
 
-   In :func:`phaseplot.separatrices`, set the offset from the equlibrium
+   In :func:`phaseplot.separatrices`, set the offset from the equilibrium
    point to the starting point of the separatix traces, in the direction of
    the eigenvectors evaluated at that equilibrium point.
 
@@ -537,7 +540,7 @@ Plotting parameters
 
    If True plot omega-damping grid in :func:`pole_zero_plot`. If False
    or None show imaginary axis for continuous-time systems, unit circle for
-   discrete-time systems.  If `empty`, do not draw any additonal lines.
+   discrete-time systems.  If 'empty', do not draw any additional lines.
 
    Note: this setting only applies to pole/zero plots.  For root locus
    plots, the 'rlocus.grid' parameter value is used as the default.
@@ -562,7 +565,7 @@ Plotting parameters
 
    If True, plot omega-damping grid in :func:`root_locus_plot`. If False
    or None show imaginary axis for continuous-time systems, unit circle for
-   discrete-time systems.  If `empty`, do not draw any additonal lines.
+   discrete-time systems.  If 'empty', do not draw any additional lines.
 
 .. py:data:: sisotool.initial_gain
    :type: float

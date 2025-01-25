@@ -311,7 +311,7 @@ horizon estimator* (MHE).
 
 The formulation for the moving horizon estimation problem is very general
 and various situations can be captured using the conditional probability
-function :math:`p(x[0], \dots, x[N] \mid y[0], \dots, y[N-1]`.  We start by
+function :math:`p(x[0], \dots, x[N] \mid y[0], \dots, y[N-1])`.  We start by
 noting that if the disturbances are independent of the underlying states of
 the system, we can write the conditional probability as
 
@@ -373,20 +373,15 @@ optimal estimation problem over a finite horizon::
 
 Given noisy measurements :math:`y` and control inputs :math:`u`, an
 estimate of the states over the time points can be computed using the
-:func:`optimal.OptimalEstimationProblem.compute_estimate` method::
+:func:`~optimal.OptimalEstimationProblem.compute_estimate` method::
 
   estim = oep.compute_optimal(Y, U[, X0=x0, initial_guess=(xhat, v)])
   xhat, v, w = estim.states, estim.inputs, estim.outputs
 
 For discrete-time systems, the
-:func:`optimal.OptimalEstimationProblem.create_mhe_iosystem` method
+:func:`~optimal.OptimalEstimationProblem.create_mhe_iosystem` method
 can be used to generate an input/output system that implements a
 moving horizon estimator.
-
-An example showing the use of the optimal estimation problem and
-moving horizon estimation (MHE) applied to a planar vertical takeoff
-and landing (PVTOL) model is given in the :doc:`Moving Horizon
-Estimation Jupyter notebook <examples/mhe-pvtol>`.
 
 Several functions are available to help set up standard optimal estimation
 problems:

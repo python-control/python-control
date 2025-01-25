@@ -15,7 +15,7 @@ from .statesp import StateSpace
 
 
 def h2syn(P, nmeas, ncon):
-    """H_2 control synthesis for plant P.
+    """H2 control synthesis for plant P.
 
     Parameters
     ----------
@@ -87,7 +87,7 @@ def h2syn(P, nmeas, ncon):
 
 def hinfsyn(P, nmeas, ncon):
     # TODO: document significance of rcond
-    """H_{inf} control synthesis for plant P.
+    """H-infinity control synthesis for plant P.
 
     Parameters
     ----------

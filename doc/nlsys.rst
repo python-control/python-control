@@ -11,9 +11,10 @@ of the form
    \frac{dx}{dt} &= f(t, x, u, \theta), \\
    y &= h(t, x, u, \theta),
 
-where :math:`t` represents the current time, :math:`x` is the system
-state, :math:`u` is the system input, :math:`y` is the system output,
-and :math:`\theta` represents a set of parameters.
+where :math:`t` represents the current time, :math:`x \in
+\mathbb{R}^n` is the system state, :math:`u \in \mathbb{R}^m` is the
+system input, :math:`y \in \mathbb{R}^p` is the system output, and
+:math:`\theta` represents a set of parameters.
 
 Discrete time systems are also supported and have dynamics of the form
 
@@ -37,11 +38,11 @@ The `updfcn` argument is a function returning the state update function::
 
   updfcn(t, x, u, params) -> array
 
-where `x` is a 1-D array with shape (n,), `u` is a 1-D array
-with shape (m,), `t` is a float representing the current time,
-and `params` is a dict containing the values of parameters used by the
-function.  The dynamics of the system can be in continuous or discrete
-time (use the `dt` keyword to create a discrete-time system).
+where `t` is a float representing the current time, `x` is a 1-D array
+with shape (n,), `u` is a 1-D array with shape (m,), and `params` is a
+dict containing the values of parameters used by the function.  The
+dynamics of the system can be in continuous or discrete time (use the
+`dt` keyword to create a discrete-time system).
 
 The output function `outfcn` is used to specify the outputs of the
 system and has the same calling signature as `updfcn`.  If it is not
@@ -62,7 +63,7 @@ simple model of a spring loaded arm driven by a motor:
    :width: 240
    :align: center
 
-The dynamics of this system can be modeling using the following code:
+The dynamics of this system can be modeled using the following code:
 
 .. testcode::
 
@@ -73,7 +74,6 @@ The dynamics of this system can be modeling using the following code:
       'k': 1,               # Spring constant
       'r': 1,               # Location of spring contact on arm
       'l': 2,               # Distance to the read head
-      'eps': 0.01,          # Magnitude of velocity-dependent perturbation
   }
 
   # State derivative
@@ -114,7 +114,7 @@ of the model (via the Python `~python.print` function):
   Inputs (1): ['tau']
   Outputs (2): ['y', 'thdot']
   States (2): ['theta', 'thdot']
-  Parameters: ['J', 'b', 'k', 'r', 'l', 'eps']
+  Parameters: ['J', 'b', 'k', 'r', 'l']
   <BLANKLINE>
   Update: <function servomech_update at ...>
   Output: <function servomech_output at ...>
@@ -165,7 +165,8 @@ Time responses can be plotted using the :func:`time_response_plot`
 function or (equivalently) the :func:`TimeResponseData.plot`
 method::
 
-  cplt = ct.time_response_plot(resp)
+  cplt = ct.time_response_plot(resp)  # function call
+  cplt = resp.plot()                  # method call
 
 The resulting :class:`ControlPlot` object can be used to access
 different plot elements:

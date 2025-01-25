@@ -54,12 +54,12 @@ system in response to a standard input (such as a step function or
 impulse function), the initial state with no input, a custom function
 of time, or any combination of the above.  Time responses are useful
 for evaluating system performance of either linear or nonlinear
-systems, in continous or discrete time.  The time response for a
+systems, in continuous or discrete time.  The time response for a
 linear system to a standard input can be often computed exactly while
-the responses of nonlinear systems or linear systems with arbitary
+the responses of nonlinear systems or linear systems with arbitrary
 input signals must be computed numerically.
 
-Continous time signals in `python-control` are represented by the
+Continuous time signals in `python-control` are represented by the
 value of the signal at a set of specified time points, with linear
 interpolation between the time points.  The time points need not be
 uniformly spaced. Discrete time signals are represented by the value
@@ -106,8 +106,8 @@ function is described in more detail in the :ref:`iosys-module` section.
 
 .. _time-series-convention:
 
-Time series data
-----------------
+Time series data conventions
+----------------------------
 
 A variety of functions in the library return time series data: sequences of
 values that change over time.  A common set of conventions is used for
@@ -122,7 +122,7 @@ and :func:`initial_response`.
 .. note:: The convention used by `python-control` is different from
     the convention used in the `scipy.signal
     <https://docs.scipy.org/doc/scipy/reference/signal.html>`_
-    library. In Scipy's convention the meaning of rows and columns is
+    library. In SciPy's convention the meaning of rows and columns is
     interchanged.  Thus, all 2D values must be transposed when they
     are used with functions from `scipy.signal`_.
 
@@ -232,12 +232,13 @@ a pandas dataframe::
 
     df = response.to_pandas()
 
-The column labels for the data frame are `time` and the labels for the input,
-output, and state signals ('u[i]', 'y[i]', and 'x[i]' by default, but these
-can be changed using the `inputs`, `outputs`, and `states` keywords when
-constructing the system, as described in :func:`ss`, :func:`tf`, and other
-system creation functions.  Note that when exporting to pandas, "rows" in the
-data frame correspond to time and "cols" (DataSeries) correspond to signals.
+The column labels for the data frame are :code:`time` and the labels
+for the input, output, and state signals ('u[i]', 'y[i]', and 'x[i]'
+by default, but these can be changed using the `inputs`, `outputs`,
+and `states` keywords when constructing the system, as described in
+:func:`ss`, :func:`tf`, and other system creation functions.  Note
+that when exporting to pandas, "rows" in the data frame correspond to
+time and "cols" (DataSeries) correspond to signals.
 
 Time response plots
 -------------------
@@ -264,6 +265,7 @@ for a two-input, two-output can be plotted using the commands:
   :hide:
 
   plt.savefig('figures/timeplot-mimo_step-default.png')
+  plt.close('all')
 
 which produces the following plot:
 
@@ -296,6 +298,7 @@ yields the following plot:
   :hide:
 
   plt.savefig('figures/timeplot-mimo_step-pi_cs.png')
+  plt.close('all')
 
 .. image:: figures/timeplot-mimo_step-pi_cs.png
    :align: center
@@ -738,11 +741,11 @@ various ways.  The following general rules apply:
   sequentially, the :func:`matplotlib.pyplot.figure` command should be used
   to explicitly create a new figure.
 
-* The `ax` keyword argument can be used to direct the plotting function
-  to use a specific axes or array of axes.  The value of the `ax` keyword
-  must have the proper number of axes for the plot (so a plot generating a
-  2x2 array of subplots should be given a 2x2 array of axes for the `ax`
-  keyword).
+* The `ax` keyword argument can be used to direct the plotting
+  function to use a specific axes or array of axes.  The value of the
+  `ax` keyword must have the proper number of axes for the plot (so a
+  plot generating a 2x2 array of subplots should be given a 2x2 array
+  of axes for the `ax` keyword).
 
 * The `color`, `linestyle`, `linewidth`, and other matplotlib line
   property arguments can be used to override the default line properties.
@@ -829,7 +832,7 @@ various ways.  The following general rules apply:
   specified in the `rcParams` keyword argument.  To override the
   defaults for all control plots, update the
   `config.defaults['ctrlplt.rcParams']` dictionary entries.  For convenience,
-  this dictionary can alse be accessed as `ct.rcParams`.
+  this dictionary can also be accessed as `ct.rcParams`.
 
   The default values for style parameters for control plots can be restored
   using :func:`reset_rcParams`.
@@ -847,13 +850,14 @@ various ways.  The following general rules apply:
   and phase portions of the plot, and `share_frequency` can be used instead
   of `sharex`.
 
-* The `title` keyword can be used to override the automatic creation of
-  the plot title.  The default title is a string of the form "<Type> plot
-  for <syslist>" where <syslist> is a list of the sys names contained in
-  the plot (which is updated if the plotting is called multiple times).
-  Use `title` = False to suppress the title completely.  The title can also
-  be updated using the :func:`ControlPlot.set_plot_title` method
-  for the returned control plot object.
+* The `title` keyword can be used to override the automatic creation
+  of the plot title.  The default title is a string of the form
+  "<Type> plot for <syslist>" where <syslist> is a list of the sys
+  names contained in the plot (which is updated if the plotting
+  function is called multiple times).  Use `title` = False to suppress
+  the title completely.  The title can also be updated using the
+  :func:`~ControlPlot.set_plot_title` method for the returned control
+  plot object.
 
   The plot title is only generated if `ax` is None.
 

@@ -74,12 +74,8 @@ The python-control package can also be used with `Google Colab
 <colab.google.com>`_ by including the following lines to import the
 control package::
 
-  try:
-      import control as ct
-      print("python-control", ct.__version__)
-  except ImportError:
-      !pip install control
-      import control as ct
+  !pip install control
+  import control as ct
 
 Note that Google Colab does not currently support Slycot, so some
 functionality may not be available.
@@ -94,15 +90,15 @@ The python-control package makes use of a few naming and calling conventions:
   words (`frequency_response`).
 
 * Class names use camel case (`StateSpace`, `ControlPlot`, etc) and
-  instances of the class are created with "factory functions" (`ss`)
-  or as the output of an operation (`bode_plot`).
+  instances of the class are created with "factory functions" (`ss`, `tf`)
+  or as the output of an operation (`bode_plot`, `step_response`).
 
 * Functions that return multiple values use either objects (with
   elements for each return value) or tuples.  For those functions that
   return tuples, the underscore variable can be used if only some of
   the return values are needed::
 
-    K, _, _ = lqr(sys)
+    K, _, _ = ct.lqr(sys)
 
 * Python-control supports both single-input, single-output (SISO)
   systems and multi-input, multi-output (MIMO) systems, including
@@ -134,10 +130,65 @@ some things to keep in mind:
   [1, 2, 3] and matrices are written using 2D nested lists, e.g., [[1,
   2], [3, 4]].
 * Functions that in MATLAB would return variable numbers of values
-  will have a parameter of the form `return_<val>` that is used to
+  will have a parameter of the form `return_\<val\>` that is used to
   return additional data.  (These functions usually return an object of
   a class that has attributes that can be used to access the
   information and this is the preferred usage pattern.)
 * You cannot use braces for collections; use tuples instead.
 * Time series data have time as the final index (see
-  :ref:`time-series-convention`).
+  :ref:`time series data conventions <time-series-convention>`).
+
+
+Documentation Conventions
+=========================
+
+This documentation has a number of notional conventions and functionality:
+
+* The left panel displays the table of contents and is divided into
+  two main sections: the User Guide, which contains a narrative
+  description of the package along with examples, and the Reference
+  Manual, which contains documentation for all functions, classes,
+  configurable default parameters, and other detailed information.
+
+* Class, functions, and methods with additional documentation appear
+  in a bold, code font that link to the Reference Manual. Example: `ss`.
+
+* Links to other sections appear in blue. Example: :ref:`nonlinear-systems`.
+
+* Parameters appear in a (non-bode) code font, as do code fragments.
+  Example: `omega`.
+
+* Example code is contained in code blocks that can be copied using
+  the copy icon in the top right corner of the code block.  Code
+  blocks are of three primary types: summary descriptions, code
+  listings, and executed commands.
+
+  Summary descriptions show the calling structure of commands but are
+  not directly executable.  Example::
+
+    resp = ct.frequency_response(sys[, omega])
+
+  Code listings consist of executable code that can be copied and
+  pasted into a Python execution environment.  In most cases the
+  objects required by the code block will be present earlier in the
+  file or, occasionally, in a different section or chapter (with a
+  reference near the code block).  All code listings assume that the
+  NumPy package is available using the prefix `np` and the python-control
+  package is available using prefix `ct`.  Example:
+
+  .. code::
+
+     sys = ct.rss(4, 2, 1)
+     resp = ct.frequency_response(sys)
+     cplt = resp.plot()
+
+  Executed commands show commands preceded by a prompt string of the
+  form ">>> " and also show the output that is obtained when executing
+  that code.  The copy functionality for these blocks is configured to
+  only copy the commands and not the prompt string or outputs.  Example:
+
+  .. doctest::
+
+     >>> sys = ct.tf([1], [1, 0.5, 1])
+     >>> ct.bandwidth(sys)
+     np.float64(1.4839084518312828)

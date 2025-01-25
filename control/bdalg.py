@@ -27,9 +27,11 @@ __all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect',
 
 
 def series(*sys, **kwargs):
-    r"""series(sys1, sys2[, ..., sysn])
+    """series(sys1, sys2[, ..., sysn])
 
-    Return series connection (`sysn` \* ...\  \*) `sys2` \* `sys1`.
+    Series connection of I/O systems.
+
+    Generates a new system ``[sysn * ... *] sys2 * sys1``.
 
     Parameters
     ----------
@@ -100,7 +102,9 @@ def series(*sys, **kwargs):
 def parallel(*sys, **kwargs):
     r"""parallel(sys1, sys2[, ..., sysn])
 
-    Return parallel connection `sys1` + `sys2` (+ ...\  + `sysn`).
+    Parallel connection of I/O systems.
+
+    Generates a parallel connection ``sys1 + sys2 [+ ...  + sysn]``.
 
     Parameters
     ----------

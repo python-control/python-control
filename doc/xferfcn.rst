@@ -52,8 +52,8 @@ Input/output norms
 
 Continuous and discrete-time signals can be represented as a normed
 linear space with the appropriate choice of signal norm.  For
-continous time signals, the three most common norms are the 2-norm and
-the :math:`\infty`-norm:
+continuous time signals, the three most common norms are the 1-norm,
+2-norm, and the :math:`\infty`-norm:
 
 .. list-table::
    :header-rows: 1
@@ -89,7 +89,7 @@ following table summarizes the induced norms for a transfer function
      - :math:`\| G \|_2`
      - :math:`\| g \|_1`
 
-The 2-norm and :math:`\infty`-norm can be computed using
+The system 2-norm and :math:`\infty`-norm can be computed using
 :func:`system_norm`::
 
   sysnorm = ct.system_norm(sys, p=<val>)
@@ -144,12 +144,12 @@ where
 
    S = \frac{1}{1 + P C}, \qquad T = \frac{P C}{1 + P C}
 
-are the sensitivty function and complementary sensitivity function,
+are the sensitivity function and complementary sensitivity function,
 and :math:`P(s)` represents the process dynamics.
 
 The :func:`h2syn` and :func:`hinfsyn` functions compute a feedback
 controller :math:`C(s)` that minimizes the 2-norm and the
-:math:`\infty`-norm of the sensitity function for the closed loop
+:math:`\infty`-norm of the sensitivity function for the closed loop
 system, respectively.
 
 
@@ -172,3 +172,21 @@ a time delay to a given order:
     -s^3 + 120 s^2 - 6000 s + 1.2e+05
     ---------------------------------
     s^3 + 120 s^2 + 6000 s + 1.2e+05
+
+The plot below shows how the Pade approximation compares to a pure
+time delay.
+
+.. testcode::
+  :hide:
+
+  import matplotlib.pyplot as plt
+  omega = np.logspace(0, 2)
+  delay_exact = ct.FrequencyResponseData(np.exp(-0.1j * omega ), omega)
+  cplt = ct.bode_plot(
+      [delay_exact/0.98, delay*0.98], omega, legend_loc='upper right',
+      label=['Exact delay', '3rd order Pade approx'],
+      title="Pade approximation versus pure time delay")
+  cplt.axes[0, 0].set_ylim([0.1, 10])
+  plt.savefig('figures/xferfcn-delay-compare.png')
+
+.. image:: figures/xferfcn-delay-compare.png

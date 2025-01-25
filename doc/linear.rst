@@ -69,11 +69,6 @@ customized access to system information:
       A, B, C, D, name='sys',
       states=['x1', 'x2'], inputs=['u1', 'u2'], outputs=['y'])
 
-State space models can be manipulated using standard arithmetic
-operations as well as the :func:`feedback`, :func:`parallel`, and
-:func:`series` function.  A full list of functions can be found in
-:ref:`function-ref`.
-
 The :func:`rss` function can be used to create a random state space
 system with a desired number or inputs, outputs, and states:
 
@@ -101,19 +96,20 @@ transfer functions
 where :math:`n` is greater than or equal to :math:`m` for a proper
 transfer function.  Improper transfer functions are also allowed.
 
-To create a transfer function, use the :func:`tf` function:
+To create a transfer function, use the :func:`tf` function::
 
-.. testsetup:: xferfcn
-
-  num = np.array([1, 2])
-  den = np.array([3, 4])
-
-.. testcode:: xferfcn
+  num = [a0, a1, ..., am]
+  den = [b0, b1, ..., bn]
 
   sys = ct.tf(num, den)
 
 The system name as well as input and output labels can be specified in
 the same way as state space systems:
+
+.. testsetup:: xferfcn
+
+  num = [1, 2]
+  den = [3, 4]
 
 .. testcode:: xferfcn
 
@@ -156,9 +152,9 @@ Frequency response data (FRD) systems
 
 The :class:`FrequencyResponseData` (FRD) class is used to represent
 systems in frequency response data form.  The main data attributes are
-`omega` and `frdata`, where `omega` is a 1D array of frequencies and
-`frdata` is the (complex-value) value of the transfer function at each
-frequency point.
+`omega` and `frdata`, where `omega` is a 1D array of frequencies (in
+rad/sec) and `frdata` is the (complex-value) value of the transfer
+function at each frequency point.
 
 FRD systems can be created with the :func:`frd` factory function:
 
@@ -232,7 +228,7 @@ Similarly, MIMO frequency response data (FRD) systems are created by
 providing the :func:`frd` function with a 3D array of response
 values,with the first dimension corresponding to the output index of
 the system, the second dimension corresponding to the input index, and
-the 3rd dimension corresponding to the frequency points in omega.
+the 3rd dimension corresponding to the frequency points in `omega`.
 
 Signal names for MIMO systems are specified using lists of labels:
 
@@ -275,11 +271,11 @@ response.
 .. note:: If a system is single-input, single-output (SISO),
 	  `magnitude` and `phase` default to 1D arrays, indexed by
 	  frequency.  If the system is not SISO or `squeeze` is set to
-	  False, the array is 3D, indexed by the output, input, and
-	  frequency.  If `squeeze` is True for a MIMO system then
-	  single-dimensional axes are removed.  The processing of the
-	  `squeeze` keyword can be changed by calling the response
-	  function with a new argument::
+	  False generating the response, the array is 3D, indexed by
+	  the output, input, and frequency.  If `squeeze` is True for
+	  a MIMO system then single-dimensional axes are removed.  The
+	  processing of the `squeeze` keyword can be changed by
+	  calling the response function with a new argument::
 
 	    mag, phase, omega = response(squeeze=False)
 
@@ -294,7 +290,7 @@ response.
 Discrete Time Systems
 =====================
 
-A discrete-time system is created by specifying a nonzero "timebase",
+A discrete-time system is created by specifying a nonzero "timebase"
 `dt` when the system is constructed:
 
 .. testsetup:: dtime
@@ -311,22 +307,22 @@ A discrete-time system is created by specifying a nonzero "timebase",
 The timebase argument is interpreted as follows:
 
 * `dt` = 0: continuous-time system (default)
-* `dt` > 0: discrete-time system with sampling period 'dt'
+* `dt` > 0: discrete-time system with sampling period `dt`
 * `dt` = True: discrete time with unspecified sampling period
 * `dt` = None: no timebase specified (see below)
 
 Systems must have compatible timebases in order to be combined. A
-discrete-time system with unspecified sampling time (`dt` = True)
-can be combined with a system having a specified sampling time; the
-result will be a discrete-time system with the sample time of the
-other system.  Similarly, a system with timebase None can be combined
-with a system having a specified timebase; the result will have the
-timebase of the other system. For continuous-time systems, the
+discrete-time system with unspecified sampling time (`dt` = True) can
+be combined with a system having a specified sampling time; the result
+will be a discrete-time system with the sample time of the other
+system.  Similarly, a system with timebase None can be combined with a
+system having a specified timebase; the result will have the timebase
+of the other system. For continuous-time systems, the
 :func:`sample_system` function or the :meth:`StateSpace.sample` and
 :meth:`TransferFunction.sample` methods can be used to create a
-discrete-time system from a continuous-time system.  See
-:ref:`utility-and-conversions`. The default value of `dt` can be
-changed by changing the value of `config.defaults['control.default_dt']`.
+discrete-time system from a continuous-time system.  The default value
+of `dt` can be changed by changing the value of
+`config.defaults['control.default_dt']`.
 
 Functions operating on LTI systems will take into account whether a
 system is continuous time or discrete time when carrying out operations
@@ -365,8 +361,8 @@ Conversion between representations
 ----------------------------------
 
 LTI systems can be converted between representations either by calling
-the constructor for the desired data type using the original system as
-the sole argument or using the explicit conversion functions
+the factory function for the desired data type using the original
+system as the sole argument or using the explicit conversion functions
 :func:`ss2tf` and :func:`tf2ss`.  In most cases these types of
 explicit conversions are not necessary, since functions designed to
 operate on LTI systems will work on any subclass.
@@ -566,7 +562,7 @@ Information about an LTI system can be obtained using the Python
        [-0.  0.]]
 
 A loadable description of a system can be obtained just by displaying
-the system object::
+the system object:
 
 .. doctest::
 

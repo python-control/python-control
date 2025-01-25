@@ -43,7 +43,8 @@ The following operators are defined to operate between I/O systems:
 
 If either of the systems is a scalar or an array of appropriate
 dimension, then the appropriate scalar or matrix operation is
-performed.
+performed.  In addition, if a SISO system is combined with a MIMO
+system, the SISO system will be broadcast to the appropriate shape.
 
 Systems of different types can be combined using these operations,
 with the following rules:
@@ -100,10 +101,10 @@ the following command will also work::
 
   Gyu = G1.feedback(G2)
 
-All block diagram algebra functions allow the names of the system and
-signals to be specified using the usual `name`, `inputs`, and
-`outputs` keywords, as described in the :class:`InputOutputSystem`
-class.  For state space systems, the names of the states can also be
+All block diagram algebra functions allow the name of the system and
+labels for signals to be specified using the usual `name`, `inputs`,
+and `outputs` keywords, as described in the :class:`InputOutputSystem`
+class.  For state space systems, the labels for the states can also be
 given, but caution should be used since the order of states in the
 combined system is not guaranteed.
 
@@ -234,10 +235,12 @@ constructed using :func:`nlsys` with no update function:
 
 .. testcode:: predprey
 
+  def output(t, x, u, params):
+      return -K @ (u[1:] - xeq) + kf * (u[0] - ueq)
+
   controller = ct.nlsys(
-    None,
-    lambda t, x, u, params: -K @ (u[1:] - xeq) + kf * (u[0] - ueq),
-    inputs=['Ld', 'H', 'L'], outputs=1, name='control')
+      None, output,
+      inputs=['Ld', 'H', 'L'], outputs=1, name='control')
 
 The input to the controller is `u`, consisting of the desired lynx
 population followed by the vector of hare and lynx populations.
@@ -336,7 +339,7 @@ interconnecting systems, especially when combined with the
 :func:`summing_junction` function.  For example, the following code
 will create a unity gain, negative feedback system:
 
-.. testcode: autoconnect
+.. testcode:: autoconnect
 
   P = ct.tf([1], [1, 0], inputs='u', outputs='y')
   C = ct.tf([10], [1, 1], inputs='e', outputs='u')
@@ -441,7 +444,9 @@ connection of signals with the same name, the
 :func:`interconnect` has a variety of other mechanisms
 available for specifying signal names.  The following forms are
 recognized for the `connections`, `inplist`, and `outlist`
-parameters::
+parameters:
+
+.. code-block:: text
 
   (subsys, index, gain)             tuple form with integer indices
   ('sysname', 'signal', gain)	    tuple form with name lookup
@@ -726,7 +731,7 @@ an LQR controller:
   K, _, _ = ct.lqr(sys, np.eye(2), np.eye(1))
 
 We construct an estimator for the system assuming disturbance and
-noise intensity of 0.1:
+noise intensity of 0.01:
 
 .. testcode:: statefbk
 
@@ -829,12 +834,11 @@ Adding integral action
 ----------------------
 
 Integral action can be included using the `integral_action` keyword.
-The value of this keyword can either be a matrix (ndarray) or a
-function.  If a matrix :math:`C` is specified, the difference between
-the desired state and system state will be multiplied by this matrix
-and integrated.  The controller gain should then consist of a set of
-proportional gains :math:`K_\text{p}` and integral gains
-:math:`K_\text{i}` with
+The value of this keyword should be a matrix (ndarray).  The
+difference between the desired state and system state will be
+multiplied by this matrix and integrated.  The controller gain should
+then consist of a set of proportional gains :math:`K_\text{p}` and
+integral gains :math:`K_\text{i}` with
 
 .. math::
 
@@ -844,21 +848,23 @@ and the control action will be given by
 
 .. math::
 
-  u = u_\text{d} - K\text{p} (x - x_\text{d}) -
+  u = u_\text{d} - K_\text{p} (x - x_\text{d}) -
       K_\text{i} \int C (x - x_\text{d}) dt.
 
-If `integral_action` is a function ``h``, that function will be called
-with the signature ``h(t, x, u, params)`` to obtain the outputs that
-should be integrated.  The number of outputs that are to be integrated
+.. TODO: If `integral_action` is a function ``h``, that function will
+   be called with the signature ``h(t, x, u, params)`` to obtain the
+   outputs that should be integrated.
+
+The number of outputs that are to be integrated
 must match the number of additional columns in the `K` matrix.  If an
 estimator is specified, :math:`\hat x` will be used in place of
 :math:`x`.
 
 As an example, consider the servo-mechanism model `servomech`
-described in the :ref:`sec-nonlinear-models`.  We construct a state
-space controller by linearizing the system around an equilibrium
-point, augmenting the model with an integrator, and computing a state
-feedback that optimizes a quadratic cost function:
+described in :ref:`creating nonlinear models <sec-nonlinear-models>`.
+We construct a state space controller by linearizing the system around
+an equilibrium point, augmenting the model with an integrator, and
+computing a state feedback that optimizes a quadratic cost function:
 
 .. testsetup:: integral_action
 
@@ -872,7 +878,6 @@ feedback that optimizes a quadratic cost function:
       'k': 1,               # Spring constant
       'r': 1,               # Location of spring contact on arm
       'l': 2,               # Distance to the read head
-      'eps': 0.01,          # Magnitude of velocity-dependent perturbation
   }
 
   # State derivative
@@ -943,11 +948,12 @@ the integral action:
 Adding gain scheduling
 ----------------------
 
-Finally, for the trajectory generation design pattern, gain scheduling on
-the desired state, desired input, or system state can be implemented by
-setting the gain to a 2-tuple consisting of a list of gains and a list of
-points at which the gains were computed, as well as a description of the
-scheduling variables::
+Finally, for the trajectory generation design pattern, gain scheduling
+on the desired state :math:`x_\text{d}`, desired input
+:math:`u_\text{d}`, or current state :math:`x` can be implemented by
+setting the gain to a 2-tuple consisting of a list of gains and a list
+of points at which the gains were computed, as well as a description
+of the scheduling variables::
 
   ctrl, clsys = ct.create_statefbk_iosystem(
       sys, ([g1, ..., gN], [p1, ..., pN]), gainsched_indices=[s1, ..., sq])
@@ -961,10 +967,10 @@ controller implemented in this case has the form
 
   u = u_\text{d} - K(\mu) (x - x_\text{d})
 
-where :math:`\mu` represents the scheduling variables.  See
-:ref:`steering-gainsched.py` for an example implementation of a gain
-scheduled controller (in the alternative formulation section at the
-bottom of the file).
+where :math:`\mu` represents the scheduling variables.  See :ref:`gain
+scheduled control for vehicle steering <steering-gainsched.py>` for an
+example implementation of a gain scheduled controller (in the
+alternative formulation section at the bottom of the file).
 
 As an example, consider the following simple model of a mobile robot
 ("unicycle" model), which has dynamics given by

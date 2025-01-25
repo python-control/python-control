@@ -115,7 +115,7 @@ class NamedSignal(np.ndarray):
             out += f",\nsignal_labels={self.signal_labels}"
         if self.trace_labels is not None:
             out += f",\ntrace_labels={self.trace_labels}"
-        out += "\n)"
+        out += ")"
         return out
 
 

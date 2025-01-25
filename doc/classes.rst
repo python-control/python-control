@@ -55,8 +55,8 @@ These classes are used as the outputs of `_response`, `_map`, and
    TimeResponseData
    TimeResponseList
 
-More informaton on the functions used to create these classes can be
-found in the :ref:`iosys-module` chapter.
+More information on the functions used to create these classes can be
+found in the :ref:`response-chapter` chapter.
 
 
 Nonlinear System Classes

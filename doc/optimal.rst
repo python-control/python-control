@@ -165,7 +165,7 @@ A nonlinear constraint is satisfied if
    lb <= f(x, u) <= ub
 
 The `constraints` are taken as trajectory constraints holding at all
-points on the trajectory.  The `terminal_constraint` parameter can be
+points on the trajectory.  The `terminal_constraints` parameter can be
 used to specify a constraint that only holds at the final point of the
 trajectory.
 

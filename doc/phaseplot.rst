@@ -21,9 +21,11 @@ The default method for generating a phase plane plot is to provide a
 
 .. testcode:: phaseplot
 
+    def sys_update(t, x, u, params):
+        return np.array([[0, 1], [-1, -1]]) @ x
     sys = ct.nlsys(
-        lambda t, x, u, params: np.array([[0, 1], [-1, -1]]) @ x,
-        states=['position', 'velocity'], inputs=0, name='damped oscillator')
+        sys_update, states=['position', 'velocity'],
+	inputs=0, name='damped oscillator')
     axis_limits = [-1, 1, -1, 1]
     T = 8
     ct.phase_plane_plot(sys, axis_limits, T)

@@ -37,13 +37,13 @@ GitHub repository file and directory layout:
 
       + bdalg.py, delay.py, canonical.py, margins.py,
         sysnorm.py, modelsimp.py, passivity.py, robust.py,
-        statefbk.py, stochsys.py - analysis and synthesis routintes
+        statefbk.py, stochsys.py - analysis and synthesis routines
 
       + ctrlplot.py, descfcn.py, freqplot.py, grid.py,
         nichols.py, pzmap.py, rlocus.py, sisotool.py,
-        timeplot.py, timeresp.py - response and plotting rouintes
+        timeplot.py, timeresp.py - response and plotting routines
 
-      + ctrlutil.py, dtime.py, exception.py, mateqn.py - utility funcitons
+      + ctrlutil.py, dtime.py, exception.py, mateqn.py - utility functions
 
       + phaseplot.py - phase plot module
 
@@ -135,11 +135,11 @@ Function names
 * Function names are lower case with words separated by underscores.
 
 * Function names usually describe what they do
-  (`create_statefbk_iosys`, `find_operating_points`) or what they
+  (`create_statefbk_iosystem`, `find_operating_points`) or what they
   generate (`input_output_response`, `find_operating_point`).
 
 * Some abbreviations and shortened versions are used when names get
-  very long (e.g., `create_statefbk_iosys` instead of
+  very long (e.g., `create_statefbk_iosystem` instead of
   `create_state_feedback_input_output_system`.
 
 * Factory functions for I/O systems use short names (partly from MATLAB
@@ -257,7 +257,7 @@ Time and frequency responses:
 * Use `frdata`, `omega` for frequency response data attributes.  These
   should be used as parameter names when creating
   `FrequencyResponseData` objects and also as attributes when
-  retreiving response data.  The `frdata` attribute is stored as a 3D
+  retrieving response data.  The `frdata` attribute is stored as a 3D
   array indexed by outputs, inputs, frequency.
 
 * Use `complex`, `magnitude`, `phase` for frequency response
@@ -271,7 +271,7 @@ Time and frequency responses:
     as `fresp`, but this is generally not accessed directly by users.
 
   - Note that when creating time response data the independent
-    variable (time) is the first argument wherease for frequency
+    variable (time) is the first argument whereas for frequency
     response data the independent variable (omega) is the second
     argument.  This is because we also create frequency response data
     from a linear system using a call ``frd(sys, omega)``, and
@@ -281,8 +281,8 @@ Time and frequency responses:
     start with time and then list the arguments in the most frequently
     used order.
 
-* Use `response` for generic response objects (time, frequency,
-  describing function, Nyquist, etc).
+* Use `response` or `resp` for generic response objects (time,
+  frequency, describing function, Nyquist, etc).
 
   - Note that when responses are evaluated as tuples, the ordering of
     the dependent and independent variables switches between time and
@@ -323,8 +323,8 @@ General docstring info
 ----------------------
 
 The guiding principle used to guide how docstrings are written is
-similar to NumPy (as articuated in the `numpydoc style guide
-<https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard>`_:
+similar to NumPy (as articulated in the `numpydoc style guide
+<https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard>`_):
 
    A guiding principle is that human readers of the text are given
    precedence over contorting docstrings so our tools produce nice
@@ -352,7 +352,7 @@ guidelines:
     generate a link to the :mod:`sys` Python module.  To avoid this,
     `conf.py` includes code that converts \`sys\` in docstrings to
     \:code\:\`sys`, which renders as :code:`sys` (code style, with no
-    link).  In ``.rst`` files, this construction should be done
+    link).  In ``.rst`` files this construction should be done
     manually, since ``.rst`` files are not pre-processed as a
     docstring.
 
@@ -398,11 +398,11 @@ guidelines:
   - The rationale here is similar to built-ins: adding 4 backticks
     just to get them in a code font seems unnecessary.
 
-  - Note that if a string is is included in Python assignment
-    statement (e.g., ``method='slycot'``) it looks quite ugly in text
-    form to have it enclosed in double backticks
-    (\`\`method='slycot'\`\`), so OK to use method='slycot' (no
-    backticks).
+  - Note that if a string is included in Python assignment statement
+    (e.g., ``method='slycot'``) it looks quite ugly in text form to
+    have it enclosed in double backticks (\`\`method='slycot'\`\`), so
+    OK to use method='slycot' (no backticks) or `method` = 'slycot'
+    (backticks with extra spaces).
 
 * References to the `defaults` dictionary should be of the form
   \`config.defaults['module.param']\` (like a parameter), which
@@ -412,8 +412,7 @@ guidelines:
     documentation for that parameter (in the
     :ref:`package-configuration-parameters` section of the Reference
     Manual), but the special processing to do that hasn't been
-    implemented.  If we go that route at some point, we could perhaps
-    due a global change to single backticks.
+    implemented.
 
   - Depending on placement, you can end up with lots of white space
     around defaults parameters (also true in the docstrings).
@@ -497,9 +496,9 @@ Follow numpydoc format with the follow additional details:
   (in the "Parameters" or "Additional Parameters" section of the class
   docstring).
 
-* Attributes that are created within a class and might be of interest
-  to the user should be documented in the "Attributes" section of the
-  class docstring.
+* Attributes that are created within a class and that might be of
+  interest to the user should be documented in the "Attributes"
+  section of the class docstring.
 
 * Classes should not include a "Returns" section (since they always
   return an instance of the class).
@@ -526,9 +525,9 @@ design to get up and running quickly.
 
 The User Guide consists of chapters that are each their own separate
 `.rst` file and each of them generates a separate page.  Chapters are
-divided into sections whose names appear in the indexo on the left of
+divided into sections whose names appear in the index on the left of
 the web page when that chapter is being viewed.  In some cases a
-section may be in its own file, including in the chapter page by using
+section may be in its own file, included in the chapter page by using
 the `include` directive (see `nlsys.py` for an example).
 
 Sphinx files guidelines:
@@ -544,7 +543,7 @@ Sphinx files guidelines:
   prompt and the expected response) and code blocks (using the
   `testcode` directive).
 
-* When refering to the python-control package, several different forms
+* When referring to the python-control package, several different forms
   can be used:
 
   - Full name: "the Python Control Systems Library (python-control)"
@@ -553,12 +552,13 @@ Sphinx files guidelines:
   - Adjective form: "the python-control package" or "a python-control
     module" (this is the most common form).
 
-  - Noun form: "`python-control`" (only used occassionally).
+  - Noun form: "`python-control`" (only used occasionally).
 
-* Unlike docstrings, use backticks and \:math\: more liberally when it
-  is appropriate to highlight/format code properly.  However, Python
-  built-ins should still just be written as True, False, and None (no
-  backticks).
+* Unlike docstrings, the documentation in the User Guide should use
+  backticks and \:math\: more liberally when it is appropriate to
+  highlight/format code properly.  However, Python built-ins should
+  still just be written as True, False, and None (no backticks), for
+  formatting consistency.
 
   - The Sphinx documentation is not read in "raw" form, so OK to add
     the additional annotations.
@@ -573,16 +573,18 @@ Sphinx files guidelines:
 Reference Manual
 ----------------
 
-The reference manual should provide a fairly comprehensive description
-of every class, function and configuration variable in the package.
+The Reference Manual should provide a fairly comprehensive description
+of every class, function, and configuration variable in the package.
+All primary functions and classes bust be included here, since the
+Reference Manual generates the stub files used by Sphinx.
 
 
 Modules and subpackages
 -----------------------
 
-When documenting (independent) modules and subpackages (refered to
+When documenting (independent) modules and subpackages (refereed to
 here collectively as modules), use the following guidelines for
-documentatation:
+documentation:
 
 * In module docstrings, refer to module functions and classes without
   including the module prefix.  This will let Sphinx set up the links
@@ -591,7 +593,7 @@ documentatation:
 
 * Objects in the parent (`control`) package should be referenced using
   the `~control` prefix, so that Sphinx generates the links properly
-  (otherwise it looks within the package).
+  (otherwise it only looks within the package).
 
 * In the User Guide, set ``currentmodule`` to ``control`` and refer to
   the module objects using the prefix `~prefix` in the text portions

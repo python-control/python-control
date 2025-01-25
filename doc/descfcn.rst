@@ -86,6 +86,38 @@ nonlinearity::
 These functions use the :class:`DescribingFunctionNonlinearity` class,
 which allows an analytical description of the describing function.
 
+
+Example
+-------
+
+The following example demonstrates a more complicated interaction
+between a (non-static) nonlinearity and a higher order transfer
+function, resulting in multiple intersection points:
+
+.. testcode:: descfcn
+
+  # Linear dynamics
+  H_simple = ct.tf([1], [1, 2, 2, 1])
+  H_multiple = ct.tf(H_simple * ct.tf(*ct.pade(5, 4)) * 4, name='sys')
+  omega = np.logspace(-3, 3, 500)
+
+  # Nonlinearity
+  F_backlash = ct.friction_backlash_nonlinearity(1)
+  amp = np.linspace(0.6, 5, 50)
+
+  # Describing function plot
+  cplt = ct.describing_function_plot(
+      H_multiple, F_backlash, amp, omega, mirror_style=False)
+
+.. testcode:: descfcn
+  :hide:
+
+  import matplotlib.pyplot as plt
+  plt.savefig('figures/descfcn-pade-backlash.png')
+
+.. image:: figures/descfcn-pade-backlash.png
+
+
 Module classes and functions
 ----------------------------
 .. autosummary::

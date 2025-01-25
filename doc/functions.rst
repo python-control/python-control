@@ -38,6 +38,7 @@ Functions that transform systems from one form to another:
     modal_form
     observable_form
     reachable_form
+    sample_system
     similarity_transform
     ss2tf
     tf2ss
@@ -319,7 +320,6 @@ Utility Functions
     mag2db
     reset_defaults
     reset_rcParams
-    sample_system
     set_defaults
     ssdata
     timebase

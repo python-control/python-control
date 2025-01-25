@@ -2621,24 +2621,24 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num,
     """Determine the frequency range for a frequency-domain plot
     according to a standard logic.
 
-    If omega_in and omega_limits are both None, then omega_out is computed
-    on omega_num points according to a default logic defined by
-    _default_frequency_range and tailored for the list of systems syslist, and
-    omega_range_given is set to False.
+    If `omega_in` and `omega_limits` are both None, then `omega_out` is
+    computed on `omega_num` points according to a default logic defined by
+    `_default_frequency_range` and tailored for the list of systems
+    syslist, and `omega_range_given` is set to False.
 
-    If omega_in is None but omega_limits is an array_like of 2 elements, then
-    omega_out is computed with the function np.logspace on omega_num points
-    within the interval [min, max] =  [omega_limits[0], omega_limits[1]], and
-    omega_range_given is set to True.
+    If `omega_in` is None but `omega_limits` is a tuple of 2 elements, then
+    `omega_out` is computed with the function `numpy.logspace` on
+    `omega_num` points within the interval ``[min, max] = [omega_limits[0],
+    omega_limits[1]]``, and `omega_range_given` is set to True.
 
-    If omega_in is a list or tuple of length 2, it is interpreted as a
-    range and handled like omega_limits.  If omega_in is a list or tuple of
-    length 3, it is interpreted a range plus number of points and handled
-    like omega_limits and omega_num.
+    If `omega_in` is a tuple of length 2, it is interpreted as a range and
+    handled like `omega_limits`.  If `omega_in` is a tuple of length 3, it
+    is interpreted a range plus number of points and handled like
+    `omega_limits` and `omega_num`.
 
-    If omega_in is an array or a list/tuple of length greater than
-    two, then omega_out is set to omega_in (as an array), and
-    omega_range_given is set to True
+    If `omega_in` is an array or a list/tuple of length greater than two,
+    then `omega_out` is set to `omega_in` (as an array), and
+    `omega_range_given` is set to True
 
     Parameters
     ----------

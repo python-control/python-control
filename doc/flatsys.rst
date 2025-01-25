@@ -7,7 +7,7 @@ Differentially Flat Systems
 
 The `flatsys` subpackage contains a set of classes and functions to
 compute trajectories for differentially flat systems.  The objects in
-this subpackage must be explictly imported::
+this subpackage must be explicitly imported::
 
   import control as ct
   import control.flatsys as fs
@@ -67,7 +67,7 @@ system, using equation :eq:`flat2state` to determine the
 full state space and input trajectories.
 
 In particular, given initial and final conditions on :math:`z` and its
-derivatives that satisfy the initial and final conditions any curve
+derivatives that satisfy the initial and final conditions, any curve
 :math:`z(\cdot)` satisfying those conditions will correspond to a feasible
 trajectory of the system.  We can parameterize the flat output trajectory
 using a set of smooth basis functions :math:`\psi_i(t)`:
@@ -119,8 +119,8 @@ Assuming that :math:`M` has a sufficient number of columns and that it
 is full column rank, we can solve for a (possibly non-unique)
 :math:`\alpha` that solves the trajectory generation problem.
 
-Sub-package usage
------------------
+Subpackage usage
+----------------
 
 To access the flat system modules, import `control.flatsys`::
 
@@ -361,11 +361,11 @@ The results of the two approaches can be shown using the
    :align: center
 
 
-Sub-package classes and functions
----------------------------------
+Subpackage classes and functions
+--------------------------------
 
 The flat systems subpackage `flatsys` utilizes a number of classes to
-define the flatsystem, the basis functions, and the system trajetory:
+define the flat system, the basis functions, and the system trajectory:
 
 .. autosummary::
    :template: custom-class-template.rst

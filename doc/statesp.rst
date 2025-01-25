@@ -7,7 +7,8 @@ This section describes the functions the are available to analyze
 state space systems and design state feedback controllers.  The
 functionality described here is mainly specific to state space system
 representations; additional functions for analysis of linear
-input/output systems are defined in the next section and can also be
+input/output systems, including transfer functions and frequency
+response data systems, are defined in the next section and can also be
 applied to LTI systems in state space form.
 
 
@@ -41,7 +42,7 @@ Similarity transformations and canonical forms
 ----------------------------------------------
 
 State space systems can be transformed into different internal
-representations representing a variety of standard cananonical forms
+representations representing a variety of standard canonical forms
 that have the same input/output properties.  The
 :func:`similarity_transform` function allows a change of internal
 state variable via similarity transformation and the
@@ -121,7 +122,7 @@ that minimizes the quadratic cost
 
    J = \int_0^\infty (x' Q x + u' R u + 2 x' N u) dt
 
-by solving the approriate Riccati equation.  It returns the gain
+by solving the appropriate Riccati equation.  It returns the gain
 matrix `K`, the solution to the Riccati equation `S`, and the location
 of the closed loop eigenvalues `E`.  It can be called in one of
 several forms:

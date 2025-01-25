@@ -60,7 +60,7 @@ _statesp_defaults = {
 class StateSpace(NonlinearIOSystem, LTI):
     r"""StateSpace(A, B, C, D[, dt])
 
-    State space representation for LIT input/output systems.
+    State space representation for LTI input/output systems.
 
     The StateSpace class is used to represent state-space realizations of
     linear time-invariant (LTI) systems:
@@ -109,7 +109,7 @@ class StateSpace(NonlinearIOSystem, LTI):
     when the system is constructed:
 
     * `dt` = 0: continuous-time system (default)
-    * `dt` > 0: discrete-time system with sampling period 'dt'
+    * `dt` > 0: discrete-time system with sampling period `dt`
     * `dt` = True: discrete time with unspecified sampling period
     * `dt` = None: no timebase specified
 

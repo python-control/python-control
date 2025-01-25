@@ -1682,15 +1682,15 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
                 steady_state_value = InfValue
 
             retij = {
-                'RiseTime': rise_time,
-                'SettlingTime': settling_time,
-                'SettlingMin': settling_min,
-                'SettlingMax': settling_max,
-                'Overshoot': overshoot,
-                'Undershoot': undershoot,
-                'Peak': peak_value,
-                'PeakTime': peak_time,
-                'SteadyStateValue': steady_state_value
+                'RiseTime': float(rise_time),
+                'SettlingTime': float(settling_time),
+                'SettlingMin': float(settling_min),
+                'SettlingMax': float(settling_max),
+                'Overshoot': float(overshoot),
+                'Undershoot': float(undershoot),
+                'Peak': float(peak_value),
+                'PeakTime': float(peak_time),
+                'SteadyStateValue': float(steady_state_value)
                 }
             retrow.append(retij)
 
