@@ -1182,7 +1182,7 @@ class StateSpace(NonlinearIOSystem, LTI):
                 return StateSpace(A[:nr, :nr], B[:nr, :self.ninputs],
                                   C[:self.noutputs, :nr], self.D, self.dt)
             except ImportError:
-                raise TypeError("minreal requires Slycot tb01pd")
+                raise TypeError("minreal requires slycot tb01pd")
         else:
             return StateSpace(self)
 
@@ -2004,7 +2004,7 @@ def linfnorm(sys, tol=1e-10):
 
     """
     if ab13dd is None:
-        raise ControlSlycot("Can't find slycot module 'ab13dd'")
+        raise ControlSlycot("Can't find slycot module ab13dd")
 
     a, b, c, d = ssdata(_convert_to_statespace(sys))
     e = np.eye(a.shape[0])

@@ -295,7 +295,7 @@ def balanced_reduction(sys, orders, method='truncate', alpha=None):
     ValueError
         If `method` is not 'truncate' or 'matchdc'.
     ImportError
-        If Slycot routine ab09ad, ab09md, or ab09nd is not found.
+        If slycot routine ab09ad, ab09md, or ab09nd is not found.
     ValueError
         If there are more unstable modes than any value in orders.
 
@@ -314,12 +314,12 @@ def balanced_reduction(sys, orders, method='truncate', alpha=None):
             from slycot import ab09ad, ab09md
         except ImportError:
             raise ControlSlycot(
-                "can't find Slycot subroutine ab09md or ab09ad")
+                "can't find slycot subroutine ab09md or ab09ad")
     elif method == 'matchdc':
         try:
             from slycot import ab09nd
         except ImportError:
-            raise ControlSlycot("can't find Slycot subroutine ab09nd")
+            raise ControlSlycot("can't find slycot subroutine ab09nd")
 
     # Check for ss system object, need a utility for this?
 

@@ -34,7 +34,7 @@ def h2syn(P, nmeas, ncon):
     Raises
     ------
     ImportError
-        If Slycot routine sb10hd is not loaded.
+        If slycot routine sb10hd is not loaded.
 
     See Also
     --------

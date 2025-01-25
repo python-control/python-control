@@ -472,7 +472,8 @@ def create_estimator_iosystem(
     # Set the output matrices
     if C is not None:
         # Make sure we have full system output (allowing for numerical errors)
-        if not np.allclose(sys.C, np.eye(sys.nstates)):
+        if sys.C.shape[0] != sys.nstates or \
+           not np.allclose(sys.C, np.eye(sys.nstates)):
             raise ValueError("System output must be full state")
 
         # Make sure that the output matches the size of RN
