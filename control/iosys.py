@@ -108,6 +108,16 @@ class NamedSignal(np.ndarray):
     def __getitem__(self, key):
         return super().__getitem__(self._parse_key(key))
 
+    def __repr__(self):
+        out = "NamedSignal(\n"
+        out += repr(np.array(self))             # NamedSignal -> array
+        if self.signal_labels is not None:
+            out += f",\nsignal_labels={self.signal_labels}"
+        if self.trace_labels is not None:
+            out += f",\ntrace_labels={self.trace_labels}"
+        out += "\n)"
+        return out
+
 
 class InputOutputSystem():
     """Base class for input/output systems.
