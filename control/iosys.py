@@ -321,7 +321,7 @@ class InputOutputSystem():
 
         Format used in creating the representation for the system:
 
-          * 'info' : <IOSystemType:sysname:[inputs] -> [outputs]>
+          * 'info' : <IOSystemType sysname: [inputs] -> [outputs]>
           * 'eval' : system specific, loadable representation
           * 'latex' : HTML/LaTeX representation of the object
 
@@ -536,7 +536,8 @@ class InputOutputSystem():
     # Property for getting and setting list of input signals
     input_labels = property(
         lambda self: list(self.input_index.keys()),     # getter
-        set_inputs)                                     # setter
+        set_inputs,                                     # setter
+        doc="List of labels for the input signals.")
 
     def set_outputs(self, outputs, prefix='y'):
         """Set the number/names of the system outputs.
@@ -597,7 +598,8 @@ class InputOutputSystem():
     # Property for getting and setting list of output signals
     output_labels = property(
         lambda self: list(self.output_index.keys()),     # getter
-        set_outputs)                                     # setter
+        set_outputs,                                     # setter
+        doc="List of labels for the output signals.")
 
     def set_states(self, states, prefix='x'):
         """Set the number/names of the system states.
@@ -658,7 +660,8 @@ class InputOutputSystem():
     # Property for getting and setting list of state signals
     state_labels = property(
         lambda self: list(self.state_index.keys()),     # getter
-        set_states)                                     # setter
+        set_states,                                     # setter
+        doc="List of labels for the state signals.")
 
     @property
     def shape(self):
@@ -941,7 +944,7 @@ def iosys_repr(sys, format=None):
     format : str
         Format to use in creating the representation:
 
-          * 'info' : <IOSystemType:sysname:[inputs] -> [outputs]>
+          * 'info' : <IOSystemType sysname: [inputs] -> [outputs]>
           * 'eval' : system specific, loadable representation
           * 'latex' : HTML/LaTeX representation of the object
 

@@ -247,10 +247,10 @@ def test_plot_ax_processing(resp_fcn, plot_fcn):
     # Make sure that docstring documents ax keyword
     if plot_fcn not in legacy_plot_fcns:
         if plot_fcn in multiaxes_plot_fcns:
-            assert "ax : array of matplotlib.axes.Axes, optional" \
+            assert "ax : array of `matplotlib.axes.Axes`, optional" \
                 in plot_fcn.__doc__
         else:
-            assert "ax : matplotlib.axes.Axes, optional" in plot_fcn.__doc__
+            assert "ax : `matplotlib.axes.Axes`, optional" in plot_fcn.__doc__
 
 
 @pytest.mark.parametrize("resp_fcn, plot_fcn", resp_plot_fcns)

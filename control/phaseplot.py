@@ -89,7 +89,7 @@ def phase_plane_plot(
         Plot all elements in the given color (use ``plot_<element>`` =
         {'color': c} to set the color in one element of the phase
         plot (equilpoints, separatrices, streamlines, etc).
-    ax : matplotlib.axes.Axes, optional
+    ax : `matplotlib.axes.Axes`, optional
         The matplotlib axes to draw the figure on.  If not specified and
         the current figure has a single axes, that axes is used.
         Otherwise, a new figure is created.
@@ -275,7 +275,7 @@ def vectorfield(
         dict with key 'args' and value given by a tuple (passed to callable).
     color : matplotlib color spec, optional
         Plot the vector field in the given color.
-    ax : matplotlib.axes.Axes
+    ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
     Returns
@@ -376,7 +376,7 @@ def streamlines(
         dict with key 'args' and value given by a tuple (passed to callable).
     color : str
         Plot the streamlines in the given color.
-    ax : matplotlib.axes.Axes
+    ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
     Returns
@@ -497,7 +497,7 @@ def equilpoints(
         dict with key 'args' and value given by a tuple (passed to callable).
     color : str
         Plot the equilibrium points in the given color.
-    ax : matplotlib.axes.Axes
+    ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
     Returns
@@ -589,7 +589,7 @@ def separatrices(
         separatrices.  If a tuple is given, the first element is used as
         the color specification for stable separatrices and the second
         element for unstable separatrices.
-    ax : matplotlib.axes.Axes
+    ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
     Returns

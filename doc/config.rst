@@ -166,7 +166,7 @@ System display parameters
    Set the default format used by :func:`iosys_repr` to create the
    representation of an :class:`InputOutputSystem`:
 
-     * 'info' : <IOSystemType:sysname:[inputs] -> [outputs]>
+     * 'info' : <IOSystemType sysname: [inputs] -> [outputs]>
      * 'eval' : system specific, loadable representation
      * 'latex' : latex representation of the object
 

@@ -444,7 +444,7 @@ def describing_function_plot(
     point_label : str, optional
         Formatting string used to label intersection points on the Nyquist
         plot.  Defaults to "%5.2g @ %-5.2g".  Set to None to omit labels.
-    ax : matplotlib.axes.Axes, optional
+    ax : `matplotlib.axes.Axes`, optional
         The matplotlib axes to draw the figure on.  If not specified and
         the current figure has a single axes, that axes is used.
         Otherwise, a new figure is created.

@@ -109,7 +109,7 @@ def time_response_plot(
     add_initial_zero : bool
         Add an initial point of zero at the first time point for all
         inputs with type 'step'.  Default is True.
-    ax : array of matplotlib.axes.Axes, optional
+    ax : array of `matplotlib.axes.Axes`, optional
         The matplotlib axes to draw the figure on.  If not specified, the
         axes for the current figure are used or, if there is no current
         figure with the correct number and shape of axes, a new figure is

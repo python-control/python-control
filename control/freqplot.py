@@ -66,8 +66,15 @@ _freqplot_defaults = {
 #
 
 class FrequencyResponseList(list):
+    """List of FrequencyResponseData objects with plotting capability.
+
+    This class consists of a list of `FrequencyResponseData` objects.
+    It is a subclass of the Python `list` class, with a `plot` method that
+    plots the individual `FrequencyResponseData` objects.
+
+    """
     def plot(self, *args, plot_type=None, **kwargs):
-        """List of FrequencyResponseData objects with plotting capability.
+        """Plot a list of frequency responses.
 
         See `FrequencyResponseData.plot` for details.
 
@@ -149,7 +156,7 @@ def bode_plot(
 
     Other Parameters
     ----------------
-    ax : array of matplotlib.axes.Axes, optional
+    ax : array of `matplotlib.axes.Axes`, optional
         The matplotlib axes to draw the figure on.  If not specified, the
         axes for the current figure are used or, if there is no current
         figure with the correct number and shape of axes, a new figure is
@@ -1617,7 +1624,7 @@ def nyquist_plot(
         8 and can be set using `config.defaults['nyquist.arrow_size']`.
     arrow_style : matplotlib.patches.ArrowStyle, optional
         Define style used for Nyquist curve arrows (overrides `arrow_size`).
-    ax : matplotlib.axes.Axes, optional
+    ax : `matplotlib.axes.Axes`, optional
         The matplotlib axes to draw the figure on.  If not specified and
         the current figure has a single axes, that axes is used.
         Otherwise, a new figure is created.
@@ -2398,7 +2405,7 @@ def singular_values_plot(
 
     Other Parameters
     ----------------
-    ax : matplotlib.axes.Axes, optional
+    ax : `matplotlib.axes.Axes`, optional
         The matplotlib axes to draw the figure on.  If not specified and
         the current figure has a single axes, that axes is used.
         Otherwise, a new figure is created.

@@ -685,7 +685,7 @@ def _get_color_offset(ax, color_cycle=None):
 
     Parameters
     ----------
-    ax : matplotlib.axes.Axes
+    ax : `matplotlib.axes.Axes`
         Axes containing already plotted lines.
     color_cycle : list of matplotlib color specs, optional
         Colors to use in plotting lines.  Defaults to matplotlib rcParams
@@ -727,7 +727,7 @@ def _get_color(
         Offset into the color cycle (for multi-trace plots).
     fmt : str, optional
         Format string passed to plotting command.
-    ax : matplotlib.axes.Axes, optional
+    ax : `matplotlib.axes.Axes`, optional
         Axes containing already plotted lines.
     lines : list of matplotlib.lines.Line2D, optional
         List of plotted lines.  If not given, use ax.get_lines().

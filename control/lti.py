@@ -23,10 +23,10 @@ __all__ = ['poles', 'zeros', 'damp', 'evalfr', 'frequency_response',
 class LTI(InputOutputSystem):
     """Parent class for linear time-invariant system objects.
 
-    LTI is the parent to the `StateSpace` and `TransferFunction` child
-    classes. It contains the number of inputs and outputs, and the timebase
-    (dt) for the system.  This class is not generally accessed directly by
-    the user.
+    LTI is the parent to the `FrequencyResponseData`, `StateSpace`, and
+    `TransferFunction` child classes. It contains the number of inputs and
+    outputs, and the timebase (dt) for the system.  This class is not
+    generally accessed directly by the user.
 
     See Also
     --------
@@ -76,7 +76,7 @@ class LTI(InputOutputSystem):
 
         Notes
         -----
-        See `FrequencyResponseData`.__call__`, `StateSpace.__call__`,
+        See `FrequencyResponseData.__call__`, `StateSpace.__call__`,
         `TransferFunction.__call__` for class-specific details.
 
         """

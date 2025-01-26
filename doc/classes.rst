@@ -47,12 +47,22 @@ These classes are used as the outputs of `_response`, `_map`, and
    :nosignatures:
 
    ControlPlot
-   FrequencyResponseList
+   FrequencyResponseData
    NyquistResponseData
-   NyquistResponseList
    PoleZeroData
-   PoleZeroList
    TimeResponseData
+
+In addition, the following classes are used to store lists of
+responses, which can then be plotted using the ``.plot()`` method:
+
+.. autosummary::
+   :toctree: generated/
+   :template: list-class-template.rst
+   :nosignatures:
+
+   FrequencyResponseList
+   NyquistResponseList
+   PoleZeroList
    TimeResponseList
 
 More information on the functions used to create these classes can be

@@ -65,7 +65,7 @@ def nichols_plot(
 
     Other Parameters
     ----------------
-    ax : matplotlib.axes.Axes, optional
+    ax : `matplotlib.axes.Axes`, optional
         The matplotlib axes to draw the figure on.  If not specified and
         the current figure has a single axes, that axes is used.
         Otherwise, a new figure is created.
@@ -190,7 +190,7 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
     line_style : string, optional
         :doc:`Matplotlib linestyle \
             <matplotlib:gallery/lines_bars_and_markers/linestyles>`.
-    ax : matplotlib.axes.Axes, optional
+    ax : `matplotlib.axes.Axes`, optional
         Axes to add grid to.  If None, use `matplotlib.pyplot.gca`.
     label_cl_phases : bool, optional
         If True, closed-loop phase lines will be labeled.
