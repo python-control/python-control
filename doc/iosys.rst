@@ -236,7 +236,8 @@ constructed using :func:`nlsys` with no update function:
 .. testcode:: predprey
 
   def output(t, x, u, params):
-      return -K @ (u[1:] - xeq) + kf * (u[0] - ueq)
+      Ld, x, ye = u[0], u[1:], xeq[1]
+      return ueq - K @ (x - xeq) + kf * (Ld - ye)
 
   controller = ct.nlsys(
       None, output,
@@ -259,7 +260,7 @@ To connect the controller to the predatory-prey model, we use the
     ],
     inplist=['control.Ld'], inputs='Ld',
     outlist=['predprey.Hares', 'predprey.Lynxes', 'control.y[0]'],
-    outputs=['Hares', 'Lynxes', 'u0'], name='closed'
+    outputs=['Hares', 'Lynxes', 'u0'], name='closed loop'
   )
 
 Finally, we simulate the closed loop system:
@@ -267,8 +268,11 @@ Finally, we simulate the closed loop system:
 .. testcode:: predprey
 
   # Simulate the system
-  resp = ct.input_output_response(closed, timepts, 30, [15, 20])
-  resp.plot(plot_inputs=False, overlay_signals=True, legend_loc='upper left')
+  Ld = 30
+  resp = ct.input_output_response(closed, timepts, U=Ld, X0=[15, 20])
+  cplt = resp.plot(
+      plot_inputs=False, overlay_signals=True, legend_loc='upper left')
+  cplt.axes[0, 0].axhline(Ld, linestyle='--', color='black')
 
 .. testcode:: predprey
    :hide:
