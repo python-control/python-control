@@ -1,0 +1,137 @@
+.. currentmodule:: control
+
+.. _version-0.9.4:
+
+Version 0.9.4 Release Notes
+----------------------------
+
+* Released: date of release
+* `GitHub release page
+  <https://github.com/python-control/python-control/releases/tag/0.9.4>`_
+
+This release adds functions for optimization-based estimation and
+moving horizon estimation, better handling of system and signal names,
+as well a number of bug fixes, small enhancements, and updated
+documentation.
+
+
+New classes, functions, and methods
+...................................
+
+The following new classes, functions, and methods have been added in
+this release:
+
+* Added the `optimal.OptimalEstimationProblem` class, the
+  `optimal.compute_oep` function, and the
+  `optimal.create_mhe_iosystem` function, which compute the optimal
+  estimate for a (nonlinear) I/O system using an explicit cost
+  function of a fixed window of applied inputs and measured outputs.
+
+* Added `gaussian_likelyhood_cost` to create cost function
+  corresponding to Gaussian likelihoods for use in optimal estimation.
+
+* Added `disturbance_range_constraint` to create a range constraint on
+  disturbances.
+
+* Added `LTI.bandwidth` to compute the bandwidth of a linear system.
+
+
+Bug fixes
+.........
+
+The following bugs have been fixed in this release:
+
+* Fixed a bug in `interconnect` in which the system name was being
+  clobbered internally.
+
+* Fixed a bug in `bode_plot` where phase wrapping was not working when
+  there were multiple systems.
+
+* Fixed a bug in `root_locus_plot` in which the `ax` parameter was not
+  being handled correctly.
+
+* Fixed a bug in `create_statefbk_iosystem` that didn't proper handle
+  1D gain schedules.
+
+* Fixed a bug in `rootlocus_pid_designer` where the Bode plot was
+  sometimes blank.
+
+* Fixed a bug in which signal labels for a `StateSpace` system were
+  lost when computing `forced_response`.
+
+* Fixed a bug in which the `damp` command was assuming a
+  continuous-time system when printing out pole locations (but the
+  return value was correct).
+
+* Fixed a bug in which signal names could be lost for state transfer
+  functions when using the `interconnect` function.
+
+* Fixed a bug in the block-diagonal schur matrix computation used in
+  `bdschur`.
+
+
+Improvements
+............
+
+The following additional improvements and changes in functionality
+were implemented in this release:
+
+* Added an `add_unused` keyword parameter to `interconnect` that
+  allows unused inputs or outputs to be added as inputs or outputs of
+  the interconnected system (useful for doing a "partial"
+  interconnection).
+
+* Added `control_indices` and `state_indices` to
+  `create_statefbk_iosystem` to allow partial interconnection (eg, for
+  inner/outer loop construction).
+
+* `create_mpc_iosystem` now allows system and signal names to be
+  specified via appropriate keywords.
+
+* `TransferFunction` objects can now be displayed either in polynomial
+  form or in zpk form using the `display_format` parameter when
+  creating the system.
+
+* Allow discrete-time Nyquist plots for discrete-time systems with
+  poles at 0 and 1.
+
+* Generate a warning if `prewarp_frequency` is used in `sample_system`
+  for a discretization type that doesn't support it.
+
+* Converting a system from state space form to transfer function form
+  (and vice versa) now updates the system name to append "$converted",
+  removing an issue where two systems might have the same name.
+
+
+Deprecations
+............
+
+The following functions have been newly deprecated in this release and
+generate a warning message when used:
+
+* Changed `type` keyword for `create_statefbk_iosystem` to
+  `controller_type` ('linear' or 'nonlinear').
+
+* `issys`: use ``isinstance(sys, ct.LTI)``.
+
+The listed items are slated to be removed in future releases (usually
+the next major or minor version update.
+
+
+Removals
+........
+
+The following functions and capabilities have been removed in this release:
+
+* `function`: function that was removed.
+
+* Other functionality that has been removed.
+
+Code that makes use of the functionality listed above will have to be
+rewritten to work with this release of the python-control package.
+
+
+Additional notes
+................
+
+Anything else that doesn't fit above.

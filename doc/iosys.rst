@@ -668,6 +668,10 @@ closed loop systems `clsys`, both as I/O systems.  The input to the
 controller is the vector of desired states :math:`x_\text{d}`, desired
 inputs :math:`u_\text{d}`, and system states :math:`x`.
 
+If an `InputOutputSystem` is passed instead of the gain `K`, the error
+e = x - xd is passed to the system and the output is used as the
+feedback compensation term.
+
 The above design pattern is referred to as the "trajectory generation"
 ('trajgen') pattern, since it assumes that the input to the controller is a
 feasible trajectory :math:`(x_\text{d}, u_\text{d})`.  Alternatively, a

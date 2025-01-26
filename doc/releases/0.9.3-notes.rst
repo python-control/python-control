@@ -1,0 +1,129 @@
+.. currentmodule:: control
+
+.. _version-0.9.3:
+
+Version 0.9.3 Release Notes
+----------------------------
+
+* Released: date of release
+* `GitHub release page
+  <https://github.com/python-control/python-control/releases/tag/0.9.3>`_
+
+This release adds support for collocation in finding optimal
+trajectories, adds the ability to compute optimal trajectories for
+flat systems, adds support for passivity indices and passivity tests
+for discrete time systems, and includes support for gain scheduling
+(in `create_statefbk_iosystem`.  Setup is now done using setuptools
+(`pip install .` instead of `python setup.py install`).
+
+This release requires Python 3.8 or higher.
+
+
+New classes, functions, and methods
+...................................
+
+The following new classes, functions, and methods have been added in
+this release:
+
+* `ispassive`: check to see if an LTI system is passive (requires
+  `cvxopt`).
+
+* `get_output_fb_index`, `get_input_ff_index`: compute passivity indices.
+
+* `flatsys.BSplineFamily`: new family of basis functions for flat
+  systems.
+
+* `flatsys.solve_flat_ocp`: allows solution of optimal control
+  problems for differentially flat systems with trajectory and
+  terminal costs and constraints, mirroring the functionality of
+  `optimal.solve_ocp`.
+
+* `zpk`: create a transfer funtion from a zero, pole, gain
+  representation.
+
+* `find_eqpts` (now `find_operating_system`) now works for
+  discrete-time systems.
+
+Bug fixes
+.........
+
+The following bugs have been fixed in this release:
+
+* Fixed `timebase` bug in `InterconnectedSystem` that gave errors for
+  discrete-time systems.
+
+* Fixed incorect dimension check in `matlab.lsim` for discrete-time
+  systems.
+
+* Fixed a bug in the computation of derivatives for the Bezier family
+  of basis functions with rescaled final time, and implemented a final
+  time rescaling for the polynomial family of basis functions.
+
+* Fixed bug in the processing of the `params` keyword for systems
+  without states.
+
+* Fixed a problem that was identified in PR #785, where
+  interconnecting a LinearIOSystem with a StateSpace system via the
+  interconnect function did not work correctly.
+
+* Fixed an issued regarding the way that `StateSpace._isstatic` was
+  defining a static system. New version requires nstates == 0.
+
+* Fixed a bug in which system and system name were not being handled
+  correctly when a `TransferFunction` system was combined with other
+  linear systems using interconnect.
+
+* Fixed a bug in `find_eqpt` where when y0 is None, dy in the root
+  function could not be calculated (since it tries to subtract
+  None).
+
+
+Improvements
+............
+
+The following additional improvements and changes in functionality
+were implemented in this release:
+
+* Handle `t_eval` for static systems in `input_output_response`.
+
+* Added support for discrete-time passive systems.
+
+* Added a more descriptive `__repr__` for basis functions (show the
+  family + information on attributes).
+
+* `StateSpace.sample` and `TransferFunction.sample` return a system
+  with the same input and output labels, which is convenient when
+  constructing interconnected systems using `interconnect`.
+
+* `optimal.solve_ocp`: add collocation method for solving optimal
+  control problems.  Use `trajectory_method` parameter that be set to
+  either 'shooting' (default for discrete time systems) or
+  'collocation' (default for continuous time systems). When
+  collocation is used, the `initial_guess` parameter can either be an
+  input trajectory (as before) or a tuple consisting of a state
+  trajectory and an input trajectory.
+
+* `StateSpace` objects can now be divided by a scalar.
+
+* `rlocus`, `sisotool`: Allow `initial_gain` to be a scalar (instead
+  of requiring and array).
+
+* `create_statefbk_iosystem` now supports gain scheduling.
+
+* `create_estimator_iosystem` now supports continous time systems.
+
+
+Deprecations
+............
+
+The following functions have been newly deprecated in this release and
+generate a warning message when used:
+
+* In the :ref:`optimal module <optimal-module>`, constraints are
+  specified in the form ``LinearConstraint(A, lb, ub)`` or
+  ``NonlinearConstraint(fun, lb, ub)`` instead of the previous forms
+  ``(LinearConstraint, A, lb, ub)`` and ``(NonlinearConstraint, fun,
+  lb, ub)``.
+
+The listed items are slated to be removed in future releases (usually
+the next major or minor version update.

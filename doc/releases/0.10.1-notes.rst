@@ -1,0 +1,200 @@
+.. currentmodule:: control
+
+.. _version-0.10.1:
+
+Version 0.10.1 Release Notes (current)
+--------------------------------------
+
+* Released: 17 Aug 2024
+* `GitHub release page
+  <https://github.com/python-control/python-control/releases/tag/0.10.1>`_
+
+This release provides a number of updates to the plotting functions to
+make the interface more uniform between the various types of control
+plots (including the use of the `ControlPlot` object as the return
+type for all :code:`_plot` functions, adds slice access for state space
+models, includes new tools for model identification from data, as well
+as compatibility with NumPy 2.0.
+
+New functions
+.............
+
+The following new functions have been added in this release:
+
+* `hankel_singular_values`: renamed `hsvd`, with a convenience alias
+  available for backwards compatibility.
+
+* `balanced_reduction`: renamed `balred`, with a convenience alias
+  available for backwards compatibility.
+
+* `model_reduction`: renamed `modred`, with a convenience alias
+  available for backwards compatibility.
+
+* `minimal_realization`: renamed `minreal`, with a convenience alias
+  available for backwards compatibility.
+
+* `eigensys_realization`: new system ID method, with a convenience
+  alias `era` available.
+
+* All plotting functions now return a `ControlPlot` object with lines,
+  axes, legend, etc available. Accessing this object as a list is
+  backward compatible with 10.0 format (with deparecation warning).
+
+
+Bug fixes
+.........
+
+The following bugs have been fixed in this release:
+
+* Fixed bug in `matlab.rlocus` where `kvect` was being used instead of
+  `gains`.  Also allow `root_locus_plot` to process `kvects` as a
+  legacy keyword.
+
+* Fixed a bug in `nyquist_plot` where it generated an error if called
+  with a `FrequencyResponseData` object.
+
+* Fixed a bug in processing `indent_radius` keyword when
+  `nyquist_plot` is passed a system.
+
+* Fixed a bug in `root_locus_plot` that generated an error when you
+  clicked on a point outside the border window.
+
+* Fixed a bug in `interconnect` where specification of a list of
+  signals as the input was not handled properly (each signal in the
+  list was treated as a separate input rather than connecting a single
+  input to the list).
+
+* Fixed a bug in `impulse_response` where the `input` keyword was not
+  being handled properly.
+
+* Fixed bug in `step_info` in computing settling time for a constant
+  system.
+
+
+Improvements
+............
+
+The following additional improvements and changes in functionality
+were implemented in this release:
+
+* Added support for NumPy 2.
+
+* `frequency_response` now properly transfer labels from the system to
+  the response.
+
+* I/O systems with no inputs and no outputs are now allowed, mainly
+  for use by the `phase_plane_plot` function.
+
+* Improved error messages in `input_output_response` when the number
+  of states, inputs, or outputs are incompatible with the system size
+  by telling you which one didn't match.
+
+* `phase_plane_plot` now generate warnings when simulations fail for
+  individual initial conditions and drops individual traces (rather
+  than terminating).
+
+* Changed the way plot titles are created, using
+  `matplotlib.axes.set_title` (centers title over axes) instead of
+  `matplotlib.fig.suptitle` (centers over figure, which is good for
+  multi-axes plots but otherwise looks funny).
+
+* Updated arrow placement in `phase_plane_plot` so that very short
+  lines have zero or one arrows.
+
+* Subsystem indexing now allows slices as indexing arguments.
+
+* The `label` keyword is now allowed in frequency response commands to
+  override default label generation.
+
+* Restored functionality that allowed omega to be specified as a list
+  of 2 elements (indicating a range) in all frequency
+  response/plotting routines.  This used to work for
+  `nyquist_response` but got removed at some point.  It now works for
+  all frequency response commands.
+
+* Fixed up the `ax` keyword processing to allow arrays or lists +
+  uniform processing in all frequency plotting routines.
+
+* Fixed processing of `rcParam` to provide more uniformity.
+
+* Added new `ControlPlot.set_plot_title` method to set/add titles that are
+  better centered (on axes instead of figure).
+
+* Set up `frd` as factory function with keywords, including setting
+  the signal/system names.
+
+* Bode and Nyquist plots now allow FRD systems with different omega
+  vectors as well as mixtures of FRD and other LTI systems.
+
+* Added unit circle, sensitivity circles, and complementary
+  sensitivity cicles to `nyquist_plot`.
+
+* `time_response_plot` improvements:
+
+  - Fixed up the `ax` keyword processing to allow arrays or lists +
+    uniform processing for all (time and frequency) plot routines.
+
+  - Allow time responses for multiple systems with common time vector
+    and inputs to find a single time interval.
+
+  - Updated sequential plotting so that different colors are used and
+    plot title is updated (like Bode and Nyquist).
+
+  - Allow label keyword in various time response commands to override
+    default label generation.
+
+  - Allow legends to be turned on and off using `show_legend` keyword.
+
+* `NonlinearIOSystem` improvements:
+
+   - Allow system name to be overridden in `linearize`, even if
+     `copy_names` is `False`.
+
+   - Allows renaming of system/signal names in bdalg functions
+
+   - New `update_names` method for that allows signal and system names
+     to be updated.
+
+   - `x0`, `u0` keywords in `linearize` and `input_output_response`
+     provide common functionality in allowing concatenation of lists
+     and zero padding ("vector element processing").
+
+   - Improved error messages when `x0` and `u0` don't match the expected size.
+
+   - If no output function is given in `nlsys`, which provides full
+     state output, the output signal names are set to match the state
+     names.
+
+* `markov` now supports MIMO systems and accepts a `TimeResponseData`
+  object as input.
+
+* Processing of the `ax` and `title` keywords is now consistent across
+  all plotting functions.
+
+* Set up uniform processing of the `rcParams` keyword argument for
+  plotting functions (with unit tests).
+
+* Updated legend processing to be consistent across all plotting
+  functions, as described in the user documention.
+
+* Default configuration parameters for plotting are now in
+  `control.rcParams` and can be reset using `reset_rcParams`.
+
+* Unified `color` and `*fmt` argument processing code, in addition to
+  color management for sequential plotting.
+
+
+Deprecations
+............
+
+The following functions have been newly deprecated in this release and
+generate a warning message when used:
+
+* Assessing the output of a plotting function to a list is now
+  deprecated.  Assign to a `ControlPlot` object and access lines and
+  other elements via attributes.
+
+* Deprecated the `relabel` keyword in `time_response_plot`.
+
+The listed items are slated to be removed in future releases (usually
+the next major or minor version update.

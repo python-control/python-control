@@ -68,6 +68,7 @@ or the GitHub site: https://github.com/python-control/python-control.
    config
    matlab
    develop
+   releases
 
 ***********
 Development

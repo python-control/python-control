@@ -239,13 +239,13 @@ Time and frequency responses:
     ioresp = ct.input_output_response(sys, timepts, U)
     cplt = ct.bode_plot(sys, omega)
 
-* Use `inputs`, `outputs`, `states`, `time` for time response data
-  attributes.  These should be used as parameter names when creating
-  `TimeResponseData` objects and also as attributes when retrieving
-  response data (with dimensions dependent on `squeeze` processing).
-  These are stored internally in non-squeezed form using `u`, `y`,
-  `x`, and `t`, but the internal data should generally not be accessed
-  directly.  For example::
+* Use `inputs`, `outputs`, `states`, :code:`time` for time response
+  data attributes.  These should be used as parameter names when
+  creating `TimeResponseData` objects and also as attributes when
+  retrieving response data (with dimensions dependent on `squeeze`
+  processing).  These are stored internally in non-squeezed form using
+  `u`, `y`, `x`, and `t`, but the internal data should generally not
+  be accessed directly.  For example::
 
     plt.plot(ioresp.time, ioresp.outputs[0])
     tresp = ct.TimeResponseData(time, outputs, states, ...)  # (internal call)

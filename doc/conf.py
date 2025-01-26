@@ -29,7 +29,7 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 # -- Project information -----------------------------------------------------
 
 project = u'Python Control Systems Library'
-copyright = u'2024, python-control.org'
+copyright = u'2025, python-control.org'
 author = u'Python Control Developers'
 
 # Version information - read from the source code
@@ -92,8 +92,9 @@ language = 'en'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
-exclude_patterns = [u'_build', 'Thumbs.db', '.DS_Store',
-                    '*.ipynb_checkpoints']
+exclude_patterns = [
+    u'_build', 'Thumbs.db', '.DS_Store', '*.ipynb_checkpoints',
+    'releases/template.rst']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'

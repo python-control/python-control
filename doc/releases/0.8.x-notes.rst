@@ -1,0 +1,32 @@
+.. currentmodule:: control
+
+.. _version-0.8.x:
+
+Version 0.8.x Release Notes
+----------------------------
+
+* Released: 7 Jul 2018 - 28 Dec 2020
+* `Detailed release notes <https://github.com/python-control/python-control/wiki/Release-notes#python-control-084-28-dec-2020>`_
+  on python-control GitHub wiki.
+
+[ChatGPT summary] Between versions 0.8.0 and 0.8.4, the
+python-control package introduced significant updates and
+enhancements. Notable additions include improved support for nonlinear
+systems with a new input/output systems module and functions for
+linearization and differential flatness analysis, the ability to
+create non-proper transfer functions, and support for dynamic
+prewarping during continuous-to-discrete system
+conversion. Visualization improvements were made across several
+functions, such as enhanced options for Nyquist plots, better
+pole-zero mapping compatibility with recent matplotlib updates, and
+LaTeX formatting for Jupyter notebook outputs. Bugs were fixed in
+critical areas like discrete-time simulations, forced response
+computations, and naming conventions for interconnected systems. The
+release also focused on expanded configurability with a new
+`use_legacy_defaults` function and dict-based configuration handling,
+updated unit testing (switching to pytest), and enhanced documentation
+and examples, including for `sisotool` and trajectory
+planning. Improvements to foundational algorithms, such as pole
+placement, transfer function manipulation, and discrete root locus,
+rounded out this series of releases, ensuring greater flexibility and
+precision for control systems analysis.
