@@ -81,11 +81,16 @@ def _poly_iw_sqr(pol_iw):
 
 def _poly_iw_real_crossing(num_iw, den_iw, epsw):
     # Return w where imag(H(iw)) == 0
+
+    # Compute the imaginary part of H = (num.r + j num.i)/(den.r + j den.i)
     test_w = np.polysub(np.polymul(num_iw.imag, den_iw.real),
                         np.polymul(num_iw.real, den_iw.imag))
+
+    # Find the real-valued w > 0 where imag(H(iw)) = 0
     w = np.roots(test_w)
     w = np.real(w[np.isreal(w)])
     w = w[w >= epsw]
+
     return w
 
 
@@ -471,7 +476,7 @@ def phase_crossover_frequencies(sys):
     omega : ndarray
         1d array of (non-negative) frequencies where Nyquist plot
         intersects the real axis
-    gain : ndarray
+    gains : ndarray
         1d array of corresponding gains
 
     Examples
@@ -493,13 +498,13 @@ def phase_crossover_frequencies(sys):
         omega = _poly_iw_real_crossing(num_iw, den_iw, 0.)
 
         # using real() to avoid rounding errors and results like 1+0j
-        gain = np.real(evalfr(sys, 1J * omega))
+        gains = np.real(sys(omega * 1j, warn_infinite=False))
     else:
         zargs = _poly_z_invz(sys)
         z, omega = _poly_z_real_crossing(*zargs, epsw=0.)
-        gain = np.real(evalfr(sys, z))
+        gains = np.real(sys(z, warn_infinite=False))
 
-    return omega, gain
+    return omega, gains
 
 
 def margin(*args):
