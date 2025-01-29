@@ -517,6 +517,15 @@ def test_nyquist_frd():
     warnings.resetwarnings()
 
 
+def test_no_indent_pole():
+    s = ct.tf('s')
+    sys = ((1 + 5/s)/(1 + 0.5/s))**2   # Double-Lag-Compensator
+
+    with pytest.raises(RuntimeError, match="evaluate at a pole"):
+        resp = ct.nyquist_response(
+            sys, warn_encirclements=False, indent_direction='none')
+
+
 if __name__ == "__main__":
     #
     # Interactive mode: generate plots for manual viewing
