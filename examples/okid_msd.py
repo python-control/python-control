@@ -1,7 +1,7 @@
-# markov.py
-# Johannes Kaisinger, 4 July 2024
+# okid_msd.py
+# Johannes Kaisinger, 13 July 2024
 #
-# Demonstrate estimation of Markov parameters.
+# Demonstrate estimation of Markov parameters via okid.
 # SISO, SIMO, MISO, MIMO case
 
 import numpy as np
@@ -12,17 +12,17 @@ import control as ct
 
 def create_impulse_response(H, time, transpose, dt):
     """Helper function to use TimeResponseData type for plotting"""
-    
+
     H = np.array(H, ndmin=3)
 
     if transpose:
         H = np.transpose(H)
-    
+
     q, p, m = H.shape
     inputs = np.zeros((p,p,m))
 
     issiso = True if (q == 1 and p == 1) else False
-    
+
     input_labels = []
     trace_labels, trace_types = [], []
     for i in range(p):
@@ -53,7 +53,7 @@ def create_impulse_response(H, time, transpose, dt):
 # m q_dd + c q_d + k q = f
 m1, k1, c1 = 1., 4., 1.
 m2, k2, c2 = 2., 2., 1.
-k3, c3 = 6., 2.
+k3, c3 = 6., 1.
 
 A = np.array([
     [0., 0., 1., 0.],
@@ -78,7 +78,7 @@ match xixo:
     case "MIMO":
         sys = ct.StateSpace(A, B, C, D)
 
-dt = 0.25
+dt = 0.1
 sysd = sys.sample(dt, method='zoh')
 sysd.name = "H_true"
 
@@ -90,11 +90,13 @@ response = ct.forced_response(sysd, U=u)
 response.plot()
 plt.show()
 
-m = 50
-ir_true = ct.impulse_response(sysd, T=dt*m)
+m = 100
+ir_true = ct.impulse_response(sysd, T=t[:m+1])
+H_true = ir_true.outputs
 
-H_est = ct.markov(response, m, dt=dt)
-# Helper function for plotting only
+
+H_est = ct.okid(response, m, dt=dt)
+# helper function for plotting only
 ir_est = create_impulse_response(H_est,
                                  ir_true.time,
                                  ir_true.transpose,
