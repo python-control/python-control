@@ -1074,7 +1074,7 @@ def create_statefbk_iosystem(
 
 
 def ctrb(A, B, t=None):
-    """Controllabilty matrix.
+    """Controllability matrix.
 
     Parameters
     ----------
