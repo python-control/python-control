@@ -1,4 +1,4 @@
-"""statesp_test.py - test state space class
+"""Tests for the StateSpace class.
 
 RMM, 30 Mar 2011 based on TestStateSp from v0.4a)
 RMM, 14 Jun 2019 statesp_array_test.py coverted from statesp_test.py to test
@@ -560,54 +560,44 @@ class TestStateSpace:
         )
 
     @slycotonly
-    def test_pow(self, sys222, sys322):
+    @pytest.mark.parametrize("power", [0, 1, 3, -3])
+    @pytest.mark.parametrize("sysname", ["sys222", "sys322"])
+    def test_pow(self, request, sysname, power):
         """Test state space powers."""
-        for sys in [sys222, sys322]:
-            # Power of 0
-            result = sys**0
-            expected = StateSpace([], [], [], np.eye(2), dt=0)
-            np.testing.assert_allclose(expected.A, result.A)
-            np.testing.assert_allclose(expected.B, result.B)
-            np.testing.assert_allclose(expected.C, result.C)
-            np.testing.assert_allclose(expected.D, result.D)
-            # Power of 1
-            result = sys**1
-            expected = sys
-            np.testing.assert_allclose(expected.A, result.A)
-            np.testing.assert_allclose(expected.B, result.B)
-            np.testing.assert_allclose(expected.C, result.C)
-            np.testing.assert_allclose(expected.D, result.D)
-            # Power of -1 (inverse of biproper system)
-            # Testing transfer function representations to avoid the
-            # non-uniqueness of the state-space representation. Once MIMO
-            # canonical forms are supported, can check canonical state-space
-            # matrices instead.
-            result = (sys * sys**-1).minreal()
-            expected = StateSpace([], [], [], np.eye(2), dt=0)
-            assert_tf_close_coeff(
-                ss2tf(expected).minreal(),
-                ss2tf(result).minreal(),
-            )
+        sys = request.getfixturevalue(sysname)
+        result = sys**power
+        if power == 0:
+             expected = StateSpace([], [], [], np.eye(sys.ninputs), dt=0)
+        else:
+            sign = 1 if power > 0 else -1
+            expected = sys**sign
+            for i in range(1,abs(power)):
+                expected *= sys**sign
+        np.testing.assert_allclose(expected.A, result.A)
+        np.testing.assert_allclose(expected.B, result.B)
+        np.testing.assert_allclose(expected.C, result.C)
+        np.testing.assert_allclose(expected.D, result.D)
+
+    @slycotonly
+    @pytest.mark.parametrize("order", ["inv*sys", "sys*inv"])
+    @pytest.mark.parametrize("sysname", ["sys222", "sys322"])
+    def test_pow_inv(self, request, sysname, order):
+        """Power of -1 (inverse of biproper system).
+
+        Testing transfer function representations to avoid the
+        non-uniqueness of the state-space representation. Once MIMO
+        canonical forms are supported, can check canonical state-space
+        matrices instead.
+        """
+        sys = request.getfixturevalue(sysname)
+        if order == "inv*sys":
             result = (sys**-1 * sys).minreal()
-            expected = StateSpace([], [], [], np.eye(2), dt=0)
-            assert_tf_close_coeff(
-                ss2tf(expected).minreal(),
-                ss2tf(result).minreal(),
-            )
-            # Power of 3
-            result = sys**3
-            expected = sys * sys * sys
-            np.testing.assert_allclose(expected.A, result.A)
-            np.testing.assert_allclose(expected.B, result.B)
-            np.testing.assert_allclose(expected.C, result.C)
-            np.testing.assert_allclose(expected.D, result.D)
-            # Power of -3
-            result = sys**-3
-            expected = sys**-1 * sys**-1 * sys**-1
-            np.testing.assert_allclose(expected.A, result.A)
-            np.testing.assert_allclose(expected.B, result.B)
-            np.testing.assert_allclose(expected.C, result.C)
-            np.testing.assert_allclose(expected.D, result.D)
+        else:
+            result = (sys * sys**-1).minreal()
+        expected = StateSpace([], [], [], np.eye(sys.ninputs), dt=0)
+        assert_tf_close_coeff(
+            ss2tf(expected).minreal(),
+            ss2tf(result).minreal())
 
     @slycotonly
     def test_truediv(self, sys222, sys322):
