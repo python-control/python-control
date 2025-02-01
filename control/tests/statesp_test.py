@@ -7,22 +7,22 @@ BG,  26 Jul 2020 merge statesp_array_test.py differences into statesp_test.py
                  convert to pytest
 """
 
-import numpy as np
-from numpy.testing import assert_array_almost_equal
-import pytest
 import operator
-from numpy.linalg import solve
-from scipy.linalg import block_diag, eigvals
 
 import control as ct
+import numpy as np
+import pytest
 from control.config import defaults
 from control.dtime import sample_system
 from control.lti import evalfr
-from control.statesp import StateSpace, _convert_to_statespace, tf2ss, \
-    _statesp_defaults, _rss_generate, linfnorm, ss, rss, drss
-from control.xferfcn import TransferFunction, ss2tf, _tf_close_coeff
+from control.statesp import (StateSpace, _convert_to_statespace, _rss_generate,
+                             _statesp_defaults, drss, linfnorm, rss, ss, tf2ss)
+from control.xferfcn import TransferFunction, ss2tf
+from numpy.linalg import solve
+from numpy.testing import assert_array_almost_equal
+from scipy.linalg import block_diag, eigvals
 
-from .conftest import editsdefaults, slycotonly
+from .conftest import assert_tf_close_coeff, editsdefaults, slycotonly
 
 
 class TestStateSpace:
@@ -384,7 +384,7 @@ class TestStateSpace:
             (StateSpace.__rsub__, -expected_sub),
         ]:
             result = op(ss_mimo, ss_siso)
-            assert _tf_close_coeff(
+            assert_tf_close_coeff(
                 expected.minreal(),
                 ss2tf(result).minreal(),
             )
@@ -404,7 +404,7 @@ class TestStateSpace:
             (StateSpace.__rsub__, -expected_sub),
         ]:
             result = op(ss_siso, np.eye(2))
-            assert _tf_close_coeff(
+            assert_tf_close_coeff(
                 expected.minreal(),
                 ss2tf(result).minreal(),
             )
@@ -479,7 +479,7 @@ class TestStateSpace:
     )
     def test_mul_mimo_siso(self, left, right, expected):
         result = tf2ss(left).__mul__(right)
-        assert _tf_close_coeff(
+        assert_tf_close_coeff(
             expected.minreal(),
             ss2tf(result).minreal(),
         )
@@ -554,7 +554,7 @@ class TestStateSpace:
     )
     def test_rmul_mimo_siso(self, left, right, expected):
         result = tf2ss(right).__rmul__(left)
-        assert _tf_close_coeff(
+        assert_tf_close_coeff(
             expected.minreal(),
             ss2tf(result).minreal(),
         )
@@ -584,13 +584,13 @@ class TestStateSpace:
             # matrices instead.
             result = (sys * sys**-1).minreal()
             expected = StateSpace([], [], [], np.eye(2), dt=0)
-            assert _tf_close_coeff(
+            assert_tf_close_coeff(
                 ss2tf(expected).minreal(),
                 ss2tf(result).minreal(),
             )
             result = (sys**-1 * sys).minreal()
             expected = StateSpace([], [], [], np.eye(2), dt=0)
-            assert _tf_close_coeff(
+            assert_tf_close_coeff(
                 ss2tf(expected).minreal(),
                 ss2tf(result).minreal(),
             )
@@ -616,14 +616,14 @@ class TestStateSpace:
             # Divide by self
             result = (sys.__truediv__(sys)).minreal()
             expected = StateSpace([], [], [], np.eye(2), dt=0)
-            assert _tf_close_coeff(
+            assert_tf_close_coeff(
                 ss2tf(expected).minreal(),
                 ss2tf(result).minreal(),
             )
             # Divide by TF
             result = sys.__truediv__(TransferFunction.s)
             expected = ss2tf(sys) / TransferFunction.s
-            assert _tf_close_coeff(
+            assert_tf_close_coeff(
                 expected.minreal(),
                 ss2tf(result).minreal(),
             )
@@ -634,14 +634,14 @@ class TestStateSpace:
         for sys in [sys222, sys322]:
             result = (sys.__rtruediv__(sys)).minreal()
             expected = StateSpace([], [], [], np.eye(2), dt=0)
-            assert _tf_close_coeff(
+            assert_tf_close_coeff(
                 ss2tf(expected).minreal(),
                 ss2tf(result).minreal(),
             )
             # Divide TF by SS
             result = sys.__rtruediv__(TransferFunction.s)
             expected = TransferFunction.s / sys
-            assert _tf_close_coeff(
+            assert_tf_close_coeff(
                 expected.minreal(),
                 result.minreal(),
             )
@@ -649,7 +649,7 @@ class TestStateSpace:
         sys = tf2ss(TransferFunction([1, 2], [2, 1]))
         result = sys.__rtruediv__(np.eye(2))
         expected = TransferFunction([2, 1], [1, 2]) * np.eye(2)
-        assert _tf_close_coeff(
+        assert_tf_close_coeff(
             expected.minreal(),
             ss2tf(result).minreal(),
         )

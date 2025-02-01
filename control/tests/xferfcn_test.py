@@ -10,12 +10,12 @@ import numpy as np
 import pytest
 
 import control as ct
-from control import StateSpace, TransferFunction, defaults, evalfr, isctime, \
-    isdtime, reset_defaults, rss, sample_system, set_defaults, ss, ss2tf, tf, \
-    tf2ss, zpk
+from control import (StateSpace, TransferFunction, defaults, evalfr, isctime,
+                     isdtime, reset_defaults, rss, sample_system, set_defaults,
+                     ss, ss2tf, tf, tf2ss, zpk)
 from control.statesp import _convert_to_statespace
-from control.tests.conftest import slycotonly
-from control.xferfcn import _convert_to_transfer_function, _tf_close_coeff
+from control.tests.conftest import assert_tf_close_coeff, slycotonly
+from control.xferfcn import _convert_to_transfer_function
 
 
 class TestXferFcn:
@@ -424,7 +424,7 @@ class TestXferFcn:
                 [op(tf_arr[1, 0], tf_siso), op(tf_arr[1, 1], tf_siso)],
             ])
             result = op(tf_mimo, tf_siso)
-            assert _tf_close_coeff(expected.minreal(), result.minreal())
+            assert_tf_close_coeff(expected.minreal(), result.minreal())
 
     @pytest.mark.parametrize(
         "left, right, expected",
@@ -496,7 +496,7 @@ class TestXferFcn:
     def test_mul_mimo_siso(self, left, right, expected):
         """Test multiplication of a MIMO and a SISO system."""
         result = left.__mul__(right)
-        assert _tf_close_coeff(expected.minreal(), result.minreal())
+        assert_tf_close_coeff(expected.minreal(), result.minreal())
 
     @pytest.mark.parametrize(
         "left, right, expected",
@@ -568,7 +568,7 @@ class TestXferFcn:
     def test_rmul_mimo_siso(self, left, right, expected):
         """Test right multiplication of a MIMO and a SISO system."""
         result = right.__rmul__(left)
-        assert _tf_close_coeff(expected.minreal(), result.minreal())
+        assert_tf_close_coeff(expected.minreal(), result.minreal())
 
     @pytest.mark.parametrize(
         "left, right, expected",
@@ -605,7 +605,7 @@ class TestXferFcn:
     def test_truediv_mimo_siso(self, left, right, expected):
         """Test true division of a MIMO and a SISO system."""
         result = left.__truediv__(right)
-        assert _tf_close_coeff(expected.minreal(), result.minreal())
+        assert_tf_close_coeff(expected.minreal(), result.minreal())
 
     @pytest.mark.parametrize(
         "left, right, expected",
@@ -631,7 +631,7 @@ class TestXferFcn:
     def test_rtruediv_mimo_siso(self, left, right, expected):
         """Test right true division of a MIMO and a SISO system."""
         result = right.__rtruediv__(left)
-        assert _tf_close_coeff(expected.minreal(), result.minreal())
+        assert_tf_close_coeff(expected.minreal(), result.minreal())
 
     @pytest.mark.parametrize("named", [False, True])
     def test_slice(self, named):
@@ -925,9 +925,9 @@ class TestXferFcn:
             ],
         )
         tf_appended_1 = tf1.append(tf2)
-        assert _tf_close_coeff(tf_exp_1, tf_appended_1)
+        assert_tf_close_coeff(tf_exp_1, tf_appended_1)
         tf_appended_2 = tf1.append(tf2).append(tf3)
-        assert _tf_close_coeff(tf_exp_2, tf_appended_2)
+        assert_tf_close_coeff(tf_exp_2, tf_appended_2)
 
     def test_convert_to_transfer_function(self):
         """Test for correct state space to transfer function conversion."""

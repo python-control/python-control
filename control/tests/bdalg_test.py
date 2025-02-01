@@ -1,24 +1,21 @@
-"""bdalg_test.py - test suite for block diagram algebra
+"""bdalg_test.py - test suite for block diagram algebra.
 
 RMM, 30 Mar 2011 (based on TestBDAlg from v0.4a)
 """
 
-import numpy as np
-from numpy import sort
-import pytest
-
 import control as ctrl
-from control.xferfcn import TransferFunction, _tf_close_coeff
+import numpy as np
+import pytest
+from control.bdalg import _ensure_tf, append, connect, feedback
+from control.lti import poles, zeros
 from control.statesp import StateSpace
-from control.bdalg import feedback, append, connect
-from control.lti import zeros, poles
-from control.bdalg import _ensure_tf
+from control.tests.conftest import assert_tf_close_coeff
+from control.xferfcn import TransferFunction
+from numpy import sort
 
 
 class TestFeedback:
-    """These are tests for the feedback function in bdalg.py.  Currently, some
-    of the tests are not implemented, or are not working properly.  TODO: these
-    need to be fixed."""
+    """Tests for the feedback function in bdalg.py."""
 
     @pytest.fixture
     def tsys(self):
@@ -180,7 +177,7 @@ class TestFeedback:
                                              [[[1., 4., 9., 8., 5.]]])
 
     def testLists(self, tsys):
-        """Make sure that lists of various lengths work for operations"""
+        """Make sure that lists of various lengths work for operations."""
         sys1 = ctrl.tf([1, 1], [1, 2])
         sys2 = ctrl.tf([1, 3], [1, 4])
         sys3 = ctrl.tf([1, 5], [1, 6])
@@ -237,7 +234,7 @@ class TestFeedback:
             sort(zeros(sys1 + sys2 + sys3 + sys4 + sys5)))
 
     def testMimoSeries(self, tsys):
-        """regression: bdalg.series reverses order of arguments"""
+        """regression: bdalg.series reverses order of arguments."""
         g1 = ctrl.ss([], [], [], [[1, 2], [0, 3]])
         g2 = ctrl.ss([], [], [], [[1, 0], [2, 3]])
         ref = g2 * g1
@@ -430,9 +427,9 @@ class TestEnsureTf:
         ],
     )
     def test_ensure(self, arraylike_or_tf, dt, tf):
-        """Test nominal cases"""
+        """Test nominal cases."""
         ensured_tf = _ensure_tf(arraylike_or_tf, dt)
-        assert _tf_close_coeff(tf, ensured_tf)
+        assert_tf_close_coeff(tf, ensured_tf)
 
     @pytest.mark.parametrize(
         "arraylike_or_tf, dt, exception",
@@ -460,7 +457,7 @@ class TestEnsureTf:
         ],
     )
     def test_error_ensure(self, arraylike_or_tf, dt, exception):
-        """Test error cases"""
+        """Test error cases."""
         with pytest.raises(exception):
             _ensure_tf(arraylike_or_tf, dt)
 
@@ -624,7 +621,7 @@ class TestTfCombineSplit:
     def test_combine_tf(self, tf_array, tf):
         """Test combining transfer functions."""
         tf_combined = ctrl.combine_tf(tf_array)
-        assert _tf_close_coeff(tf_combined, tf)
+        assert_tf_close_coeff(tf_combined, tf)
 
     @pytest.mark.parametrize(
         "tf_array, tf",
@@ -712,12 +709,12 @@ class TestTfCombineSplit:
         # Test entry-by-entry
         for i in range(tf_split.shape[0]):
             for j in range(tf_split.shape[1]):
-                assert _tf_close_coeff(
+                assert_tf_close_coeff(
                     tf_split[i, j],
                     tf_array[i, j],
                 )
         # Test combined
-        assert _tf_close_coeff(
+        assert_tf_close_coeff(
             ctrl.combine_tf(tf_split),
             ctrl.combine_tf(tf_array),
         )
