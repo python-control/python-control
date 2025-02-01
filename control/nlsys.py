@@ -810,7 +810,7 @@ class InterconnectedSystem(NonlinearIOSystem):
                 return (" - " if not first else "-") + \
                     f"{abs(gain)} * {signal}"
 
-        out += f"\nConnections:\n"
+        out += "\nConnections:\n"
         for i in range(len(input_list)):
             first = True
             cxn = f"{input_list[i]} <- "
@@ -830,7 +830,7 @@ class InterconnectedSystem(NonlinearIOSystem):
                 cxn, width=78, initial_indent=" * ",
                 subsequent_indent="     ")) + "\n"
 
-        out += f"\nOutputs:\n"
+        out += "\nOutputs:\n"
         for i in range(len(self.output_labels)):
             first = True
             cxn = f"{self.output_labels[i]} <- "
@@ -2535,7 +2535,7 @@ def interconnect(
     # This includes signal lists such as ('sysname', ['sig1', 'sig2', ...])
     # as well as slice-based specifications such as 'sysname.signal[i:j]'.
     #
-    dprint(f"Pre-processing connections:")
+    dprint("Pre-processing connections:")
     new_connections = []
     for connection in connections:
         dprint(f"  parsing {connection=}")
@@ -2574,7 +2574,7 @@ def interconnect(
     #
     dprint(f"Pre-processing input connections: {inplist}")
     if not isinstance(inplist, list):
-        dprint(f"  converting inplist to list")
+        dprint("  converting inplist to list")
         inplist = [inplist]
     new_inplist, new_inputs = [], [] if inplist_none else inputs
 
@@ -2637,7 +2637,7 @@ def interconnect(
         else:
             if isinstance(connection, list):
                 # Passed a list => create input map
-                dprint(f"  detected input list")
+                dprint("  detected input list")
                 signal_list = []
                 for spec in connection:
                     isys, indices, gain = _parse_spec(syslist, spec, 'input')
@@ -2663,7 +2663,7 @@ def interconnect(
     #
     dprint(f"Pre-processing output connections: {outlist}")
     if not isinstance(outlist, list):
-        dprint(f"  converting outlist to list")
+        dprint("  converting outlist to list")
         outlist = [outlist]
     new_outlist, new_outputs = [], [] if outlist_none else outputs
     for iout, connection in enumerate(outlist):
@@ -2740,7 +2740,7 @@ def interconnect(
 
             if isinstance(connection, list):
                 # Passed a list => create input map
-                dprint(f"  detected output list")
+                dprint("  detected output list")
                 signal_list = []
                 for spec in connection:
                     signal_list += _find_output_or_input_signal(spec)

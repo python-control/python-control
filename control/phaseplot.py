@@ -1090,9 +1090,9 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     # Get parameters to pass to function
     if parms:
         warnings.warn(
-            f"keyword 'parms' is deprecated; use 'params'", FutureWarning)
+            "keyword 'parms' is deprecated; use 'params'", FutureWarning)
         if params:
-            raise ControlArgument(f"duplicate keywords 'parms' and 'params'")
+            raise ControlArgument("duplicate keywords 'parms' and 'params'")
         else:
             params = parms
 
