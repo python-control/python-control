@@ -49,7 +49,6 @@ class TestControlMatlab:
         D = zeros((2, 2))
         return A, B, C, D
 
-    @slycotonly
     def test_dcgain_mimo(self, MIMO_mats):
         """Test function dcgain with MIMO systems"""
         #Test MIMO systems

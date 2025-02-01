@@ -248,7 +248,6 @@ class TestStateSpace:
 
         np.testing.assert_almost_equal(true_z, z)
 
-    @slycotonly
     def test_zero_mimo_sys322_square(self, sys322):
         """Evaluate the zeros of a square MIMO system."""
 
@@ -256,7 +255,6 @@ class TestStateSpace:
         true_z = np.sort([44.41465, -0.490252, -5.924398])
         np.testing.assert_array_almost_equal(z, true_z)
 
-    @slycotonly
     def test_zero_mimo_sys222_square(self, sys222):
         """Evaluate the zeros of a square MIMO system."""
 
@@ -320,7 +318,6 @@ class TestStateSpace:
         np.testing.assert_array_almost_equal(sys.C, C)
         np.testing.assert_array_almost_equal(sys.D, D)
 
-    @slycotonly
     def test_add_sub_mimo_siso(self):
         # Test SS with SS
         ss_siso = StateSpace(
@@ -702,8 +699,6 @@ class TestStateSpace:
         with pytest.raises(AttributeError):
             sys.evalfr(omega)
 
-
-    @slycotonly
     def test_freq_resp(self):
         """Evaluate the frequency response at multiple frequencies."""
 

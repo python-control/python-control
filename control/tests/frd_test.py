@@ -258,7 +258,6 @@ class TestFRD:
         freqplot.nyquist(f1)
         # plt.savefig('/dev/null', format='svg')
 
-    @slycotonly
     @pytest.mark.parametrize(
         "frd_fcn", [ct.frd, ct.FRD, ct.FrequencyResponseData])
     def testMIMO(self, frd_fcn):
@@ -276,7 +275,6 @@ class TestFRD:
             sys.frequency_response(chkpts)[1],
             f1.frequency_response(chkpts)[1])
 
-    @slycotonly
     @pytest.mark.parametrize(
         "frd_fcn", [ct.frd, ct.FRD, ct.FrequencyResponseData])
     def testMIMOfb(self, frd_fcn):
@@ -295,7 +293,6 @@ class TestFRD:
             f1.frequency_response(chkpts)[1],
             f2.frequency_response(chkpts)[1])
 
-    @slycotonly
     @pytest.mark.parametrize(
         "frd_fcn", [ct.frd, ct.FRD, ct.FrequencyResponseData])
     def testMIMOfb2(self, frd_fcn):
@@ -316,7 +313,6 @@ class TestFRD:
             f1.frequency_response(chkpts)[1],
             f2.frequency_response(chkpts)[1])
 
-    @slycotonly
     @pytest.mark.parametrize(
         "frd_fcn", [ct.frd, ct.FRD, ct.FrequencyResponseData])
     def testMIMOMult(self, frd_fcn):
@@ -335,7 +331,6 @@ class TestFRD:
             (f1*f2).frequency_response(chkpts)[1],
             (sys*sys).frequency_response(chkpts)[1])
 
-    @slycotonly
     @pytest.mark.parametrize(
         "frd_fcn", [ct.frd, ct.FRD, ct.FrequencyResponseData])
     def testMIMOSmooth(self, frd_fcn):

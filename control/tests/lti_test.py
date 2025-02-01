@@ -309,7 +309,6 @@ class TestLTI:
             evalfr(sys, [[0.1j, 1j], [1j, 10j]])
 
 
-@slycotonly
 @pytest.mark.parametrize(
     "outdx, inpdx, key",
     [('y[0]', 'u[1]', (0, 1)),
@@ -356,7 +355,6 @@ def test_subsys_indexing(fcn, outdx, inpdx, key):
                 subsys_chk.frequency_response(omega).response)
 
 
-@slycotonly
 @pytest.mark.parametrize("op", [
     '__mul__', '__rmul__', '__add__', '__radd__', '__sub__', '__rsub__'])
 @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd])
