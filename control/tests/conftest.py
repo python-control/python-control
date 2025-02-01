@@ -92,15 +92,13 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "slow: mark test as slow to run")
 
 
-def assert_tf_close_coeff(tf_a, tf_b, rtol=1e-5, atol=1e-8):
+def assert_tf_close_coeff(actual, desired, rtol=1e-5, atol=1e-8):
     """Check if two transfer functions have close coefficients.
 
     Parameters
     ----------
-    tf_a : TransferFunction
-        First transfer function.
-    tf_b : TransferFunction
-        Second transfer function.
+    actual, desired : TransferFunction
+        Transfer functions to compare.
     rtol : float
         Relative tolerance for ``np.testing.assert_allclose``.
     atol : float
@@ -111,18 +109,18 @@ def assert_tf_close_coeff(tf_a, tf_b, rtol=1e-5, atol=1e-8):
     AssertionError
     """
     # Check number of outputs and inputs
-    assert tf_a.noutputs == tf_b.noutputs
-    assert tf_a.ninputs == tf_b.ninputs
+    assert actual.noutputs == desired.noutputs
+    assert actual.ninputs == desired.ninputs
     # Check timestep
-    assert  tf_a.dt == tf_b.dt
+    assert  actual.dt == desired.dt
     # Check coefficient arrays
-    for i in range(tf_a.noutputs):
-        for j in range(tf_a.ninputs):
+    for i in range(actual.noutputs):
+        for j in range(actual.ninputs):
             np.testing.assert_allclose(
-                tf_a.num[i][j],
-                tf_b.num[i][j],
+                actual.num[i][j],
+                desired.num[i][j],
                 rtol=rtol, atol=atol)
             np.testing.assert_allclose(
-                tf_a.den[i][j],
-                tf_b.den[i][j],
+                actual.den[i][j],
+                desired.den[i][j],
                 rtol=rtol, atol=atol)
