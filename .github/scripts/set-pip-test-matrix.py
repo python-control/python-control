@@ -1,7 +1,5 @@
-""" set-pip-test-matrix.py
+"""Create test matrix for pip wheels in OS/BLAS test matrix workflow."""
 
-Create test matrix for pip wheels
-"""
 import json
 from pathlib import Path
 
