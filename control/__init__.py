@@ -70,6 +70,11 @@ functionality:
 # Import functions from within the control system library
 # Note: the functions we use are specified as __all__ variables in the modules
 
+# don't warn about `import *`
+# ruff: noqa: F403
+# don't warn about unknown names; they come `import *`
+# ruff: noqa: F405
+
 # Input/output system modules
 from .iosys import *
 from .nlsys import *
@@ -106,8 +111,8 @@ from .passivity import *
 from .sysnorm import *
 
 # Allow access to phase_plane functions as ct.phaseplot.fcn or ct.pp.fcn
-from . import phaseplot
-from . import phaseplot as pp
+from . import phaseplot as phaseplot
+pp = phaseplot
 
 # Exceptions
 from .exception import *
