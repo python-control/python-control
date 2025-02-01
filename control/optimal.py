@@ -162,7 +162,7 @@ class OptimalControlProblem():
         if trajectory_method is None:
             trajectory_method = 'collocation' if sys.isctime() else 'shooting'
         elif trajectory_method not in _optimal_trajectory_methods:
-            raise NotImplementedError(f"Unkown method {method}")
+            raise NotImplementedError(f"Unknown method {trajectory_method}")
 
         self.shooting = trajectory_method in {'shooting'}
         self.collocation = trajectory_method in {'collocation'}
@@ -1105,7 +1105,7 @@ def solve_ocp(
     # Process (legacy) method keyword
     if kwargs.get('method'):
         method = kwargs.pop('method')
-        if method not in optimal_methods:
+        if method not in _optimal_trajectory_methods:
             if kwargs.get('minimize_method'):
                 raise ValueError("'minimize_method' specified more than once")
             warnings.warn(

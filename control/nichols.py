@@ -136,7 +136,7 @@ def nichols_plot(
 
         # Decide on the system name and label
         sysname = response.sysname if response.sysname is not None \
-            else f"Unknown-{idx_sys}"
+            else f"Unknown-sys_{idx}"
         label_ = sysname if label is None else label[idx]
 
         # Generate the plot

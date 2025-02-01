@@ -2219,7 +2219,7 @@ def gangof4_plot(
         See :class:`ControlPlot` for more detailed information.
 
     """
-    if len(args) == 1 and isinstance(arg, FrequencyResponseData):
+    if len(args) == 1 and isinstance(args[0], FrequencyResponseData):
         if any([kw is not None
                 for kw in [omega, omega_limits, omega_num, Hz]]):
             raise ValueError(
