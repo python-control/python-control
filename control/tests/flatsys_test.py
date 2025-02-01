@@ -470,9 +470,9 @@ class TestFlatSys:
         r1 = traj1.response(teval)
         r2 = traj2.response(teval)
 
-        assert np.max(abs(r1.x-r2.x)) == 0
-        assert np.max(abs(r1.u-r2.u)) == 0
-        assert np.max(abs(r1.y-r2.y)) == 0
+        np.testing.assert_array_equal(r1.x, r2.x)
+        np.testing.assert_array_equal(r1.y, r2.y)
+        np.testing.assert_array_equal(r1.u, r2.u)
 
 
     def test_bezier_basis(self):
