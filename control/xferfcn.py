@@ -1516,6 +1516,12 @@ def _convert_to_transfer_function(
             den = [[[1.] for j in range(sys.ninputs)]
                    for i in range(sys.noutputs)]
         else:
+            # Preallocate numerator and denominator arrays
+            num = [[[] for j in range(sys.ninputs)]
+                   for i in range(sys.noutputs)]
+            den = [[[] for j in range(sys.ninputs)]
+                   for i in range(sys.noutputs)]
+
             try:
                 # Use Slycot to make the transformation
                 # Make sure to convert system matrices to numpy arrays
@@ -1523,12 +1529,6 @@ def _convert_to_transfer_function(
                 tfout = tb04ad(
                     sys.nstates, sys.ninputs, sys.noutputs, array(sys.A),
                     array(sys.B), array(sys.C), array(sys.D), tol1=0.0)
-
-                # Preallocate outputs.
-                num = [[[] for j in range(sys.ninputs)]
-                       for i in range(sys.noutputs)]
-                den = [[[] for j in range(sys.ninputs)]
-                       for i in range(sys.noutputs)]
 
                 for i in range(sys.noutputs):
                     for j in range(sys.ninputs):
@@ -1538,16 +1538,13 @@ def _convert_to_transfer_function(
                         den[i][j] = list(tfout[5][i, :])
 
             except ImportError:
-                # If slycot is not available, use signal.lti (SISO only)
-                if sys.ninputs != 1 or sys.noutputs != 1:
-                    raise ControlMIMONotImplemented("Not implemented for " +
-                        "MIMO systems without slycot.")
-
-                # Do the conversion using sp.signal.ss2tf
-                # Note that this returns a 2D array for the numerator
-                num, den = sp.signal.ss2tf(sys.A, sys.B, sys.C, sys.D)
-                num = squeeze(num)  # Convert to 1D array
-                den = squeeze(den)  # Probably not needed
+                # If slycot not available, do conversion using sp.signal.ss2tf
+                for j in range(sys.ninputs):
+                    num_j, den_j = sp.signal.ss2tf(
+                        sys.A, sys.B, sys.C, sys.D, input=j)
+                    for i in range(sys.noutputs):
+                        num[i][j] = num_j[i]
+                        den[i][j] = den_j
 
         newsys = TransferFunction(num, den, sys.dt)
         if use_prefix_suffix:

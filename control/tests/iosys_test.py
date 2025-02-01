@@ -2288,7 +2288,6 @@ def test_signal_indexing():
         resp.outputs['y[0]', 'u[0]']
 
 
-@slycotonly
 @pytest.mark.parametrize("fcn, spec, expected, missing", [
     (ct.ss, {}, "states=4, outputs=3, inputs=2", r"dt|name"),
     (ct.tf, {}, "outputs=3, inputs=2", r"dt|states|name"),
