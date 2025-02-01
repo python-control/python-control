@@ -274,12 +274,12 @@ def acker(A, B, poles):
 
     """
     # Convert the inputs to matrices
-    a = _ssmatrix(A)
-    b = _ssmatrix(B)
+    A = _ssmatrix(A)
+    B = _ssmatrix(B)
 
     # Make sure the system is controllable
     ct = ctrb(A, B)
-    if np.linalg.matrix_rank(ct) != a.shape[0]:
+    if np.linalg.matrix_rank(ct) != A.shape[0]:
         raise ValueError("System not reachable; pole placement invalid")
 
     # Compute the desired characteristic polynomial
@@ -288,9 +288,9 @@ def acker(A, B, poles):
     # Place the poles using Ackermann's method
     # TODO: compute pmat using Horner's method (O(n) instead of O(n^2))
     n = np.size(p)
-    pmat = p[n-1] * np.linalg.matrix_power(a, 0)
+    pmat = p[n-1] * np.linalg.matrix_power(A, 0)
     for i in np.arange(1, n):
-        pmat = pmat + p[n-i-1] * np.linalg.matrix_power(a, i)
+        pmat = pmat + p[n-i-1] * np.linalg.matrix_power(A, i)
     K = np.linalg.solve(ct, pmat)
 
     K = K[-1][:]                # Extract the last row
