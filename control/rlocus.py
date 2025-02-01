@@ -452,20 +452,18 @@ def _RLSortRoots(roots):
     one branch to another."""
 
     sorted = zeros_like(roots)
-    for n, row in enumerate(roots):
-        if n == 0:
-            sorted[n, :] = row
-        else:
-            # sort the current row by finding the element with the
-            # smallest absolute distance to each root in the
-            # previous row
-            available = list(range(len(prevrow)))
-            for elem in row:
-                evect = elem - prevrow[available]
-                ind1 = abs(evect).argmin()
-                ind = available.pop(ind1)
-                sorted[n, ind] = elem
-        prevrow = sorted[n, :]
+    sorted[0] = roots[0]
+    for n, row in enumerate(roots[1:], start=1):
+        # sort the current row by finding the element with the
+        # smallest absolute distance to each root in the
+        # previous row
+        prevrow = sorted[n-1]
+        available = list(range(len(prevrow)))
+        for elem in row:
+            evect = elem - prevrow[available]
+            ind1 = abs(evect).argmin()
+            ind = available.pop(ind1)
+            sorted[n, ind] = elem
     return sorted
 
 
