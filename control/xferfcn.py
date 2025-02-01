@@ -221,8 +221,8 @@ class TransferFunction(LTI):
         # Determine if the transfer function is static (needed for dt)
         static = True
         for arr in [num, den]:
-            for poly in np.nditer(arr, flags=['refs_ok']):
-                if poly.item().size > 1:
+            for poly_ in np.nditer(arr, flags=['refs_ok']):
+                if poly_.item().size > 1:
                     static = False
                     break
             if not static:
@@ -1283,8 +1283,8 @@ class TransferFunction(LTI):
         that is, if the system has no dynamics. """
         for list_of_polys in self.num, self.den:
             for row in list_of_polys:
-                for poly in row:
-                    if len(poly) > 1:
+                for poly_ in row:
+                    if len(poly_) > 1:
                         return False
         return True
 
