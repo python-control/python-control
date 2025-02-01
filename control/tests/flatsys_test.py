@@ -452,6 +452,29 @@ class TestFlatSys:
         np.testing.assert_almost_equal(x_const, x_nlconst)
         np.testing.assert_almost_equal(u_const, u_nlconst)
 
+    def test_solve_flat_ocp_scalar_timepts(self):
+        # scalar timepts gives expected result
+        f = fs.LinearFlatSystem(ct.ss(ct.tf([1],[1,1])))
+
+        def terminal_cost(x, u):
+            return (x-5).dot(x-5)+u.dot(u)
+
+        traj1 = fs.solve_flat_ocp(f, [0, 1], x0=[23],
+                                  terminal_cost=terminal_cost)
+
+        traj2 = fs.solve_flat_ocp(f, 1, x0=[23],
+                                  terminal_cost=terminal_cost)
+
+        teval = np.linspace(0, 1, 101)
+
+        r1 = traj1.response(teval)
+        r2 = traj2.response(teval)
+
+        np.testing.assert_array_equal(r1.x, r2.x)
+        np.testing.assert_array_equal(r1.y, r2.y)
+        np.testing.assert_array_equal(r1.u, r2.u)
+
+
     def test_bezier_basis(self):
         bezier = fs.BezierFamily(4)
         time = np.linspace(0, 1, 100)

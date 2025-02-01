@@ -721,8 +721,7 @@ def solve_flat_ocp(
 
     # Process final time
     timepts = np.atleast_1d(timepts)
-    Tf = timepts[-1]
-    T0 = timepts[0] if len(timepts) > 1 else T0
+    T0 = timepts[0] if len(timepts) > 1 else 0
 
     # Process keyword arguments
     if trajectory_constraints is None:
