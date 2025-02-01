@@ -57,8 +57,14 @@ filterwarnings = [
     "error:.*matrix subclass:PendingDeprecationWarning",
 ]
 
-[tool.ruff.lint]
-select = ['D', 'E', 'W', 'DOC']
+[tool.ruff]
 
-[tool.ruff.lint.pydocstyle]
-convention = 'numpy'
+# TODO: expand to cover all code
+include = ['control/**.py']
+exclude = ['control/tests/*.py']
+
+[tool.ruff.lint]
+select = [
+       'F', # pyflakes
+       # todo: add more as needed
+]
