@@ -1503,7 +1503,6 @@ def _convert_to_transfer_function(
 
     """
     from .statesp import StateSpace
-    kwargs = {}
 
     if isinstance(sys, TransferFunction):
         return sys

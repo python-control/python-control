@@ -210,7 +210,7 @@ class NonlinearIOSystem(InputOutputSystem):
                 "can't multiply systems with incompatible inputs and outputs")
 
         # Make sure timebase are compatible
-        dt = common_timebase(other.dt, self.dt)
+        common_timebase(other.dt, self.dt)
 
         # Create a new system to handle the composition
         inplist = [(0, i) for i in range(other.ninputs)]
@@ -242,7 +242,7 @@ class NonlinearIOSystem(InputOutputSystem):
                              "inputs and outputs")
 
         # Make sure timebase are compatible
-        dt = common_timebase(self.dt, other.dt)
+        common_timebase(self.dt, other.dt)
 
         # Create a new system to handle the composition
         inplist = [(0, i) for i in range(self.ninputs)]

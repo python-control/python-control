@@ -161,7 +161,6 @@ def phase_plane_plot(
 
     # Create copy of kwargs for later checking to find unused arguments
     initial_kwargs = dict(kwargs)
-    passed_kwargs = False
 
     # Utility function to create keyword arguments
     def _create_kwargs(global_kwargs, local_kwargs, **other_kwargs):
@@ -1143,10 +1142,11 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         if scale is None:
             plt.quiver(x1, x2, dx[:,:,1], dx[:,:,2], angles='xy')
         elif (scale != 0):
+            plt.quiver(x1, x2, dx[:,:,0]*np.abs(scale),
+                       dx[:,:,1]*np.abs(scale), angles='xy')
             #! TODO: optimize parameters for arrows
             #! TODO: figure out arguments to make arrows show up correctly
-            xy = plt.quiver(x1, x2, dx[:,:,0]*np.abs(scale),
-                            dx[:,:,1]*np.abs(scale), angles='xy')
+            # xy = plt.quiver(...)
             # set(xy, 'LineWidth', PP_arrow_linewidth, 'Color', 'b')
 
         #! TODO: Tweak the shape of the plot
@@ -1256,15 +1256,17 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         #! TODO: figure out arguments to make arrows show up correctly
         plt.quiver(x1, x2, dx[:,:,0], dx[:,:,1], angles='xy')
     elif scale != 0 and Narrows > 0:
+        plt.quiver(x1, x2, dx[:,:,0]*abs(scale), dx[:,:,1]*abs(scale),
+                   angles='xy')
         #! TODO: figure out arguments to make arrows show up correctly
-        xy = plt.quiver(x1, x2, dx[:,:,0]*abs(scale), dx[:,:,1]*abs(scale),
-                        angles='xy')
+        # xy = plt.quiver(...)
         # set(xy, 'LineWidth', PP_arrow_linewidth)
         # set(xy, 'AutoScale', 'off')
         # set(xy, 'AutoScaleFactor', 0)
 
     if scale < 0:
-        bp = plt.plot(x1, x2, 'b.');        # add dots at base
+        plt.plot(x1, x2, 'b.');        # add dots at base
+        # bp = plt.plot(...)
         # set(bp, 'MarkerSize', PP_arrow_markersize)
 
 

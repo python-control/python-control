@@ -166,12 +166,14 @@ def lqe(*args, **kwargs):
 
     # Get the cross-covariance matrix, if given
     if (len(args) > index + 2):
-        NN = np.array(args[index+2], ndmin=2, dtype=float)
+        # NN = np.array(args[index+2], ndmin=2, dtype=float)
         raise ControlNotImplemented("cross-covariance not implemented")
 
     else:
+        pass
         # For future use (not currently used below)
-        NN = np.zeros((QN.shape[0], RN.shape[1]))
+        # NN = np.zeros((QN.shape[0], RN.shape[1]))
+
 
     # Check dimensions of G (needed before calling care())
     _check_shape("QN", QN, G.shape[1], G.shape[1])
@@ -290,7 +292,7 @@ def dlqe(*args, **kwargs):
     #    NN = np.zeros(QN.size(0),RN.size(1))
     # NG = G @ NN
     if len(args) > index + 2:
-        NN = np.array(args[index+2], ndmin=2, dtype=float)
+        # NN = np.array(args[index+2], ndmin=2, dtype=float)
         raise ControlNotImplemented("cross-covariance not yet implememented")
 
     # Check dimensions of G (needed before calling care())

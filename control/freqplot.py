@@ -759,13 +759,11 @@ def bode_plot(
             if plot_magnitude:
                 ax_mag.axhline(y=0 if dB else 1, color='k', linestyle=':',
                                zorder=-20)
-                mag_ylim = ax_mag.get_ylim()
 
             if plot_phase:
                 ax_phase.axhline(y=phase_limit if deg else
                                  math.radians(phase_limit),
                                  color='k', linestyle=':', zorder=-20)
-                phase_ylim = ax_phase.get_ylim()
 
             # Annotate the phase margin (if it exists)
             if plot_phase and pm != float('inf') and Wcp != float('nan'):
