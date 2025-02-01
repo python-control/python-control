@@ -630,7 +630,7 @@ def separatrices(
         case (stable_color, unstable_color) | [stable_color, unstable_color]:
             pass
         case single_color:
-            stable_color = unstable_color = color
+            stable_color = unstable_color = single_color
 
     # Make sure all keyword arguments were processed
     if _check_kwargs and kwargs:
