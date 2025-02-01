@@ -61,15 +61,17 @@ The docstring examples assume that the following import commands::
 """
 
 # Basis function families
-from .basis import BasisFamily
-from .poly import PolyFamily
-from .bezier import BezierFamily
-from .bspline import BSplineFamily
+from .basis import BasisFamily as BasisFamily
+from .poly import PolyFamily as PolyFamily
+from .bezier import BezierFamily as BezierFamily
+from .bspline import BSplineFamily as BSplineFamily
 
 # Classes
-from .systraj import SystemTrajectory
-from .flatsys import FlatSystem, flatsys
-from .linflat import LinearFlatSystem
+from .systraj import SystemTrajectory as SystemTrajectory
+from .flatsys import FlatSystem as FlatSystem
+from .flatsys import flatsys as flatsys
+from .linflat import LinearFlatSystem as LinearFlatSystem
 
 # Package functions
-from .flatsys import point_to_point, solve_flat_ocp
+from .flatsys import point_to_point as point_to_point
+from .flatsys import solve_flat_ocp as solve_flat_ocp
