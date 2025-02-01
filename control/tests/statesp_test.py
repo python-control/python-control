@@ -9,20 +9,21 @@ BG,  26 Jul 2020 merge statesp_array_test.py differences into statesp_test.py
 
 import operator
 
-import control as ct
 import numpy as np
 import pytest
+from numpy.linalg import solve
+from numpy.testing import assert_array_almost_equal
+from scipy.linalg import block_diag, eigvals
+
+import control as ct
 from control.config import defaults
 from control.dtime import sample_system
 from control.lti import evalfr
 from control.statesp import (StateSpace, _convert_to_statespace, _rss_generate,
                              _statesp_defaults, drss, linfnorm, rss, ss, tf2ss)
+from control.tests.conftest import (assert_tf_close_coeff, editsdefaults,
+                                    slycotonly)
 from control.xferfcn import TransferFunction, ss2tf
-from numpy.linalg import solve
-from numpy.testing import assert_array_almost_equal
-from scipy.linalg import block_diag, eigvals
-
-from .conftest import assert_tf_close_coeff, editsdefaults, slycotonly
 
 
 class TestStateSpace:
@@ -579,25 +580,28 @@ class TestStateSpace:
         np.testing.assert_allclose(expected.D, result.D)
 
     @slycotonly
-    @pytest.mark.parametrize("order", ["inv*sys", "sys*inv"])
-    @pytest.mark.parametrize("sysname", ["sys222", "sys322"])
+    @pytest.mark.parametrize("order", ["left", "right"])
+    @pytest.mark.parametrize("sysname", ["sys121", "sys222", "sys322"])
     def test_pow_inv(self, request, sysname, order):
-        """Power of -1 (inverse of biproper system).
+        """Check for identity when multiplying by inverse.
 
-        Testing transfer function representations to avoid the
-        non-uniqueness of the state-space representation. Once MIMO
-        canonical forms are supported, can check canonical state-space
-        matrices instead.
+        This holds approximately true for a few steps but is very
+        unstable due to numerical precision. Don't assume this in
+        real life. For testing purposes only!
         """
         sys = request.getfixturevalue(sysname)
-        if order == "inv*sys":
-            result = (sys**-1 * sys).minreal()
+        if order == "left":
+            combined = sys**-1 * sys
         else:
-            result = (sys * sys**-1).minreal()
-        expected = StateSpace([], [], [], np.eye(sys.ninputs), dt=0)
-        assert_tf_close_coeff(
-            ss2tf(expected).minreal(),
-            ss2tf(result).minreal())
+            combined = sys * sys**-1
+        combined = combined.minreal()
+        np.testing.assert_allclose(combined.dcgain(), np.eye(sys.ninputs),
+                                   atol=1e-7)
+        T = np.linspace(0., 0.3, 100)
+        U = np.random.rand(sys.ninputs, len(T))
+        R = combined.forced_response(T=T, U=U, squeeze=False)
+        # Check that the output is the same as the input
+        np.testing.assert_allclose(R.outputs, U)
 
     @slycotonly
     def test_truediv(self, sys222, sys322):
