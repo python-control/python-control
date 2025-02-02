@@ -72,7 +72,7 @@ functionality:
 
 # don't warn about `import *`
 # ruff: noqa: F403
-# don't warn about unknown names; they come `import *`
+# don't warn about unknown names; they come via `import *`
 # ruff: noqa: F405
 
 # Input/output system modules
