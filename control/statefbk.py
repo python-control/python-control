@@ -46,8 +46,7 @@ import scipy as sp
 
 from . import statesp
 from .config import _process_legacy_keyword
-from .exception import ControlArgument, ControlDimension, \
-    ControlSlycot
+from .exception import ControlArgument, ControlSlycot
 from .iosys import _process_indices, _process_labels, isctime, isdtime
 from .lti import LTI
 from .mateqn import care, dare
