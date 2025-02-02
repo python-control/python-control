@@ -27,6 +27,7 @@ from .iosys import (isctime, isdtime, _process_labels,
                     _process_control_disturbance_indices)
 from .nlsys import NonlinearIOSystem
 from .mateqn import care, dare, _check_shape
+from .statesp import StateSpace
 from .exception import ControlArgument, ControlNotImplemented
 from .config import _process_legacy_keyword
 
