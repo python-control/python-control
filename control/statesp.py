@@ -21,8 +21,9 @@ from warnings import warn
 import numpy as np
 import scipy as sp
 import scipy.linalg
-# todo: check override of built-in any
-from numpy import any, array, asarray, concatenate, cos, delete, empty, \
+# array needed in eval() call
+from numpy import array # noqa: F401
+from numpy import any, asarray, concatenate, cos, delete, empty, \
     exp, eye, isinf, pad, sin, squeeze, zeros
 from numpy.linalg import LinAlgError, eigvals, matrix_rank, solve
 from numpy.random import rand, randn
@@ -39,8 +40,6 @@ from .iosys import InputOutputSystem, NamedSignal, \
 from .lti import LTI, _process_frequency_response
 from .nlsys import InterconnectedSystem, NonlinearIOSystem
 import control
-
-array # pyflakes
 
 try:
     from slycot import ab13dd

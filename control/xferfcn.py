@@ -22,9 +22,11 @@ from warnings import warn
 
 import numpy as np
 import scipy as sp
-from numpy import array, delete, empty, exp, finfo, float64, ndarray, \
+# float64 needed in eval() call
+from numpy import float64 # noqa: F401
+from numpy import array, delete, empty, exp, finfo, ndarray, \
     nonzero, ones, poly, polyadd, polymul, polyval, real, roots, sqrt, \
-    squeeze, where, zeros
+    where, zeros
 from scipy.signal import TransferFunction as signalTransferFunction
 from scipy.signal import cont2discrete, tf2zpk, zpk2tf
 
@@ -35,8 +37,6 @@ from .frdata import FrequencyResponseData
 from .iosys import InputOutputSystem, NamedSignal, _process_iosys_keywords, \
     _process_subsys_index, common_timebase
 from .lti import LTI, _process_frequency_response
-
-float64 # pyflakes
 
 __all__ = ['TransferFunction', 'tf', 'zpk', 'ss2tf', 'tfdata']
 
