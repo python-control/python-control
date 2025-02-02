@@ -105,6 +105,7 @@ def phase_plane_plot(
             - lines[0] = list of Line2D objects (streamlines, separatrices).
             - lines[1] = Quiver object (vector field arrows).
             - lines[2] = list of Line2D objects (equilibrium points).
+            - lines[3] = StreamplotSet object (lines with arrows).
 
     cplt.axes : 2D array of `matplotlib.axes.Axes`
         Axes for each subplot.
@@ -136,9 +137,9 @@ def phase_plane_plot(
         and gridtype.  If set to a dict, pass on the key-value pairs in
         the dict as keywords to `phaseplot.vectorfield`.
     plot_streamplot : bool or dict, optional
-        If `True` then use matplotlib's streamplot function to plot the
-        streamlines.  If set to a dict, pass on the key-value pairs in the
-        dict as keywords to :func:`~
+        If True then use :func:`matplotlib.axes.Axes.streamplot` function
+        to plot the streamlines.  If set to a dict, pass on the key-value
+        pairs in the dict as keywords to :func:`~control.phaseplot.streamplot`.
     plot_equilpoints : bool or dict, optional
         If True (default) then plot equilibrium points based in the phase
         plot boundary. If set to a dict, pass on the key-value pairs in the
@@ -357,7 +358,7 @@ def streamplot(
 
     Parameters
     ----------
-    sys : NonlinearIOSystem or callable(t, x, ...)
+    sys : `NonlinearIOSystem` or callable(t, x, ...)
         I/O system or function used to generate phase plane data.  If a
         function is given, the remaining arguments are drawn from the
         `params` keyword.
@@ -376,27 +377,27 @@ def streamplot(
     color : matplotlib color spec, optional
         Plot the vector field in the given color.
     vary_color : bool, optional
-        If set to `True`, vary the color of the streamlines based on the magnitude
+        If set to True, vary the color of the streamlines based on the magnitude
     vary_linewidth : bool, optional
-        If set to `True`, vary the linewidth of the streamlines based on the magnitude
+        If set to True, vary the linewidth of the streamlines based on the magnitude
     cmap : str or Colormap, optional
         Colormap to use for varying the color of the streamlines
-    norm : Normalize, optional
+    norm : `matplotlib.colors.Normalize`, optional
         An instance of Normalize to use for scaling the colormap and linewidths
-    ax : matplotlib.axes.Axes
+    ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
     Returns
     -------
-    out : Quiver
+    out : StreamplotSet
 
     Other parameters
     ----------------
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['ctrlplot.rcParams'].
+        Default is set by `config.default['ctrlplot.rcParams']`.
     suppress_warnings : bool, optional
-        If set to `True`, suppress warning messages in generating trajectories.
+        If set to True, suppress warning messages in generating trajectories.
 
     """
     # Process keywords
