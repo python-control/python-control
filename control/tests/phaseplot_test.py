@@ -227,6 +227,18 @@ def test_basic_phase_plots(savefigs=False):
     if savefigs:
         plt.savefig('phaseplot-oscillator-helpers.png')
 
+    plt.figure()
+    ct.phase_plane_plot(
+        invpend, [-2*pi, 2*pi, -2, 2], plot_streamlines=False,
+        plot_streamplot=dict(vary_color=True, vary_density=True),
+        gridspec=[60, 20], params={'m': 1, 'l': 1, 'b': 0.2, 'g': 1}
+    )
+    plt.xlabel(r"$\theta$ [rad]")
+    plt.ylabel(r"$\dot\theta$ [rad/sec]")
+
+    if savefigs:
+        plt.savefig('phaseplot-invpend-streamplot.png')
+
 
 if __name__ == "__main__":
     #
