@@ -50,7 +50,7 @@ from .exception import ControlArgument, ControlDimension, \
     ControlSlycot
 from .iosys import _process_indices, _process_labels, isctime, isdtime
 from .lti import LTI
-from .mateqn import _check_shape, care, dare
+from .mateqn import care, dare
 from .nlsys import NonlinearIOSystem, interconnect
 from .statesp import StateSpace, _ssmatrix, ss
 
@@ -130,21 +130,15 @@ def place(A, B, p):
     from scipy.signal import place_poles
 
     # Convert the system inputs to NumPy arrays
-    A_mat = np.array(A)
-    B_mat = np.array(B)
-    if (A_mat.shape[0] != A_mat.shape[1]):
-        raise ControlDimension("A must be a square matrix")
-
-    if (A_mat.shape[0] != B_mat.shape[0]):
-        err_str = "The number of rows of A must equal the number of rows in B"
-        raise ControlDimension(err_str)
+    A_mat = _ssmatrix(A, square=True, name="A")
+    B_mat = _ssmatrix(B, axis=0, rows=A_mat.shape[0])
 
     # Convert desired poles to numpy array
     placed_eigs = np.atleast_1d(np.squeeze(np.asarray(p)))
 
     result = place_poles(A_mat, B_mat, placed_eigs, method='YT')
     K = result.gain_matrix
-    return _ssmatrix(K)
+    return K
 
 
 def place_varga(A, B, p, dtime=False, alpha=None):
@@ -206,10 +200,8 @@ def place_varga(A, B, p, dtime=False, alpha=None):
         raise ControlSlycot("can't find slycot module 'sb01bd'")
 
     # Convert the system inputs to NumPy arrays
-    A_mat = np.array(A)
-    B_mat = np.array(B)
-    if (A_mat.shape[0] != A_mat.shape[1] or A_mat.shape[0] != B_mat.shape[0]):
-        raise ControlDimension("matrix dimensions are incorrect")
+    A_mat = _ssmatrix(A, square=True, name="A")
+    B_mat = _ssmatrix(B, axis=0, rows=A_mat.shape[0])
 
     # Compute the system eigenvalues and convert poles to numpy array
     system_eigs = np.linalg.eig(A_mat)[0]
@@ -246,7 +238,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
                A_mat, B_mat, placed_eigs, DICO)
 
     # Return the gain matrix, with MATLAB gain convention
-    return _ssmatrix(-F)
+    return -F
 
 
 # Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
@@ -274,12 +266,12 @@ def acker(A, B, poles):
 
     """
     # Convert the inputs to matrices
-    a = _ssmatrix(A)
-    b = _ssmatrix(B)
+    A = _ssmatrix(A, square=True, name="A")
+    B = _ssmatrix(B, axis=0, rows=A.shape[0], name="B")
 
     # Make sure the system is controllable
     ct = ctrb(A, B)
-    if np.linalg.matrix_rank(ct) != a.shape[0]:
+    if np.linalg.matrix_rank(ct) != A.shape[0]:
         raise ValueError("System not reachable; pole placement invalid")
 
     # Compute the desired characteristic polynomial
@@ -288,13 +280,13 @@ def acker(A, B, poles):
     # Place the poles using Ackermann's method
     # TODO: compute pmat using Horner's method (O(n) instead of O(n^2))
     n = np.size(p)
-    pmat = p[n-1] * np.linalg.matrix_power(a, 0)
+    pmat = p[n-1] * np.linalg.matrix_power(A, 0)
     for i in np.arange(1, n):
-        pmat = pmat + p[n-i-1] * np.linalg.matrix_power(a, i)
+        pmat = pmat + p[n-i-1] * np.linalg.matrix_power(A, i)
     K = np.linalg.solve(ct, pmat)
 
-    K = K[-1][:]                # Extract the last row
-    return _ssmatrix(K)
+    K = K[-1, :]                # Extract the last row
+    return K
 
 
 def lqr(*args, **kwargs):
@@ -577,7 +569,7 @@ def dlqr(*args, **kwargs):
 
     # Compute the result (dimension and symmetry checking done in dare())
     S, E, K = dare(A, B, Q, R, N, method=method, _Ss="N")
-    return _ssmatrix(K), _ssmatrix(S), E
+    return K, S, E
 
 
 # Function to create an I/O sytems representing a state feedback controller
@@ -1098,17 +1090,11 @@ def ctrb(A, B, t=None):
     """
 
     # Convert input parameters to matrices (if they aren't already)
-    A = _ssmatrix(A)
-    if np.asarray(B).ndim == 1 and len(B) == A.shape[0]:
-        B = _ssmatrix(B, axis=0)
-    else:
-        B = _ssmatrix(B)
-
+    A = _ssmatrix(A, square=True, name="A")
     n = A.shape[0]
-    m = B.shape[1]
 
-    _check_shape('A', A, n, n, square=True)
-    _check_shape('B', B, n, m)
+    B = _ssmatrix(B, axis=0, rows=n, name="B")
+    m = B.shape[1]
 
     if t is None or t > n:
         t = n
@@ -1119,7 +1105,7 @@ def ctrb(A, B, t=None):
     for k in range(1, t):
         ctrb[:, k * m:(k + 1) * m] = np.dot(A, ctrb[:, (k - 1) * m:k * m])
 
-    return _ssmatrix(ctrb)
+    return ctrb
 
 
 def obsv(A, C, t=None):
@@ -1145,16 +1131,12 @@ def obsv(A, C, t=None):
     np.int64(2)
 
     """
-
     # Convert input parameters to matrices (if they aren't already)
-    A = _ssmatrix(A)
-    C = _ssmatrix(C)
+    A = _ssmatrix(A, square=True, name="A")
+    n = A.shape[0]
 
-    n = np.shape(A)[0]
-    p = np.shape(C)[0]
-
-    _check_shape('A', A, n, n, square=True)
-    _check_shape('C', C, p, n)
+    C = _ssmatrix(C, cols=n, name="C")
+    p = C.shape[0]
 
     if t is None or t > n:
         t = n
@@ -1166,7 +1148,7 @@ def obsv(A, C, t=None):
     for k in range(1, t):
         obsv[k * p:(k + 1) * p, :] = np.dot(obsv[(k - 1) * p:k * p, :], A)
 
-    return _ssmatrix(obsv)
+    return obsv
 
 
 def gram(sys, type):
@@ -1246,7 +1228,7 @@ def gram(sys, type):
         X, scale, sep, ferr, w = sb03md(
             n, C, A, U, dico, job='X', fact='N', trana=tra)
         gram = X
-        return _ssmatrix(gram)
+        return gram
 
     elif type == 'cf' or type == 'of':
         # Compute cholesky factored gramian from slycot routine sb03od
@@ -1269,4 +1251,4 @@ def gram(sys, type):
             X, scale, w = sb03od(
                 n, m, A, Q, C.transpose(), dico, fact='N', trans=tra)
         gram = X
-        return _ssmatrix(gram)
+        return gram

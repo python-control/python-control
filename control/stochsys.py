@@ -26,7 +26,6 @@ from .iosys import InputOutputSystem, isctime, isdtime, _process_indices, \
     _process_labels, _process_control_disturbance_indices
 from .nlsys import NonlinearIOSystem
 from .mateqn import care, dare, _check_shape
-from .statesp import StateSpace, _ssmatrix
 from .exception import ControlArgument, ControlNotImplemented
 from .config import _process_legacy_keyword
 
@@ -173,12 +172,12 @@ def lqe(*args, **kwargs):
         NN = np.zeros((QN.shape[0], RN.shape[1]))
 
     # Check dimensions of G (needed before calling care())
-    _check_shape("QN", QN, G.shape[1], G.shape[1])
+    _check_shape(QN, G.shape[1], G.shape[1], name="QN")
 
     # Compute the result (dimension and symmetry checking done in care())
     P, E, LT = care(A.T, C.T, G @ QN @ G.T, RN, method=method,
                     _Bs="C", _Qs="QN", _Rs="RN", _Ss="NN")
-    return _ssmatrix(LT.T), _ssmatrix(P), E
+    return LT.T, P, E
 
 
 # contributed by Sawyer B. Fuller <minster@uw.edu>
@@ -293,12 +292,12 @@ def dlqe(*args, **kwargs):
         raise ControlNotImplemented("cross-covariance not yet implememented")
 
     # Check dimensions of G (needed before calling care())
-    _check_shape("QN", QN, G.shape[1], G.shape[1])
+    _check_shape(QN, G.shape[1], G.shape[1], name="QN")
 
     # Compute the result (dimension and symmetry checking done in dare())
     P, E, LT = dare(A.T, C.T, G @ QN @ G.T, RN, method=method,
                     _Bs="C", _Qs="QN", _Rs="RN", _Ss="NN")
-    return _ssmatrix(LT.T), _ssmatrix(P), E
+    return LT.T, P, E
 
 
 # Function to create an estimator
