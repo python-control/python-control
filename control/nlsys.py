@@ -1712,7 +1712,7 @@ def input_output_response(
         return U[..., idx-1] * (1. - dt) + U[..., idx] * dt
 
     # Check to make sure this is not a static function
-    if nstates == 0:            # No states => map input to output
+    if sys._isstatic():
         # Make sure the user gave a time vector for evaluation (or 'T')
         if t_eval is None:
             # User overrode t_eval with None, but didn't give us the times...
