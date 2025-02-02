@@ -225,6 +225,7 @@ class TransferFunction(LTI):
                     break
             if not static:
                 break
+        self._static = static
 
         defaults = args[0] if len(args) == 1 else \
             {'inputs': num.shape[1], 'outputs': num.shape[0]}
@@ -1279,12 +1280,8 @@ class TransferFunction(LTI):
         """returns True if and only if all of the numerator and denominator
         polynomials of the (possibly MIMO) transfer function are zeroth order,
         that is, if the system has no dynamics. """
-        for list_of_polys in self.num, self.den:
-            for row in list_of_polys:
-                for poly in row:
-                    if len(poly) > 1:
-                        return False
-        return True
+        # Check done at initialization
+        return self._static
 
     # Attributes for differentiation and delay
     #
