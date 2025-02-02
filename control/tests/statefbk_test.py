@@ -67,11 +67,14 @@ class TestStatefbk:
 
     def testCtrbRejectMismatch(self):
         # gh-1097: check A, B for compatible shapes
-        with pytest.raises(ControlDimension, match='A must be a square matrix'):
+        with pytest.raises(
+                ControlDimension, match='.* A must be a square matrix'):
             ctrb([[1,2]],[1])
-        with pytest.raises(ControlDimension, match='Incompatible dimensions of B matrix'):
+        with pytest.raises(
+                ControlDimension, match='B has the wrong number of rows'):
             ctrb([[1,2],[2,3]], 1)
-        with pytest.raises(ControlDimension, match='Incompatible dimensions of B matrix'):
+        with pytest.raises(
+                ControlDimension, match='B has the wrong number of rows'):
             ctrb([[1,2],[2,3]], [[1,2]])
 
     def testObsvSISO(self):
@@ -106,11 +109,14 @@ class TestStatefbk:
 
     def testObsvRejectMismatch(self):
         # gh-1097: check A, C for compatible shapes
-        with pytest.raises(ControlDimension, match='A must be a square matrix'):
+        with pytest.raises(
+                ControlDimension, match='.* A must be a square matrix'):
             obsv([[1,2]],[1])
-        with pytest.raises(ControlDimension, match='Incompatible dimensions of C matrix'):
+        with pytest.raises(
+                ControlDimension, match='C has the wrong number of columns'):
             obsv([[1,2],[2,3]], 1)
-        with pytest.raises(ControlDimension, match='Incompatible dimensions of C matrix'):
+        with pytest.raises(
+                ControlDimension, match='C has the wrong number of columns'):
             obsv([[1,2],[2,3]], [[1],[2]])
 
     def testCtrbObsvDuality(self):
