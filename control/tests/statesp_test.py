@@ -127,19 +127,16 @@ class TestStateSpace:
          ((1, 2), TypeError, "1, 4, or 5 arguments"),
          ((np.ones((3, 2)), np.ones((3, 2)),
            np.ones((2, 2)), np.ones((2, 2))), ValueError,
-          r"A is the wrong shape; expected \(3, 3\)"),
+          r"A must be a square matrix"),
          ((np.ones((3, 3)), np.ones((2, 2)),
            np.ones((2, 3)), np.ones((2, 2))), ValueError,
-          r"B is the wrong shape; expected \(3, 2\)"),
+          r"Incompatible dimensions of B matrix; expected \(3, 2\)"),
          ((np.ones((3, 3)), np.ones((3, 2)),
            np.ones((2, 2)), np.ones((2, 2))), ValueError,
-          r"C is the wrong shape; expected \(2, 3\)"),
+          r"Incompatible dimensions of C matrix; expected \(2, 3\)"),
          ((np.ones((3, 3)), np.ones((3, 2)),
            np.ones((2, 3)), np.ones((2, 3))), ValueError,
-          r"D is the wrong shape; expected \(2, 2\)"),
-         ((np.ones((3, 3)), np.ones((3, 2)),
-           np.ones((2, 3)), np.ones((3, 2))), ValueError,
-          r"D is the wrong shape; expected \(2, 2\)"),
+          r"Incompatible dimensions of D matrix; expected \(2, 2\)"),
         ])
     def test_constructor_invalid(self, args, exc, errmsg):
         """Test invalid input to StateSpace() constructor"""

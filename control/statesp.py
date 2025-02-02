@@ -32,12 +32,14 @@ from scipy.signal import cont2discrete
 
 from . import config
 from . import bdalg
-from .exception import ControlMIMONotImplemented, ControlSlycot, slycot_check
+from .exception import ControlDimension, ControlMIMONotImplemented, \
+    ControlSlycot, slycot_check
 from .frdata import FrequencyResponseData
 from .iosys import InputOutputSystem, NamedSignal, \
     _process_iosys_keywords, _process_signal_list, _process_subsys_index, \
     common_timebase, issiso
 from .lti import LTI, _process_frequency_response
+from .mateqn import _check_shape
 from .nlsys import InterconnectedSystem, NonlinearIOSystem
 import control
 
@@ -200,21 +202,18 @@ class StateSpace(NonlinearIOSystem, LTI):
             raise TypeError(
                 "Expected 1, 4, or 5 arguments; received %i." % len(args))
 
-        # Convert all matrices to standard form
-        A = _ssmatrix(A)
-        # if B is a 1D array, turn it into a column vector if it fits
-        if np.asarray(B).ndim == 1 and len(B) == A.shape[0]:
-            B = _ssmatrix(B, axis=0)
-        else:
-            B = _ssmatrix(B)
-        if np.asarray(C).ndim == 1 and len(C) == A.shape[0]:
-            C = _ssmatrix(C, axis=1)
-        else:
-            C = _ssmatrix(C, axis=0)    # if this doesn't work, error below
+        # Convert all matrices to standard form (sizes checked later)
+        A = _ssmatrix(A, square=True, name="A")
+        B = _ssmatrix(
+            B, axis=0 if np.asarray(B).ndim == 1 and len(B) == A.shape[0]
+            else 1, name="B")
+        C = _ssmatrix(
+            C, axis=1 if np.asarray(C).ndim == 1 and len(C) == A.shape[0]
+            else 0, name="C")
         if np.isscalar(D) and D == 0 and B.shape[1] > 0 and C.shape[0] > 0:
             # If D is a scalar zero, broadcast it to the proper size
             D = np.zeros((C.shape[0], B.shape[1]))
-        D = _ssmatrix(D)
+        D = _ssmatrix(D, name="D")
 
         # If only direct term is present, adjust sizes of C and D if needed
         if D.size > 0 and B.size == 0:
@@ -261,19 +260,11 @@ class StateSpace(NonlinearIOSystem, LTI):
             B.shape = (0, self.ninputs)
             C.shape = (self.noutputs, 0)
 
-        #
         # Check to make sure everything is consistent
-        #
-        # Check that the matrix sizes are consistent
-        def _check_shape(matrix, expected, name):
-            if matrix.shape != expected:
-                raise ValueError(
-                    f"{name} is the wrong shape; "
-                    f"expected {expected} instead of {matrix.shape}")
-        _check_shape(A, (self.nstates, self.nstates), "A")
-        _check_shape(B, (self.nstates, self.ninputs), "B")
-        _check_shape(C, (self.noutputs, self.nstates), "C")
-        _check_shape(D, (self.noutputs, self.ninputs), "D")
+        _check_shape(A, self.nstates, self.nstates, name="A")
+        _check_shape(B, self.nstates, self.ninputs, name="B")
+        _check_shape(C, self.noutputs, self.nstates, name="C")
+        _check_shape(D, self.noutputs, self.ninputs, name="D")
 
         #
         # Final processing
@@ -2231,11 +2222,11 @@ def summing_junction(
 # Utility functions
 #
 
-def _ssmatrix(data, axis=1):
+def _ssmatrix(data, axis=1, square=None, rows=None, cols=None, name=None):
     """Convert argument to a (possibly empty) 2D state space matrix.
 
-    The axis keyword argument makes it convenient to specify that if the input
-    is a vector, it is a row (axis=1) or column (axis=0) vector.
+    The axis keyword argument makes it convenient to specify that if the
+    input is a vector, it is a row (axis=1) or column (axis=0) vector.
 
     Parameters
     ----------
@@ -2244,20 +2235,31 @@ def _ssmatrix(data, axis=1):
     axis : 0 or 1
         If input data is 1D, which axis to use for return object.  The default
         is 1, corresponding to a row matrix.
+    square : bool, optional
+        If set to True, check that the input matrix is square.
+    rows : int, optional
+        If set, check that the input matrix has the given number of rows.
+    cols : int, optional
+        If set, check that the input matrix has the given number of columns.
+    name : str, optional
+        Name of the state-space matrix being checked (for error messages).
 
     Returns
     -------
     arr : 2D array, with shape (0, 0) if a is empty
 
     """
-    # Convert the data into an array
+    # Process the name of the object, if available
+    name = "" if name is None else " " + name
+
+    # Convert the data into an array (always making a copy)
     arr = np.array(data, dtype=float)
     ndim = arr.ndim
     shape = arr.shape
 
     # Change the shape of the array into a 2D array
     if (ndim > 2):
-        raise ValueError("state-space matrix must be 2-dimensional")
+        raise ValueError(f"state-space matrix{name} must be 2-dimensional")
 
     elif (ndim == 2 and shape == (1, 0)) or \
          (ndim == 1 and shape == (0, )):
@@ -2271,6 +2273,21 @@ def _ssmatrix(data, axis=1):
     elif ndim == 0:
         # Passed a constant; turn into a matrix
         shape = (1, 1)
+
+    # Check to make sure any conditions are satisfied
+    if square and shape[0] != shape[1]:
+        raise ControlDimension(
+            f"state-space matrix{name} must be a square matrix")
+
+    if rows is not None and shape[0] != rows:
+        raise ControlDimension(
+            f"state-space matrix{name} has the wrong number of rows; "
+            f"expected {rows} instead of {shape[0]}")
+
+    if cols is not None and shape[1] != cols:
+        raise ControlDimension(
+            f"state-space matrix{name} has the wrong number of columns; "
+            f"expected {cols} instead of {shape[1]}")
 
     #  Create the actual object used to store the result
     return arr.reshape(shape)
@@ -2383,7 +2400,7 @@ def _convert_to_statespace(sys, use_prefix_suffix=False, method=None):
 
     # If this is a matrix, try to create a constant feedthrough
     try:
-        D = _ssmatrix(np.atleast_2d(sys))
+        D = _ssmatrix(np.atleast_2d(sys), name="D")
         return StateSpace([], [], [], D, dt=None)
 
     except Exception:
