@@ -74,7 +74,7 @@ The python-control package can also be used with `Google Colab
 <colab.google.com>`_ by including the following lines to import the
 control package::
 
-  !pip install control
+  %pip install control
   import control as ct
 
 Note that Google Colab does not currently support Slycot, so some
