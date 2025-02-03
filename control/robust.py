@@ -42,9 +42,8 @@
 # External packages and modules
 import numpy as np
 import warnings
-from .exception import *
+from .exception import ControlSlycot
 from .statesp import StateSpace
-from .statefbk import *
 
 
 def h2syn(P, nmeas, ncon):
@@ -98,12 +97,6 @@ def h2syn(P, nmeas, ncon):
     # Check for ss system object, need a utility for this?
 
     # TODO: Check for continous or discrete, only continuous supported right now
-    # if isCont():
-    #    dico = 'C'
-    # elif isDisc():
-    #    dico = 'D'
-    # else:
-    dico = 'C'
 
     try:
         from slycot import sb10hd
@@ -186,12 +179,6 @@ def hinfsyn(P, nmeas, ncon):
     # Check for ss system object, need a utility for this?
 
     # TODO: Check for continous or discrete, only continuous supported right now
-    # if isCont():
-    #    dico = 'C'
-    # elif isDisc():
-    #    dico = 'D'
-    # else:
-    dico = 'C'
 
     try:
         from slycot import sb10ad

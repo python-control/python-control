@@ -1838,8 +1838,6 @@ def initial_response(
     >>> T, yout = ct.initial_response(G)
 
     """
-    from .lti import LTI
-
     # Create the time and input vectors
     if T is None or np.asarray(T).size == 1:
         T = _default_time_vector(sysdata, N=T_num, tfinal=T, is_step=False)

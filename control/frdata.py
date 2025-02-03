@@ -15,8 +15,8 @@ from copy import copy
 from warnings import warn
 
 import numpy as np
-from numpy import absolute, angle, array, empty, eye, imag, linalg, ones, \
-    real, sort, where
+from numpy import absolute, array, empty, eye, imag, linalg, ones, \
+    real, sort
 from scipy.interpolate import splev, splprep
 
 from . import config

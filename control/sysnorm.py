@@ -12,7 +12,6 @@ Author: Henrik Sandberg
 """
 
 import numpy as np
-import scipy as sp
 import numpy.linalg as la
 import warnings
 

@@ -50,6 +50,9 @@ $Id$
 
 """
 
+# Silence unused imports (F401), * imports (F403), unknown symbols (F405)
+# ruff: noqa: F401, F403, F405
+
 # Import MATLAB-like functions that are defined in other packages
 from scipy.signal import zpk2ss, ss2zpk, tf2zpk, zpk2tf
 from numpy import linspace, logspace

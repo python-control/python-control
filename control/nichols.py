@@ -21,7 +21,6 @@ from . import config
 from .ctrlplot import ControlPlot, _get_line_labels, _process_ax_keyword, \
     _process_legend_keywords, _process_line_labels, _update_plot_title
 from .ctrlutil import unwrap
-from .freqplot import _default_frequency_range, _freqplot_defaults
 from .lti import frequency_response
 from .statesp import StateSpace
 from .xferfcn import TransferFunction
@@ -137,7 +136,7 @@ def nichols_plot(
 
         # Decide on the system name and label
         sysname = response.sysname if response.sysname is not None \
-            else f"Unknown-{idx_sys}"
+            else f"Unknown-sys_{idx}"
         label_ = sysname if label is None else label[idx]
 
         # Generate the plot

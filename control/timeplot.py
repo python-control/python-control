@@ -11,7 +11,6 @@
 import itertools
 from warnings import warn
 
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -178,8 +177,6 @@ def time_response_plot(
 
     """
     from .ctrlplot import _process_ax_keyword, _process_line_labels
-    from .iosys import InputOutputSystem
-    from .timeresp import TimeResponseData
 
     #
     # Process keywords and set defaults

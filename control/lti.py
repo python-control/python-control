@@ -7,7 +7,8 @@ and TransferFunction.  It is designed for use in the python-control library.
 import numpy as np
 import math
 
-from numpy import real, angle, abs
+# todo: override built-in abs
+from numpy import real, abs
 from warnings import warn
 from . import config
 from .iosys import InputOutputSystem

@@ -16,16 +16,18 @@ __license__ = "BSD"
 __maintainer__ = "Richard Murray"
 __email__ = "murray@cds.caltech.edu"
 
+import warnings
+
 import numpy as np
 import scipy as sp
 from math import sqrt
 
-from .statesp import StateSpace
 from .lti import LTI
-from .iosys import InputOutputSystem, isctime, isdtime, _process_indices, \
-    _process_labels, _process_control_disturbance_indices
+from .iosys import (isctime, isdtime, _process_labels,
+                    _process_control_disturbance_indices)
 from .nlsys import NonlinearIOSystem
 from .mateqn import care, dare, _check_shape
+from .statesp import StateSpace
 from .exception import ControlArgument, ControlNotImplemented
 from .config import _process_legacy_keyword
 
@@ -164,12 +166,14 @@ def lqe(*args, **kwargs):
 
     # Get the cross-covariance matrix, if given
     if (len(args) > index + 2):
-        NN = np.array(args[index+2], ndmin=2, dtype=float)
+        # NN = np.array(args[index+2], ndmin=2, dtype=float)
         raise ControlNotImplemented("cross-covariance not implemented")
 
     else:
+        pass
         # For future use (not currently used below)
-        NN = np.zeros((QN.shape[0], RN.shape[1]))
+        # NN = np.zeros((QN.shape[0], RN.shape[1]))
+
 
     # Check dimensions of G (needed before calling care())
     _check_shape(QN, G.shape[1], G.shape[1], name="QN")
@@ -288,7 +292,7 @@ def dlqe(*args, **kwargs):
     #    NN = np.zeros(QN.size(0),RN.size(1))
     # NG = G @ NN
     if len(args) > index + 2:
-        NN = np.array(args[index+2], ndmin=2, dtype=float)
+        # NN = np.array(args[index+2], ndmin=2, dtype=float)
         raise ControlNotImplemented("cross-covariance not yet implememented")
 
     # Check dimensions of G (needed before calling care())
@@ -459,7 +463,7 @@ def create_estimator_iosystem(
     # Set the input and direct matrices
     B = sys.B[:, ctrl_idx]
     if not np.allclose(sys.D, 0):
-        raise NotImplemented("nonzero 'D' matrix not yet implemented")
+        raise NotImplementedError("nonzero 'D' matrix not yet implemented")
 
     # Set the output matrices
     if C is not None:

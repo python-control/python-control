@@ -8,7 +8,7 @@
 
 import numpy as np
 from .basis import BasisFamily
-from scipy.interpolate import BSpline, splev
+from scipy.interpolate import BSpline
 
 class BSplineFamily(BasisFamily):
     """B-spline basis functions.

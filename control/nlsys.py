@@ -18,7 +18,6 @@ points and linearizations.
 
 """
 
-import copy
 from warnings import warn
 
 import numpy as np
@@ -26,7 +25,7 @@ import scipy as sp
 
 from . import config
 from .iosys import InputOutputSystem, _parse_spec, _process_iosys_keywords, \
-    _process_signal_list, common_timebase, iosys_repr, isctime, isdtime
+    common_timebase, iosys_repr, isctime, isdtime
 from .timeresp import _check_convert_array, _process_time_response, \
     TimeResponseData, TimeResponseList
 
@@ -211,7 +210,7 @@ class NonlinearIOSystem(InputOutputSystem):
                 "can't multiply systems with incompatible inputs and outputs")
 
         # Make sure timebase are compatible
-        dt = common_timebase(other.dt, self.dt)
+        common_timebase(other.dt, self.dt)
 
         # Create a new system to handle the composition
         inplist = [(0, i) for i in range(other.ninputs)]
@@ -243,7 +242,7 @@ class NonlinearIOSystem(InputOutputSystem):
                              "inputs and outputs")
 
         # Make sure timebase are compatible
-        dt = common_timebase(self.dt, other.dt)
+        common_timebase(self.dt, other.dt)
 
         # Create a new system to handle the composition
         inplist = [(0, i) for i in range(self.ninputs)]
@@ -811,7 +810,7 @@ class InterconnectedSystem(NonlinearIOSystem):
                 return (" - " if not first else "-") + \
                     f"{abs(gain)} * {signal}"
 
-        out += f"\nConnections:\n"
+        out += "\nConnections:\n"
         for i in range(len(input_list)):
             first = True
             cxn = f"{input_list[i]} <- "
@@ -831,7 +830,7 @@ class InterconnectedSystem(NonlinearIOSystem):
                 cxn, width=78, initial_indent=" * ",
                 subsequent_indent="     ")) + "\n"
 
-        out += f"\nOutputs:\n"
+        out += "\nOutputs:\n"
         for i in range(len(self.output_labels)):
             first = True
             cxn = f"{self.output_labels[i]} <- "
@@ -2474,8 +2473,7 @@ def interconnect(
     `outputs`, for more natural naming of SISO systems.
 
     """
-    from .statesp import LinearICSystem, StateSpace, _convert_to_statespace
-    from .xferfcn import TransferFunction
+    from .statesp import LinearICSystem, StateSpace
 
     dt = kwargs.pop('dt', None)         # bypass normal 'dt' processing
     name, inputs, outputs, states, _ = _process_iosys_keywords(kwargs)
@@ -2537,7 +2535,7 @@ def interconnect(
     # This includes signal lists such as ('sysname', ['sig1', 'sig2', ...])
     # as well as slice-based specifications such as 'sysname.signal[i:j]'.
     #
-    dprint(f"Pre-processing connections:")
+    dprint("Pre-processing connections:")
     new_connections = []
     for connection in connections:
         dprint(f"  parsing {connection=}")
@@ -2576,7 +2574,7 @@ def interconnect(
     #
     dprint(f"Pre-processing input connections: {inplist}")
     if not isinstance(inplist, list):
-        dprint(f"  converting inplist to list")
+        dprint("  converting inplist to list")
         inplist = [inplist]
     new_inplist, new_inputs = [], [] if inplist_none else inputs
 
@@ -2639,7 +2637,7 @@ def interconnect(
         else:
             if isinstance(connection, list):
                 # Passed a list => create input map
-                dprint(f"  detected input list")
+                dprint("  detected input list")
                 signal_list = []
                 for spec in connection:
                     isys, indices, gain = _parse_spec(syslist, spec, 'input')
@@ -2665,7 +2663,7 @@ def interconnect(
     #
     dprint(f"Pre-processing output connections: {outlist}")
     if not isinstance(outlist, list):
-        dprint(f"  converting outlist to list")
+        dprint("  converting outlist to list")
         outlist = [outlist]
     new_outlist, new_outputs = [], [] if outlist_none else outputs
     for iout, connection in enumerate(outlist):
@@ -2742,7 +2740,7 @@ def interconnect(
 
             if isinstance(connection, list):
                 # Passed a list => create input map
-                dprint(f"  detected output list")
+                dprint("  detected output list")
                 signal_list = []
                 for spec in connection:
                     signal_list += _find_output_or_input_signal(spec)

@@ -30,9 +30,9 @@ function_skiplist = [
 function_docstring_hash = {
     control.append:                     '1bddbac0fe932755c85e9fb0bfb97d88',
     control.describing_function_plot:   '95f894706b1d3eeb3b854934596af09f',
-    control.dlqe:                       'f2e52e35692cf5ffe911684d41d284c9',
+    control.dlqe:                       'e1e9479310e4e5a6f50f5459fb3d2dfb',
     control.dlqr:                       '56d7f3a452bc8d7a7256a52d9d1dcb37',
-    control.lqe:                        'f0ba6cde8191cbc10f052096ffc3fcbb',
+    control.lqe:                        '0447235d11b685b9dfaf485dd01fdb9a',
     control.lqr:                        'a3e0a85f781fc9c0f69a4b7da4f0bd22',
     control.margin:                     'f02b3034f5f1d44ce26f916cc3e51600',
     control.parallel:                   'bfc470aef75dbb923f9c6fb8bf3c9b43',
@@ -40,7 +40,7 @@ function_docstring_hash = {
     control.ss2tf:                      'e779b8d70205bc1218cc2a4556a66e4b',
     control.tf2ss:                      '086a3692659b7321c2af126f79f4bc11',
     control.markov:                     'a4199c54cb50f07c0163d3790739eafe',
-    control.gangof4:                    '0e52eb6cf7ce024f9a41f3ae3ebf04f7',
+    control.gangof4:                    'f9673ae4c6d26c202060ed4b9ef54800',
 }
 
 # List of keywords that we can skip testing (special cases)

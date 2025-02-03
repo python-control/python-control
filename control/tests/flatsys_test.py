@@ -618,6 +618,11 @@ class TestFlatSys:
                 flat_sys, timepts, x0, u0, xf, uf,
                 constraints=[(None, 0, 0, 0)], basis=fs.PolyFamily(8))
 
+        # too few timepoints
+        with pytest.raises(ct.ControlArgument, match="at least three time points"):
+            fs.point_to_point(
+                flat_sys, timepts[:2], x0, u0, xf, uf, basis=fs.PolyFamily(10), cost=cost_fcn)
+
         # Unsolvable optimization
         constraint = [opt.input_range_constraint(flat_sys, -0.01, 0.01)]
         with pytest.warns(UserWarning, match="unable to solve"):

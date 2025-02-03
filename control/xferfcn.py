@@ -22,9 +22,11 @@ from warnings import warn
 
 import numpy as np
 import scipy as sp
-from numpy import angle, array, delete, empty, exp, finfo, float64, ndarray, \
-    nonzero, ones, pi, poly, polyadd, polymul, polyval, real, roots, sqrt, \
-    squeeze, where, zeros
+# float64 needed in eval() call
+from numpy import float64 # noqa: F401
+from numpy import array, delete, empty, exp, finfo, ndarray, \
+    nonzero, ones, poly, polyadd, polymul, polyval, real, roots, sqrt, \
+    where, zeros
 from scipy.signal import TransferFunction as signalTransferFunction
 from scipy.signal import cont2discrete, tf2zpk, zpk2tf
 
@@ -33,7 +35,7 @@ from . import bdalg
 from .exception import ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
 from .iosys import InputOutputSystem, NamedSignal, _process_iosys_keywords, \
-    _process_subsys_index, common_timebase, isdtime
+    _process_subsys_index, common_timebase
 from .lti import LTI, _process_frequency_response
 
 __all__ = ['TransferFunction', 'tf', 'zpk', 'ss2tf', 'tfdata']
@@ -219,8 +221,8 @@ class TransferFunction(LTI):
         # Determine if the transfer function is static (needed for dt)
         static = True
         for arr in [num, den]:
-            for poly in np.nditer(arr, flags=['refs_ok']):
-                if poly.item().size > 1:
+            for poly_ in np.nditer(arr, flags=['refs_ok']):
+                if poly_.item().size > 1:
                     static = False
                     break
             if not static:
@@ -1281,8 +1283,8 @@ class TransferFunction(LTI):
         that is, if the system has no dynamics. """
         for list_of_polys in self.num, self.den:
             for row in list_of_polys:
-                for poly in row:
-                    if len(poly) > 1:
+                for poly_ in row:
+                    if len(poly_) > 1:
                         return False
         return True
 
@@ -1501,7 +1503,6 @@ def _convert_to_transfer_function(
 
     """
     from .statesp import StateSpace
-    kwargs = {}
 
     if isinstance(sys, TransferFunction):
         return sys

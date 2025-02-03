@@ -38,7 +38,7 @@ from scipy.integrate import odeint
 from . import config
 from .ctrlplot import ControlPlot, _add_arrows_to_line2D, _get_color, \
     _process_ax_keyword, _update_plot_title
-from .exception import ControlNotImplemented
+from .exception import ControlArgument
 from .nlsys import NonlinearIOSystem, find_operating_point, \
     input_output_response
 
@@ -162,7 +162,6 @@ def phase_plane_plot(
 
     # Create copy of kwargs for later checking to find unused arguments
     initial_kwargs = dict(kwargs)
-    passed_kwargs = False
 
     # Utility function to create keyword arguments
     def _create_kwargs(global_kwargs, local_kwargs, **other_kwargs):
@@ -631,7 +630,7 @@ def separatrices(
         case (stable_color, unstable_color) | [stable_color, unstable_color]:
             pass
         case single_color:
-            stable_color = unstable_color = color
+            stable_color = unstable_color = single_color
 
     # Make sure all keyword arguments were processed
     if _check_kwargs and kwargs:
@@ -1091,9 +1090,9 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     # Get parameters to pass to function
     if parms:
         warnings.warn(
-            f"keyword 'parms' is deprecated; use 'params'", FutureWarning)
+            "keyword 'parms' is deprecated; use 'params'", FutureWarning)
         if params:
-            raise ControlArgument(f"duplicate keywords 'parms' and 'params'")
+            raise ControlArgument("duplicate keywords 'parms' and 'params'")
         else:
             params = parms
 
@@ -1144,10 +1143,11 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         if scale is None:
             plt.quiver(x1, x2, dx[:,:,1], dx[:,:,2], angles='xy')
         elif (scale != 0):
+            plt.quiver(x1, x2, dx[:,:,0]*np.abs(scale),
+                       dx[:,:,1]*np.abs(scale), angles='xy')
             #! TODO: optimize parameters for arrows
             #! TODO: figure out arguments to make arrows show up correctly
-            xy = plt.quiver(x1, x2, dx[:,:,0]*np.abs(scale),
-                            dx[:,:,1]*np.abs(scale), angles='xy')
+            # xy = plt.quiver(...)
             # set(xy, 'LineWidth', PP_arrow_linewidth, 'Color', 'b')
 
         #! TODO: Tweak the shape of the plot
@@ -1257,15 +1257,17 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         #! TODO: figure out arguments to make arrows show up correctly
         plt.quiver(x1, x2, dx[:,:,0], dx[:,:,1], angles='xy')
     elif scale != 0 and Narrows > 0:
+        plt.quiver(x1, x2, dx[:,:,0]*abs(scale), dx[:,:,1]*abs(scale),
+                   angles='xy')
         #! TODO: figure out arguments to make arrows show up correctly
-        xy = plt.quiver(x1, x2, dx[:,:,0]*abs(scale), dx[:,:,1]*abs(scale),
-                        angles='xy')
+        # xy = plt.quiver(...)
         # set(xy, 'LineWidth', PP_arrow_linewidth)
         # set(xy, 'AutoScale', 'off')
         # set(xy, 'AutoScaleFactor', 0)
 
     if scale < 0:
-        bp = plt.plot(x1, x2, 'b.');        # add dots at base
+        plt.plot(x1, x2, 'b.');        # add dots at base
+        # bp = plt.plot(...)
         # set(bp, 'MarkerSize', PP_arrow_markersize)
 
 
