@@ -68,7 +68,7 @@ class TestTimeresp:
         siso_tf2 = copy(siso_ss1)
         siso_tf2.sys = ss2tf(siso_ss1.sys)
 
-        """MIMO system, contains ``siso_ss1`` twice"""
+        """MIMO system, contains `siso_ss1` twice"""
         mimo_ss1 = copy(siso_ss1)
         A = np.zeros((4, 4))
         A[:2, :2] = siso_ss1.sys.A
@@ -84,7 +84,7 @@ class TestTimeresp:
         D[1:, 1:] = siso_ss1.sys.D
         mimo_ss1.sys = StateSpace(A, B, C, D)
 
-        """MIMO system, contains ``siso_ss2`` twice"""
+        """MIMO system, contains `siso_ss2` twice"""
         mimo_ss2 = copy(siso_ss2)
         A = np.zeros((4, 4))
         A[:2, :2] = siso_ss2.sys.A
@@ -336,7 +336,7 @@ class TestTimeresp:
 
     @pytest.mark.parametrize("tsystem", ["mimo_ss1"], indirect=True)
     def test_step_response_mimo(self, tsystem):
-        """Test MIMO system, which contains ``siso_ss1`` twice."""
+        """Test MIMO system, which contains `siso_ss1` twice."""
         sys = tsystem.sys
         t = tsystem.t
         yref = tsystem.ystep
@@ -358,7 +358,7 @@ class TestTimeresp:
     def test_step_response_return(self, tsystem):
         """Verify continuous and discrete time use same return conventions."""
         sysc = tsystem.sys
-        sysd = c2d(sysc, 1)            # discrete time system
+        sysd = c2d(sysc, 1)            # discrete-time system
         Tvec = np.linspace(0, 10, 11)  # make sure to use integer times 0..10
         Tc, youtc = step_response(sysc, Tvec, input=0)
         Td, youtd = step_response(sysd, Tvec, input=0)
@@ -530,7 +530,7 @@ class TestTimeresp:
 
     @pytest.mark.parametrize("tsystem", ["siso_tf1"], indirect=True)
     def test_discrete_time_impulse(self, tsystem):
-        # discrete time impulse sampled version should match cont time
+        # discrete-time impulse sampled version should match cont time
         dt = 0.1
         t = np.arange(0, 3, dt)
         sys = tsystem.sys
@@ -539,7 +539,7 @@ class TestTimeresp:
                                              impulse_response(sysdt, t)[1])
 
     def test_discrete_time_impulse_input(self):
-        # discrete time impulse input, Only one active input for each trace
+        # discrete-time impulse input, Only one active input for each trace
         A = [[.5, 0.25],[.0, .5]]
         B = [[1., 0,],[0., 1.]]
         C = [[1., 0.],[0., 1.]]
@@ -734,10 +734,10 @@ class TestTimeresp:
         """Test invalid parameters dtime with sys.dt > 0."""
         with pytest.raises(ValueError, match="can't both be zero"):
             forced_response(tsystem.sys)
-        with pytest.raises(ValueError, match="Parameter ``U``: Wrong shape"):
+        with pytest.raises(ValueError, match="Parameter `U`: Wrong shape"):
             forced_response(tsystem.sys,
                             T=tsystem.t, U=np.random.randn(1, 12))
-        with pytest.raises(ValueError, match="Parameter ``U``: Wrong shape"):
+        with pytest.raises(ValueError, match="Parameter `U`: Wrong shape"):
             forced_response(tsystem.sys,
                             T=tsystem.t, U=np.random.randn(12))
         with pytest.raises(ValueError, match="must match sampling time"):

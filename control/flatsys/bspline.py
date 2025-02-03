@@ -1,14 +1,19 @@
 # bspline.py - B-spline basis functions
 # RMM, 2 Aug 2022
-#
-# This class implements a set of B-spline basis functions that implement a
-# piecewise polynomial at a set of breakpoints t0, ..., tn with given orders
-# and smoothness.
-#
+
+"""B-spline basis functions.
+
+This module implements a set of B-spline basis functions that
+implement a piecewise polynomial at a set of breakpoints t0, ..., tn
+with given orders and smoothness.
+
+"""
 
 import numpy as np
-from .basis import BasisFamily
 from scipy.interpolate import BSpline
+
+from .basis import BasisFamily
+
 
 class BSplineFamily(BasisFamily):
     """B-spline basis functions.
@@ -38,7 +43,7 @@ class BSplineFamily(BasisFamily):
         The number of spline variables.  If specified as None (default),
         then the spline basis describes a single variable, with no indexing.
         If the number of spine variables is > 0, then the spline basis is
-        index using the `var` keyword.
+        indexed using the `var` keyword.
 
     """
     def __init__(self, breakpoints, degree, smoothness=None, vars=None):
@@ -120,7 +125,7 @@ class BSplineFamily(BasisFamily):
             smoothness, nvars, (int), name='smoothness', minimum=0,
             default=[d - 1 for d in degree])
 
-        # Make sure degree is sufficent for the level of smoothness
+        # Make sure degree is sufficient for the level of smoothness
         if any([degree[i] - smoothness[i] < 1 for i in range(nvars)]):
             raise ValueError("degree must be greater than smoothness")
 
@@ -180,7 +185,11 @@ class BSplineFamily(BasisFamily):
 
     # Compute the kth derivative of the ith basis function at time t
     def eval_deriv(self, i, k, t, var=None):
-        """Evaluate the kth derivative of the ith basis function at time t."""
+        """Evaluate kth derivative of ith basis function at time t.
+
+        See `BasisFamily.eval_deriv` for more information.
+
+        """
         if self.nvars is None or (self.nvars == 1 and var is None):
             # Use same variable for all requests
             var = 0

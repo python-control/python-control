@@ -256,7 +256,7 @@ jobs:
       - name: Install Wheel
         run: |
           python -m pip install --upgrade pip
-          pip install matplotlib scipy pytest pytest-cov pytest-timeout coverage
+          pip install matplotlib scipy pytest pytest-cov pytest-timeout coverage numpydoc
           pip install slycot-wheels/${{ matrix.packagekey }}/slycot*.whl
           pip show slycot
       - name: Test with pytest

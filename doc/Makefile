@@ -1,5 +1,18 @@
-# Minimal makefile for Sphinx documentation
-#
+# Makefile for python-control Sphinx documentation
+# RMM, 15 Jan 2025
+
+FIGS = figures/classes.pdf
+RST_FIGS = figures/flatsys-steering-compare.png				\
+  figures/iosys-predprey-open.png					\
+  figures/timeplot-servomech-combined.png				\
+  figures/steering-optimal.png figures/ctrlplot-servomech.png		\
+  figures/phaseplot-dampedosc-default.png				\
+  figures/timeplot-mimo_step-default.png				\
+  figures/freqplot-siso_bode-default.png				\
+  figures/pzmap-siso_ctime-default.png					\
+  figures/rlocus-siso_ctime-default.png					\
+  figures/stochastic-whitenoise-response.png				\
+  figures/xferfcn-delay-compare.png figures/descfcn-pade-backlash.png
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
@@ -12,31 +25,46 @@ BUILDDIR      = _build
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: help Makefile
+.PHONY: help Makefile html latexpdf doctest clean distclean
 
-# Rules to create figures
-FIGS = classes.pdf timeplot-mimo_step-default.png \
-  freqplot-siso_bode-default.png rlocus-siso_ctime-default.png \
-  phaseplot-dampedosc-default.png ctrlplot-servomech.png
-classes.pdf: classes.fig
-	fig2dev -Lpdf $< $@
+# List of the first RST figure of each type in each file that is generated
+figures/flatsys-steering-compare.png: flatsys.rst
+	@$(SPHINXBUILD) -M doctest "$(SOURCEDIR)" "$(BUILDDIR)"
+figures/iosys-predprey-open.png: iosys.rst
+	@$(SPHINXBUILD) -M doctest "$(SOURCEDIR)" "$(BUILDDIR)"
+figures/timeplot-servomech-combined.png: nlsys.rst
+	@$(SPHINXBUILD) -M doctest "$(SOURCEDIR)" "$(BUILDDIR)"
+figures/steering-optimal.png: optimal.rst
+	@$(SPHINXBUILD) -M doctest "$(SOURCEDIR)" "$(BUILDDIR)"
+figures/phaseplot-dampedosc-default.png: phaseplot.rst
+	@$(SPHINXBUILD) -M doctest "$(SOURCEDIR)" "$(BUILDDIR)"
+figures/timeplot-mimo_step-default.png		\
+  figures/freqplot-siso_bode-default.png	\
+  figures/pzmap-siso_ctime-default.png		\
+  figures/rlocus-siso_ctime-default.png		\
+  figures/ctrlplot-servomech.png: response.rst
+	@$(SPHINXBUILD) -M doctest "$(SOURCEDIR)" "$(BUILDDIR)"
 
-timeplot-mimo_step-default.png: ../control/tests/timeplot_test.py
-	PYTHONPATH=.. python $<
+figures/stochastic-whitenoise-response.png: stochastic.rst
+	@$(SPHINXBUILD) -M doctest "$(SOURCEDIR)" "$(BUILDDIR)"
 
-freqplot-siso_bode-default.png: ../control/tests/freqplot_test.py
-	PYTHONPATH=.. python $<
+figures/xferfcn-delay-compare.png: xferfcn.rst
+	@$(SPHINXBUILD) -M doctest "$(SOURCEDIR)" "$(BUILDDIR)"
 
-rlocus-siso_ctime-default.png: ../control/tests/rlocus_test.py
-	PYTHONPATH=.. python $<
+figures/descfcn-pade-backlash.png: descfcn.rst
+	@$(SPHINXBUILD) -M doctest "$(SOURCEDIR)" "$(BUILDDIR)"
 
-phaseplot-dampedosc-default.png: ../control/tests/phaseplot_test.py
-	PYTHONPATH=.. python $<
-
-ctrlplot-servomech.png: ../control/tests/ctrlplot_test.py
-	PYTHONPATH=.. python $<
+# Other figure rules
+figure/classes.pdf: figure/classes.fig
+	make -C figures classes.pdf
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-html pdf clean doctest: Makefile $(FIGS)
+html latexpdf: Makefile $(FIGS) $(RST_FIGS)
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+doctest clean: Makefile
+	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+distclean: clean
+	/bin/rm -rf generated

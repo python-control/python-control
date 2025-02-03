@@ -1,14 +1,11 @@
 # stochsys.py - stochastic systems module
 # RMM, 16 Mar 2022
-#
-# This module contains functions that are intended to be used for analysis
-# and design of stochastic control systems, mainly involving Kalman
-# filtering and its variants.
-#
 
-"""The :mod:`~control.stochsys` module contains functions for analyzing and
-designing stochastic (control) systems, including white noise processes and
-Kalman filtering.
+"""Stochastic systems module.
+
+This module contains functions for analyzing and designing stochastic
+(control) systems, including white noise processes and Kalman
+filtering.
 
 """
 
@@ -17,19 +14,19 @@ __maintainer__ = "Richard Murray"
 __email__ = "murray@cds.caltech.edu"
 
 import warnings
+from math import sqrt
 
 import numpy as np
 import scipy as sp
-from math import sqrt
 
-from .lti import LTI
-from .iosys import (isctime, isdtime, _process_labels,
-                    _process_control_disturbance_indices)
-from .nlsys import NonlinearIOSystem
-from .mateqn import care, dare, _check_shape
-from .statesp import StateSpace
-from .exception import ControlArgument, ControlNotImplemented
 from .config import _process_legacy_keyword
+from .exception import ControlArgument, ControlNotImplemented
+from .iosys import _process_control_disturbance_indices, _process_labels, \
+    isctime, isdtime
+from .lti import LTI
+from .mateqn import _check_shape, care, dare
+from .nlsys import NonlinearIOSystem
+from .statesp import StateSpace
 
 __all__ = ['lqe', 'dlqe', 'create_estimator_iosystem', 'white_noise',
            'correlation']
@@ -39,8 +36,9 @@ __all__ = ['lqe', 'dlqe', 'create_estimator_iosystem', 'white_noise',
 def lqe(*args, **kwargs):
     r"""lqe(A, G, C, QN, RN, [, NN])
 
-    Linear quadratic estimator design (Kalman filter) for continuous-time
-    systems. Given the system
+    Continuous-time linear quadratic estimator (Kalman filter).
+
+    Given the continuous-time system
 
     .. math::
 
@@ -73,12 +71,12 @@ def lqe(*args, **kwargs):
     Parameters
     ----------
     A, G, C : 2D array_like
-        Dynamics, process noise (disturbance), and output matrices
-    sys : LTI (StateSpace or TransferFunction)
+        Dynamics, process noise (disturbance), and output matrices.
+    sys : `StateSpace` or `TransferFunction`
         Linear I/O system, with the process noise input taken as the system
         input.
     QN, RN : 2D array_like
-        Process and sensor noise covariance matrices
+        Process and sensor noise covariance matrices.
     NN : 2D array, optional
         Cross covariance matrix.  Not currently implemented.
     method : str, optional
@@ -89,22 +87,22 @@ def lqe(*args, **kwargs):
     Returns
     -------
     L : 2D array
-        Kalman estimator gain
+        Kalman estimator gain.
     P : 2D array
-        Solution to Riccati equation
+        Solution to Riccati equation:
 
         .. math::
 
             A P + P A^T - (P C^T + G N) R^{-1}  (C P + N^T G^T) + G Q G^T = 0
 
     E : 1D array
-        Eigenvalues of estimator poles eig(A - L C)
+        Eigenvalues of estimator poles eig(A - L C).
 
     Notes
     -----
     If the first argument is an LTI object, then this object will be used
     to define the dynamics, noise and output matrices.  Furthermore, if the
-    LTI object corresponds to a discrete time system, the ``dlqe()``
+    LTI object corresponds to a discrete-time system, the `dlqe`
     function will be called.
 
     Examples
@@ -128,7 +126,7 @@ def lqe(*args, **kwargs):
     # Process the arguments and figure out what inputs we received
     #
 
-    # If we were passed a discrete time system as the first arg, use dlqe()
+    # If we were passed a discrete-time system as the first arg, use dlqe()
     if isinstance(args[0], LTI) and isdtime(args[0], strict=True):
         # Call dlqe
         return dlqe(*args, **kwargs)
@@ -188,8 +186,9 @@ def lqe(*args, **kwargs):
 def dlqe(*args, **kwargs):
     r"""dlqe(A, G, C, QN, RN, [, N])
 
-    Linear quadratic estimator design (Kalman filter) for discrete-time
-    systems. Given the system
+    Discrete-time linear quadratic estimator (Kalman filter).
+
+    Given the system
 
     .. math::
 
@@ -205,36 +204,36 @@ def dlqe(*args, **kwargs):
 
     .. math:: x_e[n+1] = A x_e[n] + B u[n] + L(y[n] - C x_e[n] - D u[n])
 
-    produces a state estimate x_e[n] that minimizes the expected squared error
-    using the sensor measurements y. The noise cross-correlation `NN` is
-    set to zero when omitted.
+    produces a state estimate x_e[n] that minimizes the expected squared
+    error using the sensor measurements y. The noise cross-correlation `NN`
+    is set to zero when omitted.
 
     Parameters
     ----------
-    A, G : 2D array_like
-        Dynamics and noise input matrices
+    A, G, C : 2D array_like
+        Dynamics, process noise (disturbance), and output matrices.
     QN, RN : 2D array_like
-        Process and sensor noise covariance matrices
+        Process and sensor noise covariance matrices.
     NN : 2D array, optional
-        Cross covariance matrix (not yet supported)
+        Cross covariance matrix (not yet supported).
     method : str, optional
         Set the method used for computing the result.  Current methods are
-        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
-        and then 'scipy'.
+        'slycot' and 'scipy'.  If set to None (default), try 'slycot'
+        first and then 'scipy'.
 
     Returns
     -------
     L : 2D array
-        Kalman estimator gain
+        Kalman estimator gain.
     P : 2D array
-        Solution to Riccati equation
+        Solution to Riccati equation.
 
         .. math::
 
             A P + P A^T - (P C^T + G N) R^{-1}  (C P + N^T G^T) + G Q G^T = 0
 
     E : 1D array
-        Eigenvalues of estimator poles eig(A - L C)
+        Eigenvalues of estimator poles eig(A - L C).
 
     Examples
     --------
@@ -260,9 +259,9 @@ def dlqe(*args, **kwargs):
     if (len(args) < 3):
         raise ControlArgument("not enough input arguments")
 
-    # If we were passed a continus time system as the first arg, raise error
+    # If we were passed a continuous time system as the first arg, raise error
     if isinstance(args[0], LTI) and isctime(args[0], strict=True):
-        raise ControlArgument("dlqr() called with a continuous time system")
+        raise ControlArgument("dlqr() called with a continuous-time system")
 
     # If we were passed a state space  system, use that to get system matrices
     if isinstance(args[0], StateSpace):
@@ -293,7 +292,7 @@ def dlqe(*args, **kwargs):
     # NG = G @ NN
     if len(args) > index + 2:
         # NN = np.array(args[index+2], ndmin=2, dtype=float)
-        raise ControlNotImplemented("cross-covariance not yet implememented")
+        raise ControlNotImplemented("cross-covariance not yet implemented")
 
     # Check dimensions of G (needed before calling care())
     _check_shape(QN, G.shape[1], G.shape[1], name="QN")
@@ -317,20 +316,20 @@ def create_estimator_iosystem(
     r"""Create an I/O system implementing a linear quadratic estimator.
 
     This function creates an input/output system that implements a
-    continuous time state estimator of the form
+    continuous-time state estimator of the form
 
     .. math::
 
         d \hat{x}/dt &= A \hat{x} + B u - L (C \hat{x} - y) \\
-           dP/dt &= A P + P A^T + F Q_N F^T - P C^T R_N^{-1} C P \\
+           dP/dt &= A P + P A^T + G Q_N G^T - P C^T R_N^{-1} C P \\
                L &= P C^T R_N^{-1}
 
-    or a discrete time state estimator of the form
+    or a discrete-time state estimator of the form
 
     .. math::
 
         \hat{x}[k+1] &= A \hat{x}[k] + B u[k] - L (C \hat{x}[k] - y[k]) \\
-               P[k+1] &= A P A^T + F Q_N F^T - A P C^T R_e^{-1} C P A \\
+               P[k+1] &= A P A^T + G Q_N G^T - A P C^T R_e^{-1} C P A \\
                     L &= A P C^T R_e^{-1}
 
     where :math:`R_e = R_N + C P C^T`.  It can be called in the form::
@@ -345,7 +344,7 @@ def create_estimator_iosystem(
 
     Parameters
     ----------
-    sys : StateSpace
+    sys : `StateSpace`
         The linear I/O system that represents the process dynamics.
     QN, RN : ndarray
         Disturbance and measurement noise covariance matrices.
@@ -354,7 +353,7 @@ def create_estimator_iosystem(
         state covariance.
     G : ndarray, optional
         Disturbance matrix describing how the disturbances enters the
-        dynamics.  Defaults to sys.B.
+        dynamics.  Defaults to `sys.B`.
     C : ndarray, optional
         If the system has full state output, define the measured values to
         be used by the estimator.  Otherwise, use the system output as the
@@ -362,7 +361,7 @@ def create_estimator_iosystem(
 
     Returns
     -------
-    estim : InputOutputSystem
+    estim : `InputOutputSystem`
         Input/output system representing the estimator.  This system takes
         the system output y and input u and generates the estimated state
         xhat.
@@ -400,21 +399,21 @@ def create_estimator_iosystem(
     measurement_labels, control_labels : str or list of str, optional
         Set the name of the measurement and control signal names (estimator
         inputs).  If a single string is specified, it should be a format
-        string using the variable ``i`` as an index.  Otherwise, a list of
+        string using the variable `i` as an index.  Otherwise, a list of
         strings matching the size of the system inputs and outputs should be
         used.  Default is the signal names for the system measurements and
-        known control inputs. These settings can also be overriden using the
+        known control inputs. These settings can also be overridden using the
         `inputs` keyword.
     inputs, outputs, states : int or list of str, optional
         Set the names of the inputs, outputs, and states, as described in
-        :func:`~control.InputOutputSystem`.  Overrides signal labels.
+        `InputOutputSystem`.  Overrides signal labels.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
+        name 'sys[id]' is generated with a unique integer id.
 
     Notes
     -----
-    This function can be used with the ``create_statefbk_iosystem()`` function
+    This function can be used with the `create_statefbk_iosystem` function
     to create a closed loop, output-feedback, state space controller::
 
         K, _, _ = ct.lqr(sys, Q, R)
@@ -425,11 +424,16 @@ def create_estimator_iosystem(
 
         resp = ct.input_output_response(est, T, [Y, U], [X0, P0])
 
-    If desired, the ``correct`` parameter can be set to ``False`` to allow
+    If desired, the `correct` parameter can be set to False to allow
     prediction with no additional measurement information::
 
         resp = ct.input_output_response(
-           est, T, 0, [X0, P0], param={'correct': False)
+           est, T, 0, [X0, P0], params={'correct': False)
+
+    References
+    ----------
+    .. [1] R. M. Murray, `Optimization-Based Control
+       <https://fbswiki.org/OBC>`_, 2023.
 
     """
 
@@ -467,8 +471,9 @@ def create_estimator_iosystem(
 
     # Set the output matrices
     if C is not None:
-        # Make sure that we have the full system output
-        if not np.array_equal(sys.C, np.eye(sys.nstates)):
+        # Make sure we have full system output (allowing for numerical errors)
+        if sys.C.shape[0] != sys.nstates or \
+           not np.allclose(sys.C, np.eye(sys.nstates)):
             raise ValueError("System output must be full state")
 
         # Make sure that the output matches the size of RN
@@ -481,11 +486,13 @@ def create_estimator_iosystem(
     # Generate the disturbance matrix (G)
     if G is None:
         G = sys.B if len(dist_idx) == 0 else sys.B[:, dist_idx]
+    G = _check_shape(G, sys.nstates, len(dist_idx), name='G')
 
     # Initialize the covariance matrix
     if P0 is None:
-        # Initalize P0 to the steady state value
+        # Initialize P0 to the steady state value
         _, P0, _ = lqe(A, G, C, QN, RN)
+    P0 = _check_shape(P0, sys.nstates, sys.nstates, symmetric=True, name='P0')
 
     # Figure out the labels to use
     estimate_labels = _process_labels(
@@ -500,13 +507,17 @@ def create_estimator_iosystem(
     else:
         # Generate labels corresponding to measured values from C
         measurement_labels = _process_labels(
-            measurement_labels, 'measurement', 
+            measurement_labels, 'measurement',
             [f'y[{i}]' for i in range(C.shape[0])])
     control_labels = _process_labels(
         control_labels, 'control',
         [sys.input_labels[i] for i in ctrl_idx])
     inputs = measurement_labels + control_labels if inputs is None \
         else inputs
+
+    # Process the disturbance covariances and check size
+    QN = _check_shape(QN, G.shape[1], G.shape[1], square=True, name='QN')
+    RN = _check_shape(RN, C.shape[0], C.shape[0], square=True, name='RN')
 
     if isinstance(covariance_labels, str):
         # Generate the list of labels using the argument as a format string
@@ -593,8 +604,8 @@ def white_noise(T, Q, dt=0):
     """Generate a white noise signal with specified intensity.
 
     This function generates a (multi-variable) white noise signal of
-    specified intensity as either a sampled continous time signal or a
-    discrete time signal.  A white noise signal along a 1D array
+    specified intensity as either a sampled continuous time signal or a
+    discrete-time signal.  A white noise signal along a 1D array
     of linearly spaced set of times T can be computing using
 
         V = ct.white_noise(T, Q, dt)
@@ -614,12 +625,12 @@ def white_noise(T, Q, dt=0):
     Q : 2D array_like
         Noise intensity matrix of dimension nxn.
     dt : float, optional
-        If 0, generate continuous time noise signal, otherwise discrete time.
+        If 0, generate continuous-time noise signal, otherwise discrete time.
 
     Returns
     -------
     V : array
-        Noise signal indexed as `V[i, j]` where `i` is the signal index and
+        Noise signal indexed as ``V[i, j]`` where `i` is the signal index and
         `j` is the time index.
 
     """
@@ -655,15 +666,16 @@ def white_noise(T, Q, dt=0):
 def correlation(T, X, Y=None, squeeze=True):
     """Compute the correlation of time signals.
 
-    For a time series X(t) (and optionally Y(t)), the correlation() function
-    computes the correlation matrix E(X'(t+tau) X(t)) or the cross-correlation
-    matrix E(X'(t+tau) Y(t)]:
+    For a time series X(t) (and optionally Y(t)), the correlation()
+    function computes the correlation matrix E(X'(t+tau) X(t)) or the
+    cross-correlation matrix E(X'(t+tau) Y(t)]:
 
       tau, Rtau = correlation(T, X[, Y])
 
-    The signal X (and Y, if present) represent a continuous time signal
-    sampled at times T.  The return value provides the correlation Rtau
-    between X(t+tau) and X(t) at a set of time offets tau.
+    The signal X (and Y, if present) represent a continuous or
+    discrete-time signal sampled at times T.  The return value provides the
+    correlation Rtau between X(t+tau) and X(t) at a set of time offsets
+    tau.
 
     Parameters
     ----------
@@ -681,6 +693,10 @@ def correlation(T, X, Y=None, squeeze=True):
 
     Returns
     -------
+    tau : array
+        Array of time offsets.
+    Rtau : array
+        Correlation for each offset tau.
 
     """
     T = np.atleast_1d(T)

@@ -42,7 +42,7 @@ def test_continuous_lqr(method, npts):
     Tf = 10
     timepts = np.linspace(0, Tf, npts)
 
-    res = opt.solve_ocp(
+    res = opt.solve_optimal_trajectory(
         sys, timepts, x0, traj_cost, constraints, terminal_cost=term_cost,
         trajectory_method=method
     )
@@ -56,7 +56,7 @@ def test_continuous_lqr(method, npts):
 
 @pytest.mark.parametrize("method", ['shooting']) # TODO: add 'collocation'
 def test_finite_horizon_simple(method):
-    # Define a (discrete time) linear system with constraints
+    # Define a (discrete-time) linear system with constraints
     # Source: https://www.mpt3.org/UI/RegulationProblem
 
     # LTI prediction model (discrete time)
@@ -77,7 +77,7 @@ def test_finite_horizon_simple(method):
     x0 = [4, 0]
 
     # Retrieve the full open-loop predictions
-    res = opt.solve_ocp(
+    res = opt.solve_optimal_trajectory(
         sys, time, x0, cost, constraints, squeeze=True,
         trajectory_method=method,
         terminal_cost=cost)     # include to match MPT3 formulation
@@ -152,7 +152,7 @@ def test_discrete_lqr():
     ]
 
     # Re-solve
-    res2 = opt.solve_ocp(
+    res2 = opt.solve_optimal_trajectory(
         sys, time, x0, integral_cost, trajectory_constraints,
         terminal_cost=terminal_cost, initial_guess=lqr_u)
 
@@ -216,7 +216,7 @@ def test_mpc_iosystem_aircraft():
 
 
 def test_mpc_iosystem_rename():
-    # Create a discrete time system (double integrator) + cost function
+    # Create a discrete-time system (double integrator) + cost function
     sys = ct.ss([[1, 1], [0, 1]], [[0], [1]], np.eye(2), 0, dt=True)
     cost = opt.quadratic_cost(sys, np.eye(2), np.eye(1))
     timepts = np.arange(0, 5)
@@ -379,7 +379,7 @@ def test_terminal_constraints(sys_args):
     np.testing.assert_almost_equal(res.states, x1, decimal=4)
 
     # Re-run using a basis function and see if we get the same answer
-    res = opt.solve_ocp(
+    res = opt.solve_optimal_trajectory(
         sys, time, x0, cost, terminal_constraints=final_point,
         basis=flat.BezierFamily(8, Tf))
 
@@ -448,7 +448,7 @@ def test_optimal_logging(capsys):
     # Solve it, with logging turned on (with warning due to mixed constraints)
     with pytest.warns(sp.optimize.OptimizeWarning,
                         match="Equality and inequality .* same element"):
-        res = opt.solve_ocp(
+        res = opt.solve_optimal_trajectory(
             sys, time, x0, cost, input_constraint, terminal_cost=cost,
             terminal_constraints=state_constraint, log=True)
 
@@ -513,21 +513,21 @@ def test_ocp_argument_errors():
 
     # Trajectory constraints not in the right form
     with pytest.raises(TypeError, match="constraints must be a list"):
-        res = opt.solve_ocp(sys, time, x0, cost, np.eye(2))
+        res = opt.solve_optimal_trajectory(sys, time, x0, cost, np.eye(2))
 
     # Terminal constraints not in the right form
     with pytest.raises(TypeError, match="constraints must be a list"):
-        res = opt.solve_ocp(
+        res = opt.solve_optimal_trajectory(
             sys, time, x0, cost, constraints, terminal_constraints=np.eye(2))
 
     # Initial guess in the wrong shape
     with pytest.raises(ValueError, match="initial guess is the wrong shape"):
-        res = opt.solve_ocp(
+        res = opt.solve_optimal_trajectory(
             sys, time, x0, cost, constraints, initial_guess=np.zeros((4,1,1)))
 
     # Unrecognized arguments
     with pytest.raises(TypeError, match="unrecognized keyword"):
-        res = opt.solve_ocp(
+        res = opt.solve_optimal_trajectory(
             sys, time, x0, cost, constraints, terminal_constraint=None)
 
     with pytest.raises(TypeError, match="unrecognized keyword"):
@@ -541,21 +541,21 @@ def test_ocp_argument_errors():
     # Unrecognized trajectory constraint type
     constraints = [(None, np.eye(3), [0, 0, 0], [0, 0, 0])]
     with pytest.raises(TypeError, match="unknown trajectory constraint type"):
-        res = opt.solve_ocp(
+        res = opt.solve_optimal_trajectory(
             sys, time, x0, cost, trajectory_constraints=constraints)
 
     # Unrecognized terminal constraint type
     with pytest.raises(TypeError, match="unknown terminal constraint type"):
-        res = opt.solve_ocp(
+        res = opt.solve_optimal_trajectory(
             sys, time, x0, cost, terminal_constraints=constraints)
 
     # Discrete time system checks: solve_ivp keywords not allowed
     sys = ct.rss(2, 1, 1, dt=True)
     with pytest.raises(TypeError, match="solve_ivp method, kwargs not allowed"):
-        res = opt.solve_ocp(
+        res = opt.solve_optimal_trajectory(
             sys, time, x0, cost, solve_ivp_method='LSODA')
     with pytest.raises(TypeError, match="solve_ivp method, kwargs not allowed"):
-        res = opt.solve_ocp(
+        res = opt.solve_optimal_trajectory(
             sys, time, x0, cost, solve_ivp_kwargs={'eps': 0.1})
 
 
@@ -583,7 +583,7 @@ def test_optimal_basis_simple(basis):
     x0 = [4, 0]
 
     # Basic optimal control problem
-    res1 = opt.solve_ocp(
+    res1 = opt.solve_optimal_trajectory(
         sys, time, x0, cost, constraints,
         terminal_cost=cost, basis=basis, return_x=True)
     assert res1.success
@@ -594,14 +594,14 @@ def test_optimal_basis_simple(basis):
     np.testing.assert_array_less(np.abs(res1.inputs[0]), 1 + 1e-6)
 
     # Pass an initial guess and rerun
-    res2 = opt.solve_ocp(
+    res2 = opt.solve_optimal_trajectory(
         sys, time, x0, cost, constraints, initial_guess=0.99*res1.inputs,
         terminal_cost=cost, basis=basis, return_x=True)
     assert res2.success
     np.testing.assert_allclose(res2.inputs, res1.inputs, atol=0.01, rtol=0.01)
 
     # Run with logging turned on for code coverage
-    res3 = opt.solve_ocp(
+    res3 = opt.solve_optimal_trajectory(
         sys, time, x0, cost, constraints, terminal_cost=cost,
         basis=basis, return_x=True, log=True)
     assert res3.success
@@ -748,7 +748,7 @@ def test_optimal_doc(method, npts, initial_guess, fail):
     with warnings.catch_warnings():
         warnings.filterwarnings(
             'ignore', message="unable to solve", category=UserWarning)
-        result = opt.solve_ocp(
+        result = opt.solve_optimal_trajectory(
             vehicle, timepts, x0, traj_cost, constraints,
             terminal_cost=term_cost, initial_guess=initial_guess,
             trajectory_method=method,
@@ -794,7 +794,7 @@ def test_oep_argument_errors():
 
     # Unrecognized arguments
     with pytest.raises(TypeError, match="unrecognized keyword"):
-        res = opt.solve_oep(sys, timepts, Y, U, cost, unknown=True)
+        res = opt.solve_optimal_estimate(sys, timepts, Y, U, cost, unknown=True)
 
     with pytest.raises(TypeError, match="unrecognized keyword"):
         oep = opt.OptimalEstimationProblem(sys, timepts, cost, unknown=True)

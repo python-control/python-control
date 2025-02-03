@@ -1,9 +1,13 @@
 # grid.py - code to add gridlines to root locus and pole-zero diagrams
-#
-# This code generates grids for pole-zero diagrams (including root locus
-# diagrams).  Rather than just draw a grid in place, it uses the AxisArtist
-# package to generate a custom grid that will scale with the figure.
-#
+
+"""Functions to add gridlines to root locus and pole-zero diagrams.
+
+This code generates grids for pole-zero diagrams (including root locus
+diagrams).  Rather than just draw a grid in place, it uses the
+AxisArtist package to generate a custom grid that will scale with the
+figure.
+
+"""
 
 import matplotlib.pyplot as plt
 import mpl_toolkits.axisartist.angle_helper as angle_helper
@@ -18,8 +22,8 @@ from numpy import cos, exp, linspace, pi, sin, sqrt
 from .iosys import isdtime
 
 
-class FormatterDMS(object):
-    '''Transforms angle ticks to damping ratios'''
+class FormatterDMS():
+    """Transforms angle ticks to damping ratios."""
     def __call__(self, direction, factor, values):
         angles_deg = np.asarray(values)/factor
         damping_ratios = np.cos((180-angles_deg) * np.pi/180)
@@ -28,10 +32,10 @@ class FormatterDMS(object):
 
 
 class ModifiedExtremeFinderCycle(angle_helper.ExtremeFinderCycle):
-    '''Changed to allow only left hand-side polar grid
+    """Changed to allow only left hand-side polar grid.
 
     https://matplotlib.org/_modules/mpl_toolkits/axisartist/angle_helper.html#ExtremeFinderCycle.__call__
-    '''
+    """
     def __call__(self, transform_xy, x1, y1, x2, y2):
         x, y = np.meshgrid(
             np.linspace(x1, x2, self.nx), np.linspace(y1, y2, self.ny))
@@ -146,7 +150,7 @@ def nogrid(dt=None, ax=None, scaling=None):
     if ax is None:
         ax = fig.gca()
 
-    # Draw the unit circle for discrete time systems
+    # Draw the unit circle for discrete-time systems
     if isdtime(dt=dt, strict=True):
         s = np.linspace(0, 2*pi, 100)
         ax.plot(np.cos(s), np.sin(s), 'k--', lw=0.5, dashes=(5, 5))
@@ -154,7 +158,7 @@ def nogrid(dt=None, ax=None, scaling=None):
     _final_setup(ax, scaling=scaling)
     return ax, fig
 
-# Grid for discrete time system (drawn, not rendered by AxisArtist)
+# Grid for discrete-time system (drawn, not rendered by AxisArtist)
 # TODO (at some point): think about using customized grid generator?
 def zgrid(zetas=None, wns=None, ax=None, scaling=None):
     """Draws discrete damping and frequency grid"""
@@ -172,11 +176,11 @@ def zgrid(zetas=None, wns=None, ax=None, scaling=None):
         x = linspace(0, sqrt(1-zeta**2), 200)
         ang = pi*x
         mag = exp(-pi*factor*x)
-        # Draw upper part in retangular coordinates
+        # Draw upper part in rectangular coordinates
         xret = mag*cos(ang)
         yret = mag*sin(ang)
         ax.plot(xret, yret, ':', color='grey', lw=0.75)
-        # Draw lower part in retangular coordinates
+        # Draw lower part in rectangular coordinates
         xret = mag*cos(-ang)
         yret = mag*sin(-ang)
         ax.plot(xret, yret, ':', color='grey', lw=0.75)
@@ -195,7 +199,7 @@ def zgrid(zetas=None, wns=None, ax=None, scaling=None):
         x = linspace(-pi/2, pi/2, 200)
         ang = pi*a*sin(x)
         mag = exp(-pi*a*cos(x))
-        # Draw in retangular coordinates
+        # Draw in rectangular coordinates
         xret = mag*cos(ang)
         yret = mag*sin(ang)
         ax.plot(xret, yret, ':', color='grey', lw=0.75)

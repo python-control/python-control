@@ -1,12 +1,14 @@
 # config.py - package defaults
 # RMM, 4 Nov 2012
 #
-# This file contains default values and utility functions for setting
-# variables that control the behavior of the control package.
-# Eventually it will be possible to read and write configuration
-# files.  For now, you can just choose between MATLAB and FBS default
-# values + tweak a few other things.
+# TODO: add ability to read/write configuration files (ala matplotlib)
 
+"""Functions to access default parameter values.
+
+This module contains default values and utility functions for setting
+parameters that control the behavior of the control package.
+
+"""
 
 import collections
 import warnings
@@ -27,7 +29,7 @@ _control_defaults = {
 
 
 class DefaultDict(collections.UserDict):
-    """Map names for settings from older version to their renamed ones.
+    """Default parameters dictionary, with legacy warnings.
 
     If a user wants to write to an old setting, issue a warning and write to
     the renamed setting instead. Accessing the old setting returns the value
@@ -131,6 +133,7 @@ def set_defaults(module, **keywords):
         defaults[module + '.' + key] = val
 
 
+# TODO: allow individual modules and individual parameters to be reset
 def reset_defaults():
     """Reset configuration values to their default (initial) values.
 
@@ -197,14 +200,14 @@ def _get_param(module, param, argval=None, defval=None, pop=False, last=False):
     parameter for a module based on the default parameter settings and any
     arguments passed to the function.  The precedence order for parameters is
     the value passed to the function (as a keyword), the value from the
-    config.defaults dictionary, and the default value `defval`.
+    `config.defaults` dictionary, and the default value `defval`.
 
     Parameters
     ----------
     module : str
         Name of the module whose parameters are being requested.
     param : str
-        Name of the parameter value to be determeind.
+        Name of the parameter value to be determined.
     argval : object or dict
         Value of the parameter as passed to the function.  This can either be
         an object or a dictionary (i.e. the keyword list from the function
@@ -212,15 +215,15 @@ def _get_param(module, param, argval=None, defval=None, pop=False, last=False):
     defval : object
         Default value of the parameter to use, if it is not located in the
         `config.defaults` dictionary.  If a dictionary is provided, then
-        `module.param` is used to determine the default value.  Defaults to
+        'module.param' is used to determine the default value.  Defaults to
         None.
     pop : bool, optional
         If True and if argval is a dict, then pop the remove the parameter
-        entry from the argval dict after retreiving it.  This allows the use
+        entry from the argval dict after retrieving it.  This allows the use
         of a keyword argument list to be passed through to other functions
         internal to the function being called.
     last : bool, optional
-        If True, check to make sure dictionary is empy after processing.
+        If True, check to make sure dictionary is empty after processing.
 
     """
 
@@ -253,6 +256,7 @@ def use_matlab_defaults():
     The following conventions are used:
         * Bode plots plot gain in dB, phase in degrees, frequency in
           rad/sec, with grids
+        * Frequency plots use the label "Magnitude" for the system gain.
 
     Examples
     --------
@@ -261,15 +265,19 @@ def use_matlab_defaults():
 
     """
     set_defaults('freqplot', dB=True, deg=True, Hz=False, grid=True)
+    set_defaults('freqplot', magnitude_label="Magnitude")
 
 
 # Set defaults to match FBS (Astrom and Murray)
 def use_fbs_defaults():
-    """Use `Feedback Systems <http://fbsbook.org>`_ (FBS) compatible settings.
+    """Use Feedback Systems (FBS) compatible settings.
 
-    The following conventions are used:
+    The following conventions from `Feedback Systems <https://fbsbook.org>`_
+    are used:
+
         * Bode plots plot gain in powers of ten, phase in degrees,
           frequency in rad/sec, no grid
+        * Frequency plots use the label "Gain" for the system gain.
         * Nyquist plots use dashed lines for mirror image of Nyquist curve
 
     Examples
@@ -279,6 +287,7 @@ def use_fbs_defaults():
 
     """
     set_defaults('freqplot', dB=False, deg=True, Hz=False, grid=False)
+    set_defaults('freqplot', magnitude_label="Gain")
     set_defaults('nyquist', mirror_style='--')
 
 
@@ -347,7 +356,7 @@ def use_legacy_defaults(version):
         # switched to 'array' as default for state space objects
         warnings.warn("NumPy matrix class no longer supported")
 
-        # switched to 0 (=continuous) as default timestep
+        # switched to 0 (=continuous) as default timebase
         set_defaults('control', default_dt=None)
 
         # changed iosys naming conventions
@@ -372,19 +381,42 @@ def use_legacy_defaults(version):
     return (major, minor, patch)
 
 
-#
-# Utility function for processing legacy keywords
-#
-# Use this function to handle a legacy keyword that has been renamed.  This
-# function pops the old keyword off of the kwargs dictionary and issues a
-# warning.  If both the old and new keyword are present, a ControlArgument
-# exception is raised.
-#
-def _process_legacy_keyword(kwargs, oldkey, newkey, newval):
-    if kwargs.get(oldkey) is not None:
-        warnings.warn(
-            f"keyword '{oldkey}' is deprecated; use '{newkey}'",
-            FutureWarning)
+def _process_legacy_keyword(kwargs, oldkey, newkey, newval, warn_oldkey=True):
+    """Utility function for processing legacy keywords.
+
+    Use this function to handle a legacy keyword that has been renamed.
+    This function pops the old keyword off of the kwargs dictionary and
+    issues a warning.  If both the old and new keyword are present, a
+    ControlArgument exception is raised.
+
+    Parameters
+    ----------
+    kwargs : dict
+        Dictionary of keyword arguments (from function call).
+    oldkey : str
+        Old (legacy) parameter name.
+    newkey : str
+        Current name of the parameter.
+    newval : object
+        Value of the current parameter (from the function signature).
+    warn_oldkey : bool
+        If set to False, suppress generation of a warning about using a
+        legacy keyword.  This is useful if you have two versions of a
+        keyword and you want to allow either to be used (see the `cost` and
+        `trajectory_cost` keywords in `flatsys.point_to_point` for an
+        example of this).
+
+    Returns
+    -------
+    val : object
+        Value of the (new) keyword.
+
+    """
+    if oldkey in kwargs:
+        if warn_oldkey:
+            warnings.warn(
+                f"keyword '{oldkey}' is deprecated; use '{newkey}'",
+                FutureWarning, stacklevel=3)
         if newval is not None:
             raise ControlArgument(
                 f"duplicate keywords '{oldkey}' and '{newkey}'")

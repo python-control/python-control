@@ -1,51 +1,26 @@
-# mateqn.py - Matrix equation solvers (Lyapunov, Riccati)
+# mateqn.py - matrix equation solvers (Lyapunov, Riccati)
 #
-# Implementation of the functions lyap, dlyap, care and dare
-# for solution of Lyapunov and Riccati equations.
-#
-# Original author: Bjorn Olofsson
+# Initial author: Bjorn Olofsson
+# Creation date: 2011
 
-# Copyright (c) 2011, All rights reserved.
+"""Matrix equation solvers (Lyapunov, Riccati).
 
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
+This module contains implementation of the functions lyap, dlyap, care
+and dare for solution of Lyapunov and Riccati equations.
 
-# 1. Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-
-# 2. Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-
-# 3. Neither the name of the project author nor the names of its
-#    contributors may be used to endorse or promote products derived
-#    from this software without specific prior written permission.
-
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
-# OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
+"""
 
 import warnings
-import numpy as np
-from numpy import eye, finfo, inexact
 
+import numpy as np
 import scipy as sp
+from numpy import eye, finfo, inexact
 from scipy.linalg import eigvals, solve
 
-from .exception import ControlSlycot, ControlArgument, ControlDimension, \
+from .exception import ControlArgument, ControlDimension, ControlSlycot, \
     slycot_check
 
-# Make sure we have access to the right slycot routines
+# Make sure we have access to the right Slycot routines
 try:
     from slycot.exceptions import SlycotResultWarning
 except ImportError:
@@ -113,11 +88,11 @@ def lyap(A, Q, C=None, E=None, method=None):
     Parameters
     ----------
     A, Q : 2D array_like
-        Input matrices for the Lyapunov or Sylvestor equation
+        Input matrices for the Lyapunov or Sylvestor equation.
     C : 2D array_like, optional
-        If present, solve the Sylvester equation
+        If present, solve the Sylvester equation.
     E : 2D array_like, optional
-        If present, solve the generalized Lyapunov equation
+        If present, solve the generalized Lyapunov equation.
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -126,7 +101,7 @@ def lyap(A, Q, C=None, E=None, method=None):
     Returns
     -------
     X : 2D array
-        Solution to the Lyapunov or Sylvester equation
+        Solution to the Lyapunov or Sylvester equation.
 
     """
     # Decide what method to use
@@ -190,7 +165,7 @@ def lyap(A, Q, C=None, E=None, method=None):
             raise ControlArgument(
                 "method='scipy' not valid for generalized Lyapunov equation")
 
-        # Make sure we have access to the write slicot routine
+        # Make sure we have access to the write Slycot routine
         try:
             from slycot import sg03ad
 
@@ -239,11 +214,11 @@ def dlyap(A, Q, C=None, E=None, method=None):
     Parameters
     ----------
     A, Q : 2D array_like
-        Input matrices for the Lyapunov or Sylvestor equation
+        Input matrices for the Lyapunov or Sylvestor equation.
     C : 2D array_like, optional
-        If present, solve the Sylvester equation
+        If present, solve the Sylvester equation.
     E : 2D array_like, optional
-        If present, solve the generalized Lyapunov equation
+        If present, solve the generalized Lyapunov equation.
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -252,7 +227,7 @@ def dlyap(A, Q, C=None, E=None, method=None):
     Returns
     -------
     X : 2D array (or matrix)
-        Solution to the Lyapunov or Sylvester equation
+        Solution to the Lyapunov or Sylvester equation.
 
     """
     # Decide what method to use
@@ -367,9 +342,9 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
     Parameters
     ----------
     A, B, Q : 2D array_like
-        Input matrices for the Riccati equation
+        Input matrices for the Riccati equation.
     R, S, E : 2D array_like, optional
-        Input matrices for generalized Riccati equation
+        Input matrices for generalized Riccati equation.
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -381,11 +356,11 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
     Returns
     -------
     X : 2D array (or matrix)
-        Solution to the Ricatti equation
+        Solution to the Riccati equation.
     L : 1D array
-        Closed loop eigenvalues
+        Closed loop eigenvalues.
     G : 2D array (or matrix)
-        Gain matrix
+        Gain matrix.
 
     """
     # Decide what method to use
@@ -424,7 +399,7 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
             E, _ = np.linalg.eig(A - B @ K)
             return X, E, K
 
-        # Make sure we can import required slycot routines
+        # Make sure we can import required Slycot routines
         try:
             from slycot import sb02md
         except ImportError:
@@ -470,11 +445,11 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
             eigs, _ = sp.linalg.eig(A - B @ K, E)
             return X, eigs, K
 
-        # Make sure we can find the required slycot routine
+        # Make sure we can find the required Slycot routine
         try:
             from slycot import sg02ad
         except ImportError:
-            raise ControlSlycot("Can't find slycot module 'sg02ad'")
+            raise ControlSlycot("Can't find slycot module sg02ad")
 
         # Solve the generalized algebraic Riccati equation by calling the
         # Slycot function sg02ad
@@ -497,8 +472,7 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
 
 def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
          _As="A", _Bs="B", _Qs="Q", _Rs="R", _Ss="S", _Es="E"):
-    """Solves the discrete-time algebraic Riccati
-    equation.
+    """Solves the discrete-time algebraic Riccati equation.
 
     X, L, G = dare(A, B, Q, R) solves
 
@@ -524,9 +498,9 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
     Parameters
     ----------
     A, B, Q : 2D arrays
-        Input matrices for the Riccati equation
+        Input matrices for the Riccati equation.
     R, S, E : 2D arrays, optional
-        Input matrices for generalized Riccati equation
+        Input matrices for generalized Riccati equation.
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -538,11 +512,11 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
     Returns
     -------
     X : 2D array (or matrix)
-        Solution to the Ricatti equation
+        Solution to the Riccati equation.
     L : 1D array
-        Closed loop eigenvalues
+        Closed loop eigenvalues.
     G : 2D array (or matrix)
-        Gain matrix
+        Gain matrix.
 
     """
     # Decide what method to use
@@ -590,11 +564,11 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
 
         return X, L, G
 
-    # Make sure we can import required slycot routine
+    # Make sure we can import required Slycot routine
     try:
         from slycot import sg02ad
     except ImportError:
-        raise ControlSlycot("Can't find slycot module 'sg02ad'")
+        raise ControlSlycot("Can't find slycot module sg02ad")
 
     # Initialize optional matrices
     S = np.zeros((n, m)) if S is None else np.array(S, ndmin=2)
@@ -632,7 +606,9 @@ def _slycot_or_scipy(method):
 
 # Utility function to check matrix dimensions
 def _check_shape(M, n, m, square=False, symmetric=False, name="??"):
-    if square and M.shape[0] != M.shape[1]:
+    M = np.atleast_2d(M)
+
+    if (square or symmetric) and M.shape[0] != M.shape[1]:
         raise ControlDimension("%s must be a square matrix" % name)
 
     if symmetric and not _is_symmetric(M):
@@ -642,6 +618,8 @@ def _check_shape(M, n, m, square=False, symmetric=False, name="??"):
         raise ControlDimension(
             f"Incompatible dimensions of {name} matrix; "
             f"expected ({n}, {m}) but found {M.shape}")
+
+    return M
 
 
 # Utility function to check if a matrix is symmetric

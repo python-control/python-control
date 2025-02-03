@@ -1,17 +1,8 @@
 # nichols.py - Nichols plot
 #
-# Contributed by Allan McInnes <Allan.McInnes@canterbury.ac.nz>
-#
+# Initial author: Allan McInnes <Allan.McInnes@canterbury.ac.nz>
 
-"""nichols.py
-
-Functions for plotting Black-Nichols charts.
-
-Routines in this module:
-
-nichols.nichols_plot aliased as nichols.nichols
-nichols.nichols_grid
-"""
+"""Functions for plotting Black-Nichols charts."""
 
 import matplotlib.pyplot as plt
 import matplotlib.transforms
@@ -43,40 +34,38 @@ def nichols_plot(
     Parameters
     ----------
     data : list of `FrequencyResponseData` or `LTI`
-        List of LTI systems or :class:`FrequencyResponseData` objects.  A
+        List of LTI systems or `FrequencyResponseData` objects.  A
         single system or frequency response can also be passed.
     omega : array_like
-        Range of frequencies (list or bounds) in rad/sec
-    *fmt : :func:`matplotlib.pyplot.plot` format string, optional
+        Range of frequencies (list or bounds) in rad/sec.
+    *fmt : `matplotlib.pyplot.plot` format string, optional
         Passed to `matplotlib` as the format string for all lines in the plot.
         The `omega` parameter must be present (use omega=None if needed).
     grid : boolean, optional
-        True if the plot should include a Nichols-chart grid. Default is True.
-    **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
+        True if the plot should include a Nichols-chart grid. Default is
+        True and can be set using `config.defaults['nichols.grid']`.
+    **kwargs : `matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
     Returns
     -------
-    cplt : :class:`ControlPlot` object
-        Object containing the data that were plotted:
-
-          * cplt.lines: 1D array of :class:`matplotlib.lines.Line2D` objects.
-            The size of the array matches the number of systems and the
-            value of the array is a list of Line2D objects for that system.
-
-          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
-
-          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
-
-          * cplt.legend: legend object(s) contained in the plot
-
-        See :class:`ControlPlot` for more detailed information.
-
-      lines : array of Line2D
+    cplt : `ControlPlot` object
+        Object containing the data that were plotted.  See `ControlPlot`
+        for more detailed information.
+    cplt.lines : Array of `matplotlib.lines.Line2D` objects
+        Array containing information on each line in the plot.  The shape
+        of the array matches the subplots shape and the value of the array
+        is a list of Line2D objects in that subplot.
+    cplt.axes : 2D ndarray of `matplotlib.axes.Axes`
+        Axes for each subplot.
+    cplt.figure : `matplotlib.figure.Figure`
+        Figure containing the plot.
+    cplt.legend : 2D array of `matplotlib.legend.Legend`
+        Legend object(s) contained in the plot.
 
     Other Parameters
     ----------------
-    ax : matplotlib.axes.Axes, optional
+    ax : `matplotlib.axes.Axes`, optional
         The matplotlib axes to draw the figure on.  If not specified and
         the current figure has a single axes, that axes is used.
         Otherwise, a new figure is created.
@@ -89,11 +78,11 @@ def nichols_plot(
         with no legend for a single response.  Use False to suppress legend.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['ctrlplot.rcParams'].
+        Default is set by `config.defaults['ctrlplot.rcParams']`.
     show_legend : bool, optional
-        Force legend to be shown if ``True`` or hidden if ``False``.  If
-        ``None``, then show legend when there is more than one line on the
-        plot or ``legend_loc`` has been specified.
+        Force legend to be shown if True or hidden if False.  If
+        None, then show legend when there is more than one line on the
+        plot or `legend_loc` has been specified.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
 
@@ -185,39 +174,40 @@ def _inner_extents(ax):
 
 def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
                  label_cl_phases=True):
-    """Nichols chart grid.
+    """Plot Nichols chart grid.
 
-    Plots a Nichols chart grid on the current axis, or creates a new chart
+    Plots a Nichols chart grid on the current axes, or creates a new chart
     if no plot already exists.
 
     Parameters
     ----------
-    cl_mags : array-like (dB), optional
+    cl_mags : array_like (dB), optional
         Array of closed-loop magnitudes defining the iso-gain lines on a
         custom Nichols chart.
-    cl_phases : array-like (degrees), optional
+    cl_phases : array_like (degrees), optional
         Array of closed-loop phases defining the iso-phase lines on a custom
         Nichols chart. Must be in the range -360 < cl_phases < 0
     line_style : string, optional
         :doc:`Matplotlib linestyle \
-            <matplotlib:gallery/lines_bars_and_markers/linestyles>`
-    ax : matplotlib.axes.Axes, optional
-        Axes to add grid to.  If ``None``, use ``matplotlib.pyplot.gca()``.
+            <matplotlib:gallery/lines_bars_and_markers/linestyles>`.
+    ax : `matplotlib.axes.Axes`, optional
+        Axes to add grid to.  If None, use `matplotlib.pyplot.gca`.
     label_cl_phases : bool, optional
-        If True, closed-loop phase lines will be labelled.
+        If True, closed-loop phase lines will be labeled.
 
     Returns
     -------
-    cl_mag_lines: list of `matplotlib.line.Line2D`
-      The constant closed-loop gain contours
-    cl_phase_lines: list of `matplotlib.line.Line2D`
-      The constant closed-loop phase contours
-    cl_mag_labels: list of `matplotlib.text.Text`
-      mcontour labels; each entry corresponds to the respective entry
-      in ``cl_mag_lines``
-    cl_phase_labels: list of `matplotlib.text.Text`
-      ncontour labels; each entry corresponds to the respective entry
-      in ``cl_phase_lines``
+    cl_mag_lines : list of `matplotlib.line.Line2D`
+      The constant closed-loop gain contours.
+    cl_phase_lines : list of `matplotlib.line.Line2D`
+      The constant closed-loop phase contours.
+    cl_mag_labels : list of `matplotlib.text.Text`
+      Magnitude contour labels; each entry corresponds to the respective
+      entry in `cl_mag_lines`.
+    cl_phase_labels : list of `matplotlib.text.Text`
+      Phase contour labels; each entry corresponds to the respective entry
+      in `cl_phase_lines`.
+
     """
     if ax is None:
         ax = plt.gca()
@@ -350,15 +340,16 @@ def closed_loop_contours(Gcl_mags, Gcl_phases):
 
     Parameters
     ----------
-    Gcl_mags : array-like
+    Gcl_mags : array_like
         Array of magnitudes of the contours
-    Gcl_phases : array-like
+    Gcl_phases : array_like
         Array of phases in radians of the contours
 
     Returns
     -------
     contours : complex array
         Array of complex numbers corresponding to the contours.
+
     """
     # Compute the contours in Gcl-space. Since we're given closed-loop
     # magnitudes and phases, this is just a case of converting them into
@@ -376,7 +367,7 @@ def m_circles(mags, phase_min=-359.75, phase_max=-0.25):
 
     Parameters
     ----------
-    mags : array-like
+    mags : array_like
         Array of magnitudes in dB of the M-circles
     phase_min : degrees
         Minimum phase in degrees of the N-circles
@@ -387,6 +378,7 @@ def m_circles(mags, phase_min=-359.75, phase_max=-0.25):
     -------
     contours : complex array
         Array of complex numbers corresponding to the contours.
+
     """
     # Convert magnitudes and phase range into a grid suitable for
     # building contours
@@ -402,7 +394,7 @@ def n_circles(phases, mag_min=-40.0, mag_max=12.0):
 
     Parameters
     ----------
-    phases : array-like
+    phases : array_like
         Array of phases in degrees of the N-circles
     mag_min : dB
         Minimum magnitude in dB of the N-circles
@@ -413,6 +405,7 @@ def n_circles(phases, mag_min=-40.0, mag_max=12.0):
     -------
     contours : complex array
         Array of complex numbers corresponding to the contours.
+
     """
     # Convert phases and magnitude range into a grid suitable for
     # building contours

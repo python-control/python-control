@@ -1,16 +1,18 @@
-.. _examples:
 .. currentmodule:: control
+
+.. _examples:
 
 ********
 Examples
 ********
 
-The source code for the examples below are available in the `examples/`
-subdirectory of the source code distribution. They can also be accessed online
-via the `python-control GitHub repository <https://github.com/python-control/python-control/tree/master/examples>`_.
+The source code for the examples below are available in the
+`examples/` subdirectory of the source code distribution. They can
+also be accessed online via the `python-control GitHub repository
+<https://github.com/python-control/python-control/tree/master/examples>`_.
 
 
-Python scripts
+Python Scripts
 ==============
 
 The following Python scripts document the use of a variety of methods in the
@@ -20,25 +22,25 @@ other sources.
 .. toctree::
    :maxdepth: 1
 
-   secord-matlab
-   pvtol-nested
-   pvtol-lqr
-   rss-balred
-   phase_plane_plots
-   robust_siso
-   robust_mimo
-   scherer_etal_ex7_H2_h2syn
-   scherer_etal_ex7_Hinf_hinfsyn
-   cruise-control
-   steering-gainsched
-   steering-optimal
-   kincar-flatsys
-   mrac_siso_mit
-   mrac_siso_lyapunov
-   markov
-   era_msd
+   examples/secord-matlab
+   examples/pvtol-nested
+   examples/pvtol-lqr
+   examples/rss-balred
+   examples/phase_plane_plots
+   examples/robust_siso
+   examples/robust_mimo
+   examples/scherer_etal_ex7_H2_h2syn
+   examples/scherer_etal_ex7_Hinf_hinfsyn
+   examples/cruise-control
+   examples/steering-gainsched
+   examples/steering-optimal
+   examples/kincar-flatsys
+   examples/mrac_siso_mit
+   examples/mrac_siso_lyapunov
+   examples/markov
+   examples/era_msd
 
-Jupyter notebooks
+Jupyter Notebooks
 =================
 
 The examples below use `python-control` in a Jupyter notebook environment.
@@ -51,17 +53,15 @@ online sources.
 .. toctree::
    :maxdepth: 1
 
-   cruise
-   describing_functions
-   interconnect_tutorial
-   kincar-fusion
-   mhe-pvtol
-   mpc_aircraft
-   pvtol-lqr-nested
-   pvtol-outputfbk
-   simulating_discrete_nonlinear
-   steering
-   stochresp
+   examples/cruise
+   examples/describing_functions
+   examples/interconnect_tutorial
+   examples/mpc_aircraft
+   examples/pvtol-lqr-nested
+   examples/pvtol-outputfbk
+   examples/simulating_discrete_nonlinear
+   examples/steering
+   examples/stochresp
 
 Google Colab Notebooks
 ======================

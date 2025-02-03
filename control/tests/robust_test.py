@@ -37,7 +37,7 @@ class TestH2:
         """Test h2syn"""
         p = ss(-1, [[1, 1]], [[1], [1]], [[0, 1], [1, 0]])
         k = h2syn(p, 1, 1)
-        # from Octave, which also uses SB10HD for H-2 synthesis:
+        # from Octave, which also uses SB10HD for H2 synthesis:
         #   a= -1; b1= 1; b2= 1; c1= 1; c2= 1; d11= 0; d12= 1; d21= 1; d22= 0;
         #   g = ss(a,[b1,b2],[c1;c2],[d11,d12;d21,d22]);
         #   k = h2syn(g,1,1);

@@ -26,6 +26,7 @@ import control.tests.freqplot_test as freqplot_test
 import control.tests.interconnect_test as interconnect_test
 import control.tests.iosys_test as iosys_test
 import control.tests.optimal_test as optimal_test
+import control.tests.statesp_test as statesp_test
 import control.tests.statefbk_test as statefbk_test
 import control.tests.stochsys_test as stochsys_test
 import control.tests.timeplot_test as timeplot_test
@@ -245,7 +246,7 @@ kwarg_unittest = {
     'append': test_unrecognized_kwargs,
     'bode': test_response_plot_kwargs,
     'bode_plot': test_response_plot_kwargs,
-    'LTI.bode_plot': test_response_plot_kwargs, # alias for bode_plot and tested via bode_plot
+    'LTI.bode_plot': test_response_plot_kwargs,     # tested via bode_plot
     'combine_tf': test_unrecognized_kwargs,
     'create_estimator_iosystem': stochsys_test.test_estimator_errors,
     'create_statefbk_iosystem': statefbk_test.TestStatefbk.test_statefbk_errors,
@@ -268,15 +269,19 @@ kwarg_unittest = {
     'linearize': test_unrecognized_kwargs,
     'lqe': test_unrecognized_kwargs,
     'lqr': test_unrecognized_kwargs,
+    'LTI.forced_response': statesp_test.test_convenience_aliases,
+    'LTI.impulse_response': statesp_test.test_convenience_aliases,
+    'LTI.initial_response': statesp_test.test_convenience_aliases,
+    'LTI.step_response': statesp_test.test_convenience_aliases,
     'negate': test_unrecognized_kwargs,
     'nichols_plot': test_matplotlib_kwargs,
-    'LTI.nichols_plot': test_matplotlib_kwargs, # alias for nichols_plot and tested via nichols_plot
+    'LTI.nichols_plot': test_matplotlib_kwargs,     # tested via nichols_plot
     'nichols': test_matplotlib_kwargs,
     'nlsys': test_unrecognized_kwargs,
     'nyquist': test_matplotlib_kwargs,
     'nyquist_response': test_response_plot_kwargs,
     'nyquist_plot': test_matplotlib_kwargs,
-    'LTI.nyquist_plot': test_matplotlib_kwargs, # alias for nyquist_plot and tested via nyquist_plot
+    'LTI.nyquist_plot': test_matplotlib_kwargs,     # tested via nyquist_plot
     'phase_plane_plot': test_matplotlib_kwargs,
     'parallel': test_unrecognized_kwargs,
     'pole_zero_plot': test_unrecognized_kwargs,
@@ -289,11 +294,13 @@ kwarg_unittest = {
     'set_defaults': test_unrecognized_kwargs,
     'singular_values_plot': test_matplotlib_kwargs,
     'ss': test_unrecognized_kwargs,
+    'LTI.to_ss': test_unrecognized_kwargs,          # tested via 'ss'
     'ss2io': test_unrecognized_kwargs,
     'ss2tf': test_unrecognized_kwargs,
     'summing_junction': interconnect_test.test_interconnect_exceptions,
     'suptitle': freqplot_test.test_suptitle,
     'tf': test_unrecognized_kwargs,
+    'LTI.to_tf': test_unrecognized_kwargs,          # tested via 'ss'
     'tf2io' : test_unrecognized_kwargs,
     'tf2ss' : test_unrecognized_kwargs,
     'sample_system' : test_unrecognized_kwargs,
@@ -301,11 +308,15 @@ kwarg_unittest = {
     'zpk': test_unrecognized_kwargs,
     'flatsys.point_to_point':
         flatsys_test.TestFlatSys.test_point_to_point_errors,
+    'flatsys.solve_flat_optimal':
+        flatsys_test.TestFlatSys.test_solve_flat_ocp_errors,
     'flatsys.solve_flat_ocp':
         flatsys_test.TestFlatSys.test_solve_flat_ocp_errors,
     'flatsys.FlatSystem.__init__': test_unrecognized_kwargs,
     'optimal.create_mpc_iosystem': optimal_test.test_mpc_iosystem_rename,
+    'optimal.solve_optimal_trajectory': optimal_test.test_ocp_argument_errors,
     'optimal.solve_ocp': optimal_test.test_ocp_argument_errors,
+    'optimal.solve_optimal_estimate': optimal_test.test_oep_argument_errors,
     'optimal.solve_oep': optimal_test.test_oep_argument_errors,
     'ControlPlot.set_plot_title': freqplot_test.test_suptitle,
     'FrequencyResponseData.__init__':
@@ -320,7 +331,9 @@ kwarg_unittest = {
     'flatsys.LinearFlatSystem.__init__': test_unrecognized_kwargs,
     'NonlinearIOSystem.linearize': test_unrecognized_kwargs,
     'NyquistResponseData.plot': test_response_plot_kwargs,
+    'NyquistResponseList.plot': test_response_plot_kwargs,
     'PoleZeroData.plot': test_response_plot_kwargs,
+    'PoleZeroList.plot': test_response_plot_kwargs,
     'InterconnectedSystem.__init__':
         interconnect_test.test_interconnect_exceptions,
     'StateSpace.__init__':

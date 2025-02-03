@@ -363,7 +363,7 @@ def test_bdalg_udpate_names_errors():
 
 
 class TestEnsureTf:
-    """Test ``_ensure_tf``."""
+    """Test `_ensure_tf`."""
 
     @pytest.mark.parametrize(
         "arraylike_or_tf, dt, tf",
@@ -463,7 +463,7 @@ class TestEnsureTf:
 
 
 class TestTfCombineSplit:
-    """Test ``combine_tf`` and ``split_tf``."""
+    """Test `combine_tf` and `split_tf`."""
 
     @pytest.mark.parametrize(
         "tf_array, tf",

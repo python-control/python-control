@@ -363,3 +363,19 @@ def test_negative_system_spec():
     np.testing.assert_allclose(negfbk_negsig.B, negfbk_negsys.B)
     np.testing.assert_allclose(negfbk_negsig.C, negfbk_negsys.C)
     np.testing.assert_allclose(negfbk_negsig.D, negfbk_negsys.D)
+
+
+# Named signal representations
+def test_named_signal_repr():
+    from numpy import array
+    from ..iosys import NamedSignal
+    sys = ct.rss(
+        states=2, inputs=['u1', 'u2'], outputs=['y1', 'y2'],
+        state_prefix='xi')
+    resp = sys.step_response(np.linspace(0, 1, 3))
+
+    for signal in ['inputs', 'outputs', 'states']:
+        sig_orig = getattr(resp, signal)
+        sig_eval = eval(repr(sig_orig))
+        assert sig_eval.signal_labels == sig_orig.signal_labels
+        assert sig_eval.trace_labels == sig_orig.trace_labels

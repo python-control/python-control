@@ -23,14 +23,13 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
     try:
         import sphinx_rtd_theme
         html_theme = 'sphinx_rtd_theme'
-        html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
     except ImportError:
         html_theme = 'default'
 
 # -- Project information -----------------------------------------------------
 
 project = u'Python Control Systems Library'
-copyright = u'2023, python-control.org'
+copyright = u'2025, python-control.org'
 author = u'Python Control Developers'
 
 # Version information - read from the source code
@@ -49,16 +48,15 @@ print("version %s, release %s" % (version, release))
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
-needs_sphinx = '3.1'
+needs_sphinx = '3.4'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.napoleon',
-    'sphinx.ext.intersphinx', 'sphinx.ext.imgmath',
-    'sphinx.ext.autosummary', 'nbsphinx', 'numpydoc',
-    'sphinx.ext.linkcode', 'sphinx.ext.doctest'
+    'sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.intersphinx',
+    'sphinx.ext.imgmath', 'sphinx.ext.autosummary', 'nbsphinx', 'numpydoc',
+    'sphinx.ext.linkcode', 'sphinx.ext.doctest', 'sphinx_copybutton'
 ]
 
 # scan documents for autosummary directives and generate stub pages for each.
@@ -94,8 +92,9 @@ language = 'en'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
-exclude_patterns = [u'_build', 'Thumbs.db', '.DS_Store',
-                    '*.ipynb_checkpoints']
+exclude_patterns = [
+    u'_build', 'Thumbs.db', '.DS_Store', '*.ipynb_checkpoints',
+    'releases/template.rst']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -106,7 +105,11 @@ intersphinx_mapping = \
     {'scipy': ('https://docs.scipy.org/doc/scipy', None),
      'numpy': ('https://numpy.org/doc/stable', None),
      'matplotlib': ('https://matplotlib.org/stable/', None),
+     'python': ('https://docs.python.org/3/', None),
      }
+
+# Don't generate external links to (local) keywords
+intersphinx_disabled_reftypes = ["py:keyword"]
 
 # If this is True, todo and todolist produce output, else they produce nothing.
 # The default is False.
@@ -120,6 +123,16 @@ todo_include_todos = True
 #
 html_theme = 'sphinx_rtd_theme'
 
+# Set the default role to render items in backticks as code
+default_role = 'py:obj'
+
+# Align inline math with text
+imgmath_use_preview = True
+
+# Skip prompts when using copy button
+copybutton_prompt_text = r">>> |\.\.\. "
+copybutton_prompt_is_regexp = True
+
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -131,8 +144,7 @@ html_theme = 'sphinx_rtd_theme'
 # so a file named "default.css" will overwrite the builtin "default.css".
 
 html_static_path = ['_static']
-def setup(app):
-    app.add_css_file('css/custom.css')
+html_css_files = ['css/custom.css']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -212,7 +224,7 @@ def linkcode_resolve(domain, info):
     else:                       # specific version
         return base_url + "%s/control/%s%s" % (version, fn, linespec)
 
-# Don't automaticall show all members of class in Methods & Attributes section
+# Don't automatically show all members of class in Methods & Attributes section
 numpydoc_show_class_members = False
 
 # Don't create a Sphinx TOC for the lists of class methods and attributes
@@ -248,8 +260,9 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'PythonControlLibrary.tex', u'Python Control Library Documentation',
-     u'RMM', 'manual'),
+    (master_doc, 'python-control.tex',
+     u'Python Control Systems Library User Guide',
+     u'Python Control Developers', 'manual'),
 ]
 
 
@@ -280,8 +293,21 @@ texinfo_documents = [
 doctest_global_setup = """
 import numpy as np
 import control as ct
-import control.optimal as obc
+import control.optimal as opt
 import control.flatsys as fs
 import control.phaseplot as pp
 ct.reset_defaults()
 """
+
+# -- Customization for python-control ----------------------------------------
+#
+# This code does custom processing of docstrings for the python-control
+# package.
+
+def process_docstring(app, what, name, obj, options, lines):
+    # Loop through each line in docstring and replace `sys` with :code:`sys`
+    for i in range(len(lines)):
+        lines[i] = lines[i].replace("`sys`", ":code:`sys`")
+
+def setup(app):
+    app.connect('autodoc-process-docstring', process_docstring)

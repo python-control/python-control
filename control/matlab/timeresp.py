@@ -1,13 +1,16 @@
-"""
-Time response routines in the Matlab compatibility package
+# timeresp.py - time response routines in the MATLAB compatibility package
 
-Note that the return arguments are different than in the standard control package.
+"""Time response routines in the MATLAB compatibility package.
+
+Note that the return arguments are different than in the standard
+control package..
+
 """
 
 __all__ = ['step', 'stepinfo', 'impulse', 'initial', 'lsim']
 
 def step(sys, T=None, input=0, output=None, return_x=False):
-    '''Step response of a linear system.
+    """Step response of a linear system.
 
     If the system has multiple inputs or outputs (MIMO), one input has
     to be selected for the simulation.  Optionally, one output may be
@@ -17,25 +20,26 @@ def step(sys, T=None, input=0, output=None, return_x=False):
 
     Parameters
     ----------
-    sys: StateSpace, or TransferFunction
-        LTI system to simulate
-    T: array-like or number, optional
+    sys : `StateSpace` or `TransferFunction`
+        LTI system to simulate.
+    T : array_like or number, optional
         Time vector, or simulation time duration if a number (time vector is
-        autocomputed if not given)
-    input: int
+        autocomputed if not given).
+    input : int
         Index of the input that will be used in this simulation.
-    output: int
+    output : int
         If given, index of the output that is returned by this simulation.
+    return_x : bool, optional
+        If True, return the state vector in addition to outputs.
 
     Returns
     -------
-    yout: array
-        Response of the system
-    T: array
-        Time values of the output
-    xout: array (if selected)
-        Individual response of each x variable
-
+    yout : array
+        Response of the system.
+    T : array
+        Time values of the output.
+    xout : array (if selected)
+        Individual response of each x variable.
 
     See Also
     --------
@@ -48,7 +52,7 @@ def step(sys, T=None, input=0, output=None, return_x=False):
     >>> G = rss(4)
     >>> yout, T = step(G)
 
-    '''
+    """
     from ..timeresp import step_response
 
     # Switch output argument order and transpose outputs
@@ -59,13 +63,14 @@ def step(sys, T=None, input=0, output=None, return_x=False):
 
 def stepinfo(sysdata, T=None, yfinal=None, SettlingTimeThreshold=0.02,
              RiseTimeLimits=(0.1, 0.9)):
-    """Step response characteristics (Rise time, Settling Time, Peak and others)
+    """
+    Step response characteristics (rise time, settling time, etc).
 
     Parameters
     ----------
-    sysdata : StateSpace or TransferFunction or array_like
-        The system data. Either LTI system to similate (StateSpace,
-        TransferFunction), or a time series of step response data.
+    sysdata : `StateSpace` or `TransferFunction` or array_like
+        The system data. Either LTI system to simulate (`StateSpace`,
+        `TransferFunction`), or a time series of step response data.
     T : array_like or float, optional
         Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given).
@@ -76,39 +81,29 @@ def stepinfo(sysdata, T=None, yfinal=None, SettlingTimeThreshold=0.02,
         used for a given time series of response data. Scalar for SISO,
         (noutputs, ninputs) array_like for MIMO systems.
     SettlingTimeThreshold : float, optional
-        Defines the error to compute settling time (default = 0.02)
-    RiseTimeLimits : tuple (lower_threshold, upper_theshold)
-        Defines the lower and upper threshold for RiseTime computation
+        Defines the error to compute settling time (default = 0.02).
+    RiseTimeLimits : tuple (lower_threshold, upper_threshold)
+        Defines the lower and upper threshold for RiseTime computation.
 
     Returns
     -------
     S : dict or list of list of dict
-        If `sysdata` corresponds to a SISO system, S is a dictionary
+        If `sysdata` corresponds to a SISO system, `S` is a dictionary
         containing:
 
-        RiseTime:
-            Time from 10% to 90% of the steady-state value.
-        SettlingTime:
-            Time to enter inside a default error of 2%
-        SettlingMin:
-            Minimum value after RiseTime
-        SettlingMax:
-            Maximum value after RiseTime
-        Overshoot:
-            Percentage of the Peak relative to steady value
-        Undershoot:
-            Percentage of undershoot
-        Peak:
-            Absolute peak value
-        PeakTime:
-            time of the Peak
-        SteadyStateValue:
-            Steady-state value
+            - 'RiseTime': Time from 10% to 90% of the steady-state value.
+            - 'SettlingTime': Time to enter inside a default error of 2%.
+            - 'SettlingMin': Minimum value after `RiseTime`.
+            - 'SettlingMax': Maximum value after `RiseTime`.
+            - 'Overshoot': Percentage of the peak relative to steady value.
+            - 'Undershoot': Percentage of undershoot.
+            - 'Peak': Absolute peak value.
+            - 'PeakTime': Time that the first peak value is obtained.
+            - 'SteadyStateValue': Steady-state value.
 
         If `sysdata` corresponds to a MIMO system, `S` is a 2D list of dicts.
-        To get the step response characteristics from the j-th input to the
-        i-th output, access ``S[i][j]``
-
+        To get the step response characteristics from the jth input to the
+        ith output, access ``S[i][j]``.
 
     See Also
     --------
@@ -132,7 +127,7 @@ def stepinfo(sysdata, T=None, yfinal=None, SettlingTimeThreshold=0.02,
     return S
 
 def impulse(sys, T=None, input=0, output=None, return_x=False):
-    '''Impulse response of a linear system.
+    """Impulse response of a linear system.
 
     If the system has multiple inputs or outputs (MIMO), one input has
     to be selected for the simulation.  Optionally, one output may be
@@ -142,24 +137,26 @@ def impulse(sys, T=None, input=0, output=None, return_x=False):
 
     Parameters
     ----------
-    sys: StateSpace, TransferFunction
-        LTI system to simulate
-    T: array-like or number, optional
+    sys : `StateSpace` or `TransferFunction`
+        LTI system to simulate.
+    T : array_like or number, optional
         Time vector, or simulation time duration if a number (time vector is
-        autocomputed if not given)
-    input: int
+        autocomputed if not given).
+    input : int
         Index of the input that will be used in this simulation.
-    output: int
+    output : int
         Index of the output that will be used in this simulation.
+    return_x : bool, optional
+        If True, return the state vector in addition to outputs.
 
     Returns
     -------
-    yout: array
-        Response of the system
-    T: array
-        Time values of the output
-    xout: array (if selected)
-        Individual response of each x variable
+    yout : array
+        Response of the system.
+    T : array
+        Time values of the output.
+    xout : array (if selected)
+        Individual response of each x variable.
 
     See Also
     --------
@@ -172,7 +169,7 @@ def impulse(sys, T=None, input=0, output=None, return_x=False):
     >>> G = rss()
     >>> yout, T = impulse(G)
 
-    '''
+    """
     from ..timeresp import impulse_response
 
     # Switch output argument order and transpose outputs
@@ -181,7 +178,7 @@ def impulse(sys, T=None, input=0, output=None, return_x=False):
     return (out[1], out[0], out[2]) if return_x else (out[1], out[0])
 
 def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
-    '''Initial condition response of a linear system.
+    """Initial condition response of a linear system.
 
     If the system has multiple outputs (?IMO), optionally, one output
     may be selected. If no selection is made for the output, all
@@ -189,27 +186,29 @@ def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
 
     Parameters
     ----------
-    sys: StateSpace, or TransferFunction
-        LTI system to simulate
-    T: array-like or number, optional
+    sys : `StateSpace` or `TransferFunction`
+        LTI system to simulate.
+    T : array_like or number, optional
         Time vector, or simulation time duration if a number (time vector is
-        autocomputed if not given)
-    X0: array-like object or number, optional
-        Initial condition (default = 0)
-    input: int
+        autocomputed if not given).
+    X0 : array_like object or number, optional
+        Initial condition (default = 0).
+    input : int
         This input is ignored, but present for compatibility with step
         and impulse.
-    output: int
+    output : int
         If given, index of the output that is returned by this simulation.
+    return_x : bool, optional
+        If True, return the state vector in addition to outputs.
 
     Returns
     -------
-    yout: array
-        Response of the system
-    T: array
-        Time values of the output
-    xout: array (if selected)
-        Individual response of each x variable
+    yout : array
+        Response of the system.
+    T : array
+        Time values of the output.
+    xout : array (if selected)
+        Individual response of each x variable.
 
     See Also
     --------
@@ -222,7 +221,7 @@ def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
     >>> G = rss(4)
     >>> yout, T = initial(G)
 
-    '''
+    """
     from ..timeresp import initial_response
 
     # Switch output argument order and transpose outputs
@@ -232,33 +231,32 @@ def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
 
 
 def lsim(sys, U=0., T=None, X0=0.):
-    '''Simulate the output of a linear system.
+    """Simulate the output of a linear system.
 
-    As a convenience for parameters `U`, `X0`:
-    Numbers (scalars) are converted to constant arrays with the correct shape.
-    The correct shape is inferred from arguments `sys` and `T`.
+    As a convenience for parameters `U` and `X0`, numbers (scalars) are
+    converted to constant arrays with the correct shape.  The correct
+    shape is inferred from arguments `sys` and `T`.
 
     Parameters
     ----------
-    sys: LTI (StateSpace, or TransferFunction)
-        LTI system to simulate
-    U: array-like or number, optional
-        Input array giving input at each time `T` (default = 0).
-
-        If `U` is ``None`` or ``0``, a special algorithm is used. This special
-        algorithm is faster than the general algorithm, which is used otherwise.
-    T: array-like, optional for discrete LTI `sys`
+    sys : `StateSpace` or `TransferFunction`
+        LTI system to simulate.
+    U : array_like or number, optional
+        Input array giving input at each time `T` (default = 0).  If `U` is
+        None or 0, a special algorithm is used. This special algorithm is
+        faster than the general algorithm, which is used otherwise.
+    T : array_like, optional for discrete LTI `sys`
         Time steps at which the input is defined; values must be evenly spaced.
-    X0: array-like or number, optional
+    X0 : array_like or number, optional
         Initial condition (default = 0).
 
     Returns
     -------
-    yout: array
+    yout : array
         Response of the system.
-    T: array
+    T : array
         Time values of the output.
-    xout: array
+    xout : array
         Time evolution of the state vector.
 
     See Also
@@ -273,7 +271,7 @@ def lsim(sys, U=0., T=None, X0=0.):
     >>> T = np.linspace(0,10)
     >>> yout, T, xout = lsim(G, T=T)
 
-    '''
+    """
     from ..timeresp import forced_response
 
     # Switch output argument order and transpose outputs (and always return x)

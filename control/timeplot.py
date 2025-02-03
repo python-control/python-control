@@ -1,12 +1,13 @@
 # timeplot.py - time plotting functions
 # RMM, 20 Jun 2023
-#
-# This file contains routines for plotting out time responses.  These
-# functions can be called either as standalone functions or access from the
-# TimeDataResponse class.
-#
-# Note: It might eventually make sense to put the functions here
-# directly into timeresp.py.
+
+"""Time plotting functions.
+
+This module contains routines for plotting out time responses.  These
+functions can be called either as standalone functions or access from
+the TimeResponseData class.
+
+"""
 
 import itertools
 from warnings import warn
@@ -15,7 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from . import config
-from .ctrlplot import ControlPlot, _make_legend_labels,\
+from .ctrlplot import ControlPlot, _make_legend_labels, \
     _process_legend_keywords, _update_plot_title
 
 __all__ = ['time_response_plot', 'combine_time_responses']
@@ -51,13 +52,13 @@ def time_response_plot(
 
     Parameters
     ----------
-    data : TimeResponseData
+    data : `TimeResponseData`
         Data to be plotted.
     plot_inputs : bool or str, optional
         Sets how and where to plot the inputs:
             * False: don't plot the inputs
             * None: use value from time response data (default)
-            * 'overlay`: plot inputs overlaid with outputs
+            * 'overlay': plot inputs overlaid with outputs
             * True: plot the inputs on their own axes
     plot_outputs : bool, optional
         If False, suppress plotting of the outputs.
@@ -71,10 +72,10 @@ def time_response_plot(
         Determine whether and how x- and y-axis limits are shared between
         subplots.  Can be set set to 'row' to share across all subplots in
         a row, 'col' to set across all subplots in a column, 'all' to share
-        across all subplots, or `False` to allow independent limits.
-        Default values are `False` for `sharex' and 'col' for `sharey`, and
-        can be set using config.defaults['timeplot.sharex'] and
-        config.defaults['timeplot.sharey'].
+        across all subplots, or False to allow independent limits.
+        Default values are False for `sharex' and 'col' for `sharey`, and
+        can be set using `config.defaults['timeplot.sharex']` and
+        `config.defaults['timeplot.sharey']`.
     transpose : bool, optional
         If transpose is False (default), signals are plotted from top to
         bottom, starting with outputs (if plotted) and then inputs.
@@ -82,43 +83,41 @@ def time_response_plot(
         signals are plotted from left to right, starting with the inputs
         (if plotted) and then the outputs.  Multi-trace responses are
         stacked vertically.
-    *fmt : :func:`matplotlib.pyplot.plot` format string, optional
+    *fmt : `matplotlib.pyplot.plot` format string, optional
         Passed to `matplotlib` as the format string for all lines in the plot.
-    **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
+    **kwargs : `matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
     Returns
     -------
-    cplt : :class:`ControlPlot` object
-        Object containing the data that were plotted:
-
-          * cplt.lines: Array of :class:`matplotlib.lines.Line2D` objects
-            for each line in the plot.  The shape of the array matches the
-            subplots shape and the value of the array is a list of Line2D
-            objects in that subplot.
-
-          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
-
-          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
-
-          * cplt.legend: legend object(s) contained in the plot
-
-        See :class:`ControlPlot` for more detailed information.
+    cplt : `ControlPlot` object
+        Object containing the data that were plotted.  See `ControlPlot`
+        for more detailed information.
+    cplt.lines : 2D array of `matplotlib.lines.Line2D`
+        Array containing information on each line in the plot.  The shape
+        of the array matches the subplots shape and the value of the array
+        is a list of Line2D objects in that subplot.
+    cplt.axes : 2D array of `matplotlib.axes.Axes`
+        Axes for each subplot.
+    cplt.figure : `matplotlib.figure.Figure`
+        Figure containing the plot.
+    cplt.legend : 2D array of `matplotlib.legend.Legend`
+        Legend object(s) contained in the plot.
 
     Other Parameters
     ----------------
     add_initial_zero : bool
         Add an initial point of zero at the first time point for all
         inputs with type 'step'.  Default is True.
-    ax : array of matplotlib.axes.Axes, optional
+    ax : array of `matplotlib.axes.Axes`, optional
         The matplotlib axes to draw the figure on.  If not specified, the
         axes for the current figure are used or, if there is no current
         figure with the correct number and shape of axes, a new figure is
         created.  The shape of the array must match the shape of the
         plotted data.
-    input_props : array of dicts
+    input_props : array of dict
         List of line properties to use when plotting combined inputs.  The
-        default values are set by config.defaults['timeplot.input_props'].
+        default values are set by `config.defaults['timeplot.input_props']`.
     label : str or array_like of str, optional
         If present, replace automatically generated label(s) with the given
         label(s).  If more than one line is being generated, an array of
@@ -128,52 +127,51 @@ def time_response_plot(
         Location of the legend for multi-axes plots.  Specifies an array
         of legend location strings matching the shape of the subplots, with
         each entry being either None (for no legend) or a legend location
-        string (see :func:`~matplotlib.pyplot.legend`).
+        string (see `~matplotlib.pyplot.legend`).
     legend_loc : int or str, optional
         Include a legend in the given location. Default is 'center right',
         with no legend for a single response.  Use False to suppress legend.
-    output_props : array of dicts, optional
+    output_props : array of dict, optional
         List of line properties to use when plotting combined outputs.  The
-        default values are set by config.defaults['timeplot.output_props'].
+        default values are set by `config.defaults['timeplot.output_props']`.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['ctrlplot.rcParams'].
+        Default is set by `config.defaults['ctrlplot.rcParams']`.
     relabel : bool, optional
         (deprecated) By default, existing figures and axes are relabeled
-        when new data are added.  If set to `False`, just plot new data on
+        when new data are added.  If set to False, just plot new data on
         existing axes.
     show_legend : bool, optional
-        Force legend to be shown if ``True`` or hidden if ``False``.  If
-        ``None``, then show legend when there is more than one line on an
-        axis or ``legend_loc`` or ``legend_map`` has been specified.
+        Force legend to be shown if True or hidden if False.  If
+        None, then show legend when there is more than one line on an
+        axis or `legend_loc` or `legend_map` has been specified.
     time_label : str, optional
         Label to use for the time axis.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
     trace_labels : list of str, optional
         Replace the default trace labels with the given labels.
-    trace_props : array of dicts
-        List of line properties to use when plotting combined outputs.  The
-        default values are set by config.defaults['timeplot.trace_props'].
+    trace_props : array of dict
+        List of line properties to use when plotting multiple traces.  The
+        default values are set by `config.defaults['timeplot.trace_props']`.
 
     Notes
     -----
-    1. A new figure will be generated if there is no current figure or
-       the current figure has an incompatible number of axes.  To
-       force the creation of a new figures, use `plt.figure()`.  To reuse
-       a portion of an existing figure, use the `ax` keyword.
+    A new figure will be generated if there is no current figure or the
+    current figure has an incompatible number of axes.  To force the
+    creation of a new figures, use `plt.figure`.  To reuse a portion of an
+    existing figure, use the `ax` keyword.
 
-    2. The line properties (color, linestyle, etc) can be set for the
-       entire plot using the `fmt` and/or `kwargs` parameter, which
-       are passed on to `matplotlib`.  When combining signals or
-       traces, the `input_props`, `output_props`, and `trace_props`
-       parameters can be used to pass a list of dictionaries
-       containing the line properties to use.  These input/output
-       properties are combined with the trace properties and finally
-       the kwarg properties to determine the final line properties.
+    The line properties (color, linestyle, etc) can be set for the entire
+    plot using the `fmt` and/or `kwargs` parameter, which are passed on to
+    `matplotlib`.  When combining signals or traces, the `input_props`,
+    `output_props`, and `trace_props` parameters can be used to pass a list
+    of dictionaries containing the line properties to use.  These
+    input/output properties are combined with the trace properties and
+    finally the kwarg properties to determine the final line properties.
 
-    3. The default plot properties, such as font sizes, can be set using
-       config.defaults[''timeplot.rcParams'].
+    The default plot properties, such as font sizes, can be set using
+    `config.defaults[''timeplot.rcParams']`.
 
     """
     from .ctrlplot import _process_ax_keyword, _process_line_labels
@@ -564,7 +562,7 @@ def time_response_plot(
     # Create legends
     #
     # Legends can be placed manually by passing a legend_map array that
-    # matches the shape of the suplots, with each item being a string
+    # matches the shape of the subplots, with each item being a string
     # indicating the location of the legend for that axes (or None for no
     # legend).
     #
@@ -575,7 +573,7 @@ def time_response_plot(
     #
     # Because plots can be built up by multiple calls to plot(), the legend
     # strings are created from the line labels manually.  Thus an initial
-    # call to plot() may not generate any legends (eg, if no signals are
+    # call to plot() may not generate any legends (e.g., if no signals are
     # combined nor overlaid), but subsequent calls to plot() will need a
     # legend for each different line (system).
     #
@@ -671,15 +669,15 @@ def time_response_plot(
 
 
 def combine_time_responses(response_list, trace_labels=None, title=None):
-    """Combine multiple individual time responses into a multi-trace response.
+    """Combine individual time responses into multi-trace response.
 
-    This function combines multiple instances of :class:`TimeResponseData`
-    into a multi-trace :class:`TimeResponseData` object.
+    This function combines multiple instances of `TimeResponseData`
+    into a multi-trace `TimeResponseData` object.
 
     Parameters
     ----------
-    response_list : list of :class:`TimeResponseData` objects
-        Reponses to be combined.
+    response_list : list of `TimeResponseData` objects
+        Responses to be combined.
     trace_labels : list of str, optional
         List of labels for each trace.  If not specified, trace names are
         taken from the input data or set to None.
@@ -689,7 +687,7 @@ def combine_time_responses(response_list, trace_labels=None, title=None):
 
     Returns
     -------
-    data : :class:`TimeResponseData`
+    data : `TimeResponseData`
         Multi-trace input/output data.
 
     """
@@ -751,7 +749,10 @@ def combine_time_responses(response_list, trace_labels=None, title=None):
 
             # Add on trace label and trace type
             if generate_trace_labels:
-                trace_labels.append(response.title)
+                trace_labels.append(
+                    response.title if response.title is not None else
+                    response.sysname if response.sysname is not None else
+                    "unknown")
             trace_types.append(
                 None if response.trace_types is None
                 else response.trace_types[0])

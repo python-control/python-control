@@ -1,53 +1,27 @@
 # __init__.py - initialization for control systems toolbox
 #
-# Author: Richard M. Murray
-# Date: 24 May 09
-#
-# This file contains the initialization information from the control package.
-#
-# Copyright (c) 2009 by California Institute of Technology
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-# 1. Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#
-# 2. Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#
-# 3. Neither the name of the California Institute of Technology nor
-#    the names of its contributors may be used to endorse or promote
-#    products derived from this software without specific prior
-#    written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
-# OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
-#
-# $Id$
+# Initial author: Richard M. Murray
+# Creation date: 24 May 2009
+# Use `git shortlog -n -s` for full list of contributors
 
-"""
-The Python Control Systems Library :mod:`control` provides common functions
-for analyzing and designing feedback control systems.
+"""The Python Control Systems Library (python-control) provides common
+functions for analyzing and designing feedback control systems.
+
+The initial goal for the package is to implement all of the
+functionality required to work through the examples in the textbook
+`Feedback Systems <https://fbsbook.org>`_ by Astrom and Murray.  In
+addition to standard techniques available for linear control systems,
+support for nonlinear systems (including trajectory generation, gain
+scheduling, phase plane diagrams, and describing functions) is
+included.  A :ref:`matlab-module` is available that provides many of
+the common functions corresponding to commands available in the MATLAB
+Control Systems Toolbox.
 
 Documentation is available in two forms: docstrings provided with the code,
-and the python-control users guide, available from `the python-control
+and the python-control User Guide, available from the `python-control
 homepage <https://www.python-control.org>`_.
 
-The docstring examples assume that the following import commands::
+The docstring examples assume the following import commands::
 
   >>> import numpy as np
   >>> import control as ct
@@ -57,13 +31,16 @@ Available subpackages
 
 The main control package includes the most common functions used in
 analysis, design, and simulation of feedback control systems.  Several
-additional subpackages are available that provide more specialized
-functionality:
+additional subpackages and modules are available that provide more
+specialized functionality:
 
 * :mod:`~control.flatsys`: Differentially flat systems
 * :mod:`~control.matlab`: MATLAB compatibility module
 * :mod:`~control.optimal`: Optimization-based control
 * :mod:`~control.phaseplot`: 2D phase plane diagrams
+
+These subpackages and modules are described in more detail in the
+subpackage and module docstrings and in the User Guide.
 
 """
 
@@ -122,15 +99,6 @@ try:
     from ._version import __version__
 except ImportError:
     __version__ = "dev"
-
-# patch the LTI class with function aliases for convenience functions
-# this needs to be done after the fact since the modules that contain the functions
-# all heavily depend on the LTI class
-LTI.to_ss = ss
-LTI.to_tf = tf
-LTI.bode_plot = bode_plot
-LTI.nyquist_plot = nyquist_plot
-LTI.nichols_plot = nichols_plot
 
 # Initialize default parameter values
 reset_defaults()

@@ -1,0 +1,171 @@
+.. currentmodule:: control
+
+State Space Analysis and Design
+===============================
+
+This section describes the functions the are available to analyze
+state space systems and design state feedback controllers.  The
+functionality described here is mainly specific to state space system
+representations; additional functions for analysis of linear
+input/output systems, including transfer functions and frequency
+response data systems, are defined in the next section and can also be
+applied to LTI systems in state space form.
+
+
+State space properties
+----------------------
+
+The following basic attributes and methods are available for
+:class:`StateSpace` objects:
+
+.. autosummary::
+
+   ~StateSpace.A
+   ~StateSpace.B
+   ~StateSpace.C
+   ~StateSpace.D
+   ~StateSpace.dt
+   ~StateSpace.shape
+   ~StateSpace.nstates
+   ~StateSpace.poles
+   ~StateSpace.zeros
+   ~StateSpace.dcgain
+   ~StateSpace.sample
+   ~StateSpace.returnScipySignalLTI
+   ~StateSpace.__call__
+
+A complete list of attributes, methods, and properties is available in
+the :class:`StateSpace` class documentation.
+
+
+Similarity transformations and canonical forms
+----------------------------------------------
+
+State space systems can be transformed into different internal
+representations representing a variety of standard canonical forms
+that have the same input/output properties.  The
+:func:`similarity_transform` function allows a change of internal
+state variable via similarity transformation and the
+:func:`canonical_form` function converts systems into different
+canonical forms.  Additional information is available on the
+documentation pages for the individual functions:
+
+.. autosummary::
+
+   canonical_form
+   observable_form
+   modal_form
+   reachable_form
+   similarity_transform
+
+
+Time domain properties
+----------------------
+
+The following functions are available to analyze the time domain
+properties of a linear system:
+
+.. autosummary::
+
+   damp
+   forced_response
+   impulse_response
+   initial_response
+   ssdata
+   step_info
+   step_response
+
+The time response functions (:func:`impulse_response`,
+:func:`initial_response`, :func:`forced_response`, and
+:func:`step_response`) are described in more detail in the
+:ref:`response-chapter` chapter.
+
+
+State feedback design
+---------------------
+
+State feedback controllers for a linear system are controllers of the form
+
+.. math::
+
+   u = -K x
+
+where :math:`K \in {\mathbb R}^{m \times n}` is a matrix of feedback
+gains.  Assuming the systems is controllable, the resulting closed
+loop system will have dynamics matrix :math:`A - B K` with stable
+eigenvalues.
+
+Feedback controllers can be designed using one of several
+methods:
+
+.. autosummary::
+
+   lqr
+   place
+   place_acker
+   place_varga
+
+The :func:`place`, :func:`place_acker`, and :func:`place_varga` functions
+place the eigenvalues of the closed loop system to a desired set of
+values.  Each takes the `A` and `B` matrices of the state space system
+and the desired location of the eigenvalues and returns a gain matrix
+`K`::
+
+  K = ct.place(sys.A, sys.B, E)
+
+where `E` is a 1D array of desired eigenvalues.
+
+The :func:`lqr` function computes the optimal state feedback controller
+that minimizes the quadratic cost
+
+.. math::
+
+   J = \int_0^\infty (x' Q x + u' R u + 2 x' N u) dt
+
+by solving the appropriate Riccati equation.  It returns the gain
+matrix `K`, the solution to the Riccati equation `S`, and the location
+of the closed loop eigenvalues `E`.  It can be called in one of
+several forms:
+
+  * ``K, S, E = ct.lqr(sys, Q, R)``
+  * ``K, S, E = ct.lqr(sys, Q, R, N)``
+  * ``K, S, E = ct.lqr(A, B, Q, R)``
+  * ``K, S, E = ct.lqr(A, B, Q, R, N)``
+
+If :code:`sys` is a discrete-time system, the first two forms will compute
+the discrete-time optimal controller.  For the second two forms, the
+:func:`dlqr` function can be used to compute the discrete-time optimal
+controller.  Additional arguments and details are given on the
+:func:`lqr` and :func:`dlqr` documentation pages.
+
+State estimation
+----------------
+
+State estimators (or observers) are dynamical systems that estimate
+the state of a system given a model of the dynamics and the input
+and output signals as a function of time.  Linear state estimators
+have the form
+
+.. math::
+
+     \frac{d\hat x}{dt} = A \hat x + B u + L(y - C\hat x - D u),
+
+where :math:`\hat x` is an estimate of the state and :math:`L \in
+{\mathbb R}^{n \times p}` represents the estimator gain.  The gain
+:math:`L` is chosen such that the eigenvalues of the matrix :math:`A -
+L C` are stable, resulting in an estimate that converges to the value
+of the system state.
+
+The gain matrix :math:`L` can be chosen using eigenvalue placement by
+calling the :func:`place` function::
+
+  L = ct.place(sys.A.T, sys.C.T, E).T
+
+where `E` is the desired location of the eigenvalues and ``.T`` computes
+the transpose of a matrix.
+
+More sophisticated estimators can be constructed by modeling noise and
+disturbances as stochastic signals generated by a random process.
+Estimators constructed using these models are described in more detail
+in the :ref:`kalman-filter` section of the :ref:`stochastic-systems`
+chapter.

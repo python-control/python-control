@@ -2,41 +2,77 @@
 Python Control Systems Library
 ##############################
 
-The Python Control Systems Library (`python-control`) is a Python package that
-implements basic operations for analysis and design of feedback control systems.
+The Python Control Systems Library (python-control) is a Python
+package that implements basic operations for analysis and design of
+feedback control systems.
 
 .. rubric:: Features
 
-- Linear input/output systems in state-space and frequency domain
+- Linear input/output systems in state space and frequency domain
 - Nonlinear input/output system modeling, simulation, and analysis
 - Block diagram algebra: serial, parallel, and feedback interconnections
-- Time response: initial, step, impulse
-- Frequency response: Bode and Nyquist plots
-- Control analysis: stability, reachability, observability, stability margins
-- Control design: eigenvalue placement, LQR, H2, Hinf
-- Model reduction: balanced realizations, Hankel singular values
-- Estimator design: linear quadratic estimator (Kalman filter)
+- Time response: initial, step, impulse, and forced response
+- Frequency response: Bode, Nyquist, and Nichols plots
+- Control analysis: stability, reachability, observability, stability
+  margins, phase plane plots, root locus plots
+- Control design: eigenvalue placement, LQR, H2, Hinf, and MPC/RHC
+- Trajectory generation: optimal control and differential flatness
+- Model reduction: balanced realizations and Hankel singular values
+- Estimator design: linear quadratic estimator (Kalman filter), MLE, and MHE
 
-.. rubric:: Documentation
+.. rubric:: Links:
+
+- GitHub repository: https://github.com/python-control/python-control
+- Issue tracker: https://github.com/python-control/python-control/issues
+- Mailing list: https://sourceforge.net/p/python-control/mailman/
+
+.. rubric:: How to cite
+
+An `article <https://ieeexplore.ieee.org/abstract/document/9683368>`_
+about the library is available on IEEE Explore. If the Python Control
+Systems Library helped you in your research, please cite::
+
+  @inproceedings{python-control2021,
+    title={The Python Control Systems Library (python-control)},
+    author={Fuller, Sawyer and Greiner, Ben and Moore, Jason and
+            Murray, Richard and van Paassen, Ren{\'e} and Yorke, Rory},
+    booktitle={60th IEEE Conference on Decision and Control (CDC)},
+    pages={4875--4881},
+    year={2021},
+    organization={IEEE}
+  }
+
+or the GitHub site: https://github.com/python-control/python-control.
 
 .. toctree::
-   :maxdepth: 2
+   :caption: User Guide
+   :maxdepth: 1
+   :numbered: 2
 
    intro
-   conventions
-   control
-   classes
-   plotting
-   matlab
-   flatsys
-   iosys
-   descfcn
-   optimal
+   Tutorial <examples/python-control_tutorial.ipynb>
+   Linear Systems <linear>
+   I/O Response and Plotting <response>
+   Nonlinear Systems <nonlinear>
+   Interconnected I/O Systems <iosys>
+   Stochastic Systems <stochastic>
    examples
+   genindex
 
-* :ref:`genindex`
+.. toctree::
+   :caption: Reference Manual
+   :maxdepth: 1
 
-.. rubric:: Development
+   functions
+   classes
+   config
+   matlab
+   develop
+   releases
+
+***********
+Development
+***********
 
 You can check out the latest version of the source code with the command::
 
@@ -53,16 +89,12 @@ or to test the installed package::
 
 .. _pytest: https://docs.pytest.org/
 
-Your contributions are welcome!  Simply fork the `GitHub repository <https://github.com/python-control/python-control>`_ and send a
-`pull request`_.
+Your contributions are welcome!  Simply fork the `GitHub repository
+<https://github.com/python-control/python-control>`_ and send a `pull
+request`_.
 
 .. _pull request: https://github.com/python-control/python-control/pulls
 
 Please see the `Developer's Wiki`_ for detailed instructions.
 
 .. _Developer's Wiki: https://github.com/python-control/python-control/wiki
-
-.. rubric:: Links
-
-- Issue tracker: https://github.com/python-control/python-control/issues
-- Mailing list: http://sourceforge.net/p/python-control/mailman/

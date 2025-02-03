@@ -75,7 +75,7 @@ class TestLTI:
         assert not issiso(sys, strict=True)
 
     def test_damp(self):
-        # Test the continuous time case.
+        # Test the continuous-time case.
         zeta = 0.1
         wn = 42
         p = -wn * zeta + 1j * wn * np.sqrt(1 - zeta**2)
@@ -84,7 +84,7 @@ class TestLTI:
         np.testing.assert_allclose(sys.damp(), expected)
         np.testing.assert_allclose(damp(sys), expected)
 
-        # Also test the discrete time case.
+        # Also test the discrete-time case.
         dt = 0.001
         sys_dt = c2d(sys, dt, method='matched')
         p_zplane = np.exp(p*dt)
@@ -342,7 +342,7 @@ def test_subsys_indexing(fcn, outdx, inpdx, key):
     match fcn:
         case ct.frd:
             np.testing.assert_almost_equal(
-                subsys_fcn.response, subsys_chk.response)
+                subsys_fcn.complex, subsys_chk.complex)
         case ct.ss:
             np.testing.assert_almost_equal(subsys_fcn.A, subsys_chk.A)
             np.testing.assert_almost_equal(subsys_fcn.B, subsys_chk.B)
@@ -351,8 +351,8 @@ def test_subsys_indexing(fcn, outdx, inpdx, key):
         case ct.tf:
             omega = np.logspace(-1, 1)
             np.testing.assert_almost_equal(
-                subsys_fcn.frequency_response(omega).response,
-                subsys_chk.frequency_response(omega).response)
+                subsys_fcn.frequency_response(omega).complex,
+                subsys_chk.frequency_response(omega).complex)
 
 
 @pytest.mark.parametrize("op", [

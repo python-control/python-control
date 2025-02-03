@@ -8,6 +8,7 @@ BG,  26 Jul 2020 merge statesp_array_test.py differences into statesp_test.py
 """
 
 import operator
+import platform
 
 import numpy as np
 import pytest
@@ -18,12 +19,13 @@ from scipy.linalg import block_diag, eigvals
 import control as ct
 from control.config import defaults
 from control.dtime import sample_system
-from control.lti import evalfr
-from control.statesp import (StateSpace, _convert_to_statespace, _rss_generate,
-                             _statesp_defaults, drss, linfnorm, rss, ss, tf2ss)
-from control.tests.conftest import (assert_tf_close_coeff, editsdefaults,
-                                    slycotonly)
+from control.lti import LTI, evalfr
+from control.statesp import StateSpace, _convert_to_statespace, \
+    _rss_generate, _statesp_defaults, drss, linfnorm, rss, ss, tf2ss
 from control.xferfcn import TransferFunction, ss2tf
+
+from .conftest import assert_tf_close_coeff, editsdefaults, \
+    ignore_future_warning, slycotonly
 
 
 class TestStateSpace:
@@ -1492,8 +1494,8 @@ def test_html_repr_testsize(editsdefaults):
 class TestLinfnorm:
     # these are simple tests; we assume ab13dd is correct
     # python-control specific behaviour is:
-    #   - checking for continuous- and discrete-time
-    #   - scaling fpeak for discrete-time
+    #   - checking for continuous and discrete time
+    #   - scaling fpeak for discrete time
     #   - handling static gains
 
     # the underdamped gpeak and fpeak are found from
@@ -1515,6 +1517,7 @@ class TestLinfnorm:
         return ct.c2d(systype(*sysargs), dt), refgpeak, reffpeak
 
     @slycotonly
+    @pytest.mark.usefixtures('ignore_future_warning')
     def test_linfnorm_ct_siso(self, ct_siso):
         sys, refgpeak, reffpeak = ct_siso
         gpeak, fpeak = linfnorm(sys)
@@ -1522,6 +1525,7 @@ class TestLinfnorm:
         np.testing.assert_allclose(fpeak, reffpeak)
 
     @slycotonly
+    @pytest.mark.usefixtures('ignore_future_warning')
     def test_linfnorm_dt_siso(self, dt_siso):
         sys, refgpeak, reffpeak = dt_siso
         gpeak, fpeak = linfnorm(sys)
@@ -1530,6 +1534,7 @@ class TestLinfnorm:
         np.testing.assert_allclose(fpeak, reffpeak)
 
     @slycotonly
+    @pytest.mark.usefixtures('ignore_future_warning')
     def test_linfnorm_ct_mimo(self, ct_siso):
         siso, refgpeak, reffpeak = ct_siso
         sys = ct.append(siso, siso)
@@ -1613,30 +1618,31 @@ def test_tf2ss_mimo():
 def test_convenience_aliases():
     sys = ct.StateSpace(1, 1, 1, 1)
 
-    # test that all the aliases point to the correct function
-    # .__funct__ a bound methods underlying function
-    assert sys.to_ss.__func__ == ct.ss
-    assert sys.to_tf.__func__ == ct.tf
-    assert sys.bode_plot.__func__ == ct.bode_plot
-    assert sys.nyquist_plot.__func__ == ct.nyquist_plot
-    assert sys.nichols_plot.__func__ == ct.nichols_plot
-    assert sys.forced_response.__func__ == ct.forced_response
-    assert sys.impulse_response.__func__ == ct.impulse_response
-    assert sys.step_response.__func__ == ct.step_response
-    assert sys.initial_response.__func__ == ct.initial_response
-
-    # make sure the functions can be used as member function ie they support
-    # an instance of StateSpace as the first argument and that they at least return
-    # the correct type
+    # Make sure the functions can be used as member function: i.e. they
+    # support an instance of StateSpace as the first argument and that
+    # they at least return the correct type
     assert isinstance(sys.to_ss(), StateSpace)
     assert isinstance(sys.to_tf(), TransferFunction)
     assert isinstance(sys.bode_plot(), ct.ControlPlot)
     assert isinstance(sys.nyquist_plot(), ct.ControlPlot)
     assert isinstance(sys.nichols_plot(), ct.ControlPlot)
-    assert isinstance(sys.forced_response([0, 1], [1, 1]), (ct.TimeResponseData, ct.TimeResponseList))
-    assert isinstance(sys.impulse_response(), (ct.TimeResponseData, ct.TimeResponseList))
-    assert isinstance(sys.step_response(), (ct.TimeResponseData, ct.TimeResponseList))
-    assert isinstance(sys.initial_response(X0=1), (ct.TimeResponseData, ct.TimeResponseList))
+    assert isinstance(sys.forced_response([0, 1], [1, 1]),
+                      (ct.TimeResponseData, ct.TimeResponseList))
+    assert isinstance(sys.impulse_response(),
+                      (ct.TimeResponseData, ct.TimeResponseList))
+    assert isinstance(sys.step_response(),
+                      (ct.TimeResponseData, ct.TimeResponseList))
+    assert isinstance(sys.initial_response(X0=1),
+                      (ct.TimeResponseData, ct.TimeResponseList))
+
+    # Make sure that unrecognized keywords for response functions are caught
+    for method in [LTI.impulse_response, LTI.initial_response,
+                   LTI.step_response]:
+        with pytest.raises(TypeError, match="unexpected keyword"):
+            method(sys, unknown=True)
+    with pytest.raises(TypeError, match="unexpected keyword"):
+        LTI.forced_response(sys, [0, 1], [1, 1], unknown=True)
+
 
 # Test LinearICSystem __call__
 def test_linearic_call():

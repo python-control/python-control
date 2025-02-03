@@ -13,3 +13,4 @@ dependencies:
   - nbsphinx
   - docutils
   - numpydoc
+  - sphinx-copybutton

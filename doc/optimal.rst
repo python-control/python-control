@@ -1,16 +1,21 @@
+.. currentmodule:: control
+
 .. _optimal-module:
 
-**************************
-Optimization-based control
-**************************
+Optimization-Based Control
+==========================
 
-.. automodule:: control.optimal
-   :no-members:
-   :no-inherited-members:
-   :no-special-members:
+The `optimal` module contains a set of classes and functions that can
+be used to solve optimal control and optimal estimation problems for
+linear or nonlinear systems.  The objects in this module must be
+explicitly imported::
+
+  import control as ct
+  import control.optimal as opt
+
 
 Optimal control problem setup
-=============================
+-----------------------------
 
 Consider the *optimal control problem*:
 
@@ -65,22 +70,25 @@ can be on the input, the state, or combinations of input and state,
 depending on the form of :math:`g_i`.  Furthermore, these constraints are
 intended to hold at all instants in time along the trajectory.
 
-For a discrete time system, the same basic formulation applies except
+For a discrete-time system, the same basic formulation applies except
 that the cost function is given by
 
 .. math::
 
   J(x, u) = \sum_{k=0}^{N-1} L(x_k, u_k)\, dt + V(x_N).
 
-A common use of optimization-based control techniques is the implementation
-of model predictive control (also called receding horizon control).  In
-model predictive control, a finite horizon optimal control problem is solved,
-generating open-loop state and control trajectories.  The resulting control
-trajectory is applied to the system for a fraction of the horizon
-length. This process is then repeated, resulting in a sampled data feedback
-law.  This approach is illustrated in the following figure:
+A common use of optimization-based control techniques is the
+implementation of model predictive control (MPC, also called receding
+horizon control).  In model predictive control, a finite horizon
+optimal control problem is solved, generating open-loop state and
+control trajectories.  The resulting control trajectory is applied to
+the system for a fraction of the horizon length. This process is then
+repeated, resulting in a sampled data feedback law.  This approach is
+illustrated in the following figure:
 
-.. image:: mpc-overview.png
+.. image:: figures/mpc-overview.png
+   :width: 640
+   :align: center
 
 Every :math:`\Delta T` seconds, an optimal control problem is solved over a
 :math:`T` second horizon, starting from the current state.  The first
@@ -88,7 +96,7 @@ Every :math:`\Delta T` seconds, an optimal control problem is solved over a
 x(t))` is then applied to the system. If we let :math:`x_T^{\*}(\cdot;
 x(t))` represent the optimal trajectory starting from :math:`x(t)` then the
 system state evolves from :math:`x(t)` at current time :math:`t` to
-:math:`x_T^{*}(\delta T, x(t))` at the next sample time :math:`t + \Delta
+:math:`x_T^{*}(\Delta T, x(t))` at the next sample time :math:`t + \Delta
 T`, assuming no model uncertainty.
 
 In reality, the system will not follow the predicted path exactly, so that
@@ -97,147 +105,46 @@ recompute the optimal path from the new state at time :math:`t + \Delta T`,
 extending our horizon by an additional :math:`\Delta T` units of time.  This
 approach can be shown to generate stabilizing control laws under suitable
 conditions (see, for example, the FBS2e supplement on `Optimization-Based
-Control <https://fbswiki.org/wiki/index.php/OBC>`_.
+Control <https://fbswiki.org/wiki/index.php/OBC>`_).
 
-Optimal estimation problem setup
-================================
-
-Consider a nonlinear system with discrete time dynamics of the form
-
-.. math::
-  :label: eq_fusion_nlsys-oep
-
-  X[k+1] = f(X[k], u[k], V[k]), \qquad Y[k] = h(X[k]) + W[k],
-
-where :math:`X[k] \in \mathbb{R}^n`, :math:`u[k] \in \mathbb{R}^m`, and
-:math:`Y[k] \in \mathbb{R}^p`, and :math:`V[k] \in \mathbb{R}^q` and
-:math:`W[k] \in \mathbb{R}^p` represent random processes that are not
-necessarily Gaussian white noise processes.  The estimation problem that we
-wish to solve is to find the estimate :math:`\hat x[\cdot]` that matches
-the measured outputs :math:`y[\cdot]` with "likely" disturbances and
-noise.
-
-For a fixed horizon of length :math:`N`, this problem can be formulated as
-an optimization problem where we define the likelihood of a given estimate
-(and the resulting noise and disturbances predicted by the model) as a cost
-function. Suppose we model the likelihood using a conditional probability
-density function :math:`p(x[0], \dots, x[N] \mid y[0], \dots, y[N-1])`.
-Then we can pose the state estimation problem as
-
-.. math::
-  :label: eq_fusion_oep
-
-  \hat x[0], \dots, \hat x[N] =
-  \arg \max_{\hat x[0], \dots, \hat x[N]}
-  p(\hat x[0], \dots, \hat x[N] \mid y[0], \dots, y[N-1])
-
-subject to the constraints given by equation :eq:`eq_fusion_nlsys-oep`.
-The result of this optimization gives us the estimated state for the
-previous :math:`N` steps in time, including the "current" time
-:math:`x[N]`.  The basic idea is thus to compute the state estimate that is
-most consistent with our model and penalize the noise and disturbances
-according to how likely they are (based on the given stochastic system 
-model for each).
-
-Given a solution to this fixed-horizon optimal estimation problem, we can
-create an estimator for the state over all times by repeatedly applying the
-optimization problem :eq:`eq_fusion_oep` over a moving horizon.  At each
-time :math:`k`, we take the measurements for the last :math:`N` time steps
-along with the previously estimated state at the start of the horizon,
-:math:`x[k-N]` and reapply the optimization in equation
-:eq:`eq_fusion_oep`.  This approach is known as a \define{moving horizon
-estimator} (MHE).
-
-The formulation for the moving horizon estimation problem is very general
-and various situations can be captured using the conditional probability
-function :math:`p(x[0], \dots, x[N] \mid y[0], \dots, y[N-1]`.  We start by
-noting that if the disturbances are independent of the underlying states of
-the system, we can write the conditional probability as
-
-.. math::
-
-  p \bigl(x[0], \dots, x[N] \mid y[0], \dots, y[N-1]\bigr) =
-  p_{X[0]}(x[0])\, \prod_{k=0}^{N-1} p_V\bigl(y[k] - h(x[k])\bigr)\,
-    p\bigl(x[k+1] \mid x[k]\bigr).
-
-This expression can be further simplified by taking the log of the
-expression and maximizing the function
-
-.. math::
-  :label: eq_fusion_log-likelihood
-
-  \log p_{X[0]}(x[0]) + \sum_{k=0}^{N-1} \log
-  p_W \bigl(y[k] - h(x[k])\bigr) + \log p_V(v[k]).
-
-The first term represents the likelihood of the initial state, the
-second term captures the likelihood of the noise signal, and the final
-term captures the likelihood of the disturbances.
-
-If we return to the case where :math:`V` and :math:`W` are modeled as
-Gaussian processes, then it can be shown that maximizing equation
-:eq:`eq_fusion_log-likelihood` is equivalent to solving the optimization
-problem given by
-
-.. math::
-  :label: eq_fusion_oep-gaussian
-
-  \min_{x[0], \{v[0], \dots, v[N-1]\}}
-  \|x[0] - \bar x[0]\|_{P_0^{-1}} + \sum_{k=0}^{N-1}
-  \|y[k] - h(x_k)\|_{R_W^{-1}}^2 +
-  \|v[k] \|_{R_V^{-1}}^2,
-
-where :math:`P_0`, :math:`R_V`, and :math:`R_W` are the covariances of the
-initial state, disturbances, and measurement noise.
-
-Note that while the optimization is carried out only over the estimated
-initial state :math:`\hat x[0]`, the entire history of estimated states can
-be reconstructed using the system dynamics:
-
-.. math::
-
-  \hat x[k+1] = f(\hat x[k], u[k], v[k]), \quad k = 0, \dots, N-1.
-
-In particular, we can obtain the estimated state at the end of the moving
-horizon window, corresponding to the current time, and we can thus
-implement an estimator by repeatedly solving the optimization of a window
-of length :math:`N` backwards in time.
 
 Module usage
-============
+------------
 
 The optimization-based control module provides a means of computing
 optimal trajectories for nonlinear systems and implementing
-optimization-based controllers, including model predictive control and
-moving horizon estimation.  It follows the basic problem setups
-described above, but carries out all computations in *discrete time*
-(so that integrals become sums) and over a *finite horizon*.  To local
-the optimal control modules, import `control.optimal`:
+optimization-based controllers, including model predictive control.
+It follows the basic problem setups described above, but carries out
+all computations in *discrete time* (so that integrals become sums)
+and over a *finite horizon*.  To access the optimal control modules,
+import `control.optimal`::
 
-  import control.optimal as obc
+  import control.optimal as opt
 
 To describe an optimal control problem we need an input/output system, a
 time horizon, a cost function, and (optionally) a set of constraints on the
-state and/or input, either along the trajectory and at the terminal time.
+state and/or input, along the trajectory and/or at the terminal time.
 The optimal control module operates by converting the optimal control
 problem into a standard optimization problem that can be solved by
 :func:`scipy.optimize.minimize`.  The optimal control problem can be solved
-by using the :func:`~control.optimal.solve_ocp` function::
+by using the :func:`~optimal.solve_optimal_trajectory` function::
 
-  res = obc.solve_ocp(sys, timepts, X0, cost, constraints)
+  res = opt.solve_optimal_trajectory(sys, timepts, X0, cost, constraints)
 
-The `sys` parameter should be an :class:`~control.InputOutputSystem` and the
-`timepts` parameter should represent a time vector that gives the list of
-times at which the cost and constraints should be evaluated.
+The :code:`sys` parameter should be an :class:`InputOutputSystem` and the
+`timepts` parameter should represent a time vector that gives the list
+of times at which the cost and constraints should be evaluated (the
+time points need not be uniformly spaced).
 
-The `cost` function has call signature `cost(t, x, u)` and should return the
-(incremental) cost at the given time, state, and input.  It will be
-evaluated at each point in the `timepts` vector.  The `terminal_cost`
-parameter can be used to specify a cost function for the final point in the
-trajectory.
+The `cost` function has call signature ``cost(t, x, u)`` and should
+return the (incremental) cost at the given time, state, and input.  It
+will be evaluated at each point in the `timepts` vector.  The
+`terminal_cost` parameter can be used to specify a cost function for
+the final point in the trajectory.
 
-The `constraints` parameter is a list of constraints similar to that used by
-the :func:`scipy.optimize.minimize` function.  Each constraint is specified
-using one of the following forms::
+The `constraints` parameter is a list of constraints similar to that
+used by the :func:`scipy.optimize.minimize` function.  Each constraint
+is specified using one of the following forms::
 
   LinearConstraint(A, lb, ub)
   NonlinearConstraint(f, lb, ub)
@@ -257,74 +164,58 @@ A nonlinear constraint is satisfied if
 
    lb <= f(x, u) <= ub
 
-By default, `constraints` are taken to be trajectory constraints holding at
-all points on the trajectory.  The `terminal_constraint` parameter can be
+The `constraints` are taken as trajectory constraints holding at all
+points on the trajectory.  The `terminal_constraints` parameter can be
 used to specify a constraint that only holds at the final point of the
 trajectory.
 
-The return value for :func:`~control.optimal.solve_ocp` is a bundle object
-that has the following elements:
+The return value for :func:`~optimal.solve_optimal_trajectory` is a
+bundle object that has the following elements:
 
-  * `res.success`: `True` if the optimization was successfully solved
+  * `res.success`: True if the optimization was successfully solved
   * `res.inputs`: optimal input
-  * `res.states`: state trajectory (if `return_x` was `True`)
-  * `res.time`: copy of the time timepts vector
+  * `res.states`: state trajectory (if `return_x` was True)
+  * `res.time`: copy of the time `timepts` vector
 
 In addition, the results from :func:`scipy.optimize.minimize` are also
-available.
+available as additional attributes, as described in
+`scipy.optimize.OptimizeResult`.
 
 To simplify the specification of cost functions and constraints, the
-:mod:`~control.ios` module defines a number of utility functions for
+:mod:`optimal` module defines a number of utility functions for
 optimal control problems:
 
 .. autosummary::
 
-   ~control.optimal.quadratic_cost
-   ~control.optimal.input_poly_constraint
-   ~control.optimal.input_range_constraint
-   ~control.optimal.output_poly_constraint
-   ~control.optimal.output_range_constraint
-   ~control.optimal.state_poly_constraint
-   ~control.optimal.state_range_constraint
+   optimal.quadratic_cost
+   optimal.input_poly_constraint
+   optimal.input_range_constraint
+   optimal.output_poly_constraint
+   optimal.output_range_constraint
+   optimal.state_poly_constraint
+   optimal.state_range_constraint
 
-The optimization-based control module also implements functions for solving
-optimal estimation problems.  The
-:class:`~control.optimal.OptimalEstimationProblem` class is used to define
-an optimal estimation problem over a finite horizon::
-
-  oep = OptimalEstimationProblem(sys, timepts, cost[, constraints])
-
-Given noisy measurements :math:`y` and control inputs :math:`u`, an
-estimate of the states over the time points can be computed using the
-:func:`~control.optimal.OptimalEstimationProblem.compute_estimate` method::
-
-  estim = oep.compute_optimal(Y, U[, X0=x0, initial_guess=(xhat, v)])
-  xhat, v, w = estim.states, estim.inputs, estim.outputs
-
-For discrete time systems, the
-:func:`~control.optimal.OptimalEstimationProblem.create_mhe_iosystem`
-method can be used to generate an input/output system that implements a
-moving horizon estimator.
-
-Several functions are available to help set up standard optimal estimation
-problems:
-
-.. autosummary::
-
-   ~control.optimal.gaussian_likelihood_cost
-   ~control.optimal.disturbance_range_constraint
 
 Example
-=======
+-------
 
-Consider the vehicle steering example described in FBS2e.  The dynamics of
-the system can be defined as a nonlinear input/output system using the
-following code::
+Consider the vehicle steering example described in Example 2.3 of
+`Optimization-Based Control (OBC)
+<https://fbswiki.org/wiki/index.php?title=OBC>`_.  The
+dynamics of the system can be defined as a nonlinear input/output
+system using the following code:
 
+.. testsetup:: optimal
+
+    import matplotlib.pyplot as plt
+    plt.close('all')
+
+.. testcode:: optimal
+
+  import matplotlib.pyplot as plt
   import numpy as np
   import control as ct
   import control.optimal as opt
-  import matplotlib.pyplot as plt
 
   def vehicle_update(t, x, u, params):
       # Get the parameters for the model
@@ -352,34 +243,53 @@ following code::
 We consider an optimal control problem that consists of "changing lanes" by
 moving from the point x = 0 m, y = -2 m, :math:`\theta` = 0 to the point x =
 100 m, y = 2 m, :math:`\theta` = 0) over a period of 10 seconds and
-with a starting and ending velocity of 10 m/s::
+with a starting and ending velocity of 10 m/s:
+
+.. testcode:: optimal
 
   x0 = np.array([0., -2., 0.]); u0 = np.array([10., 0.])
   xf = np.array([100., 2., 0.]); uf = np.array([10., 0.])
   Tf = 10
 
 To set up the optimal control problem we design a cost function that
-penalizes the state and input using quadratic cost functions::
+penalizes the state and input using quadratic cost functions:
+
+.. testcode:: optimal
 
   Q = np.diag([0, 0, 0.1])          # don't turn too sharply
   R = np.diag([1, 1])               # keep inputs small
   P = np.diag([1000, 1000, 1000])   # get close to final point
-  traj_cost = obc.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
-  term_cost = obc.quadratic_cost(vehicle, P, 0, x0=xf)
+  traj_cost = opt.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
+  term_cost = opt.quadratic_cost(vehicle, P, 0, x0=xf)
 
 We also constrain the maximum turning rate to 0.1 radians (about 6 degrees)
-and constrain the velocity to be in the range of 9 m/s to 11 m/s::
+and constrain the velocity to be in the range of 9 m/s to 11 m/s:
 
-  constraints = [ obc.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
+.. testcode:: optimal
 
-Finally, we solve for the optimal inputs::
+  constraints = [ opt.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
+
+Finally, we solve for the optimal inputs:
+
+.. testcode:: optimal
 
   timepts = np.linspace(0, Tf, 10, endpoint=True)
-  result = obc.solve_ocp(
+  result = opt.solve_optimal_trajectory(
       vehicle, timepts, x0, traj_cost, constraints,
       terminal_cost=term_cost, initial_guess=u0)
 
-Plotting the results::
+.. testoutput:: optimal
+  :hide:
+
+  Summary statistics:
+  * Cost function calls: ...
+  * Constraint calls: ...
+  * System simulations: ...
+  * Final cost: ...
+
+Plotting the results:
+
+.. testcode:: optimal
 
   # Simulate the system dynamics (open loop)
   resp = ct.input_output_response(
@@ -405,21 +315,22 @@ Plotting the results::
   plt.xlabel("t [sec]")
   plt.ylabel("u2 [rad/s]")
 
-  plt.suptitle("Lane change manuever")
+  plt.suptitle("Lane change maneuver")
   plt.tight_layout()
-  plt.show()
+
+.. testcode:: optimal
+  :hide:
+
+  plt.savefig('figures/steering-optimal.png')
 
 yields
 
-.. image:: steering-optimal.png
+.. image:: figures/steering-optimal.png
+   :align: center
 
-
-An example showing the use of the optimal estimation problem and moving
-horizon estimation (MHE) is given in the :doc:`mhe-pvtol Jupyter
-notebook <mhe-pvtol>`.
 
 Optimization Tips
-=================
+-----------------
 
 The python-control optimization module makes use of the SciPy optimization
 toolbox and it can sometimes be tricky to get the optimization to converge.
@@ -442,17 +353,19 @@ solutions do not seem close to optimal, here are a few things to try:
   `input_output_response` (as done above).
 
 * Use a smooth basis: as an alternative to parameterizing the optimal
-  control inputs using the value of the control at the listed time points,
-  you can specify a set of basis functions using the `basis` keyword in
-  :func:`~control.solve_ocp` and then parameterize the controller by linear
-  combination of the basis functions.  The :mod:`!control.flatsys` module
-  defines several sets of basis functions that can be used.
+  control inputs using the value of the control at the listed time
+  points, you can specify a set of basis functions using the `basis`
+  keyword in :func:`~optimal.solve_optimal_trajectory` and then
+  parameterize the controller by linear combination of the basis
+  functions.  The :ref:`flatsys subpackage <flatsys-module>` defines
+  several sets of basis functions that can be used.
 
-* Tweak the optimizer: by using the `minimize_method`, `minimize_options`,
-  and `minimize_kwargs` keywords in :func:`~control.solve_ocp`, you can
-  choose the SciPy optimization function that you use and set many
-  parameters.  See :func:`scipy.optimize.minimize` for more information on
-  the optimizers that are available and the options and keywords that they
+* Tweak the optimizer: by using the `minimize_method`,
+  `minimize_options`, and `minimize_kwargs` keywords in
+  :func:`~optimal.solve_optimal_trajectory`, you can choose the SciPy
+  optimization function that you use and set many parameters.  See
+  :func:`scipy.optimize.minimize` for more information on the
+  optimizers that are available and the options and keywords that they
   accept.
 
 * Walk before you run: try setting up a simpler version of the optimization,
@@ -466,31 +379,30 @@ formulations.
 
 
 Module classes and functions
-============================
+----------------------------
 
 The following classes and functions are defined in the
-``optimal`` module:
+`optimal` module:
 
 .. autosummary::
-   :toctree: generated/
    :template: custom-class-template.rst
 
-   ~control.optimal.OptimalControlProblem
-   ~control.optimal.OptimalControlResult
-   ~control.optimal.OptimalEstimationProblem
-   ~control.optimal.OptimalEstimationResult
+   optimal.OptimalControlProblem
+   optimal.OptimalControlResult
+   optimal.OptimalEstimationProblem
+   optimal.OptimalEstimationResult
 
 .. autosummary::
-   :toctree: generated/
 
-   ~control.optimal.create_mpc_iosystem
-   ~control.optimal.disturbance_range_constraint
-   ~control.optimal.gaussian_likelihood_cost
-   ~control.optimal.input_poly_constraint
-   ~control.optimal.input_range_constraint
-   ~control.optimal.output_poly_constraint
-   ~control.optimal.output_range_constraint
-   ~control.optimal.quadratic_cost
-   ~control.optimal.solve_ocp
-   ~control.optimal.state_poly_constraint
-   ~control.optimal.state_range_constraint
+   optimal.create_mpc_iosystem
+   optimal.disturbance_range_constraint
+   optimal.gaussian_likelihood_cost
+   optimal.input_poly_constraint
+   optimal.input_range_constraint
+   optimal.output_poly_constraint
+   optimal.output_range_constraint
+   optimal.quadratic_cost
+   optimal.solve_optimal_trajectory
+   optimal.solve_optimal_estimate
+   optimal.state_poly_constraint
+   optimal.state_range_constraint

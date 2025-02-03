@@ -1,0 +1,184 @@
+.. currentmodule:: control
+
+.. _version-0.10.0:
+
+Version 0.10.0 Release Notes
+----------------------------
+
+* Released: 31 March 2024
+* `GitHub release page
+  <https://github.com/python-control/python-control/releases/tag/0.10.0>`_
+
+This release changes the interface for plotting to use a
+``_response/_plot`` calling pattern, adds multivariable interconnect
+functionality, restructures I/O system classes, and adds the `norm`
+(now `system_norm`) function to compute input/output system norms.
+Support for the NumPy `~numpy.matrix` class has been removed.
+
+This version of `python-control` requires Python 3.10 and higher.
+
+
+New classes, functions, and methods
+...................................
+
+The following new classes, functions, and methods have been added in
+this release:
+
+* `time_response_plot`, `TimeResponseData.plot`: Plot simulation
+  results for time response functions.
+
+* `InterconnectedSystem.connection_table`: Print out a table of each
+  signal name, where it comes from (source), and where it goes
+  (destination), primarily intended for systems that have been
+  connected implicitly.
+
+* `nyquist_response`, `NyquistResponseData`: Compute the Nyquist curve
+  and store in an object that can be used to retrieve information
+  (e.g., `~NyquistResponseData.count`) or for plotting (via
+  the `~NyquistResponseData.plot` method).
+
+* `describing_function_response`, `DescribingFunctionResponse`: Compute
+  describing functions and store in a form that can be used for
+  analysis (e.g., `~DescribingFunctionResponse.intersections`) or plotting
+  (via `describing_function_plot` or the
+  `~DescribingFunctionResponse.plot` method).
+
+* `gangof4_response`, `gangof4_plot`: Compute the Gang of Four
+  response and store in a `FrequencyResponseData` object for plotting.
+
+* `singular_values_response`: Compute the Gang of Four response and store in a
+  `FrequencyResponseData` object for plotting.
+
+* `FrequencyResponseData.plot`: Plot a frequency response using a Bode,
+  Nichols, or singular values plot.
+
+* `pole_zero_map`, `PoleZeroData`: New "response" (map) functions for
+  pole/zero diagrams.  The output of `pole_zero_map` can be plotted
+  using `pole_zero_plot` or the `~PoleZeroData.plot` method.
+
+* `root_locus_map`: New "response" (map) functions for root locus
+  diagrams.  The output of `root_locus_map` can be plotted using
+  `root_locus_plot` or the `~PoleZeroData.plot` method.
+
+* `norm` (now `system_norm`): Compute H2 and H-infinity system norms.
+
+* `phase_plane_plot`: New implementation of phase
+  plane plots.  See :ref:`phase-plane-plots` for more information.
+
+
+Bug fixes
+.........
+
+The following bugs have been fixed in this release:
+
+* `sample_system`: Fixed a bug in which the zero frequency (DC) gain
+  for the 'matched' transformation was being computed incorrectly.
+
+* `TimeResponseData.to_pandas`: Fixed a bug when the response did not
+  have state data.
+
+
+Improvements
+............
+
+The following additional improvements and changes in functionality
+were implemented in this release:
+
+* `interconnect`: Allows a variety of "multivariable" specifications
+  for connections, inputs, and outputs when systems have variables
+  with names of the form 'sig[i]'.
+
+* `nlsys`: Factory function for `NonlinearIOSystem`.
+
+* Block diagram functions (`series`, `parallel`, `feedback`, `append`,
+  `negate`) now work on all I/O system classes, including nonlinear
+  systems.
+
+* Simulation functions (`initial_response`, `step_response`,
+  `forced_response`) will now work for nonlinear functions (via an
+  internal call to `input_output_response`).
+
+* Bode and Nyquist plots have been significantly enhanced in terms of
+  functionality for display multiple tracing and other visual
+  properties.  See `bode_plot` and `nyquist_plot` for details, along
+  with the :ref:`response-chapter` chapter.
+
+* Properties of frequecy plots can now be set using the
+  `config.defaults['freqplot.rcParams']` (see
+  :ref:`package-configuration-parameters` for details).
+
+* `create_statefbk_iosystem`: Allows passing an I/O system instead of
+  the a gain (or gain schedule) for the controller.
+
+* `root_locus_plot`: Interactive mode is now enabled, so clicking on a
+  location on the root locus curve will generate markers at the
+  locations on the loci corresponding to that gain and add a message
+  above the plot giving the frequency and damping ratio for the point
+  that was clicked.
+
+* `gram`: Computation of Gramians now supports discrete-time systems.
+
+* All time response functions now allow the `params` keyword to be
+  specified (for nonlinear I/O systems) and the parameter values used
+  for generating a time response are stored in the `TimeResponseData`
+  object..
+
+
+Deprecations
+............
+
+The following functions have been newly deprecated in this release and
+generate a warning message when used:
+
+* `connect`: Use `interconnect`.
+
+* `ss2io`, `tf2io`: These functions are no longer required since the
+  `StateSpace` and `TransferFunction` classes are now subclasses of
+  `NonlinearIOSystem`.
+
+* `root_locus_plot`, `sisotool`: the `print_gain` keyword has been
+  replaced `interactive`.
+
+* In various plotting routines, the (already deprecated) `Plot`
+  keyword is now the (still deprecated) `plot` keyword.  This can be
+  used to obtain legacy return values from ``_plot`` functions.
+
+* `phase_plot`: Use `phase_plane_plot` instead.
+
+The listed items are slated to be removed in future releases (usually
+the next major or minor version update).
+
+
+Removals
+........
+
+The following functions and capabilities have been removed in this release:
+
+* `use_numpy_matrix`: The `numpy.matrix` class is no longer supported.
+
+* `NamedIOSystem`: renamed to `InputOutputSystem`
+
+* `LinearIOSystem`: merged into the `StateSpace` class
+
+* `pole`: use `poles`.  The `matlab.pole` function is still available.
+
+* `zero`: use `zeros`.  The `matlab.zero` function is still available.
+
+* `timebaseEqual`: use `common_timebase`.
+
+* The `impulse_response` function no longer accepts the `X0` keyword.
+
+* The `initial_response` function no longer accepts the :code:`input`
+  keyword.
+
+* The deprecated default parameters 'bode.dB', 'bode.deg',
+  'bode.grid', and 'bode.wrap_phase' have been removed.  They should
+  be accessed as 'freqplot.dB', 'freqplot.deg', 'freqplot.grid', and
+  'freqplot.wrap_phase'.
+
+* Recalculation of the root locus plot when zooming no longer works
+  (you can still zoom in and out, you just don't get a recalculated
+  curve).
+
+Code that makes use of the functionality listed above will have to be
+rewritten to work with this release of the python-control package.

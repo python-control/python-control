@@ -1,7 +1,7 @@
 .. _matlab-module:
 
 ****************************
- MATLAB compatibility module
+ MATLAB Compatibility Module
 ****************************
 
 .. automodule:: control.matlab
@@ -9,7 +9,11 @@
    :no-inherited-members:
    :no-special-members:
 
-Creating linear models
+.. warning:: This module is not closely maintained and some
+             functionality in the main python-control package may not
+             be be available via the MATLAB compatibility module.
+
+Creating Linear Models
 ======================
 .. autosummary::
    :toctree: generated/
@@ -17,10 +21,9 @@ Creating linear models
    tf
    ss
    frd
-   rss
-   drss
+   zpk
 
-Utility functions and conversions
+Utility Functions and Conversions
 =================================
 .. autosummary::
    :toctree: generated/
@@ -32,7 +35,7 @@ Utility functions and conversions
    tf2ss
    tfdata
 
-System interconnections
+System Interconnections
 =======================
 .. autosummary::
    :toctree: generated/
@@ -44,7 +47,7 @@ System interconnections
    connect
    append
 
-System gain and dynamics
+System Gain and Dynamics
 ========================
 .. autosummary::
    :toctree: generated/
@@ -55,7 +58,7 @@ System gain and dynamics
    damp
    pzmap
 
-Time-domain analysis
+Time-Domain Analysis
 ====================
 .. autosummary::
    :toctree: generated/
@@ -64,20 +67,22 @@ Time-domain analysis
    impulse
    initial
    lsim
+   stepinfo
 
-Frequency-domain analysis
+Frequency-Domain Analysis
 =========================
 .. autosummary::
    :toctree: generated/
 
    bode
    nyquist
-   nichols
    margin
+   nichols
+   ngrid
    freqresp
    evalfr
 
-Compensator design
+Compensator Design
 ==================
 .. autosummary::
    :toctree: generated/
@@ -90,7 +95,7 @@ Compensator design
    lqe
    dlqe
 
-State-space (SS) models
+State-space (SS) Models
 =======================
 .. autosummary::
    :toctree: generated/
@@ -101,7 +106,7 @@ State-space (SS) models
    obsv
    gram
 
-Model simplification
+Model Simplification
 ====================
 .. autosummary::
    :toctree: generated/
@@ -113,14 +118,14 @@ Model simplification
    era
    markov
 
-Time delays
+Time Delays
 ===========
 .. autosummary::
    :toctree: generated/
 
    pade
 
-Matrix equation solvers and linear algebra
+Matrix Equation Solvers and Linear Algebra
 ==========================================
 .. autosummary::
    :toctree: generated/
@@ -130,7 +135,7 @@ Matrix equation solvers and linear algebra
    care
    dare
 
-Additional functions
+Additional Functions
 ====================
 .. autosummary::
    :toctree: generated/
@@ -138,8 +143,8 @@ Additional functions
    gangof4
    unwrap
 
-Functions imported from other modules
-=====================================
+Functions Imported from Other Packages
+======================================
 .. autosummary::
 
    ~numpy.linspace

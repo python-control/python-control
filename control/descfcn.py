@@ -1,14 +1,8 @@
 # descfcn.py - describing function analysis
-#
 # RMM, 23 Jan 2021
-#
-# This module adds functions for carrying out analysis of systems with
-# memoryless nonlinear feedback functions using describing functions.
-#
 
-"""The :mod:~control.descfcn` module contains function for performing
-closed loop analysis of systems with memoryless nonlinearities using
-describing function analysis.
+"""This module contains functions for performing closed loop analysis of
+systems with memoryless nonlinearities using describing function analysis.
 
 """
 
@@ -35,12 +29,12 @@ class DescribingFunctionNonlinearity():
     This class is intended to be used as a base class for nonlinear functions
     that have an analytically defined describing function.  Subclasses should
     override the `__call__` and `describing_function` methods and (optionally)
-    the `_isstatic` method (should be `False` if `__call__` updates the
+    the `_isstatic` method (should be False if `__call__` updates the
     instance state).
 
     """
     def __init__(self):
-        """Initailize a describing function nonlinearity (optional)."""
+        """Initialize a describing function nonlinearity (optional)."""
         pass
 
     def __call__(self, A):
@@ -55,6 +49,16 @@ class DescribingFunctionNonlinearity():
         describing function for a nonlinearity.  It turns the (complex) value
         of the describing function for sinusoidal input of amplitude `A`.
 
+        Parameters
+        ----------
+        A : float
+            Amplitude of the sinusoidal input to the nonlinearity.
+
+        Returns
+        -------
+        float
+            Value of the describing function at the given amplitude.
+
         """
         raise NotImplementedError(
             "describing function not implemented for this function")
@@ -63,7 +67,7 @@ class DescribingFunctionNonlinearity():
         """Return True if the function has no internal state (memoryless).
 
         This internal function is used to optimize numerical computation of
-        the describing function.  It can be set to `True` if the instance
+        the describing function.  It can be set to True if the instance
         maintains no internal memory of the instance state.  Assumed False by
         default.
 
@@ -78,7 +82,7 @@ class DescribingFunctionNonlinearity():
 
 def describing_function(
         F, A, num_points=100, zero_check=True, try_method=True):
-    """Numerically compute the describing function of a nonlinear function.
+    """Numerically compute describing function of a nonlinear function.
 
     The describing function of a nonlinearity is given by magnitude and phase
     of the first harmonic of the function when evaluated along a sinusoidal
@@ -96,7 +100,7 @@ def describing_function(
         If the function is an object with a method `describing_function`
         then this method will be used to computing the describing function
         instead of a nonlinear computation.  Some common nonlinearities
-        use the :class:`~control.DescribingFunctionNonlinearity` class,
+        use the `DescribingFunctionNonlinearity` class,
         which provides this functionality.
 
     A : array_like
@@ -107,20 +111,20 @@ def describing_function(
         100).
 
     zero_check : bool, optional
-        If `True` (default) then `A` is zero, the function will be evaluated
+        If True (default) then `A` is zero, the function will be evaluated
         and checked to make sure it is zero.  If not, a `TypeError` exception
-        is raised.  If zero_check is `False`, no check is made on the value of
+        is raised.  If zero_check is False, no check is made on the value of
         the function at zero.
 
     try_method : bool, optional
-        If `True` (default), check the `F` argument to see if it is an object
+        If True (default), check the `F` argument to see if it is an object
         with a `describing_function` method and use this to compute the
         describing function.  More information in the `describing_function`
-        method for the :class:`~control.DescribingFunctionNonlinearity` class.
+        method for the `DescribingFunctionNonlinearity` class.
 
     Returns
     -------
-    df : array of complex
+    df : ndarray of complex
         The (complex) value of the describing function at the given amplitudes.
 
     Raises
@@ -204,7 +208,7 @@ def describing_function(
         # Evaluate the function along a sinusoid
         F_eval = np.array([F(x) for x in a*sin_theta]).squeeze()
 
-        # Compute the prjections onto sine and cosine
+        # Compute the projections onto sine and cosine
         df_real = (F_eval @ sin_theta) * scale     # = M_1 \cos\phi / a
         df_imag = (F_eval @ cos_theta) * scale     # = M_1 \sin\phi / a
 
@@ -223,26 +227,26 @@ class DescribingFunctionResponse:
 
     Describing functions allow analysis of a linear I/O systems with a
     static nonlinear feedback function.  The DescribingFunctionResponse
-    class is used by the :func:`~control.describing_function_response`
+    class is used by the `describing_function_response`
     function to return the results of a describing function analysis.  The
     response object can be used to obtain information about the describing
     function analysis or generate a Nyquist plot showing the frequency
     response of the linear systems and the describing function for the
     nonlinear element.
 
-    Attributes
+    Parameters
     ----------
-    response : :class:`~control.FrequencyResponseData`
+    response : `FrequencyResponseData`
         Frequency response of the linear system component of the system.
     intersections : 1D array of 2-tuples or None
         A list of all amplitudes and frequencies in which
-        :math:`H(j\\omega) N(a) = -1`, where :math:`N(a)` is the describing
-        function associated with `F`, or `None` if there are no such
+        :math:`H(j\\omega) N(A) = -1`, where :math:`N(A)` is the describing
+        function associated with `F`, or None if there are no such
         points.  Each pair represents a potential limit cycle for the
         closed loop system with amplitude given by the first value of the
         tuple and frequency given by the second value.
     N_vals : complex array
-        Complex value of the describing function.
+        Complex value of the describing function, indexed by amplitude.
     positions : list of complex
         Location of the intersections in the complex plane.
 
@@ -257,7 +261,7 @@ class DescribingFunctionResponse:
     def plot(self, **kwargs):
         """Plot the results of a describing function analysis.
 
-        See :func:`~control.describing_function_plot` for details.
+        See `describing_function_plot` for details.
         """
         return describing_function_plot(self, **kwargs)
 
@@ -285,8 +289,8 @@ def describing_function_response(
     Parameters
     ----------
     H : LTI system
-        Linear time-invariant (LTI) system (state space, transfer function, or
-        FRD)
+        Linear time-invariant (LTI) system (state space, transfer function,
+        or FRD).
     F : static nonlinear function
         A static nonlinearity, either a scalar function or a single-input,
         single-output, static input/output system.
@@ -295,27 +299,34 @@ def describing_function_response(
     omega : list, optional
         List of frequencies to be used for the linear system Nyquist curve.
     warn_nyquist : bool, optional
-        Set to True to turn on warnings generated by `nyquist_plot` or False
-        to turn off warnings.  If not set (or set to None), warnings are
-        turned off if omega is specified, otherwise they are turned on.
+        Set to True to turn on warnings generated by `nyquist_plot` or
+        False to turn off warnings.  If not set (or set to None),
+        warnings are turned off if omega is specified, otherwise they are
+        turned on.
     refine : bool, optional
-        If `True`, :func:`scipy.optimize.minimize` to refine the estimate
+        If True, `scipy.optimize.minimize` to refine the estimate
         of the intersection of the frequency response and the describing
         function.
 
     Returns
     -------
-    response : :class:`~control.DescribingFunctionResponse` object
+    response : `DescribingFunctionResponse` object
         Response object that contains the result of the describing function
-        analysis.  The following information can be retrieved from this
-        object:
-    response.intersections : 1D array of 2-tuples or None
+        analysis.  The results can plotted using the
+        `~DescribingFunctionResponse.plot` method.
+    response.intersections : 1D ndarray of 2-tuples or None
         A list of all amplitudes and frequencies in which
         :math:`H(j\\omega) N(a) = -1`, where :math:`N(a)` is the describing
-        function associated with `F`, or `None` if there are no such
+        function associated with `F`, or None if there are no such
         points.  Each pair represents a potential limit cycle for the
         closed loop system with amplitude given by the first value of the
         tuple and frequency given by the second value.
+    response.Nvals : complex ndarray
+        Complex value of the describing function, indexed by amplitude.
+
+    See Also
+    --------
+    DescribingFunctionResponse, describing_function_plot
 
     Examples
     --------
@@ -325,7 +336,7 @@ def describing_function_response(
     >>> response = ct.describing_function_response(H_simple, F_saturation, amp)
     >>> response.intersections  # doctest: +SKIP
     [(3.343844998258643, 1.4142293090899216)]
-    >>> lines = response.plot()
+    >>> cplt = response.plot()
 
     """
     # Decide whether to turn on warnings or not
@@ -391,7 +402,7 @@ def describing_function_plot(
         *sysdata, point_label="%5.2g @ %-5.2g", label=None, **kwargs):
     """describing_function_plot(data, *args, **kwargs)
 
-    Plot a Nyquist plot with a describing function for a nonlinear system.
+    Nyquist plot with describing function for a nonlinear system.
 
     This function generates a Nyquist plot for a closed loop system
     consisting of a linear system with a static nonlinear function in the
@@ -404,17 +415,17 @@ def describing_function_plot(
         describing_function_plot(H, F, A[, omega[, options]])
 
     In the first form, the response should be generated using the
-    :func:`~control.describing_function_response` function.  In the second
+    `describing_function_response` function.  In the second
     form, that function is called internally, with the listed arguments.
 
     Parameters
     ----------
-    data : :class:`~control.DescribingFunctionResponse`
+    data : `DescribingFunctionResponse`
         A describing function response data object created by
-        :func:`~control.describing_function_response`.
+        `describing_function_response`.
     H : LTI system
-        Linear time-invariant (LTI) system (state space, transfer function, or
-        FRD)
+        Linear time-invariant (LTI) system (state space, transfer function,
+        or FRD).
     F : static nonlinear function
         A static nonlinearity, either a scalar function or a single-input,
         single-output, static input/output system.
@@ -427,50 +438,53 @@ def describing_function_plot(
     refine : bool, optional
         If True (default), refine the location of the intersection of the
         Nyquist curve for the linear system and the describing function to
-        determine the intersection point
+        determine the intersection point.
     label : str or array_like of str, optional
         If present, replace automatically generated label with the given label.
     point_label : str, optional
         Formatting string used to label intersection points on the Nyquist
-        plot.  Defaults to "%5.2g @ %-5.2g".  Set to `None` to omit labels.
-    ax : matplotlib.axes.Axes, optional
+        plot.  Defaults to "%5.2g @ %-5.2g".  Set to None to omit labels.
+    ax : `matplotlib.axes.Axes`, optional
         The matplotlib axes to draw the figure on.  If not specified and
         the current figure has a single axes, that axes is used.
         Otherwise, a new figure is created.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
     warn_nyquist : bool, optional
-        Set to True to turn on warnings generated by `nyquist_plot` or False
-        to turn off warnings.  If not set (or set to None), warnings are
-        turned off if omega is specified, otherwise they are turned on.
-    **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
+        Set to True to turn on warnings generated by `nyquist_plot` or
+        False to turn off warnings.  If not set (or set to None),
+        warnings are turned off if omega is specified, otherwise they are
+        turned on.
+    **kwargs : `matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties
         for Nyquist curve.
 
     Returns
     -------
-    cplt : :class:`ControlPlot` object
-        Object containing the data that were plotted:
+    cplt : `ControlPlot` object
+        Object containing the data that were plotted.  See `ControlPlot`
+        for more detailed information.
+    cplt.lines : array of `matplotlib.lines.Line2D`
+        Array containing information on each line in the plot.  The first
+        element of the array is a list of lines (typically only one) for
+        the Nyquist plot of the linear I/O system.  The second element of
+        the array is a list of lines (typically only one) for the
+        describing function curve.
+    cplt.axes : 2D array of `matplotlib.axes.Axes`
+        Axes for each subplot.
+    cplt.figure : `matplotlib.figure.Figure`
+        Figure containing the plot.
 
-          * cplt.lines: Array of :class:`matplotlib.lines.Line2D` objects
-            for each line in the plot.  The first element of the array is a
-            list of lines (typically only one) for the Nyquist plot of the
-            linear I/O system.  The second element of the array is a list
-            of lines (typically only one) for the describing function
-            curve.
-
-          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
-
-          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
-
-        See :class:`ControlPlot` for more detailed information.
+    See Also
+    --------
+    DescribingFunctionResponse, describing_function_response
 
     Examples
     --------
     >>> H_simple = ct.tf([8], [1, 2, 2, 1])
     >>> F_saturation = ct.saturation_nonlinearity(1)
     >>> amp = np.linspace(1, 4, 10)
-    >>> lines = ct.describing_function_plot(H_simple, F_saturation, amp)
+    >>> cplt = ct.describing_function_plot(H_simple, F_saturation, amp)
 
     """
     # Process keywords
@@ -507,8 +521,8 @@ def describing_function_plot(
     lines = np.empty(2, dtype=object)
 
     # Plot the Nyquist response
-    cfig = dfresp.response.plot(**kwargs)
-    lines[0] = cfig.lines[0]    # Return Nyquist lines for first system
+    cplt = dfresp.response.plot(**kwargs)
+    lines[0] = cplt.lines[0]    # Return Nyquist lines for first system
 
     # Add the describing function curve to the plot
     lines[1] = plt.plot(dfresp.N_vals.real, dfresp.N_vals.imag)
@@ -519,7 +533,7 @@ def describing_function_plot(
             # Add labels to the intersection points
             plt.text(pos.real, pos.imag, point_label % (a, omega))
 
-    return ControlPlot(lines, cfig.axes, cfig.figure)
+    return ControlPlot(lines, cplt.axes, cplt.figure)
 
 
 # Utility function to figure out whether two line segments intersection
@@ -552,7 +566,7 @@ def _find_intersection(L1a, L1b, L2a, L2b):
 
 # Saturation nonlinearity
 class saturation_nonlinearity(DescribingFunctionNonlinearity):
-    """Create saturation nonlinearity for use in describing function analysis.
+    """Saturation nonlinearity for describing function analysis.
 
     This class creates a nonlinear function representing a saturation with
     given upper and lower bounds, including the describing function for the
@@ -565,6 +579,11 @@ class saturation_nonlinearity(DescribingFunctionNonlinearity):
     Asymmetric saturation functions can be created, but note that these
     functions will not have zero bias and hence care must be taken in using
     the nonlinearity for analysis.
+
+    Parameters
+    ----------
+    lb, ub : float
+        Upper and lower saturation bounds.
 
     Examples
     --------
@@ -600,6 +619,19 @@ class saturation_nonlinearity(DescribingFunctionNonlinearity):
         return True
 
     def describing_function(self, A):
+        """Return the describing function for a saturation nonlinearity.
+
+        Parameters
+        ----------
+        A : float
+            Amplitude of the sinusoidal input to the nonlinearity.
+
+        Returns
+        -------
+        float
+            Value of the describing function at the given amplitude.
+
+        """
         # Check to make sure the amplitude is positive
         if A < 0:
             raise ValueError("cannot evaluate describing function for A < 0")
@@ -614,20 +646,27 @@ class saturation_nonlinearity(DescribingFunctionNonlinearity):
 
 # Relay with hysteresis (FBS2e, Example 10.12)
 class relay_hysteresis_nonlinearity(DescribingFunctionNonlinearity):
-    """Relay w/ hysteresis nonlinearity for describing function analysis.
+    """Relay w/ hysteresis for describing function analysis.
 
     This class creates a nonlinear function representing a a relay with
     symmetric upper and lower bounds of magnitude `b` and a hysteretic region
     of width `c` (using the notation from [FBS2e](https://fbsbook.org),
     Example 10.12, including the describing function for the nonlinearity.
     The following call creates a nonlinear function suitable for describing
-    function analysis:
+    function analysis::
 
         F = relay_hysteresis_nonlinearity(b, c)
 
-    The output of this function is `b` if `x > c` and `-b` if `x < -c`.  For
-    `-c <= x <= c`, the value depends on the branch of the hysteresis loop (as
+    The output of this function is b if x > c and -b if x < -c.  For -c <=
+    x <= c, the value depends on the branch of the hysteresis loop (as
     illustrated in Figure 10.20 of FBS2e).
+
+    Parameters
+    ----------
+    b : float
+        Hysteresis bound.
+    c : float
+        Width of hysteresis region.
 
     Examples
     --------
@@ -670,6 +709,19 @@ class relay_hysteresis_nonlinearity(DescribingFunctionNonlinearity):
         return False
 
     def describing_function(self, A):
+        """Return the describing function for a hysteresis nonlinearity.
+
+        Parameters
+        ----------
+        A : float
+            Amplitude of the sinusoidal input to the nonlinearity.
+
+        Returns
+        -------
+        float
+            Value of the describing function at the given amplitude.
+
+        """
         # Check to make sure the amplitude is positive
         if A < 0:
             raise ValueError("cannot evaluate describing function for A < 0")
@@ -689,14 +741,19 @@ class friction_backlash_nonlinearity(DescribingFunctionNonlinearity):
     This class creates a nonlinear function representing a friction-dominated
     backlash nonlinearity ,including the describing function for the
     nonlinearity.  The following call creates a nonlinear function suitable
-    for describing function analysis:
+    for describing function analysis::
 
         F = friction_backlash_nonlinearity(b)
 
-    This function maintains an internal state representing the 'center' of a
-    mechanism with backlash.  If the new input is within `b/2` of the current
-    center, the output is unchanged.  Otherwise, the output is given by the
-    input shifted by `b/2`.
+    This function maintains an internal state representing the 'center' of
+    a mechanism with backlash.  If the new input is within b/2 of the
+    current center, the output is unchanged.  Otherwise, the output is
+    given by the input shifted by b/2.
+
+    Parameters
+    ----------
+    b : float
+        Backlash amount.
 
     Examples
     --------
@@ -735,6 +792,19 @@ class friction_backlash_nonlinearity(DescribingFunctionNonlinearity):
         return False
 
     def describing_function(self, A):
+        """Return the describing function for a backlash nonlinearity.
+
+        Parameters
+        ----------
+        A : float
+            Amplitude of the sinusoidal input to the nonlinearity.
+
+        Returns
+        -------
+        float
+            Value of the describing function at the given amplitude.
+
+        """
         # Check to make sure the amplitude is positive
         if A < 0:
             raise ValueError("cannot evaluate describing function for A < 0")

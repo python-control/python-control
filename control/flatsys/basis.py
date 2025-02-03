@@ -1,47 +1,19 @@
 # basis.py - BasisFamily class
 # RMM, 10 Nov 2012
-#
-# The BasisFamily class is used to specify a set of basis functions for
-# implementing differential flatness computations.
-#
-# Copyright (c) 2012 by California Institute of Technology
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-# 1. Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#
-# 2. Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#
-# 3. Neither the name of the California Institute of Technology nor
-#    the names of its contributors may be used to endorse or promote
-#    products derived from this software without specific prior
-#    written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
-# OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
+
+"""Define base class for implementing basis functions.
+
+This module defines the `BasisFamily` class that used to specify a set
+of basis functions for implementing differential flatness computations.
+
+"""
 
 import numpy as np
 
 
 # Basis family class (for use as a base class)
 class BasisFamily:
-    """Base class for implementing basis functions for flat systems.
+    """Base class for basis functions for flat systems.
 
     A BasisFamily object is used to construct trajectories for a flat system.
     The class must implement a single function that computes the jth
@@ -53,10 +25,22 @@ class BasisFamily:
     each flat output (nvars = None) or a different variable for different
     flat outputs (nvars > 0).
 
-    Attributes
+    Parameters
     ----------
     N : int
         Order of the basis set.
+
+    Attributes
+    ----------
+    nvars : int or None
+        Number of variables represented by the basis (possibly of different
+        order/length).  Default is None (single variable).
+
+    coef_offset : list
+        Coefficient offset for each variable.
+
+    coef_length : list
+        Coefficient length for each variable.
 
     """
     def __init__(self, N):
@@ -71,15 +55,43 @@ class BasisFamily:
             f'N={self.N}>'
 
     def __call__(self, i, t, var=None):
-        """Evaluate the ith basis function at a point in time"""
+        """Evaluate the ith basis function at a point in time."""
         return self.eval_deriv(i, 0, t, var=var)
 
     def var_ncoefs(self, var):
-        """Get the number of coefficients for a variable"""
+        """Get the number of coefficients for a variable.
+
+        Parameters
+        ----------
+        var : int
+            Variable offset.
+
+        Returns
+        -------
+        int
+
+        """
         return self.N if self.nvars is None else self.coef_length[var]
 
     def eval(self, coeffs, tlist, var=None):
-        """Compute function values given the coefficients and time points."""
+        """Compute function values given the coefficients and time points.
+
+        Parameters
+        ----------
+        coeffs : array
+            Basis function coefficient values.
+        tlist : array
+            List of times at which to evaluate the function.
+        var : int or None, optional
+            Number of independent variables represented using the basis.
+            If None, then basis represents a single variable.
+
+        Returns
+        -------
+        array
+            Values of the variable(s) at the times in `tlist`.
+
+        """
         if self.nvars is None and var != None:
             raise SystemError("multi-variable call to a scalar basis")
 
@@ -108,6 +120,23 @@ class BasisFamily:
                      for i in range(self.var_ncoefs(var))])
                 for t in tlist])
 
-    def eval_deriv(self, i, j, t, var=None):
-        """Evaluate the kth derivative of the ith basis function at time t."""
+    def eval_deriv(self, i, k, t, var=None):
+        """Evaluate kth derivative of ith basis function at time t.
+
+        Parameters
+        ----------
+        i : int
+            Basis function offset.
+        k : int
+            Derivative order.
+        t : float
+            Time at which to evaluating the derivative.
+        var : int or None, optional
+            Variable offset.
+
+        Returns
+        -------
+        float
+
+        """
         raise NotImplementedError("Internal error; improper basis functions")

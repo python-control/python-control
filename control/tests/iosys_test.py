@@ -742,7 +742,7 @@ class TestIOSys:
             ct.series(*args)
 
     def test_discrete(self, tsys):
-        """Test discrete time functionality"""
+        """Test discrete-time functionality"""
         # Create some linear and nonlinear systems to play with
         linsys = ct.StateSpace(
             [[-1, 1], [0, -2]], [[0], [1]], [[1, 0]], [[0]], True)
@@ -774,7 +774,7 @@ class TestIOSys:
         np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
     def test_discrete_iosys(self, tsys):
-        """Create a discrete time system from scratch"""
+        """Create a discrete-time system from scratch"""
         linsys = ct.StateSpace(
             [[-1, 1], [0, -2]], [[0], [1]], [[1, 0]], [[0]], True)
 
@@ -1582,7 +1582,7 @@ def test_linear_interconnection():
     # Make sure call works properly
     response = io_connect.frequency_response(1)
     np.testing.assert_allclose(
-        response.fresp[:, :, 0], io_connect.C @ np.linalg.inv(
+        response.frdata[:, :, 0], io_connect.C @ np.linalg.inv(
             1j * np.eye(io_connect.nstates) - io_connect.A) @ io_connect.B + \
             io_connect.D)
 
@@ -2276,7 +2276,7 @@ def test_signal_indexing():
 
     # Implicitly squeezed response
     resp = ct.step_response(ct.rss(4, 1, 1, strictly_proper=True))
-    for key in ['y[0]', ('y[0]', 'u[0]')]:
+    for key in [ ['y[0]', 'y[0]'], ('y[0]', 'u[0]') ]:
         with pytest.raises(IndexError, match=r"signal name\(s\) not valid"):
             resp.outputs.__getitem__(key)
 

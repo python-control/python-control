@@ -149,10 +149,10 @@ def test_system_types():
 def test_phaseplane_errors():
     with pytest.raises(ValueError, match="invalid grid specification"):
         ct.phase_plane_plot(ct.rss(2, 1, 1), gridspec='bad')
-        
+
     with pytest.raises(ValueError, match="unknown grid type"):
         ct.phase_plane_plot(ct.rss(2, 1, 1), gridtype='bad')
-        
+
     with pytest.raises(ValueError, match="system must be planar"):
         ct.phase_plane_plot(ct.rss(3, 1, 1))
 
