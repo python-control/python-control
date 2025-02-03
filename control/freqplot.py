@@ -134,7 +134,8 @@ def bode_plot(
         If True, draw gain and phase margin lines on the magnitude and phase
         graphs and display the margins at the top of the graph.  If set to
         'overlay', the values for the gain and phase margin are placed on
-        the graph.  Setting display_margins turns off the axes grid.
+        the graph.  Setting `display_margins` turns off the axes grid, unless
+        `grid` is explicitly set to True.
     **kwargs : `matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
@@ -276,6 +277,24 @@ def bode_plot(
     # Make a copy of the kwargs dictionary since we will modify it
     kwargs = dict(kwargs)
 
+    # Legacy keywords for margins
+    display_margins = config._process_legacy_keyword(
+        kwargs, 'margins', 'display_margins', display_margins)
+    if kwargs.pop('margin_info', False):
+        warnings.warn(
+            "keyword 'margin_info' is deprecated; "
+            "use 'display_margins='overlay'")
+        if display_margins is False:
+            raise ValueError(
+                "conflicting_keywords: `display_margins` and `margin_info`")
+
+    # Turn off grid if display margins, unless explicitly overridden
+    if display_margins and 'grid' not in kwargs:
+        kwargs['grid'] = False
+
+    margins_method = config._process_legacy_keyword(
+        kwargs, 'method', 'margins_method', margins_method)
+
     # Get values for params (and pop from list to allow keyword use in plot)
     dB = config._get_param(
         'freqplot', 'dB', kwargs, _freqplot_defaults, pop=True)
@@ -315,19 +334,6 @@ def bode_plot(
             ValueError(
                 "sharex cannot be present with share_frequency")
         kwargs['share_frequency'] = sharex
-
-    # Legacy keywords for margins
-    display_margins = config._process_legacy_keyword(
-        kwargs, 'margins', 'display_margins', display_margins)
-    if kwargs.pop('margin_info', False):
-        warnings.warn(
-            "keyword 'margin_info' is deprecated; "
-            "use 'display_margins='overlay'")
-        if display_margins is False:
-            raise ValueError(
-                "conflicting_keywords: `display_margins` and `margin_info`")
-    margins_method = config._process_legacy_keyword(
-        kwargs, 'method', 'margins_method', margins_method)
 
     if not isinstance(data, (list, tuple)):
         data = [data]
@@ -727,7 +733,7 @@ def bode_plot(
                         label='_nyq_mag_' + sysname)
 
                 # Add a grid to the plot
-                ax_mag.grid(grid and not display_margins, which='both')
+                ax_mag.grid(grid, which='both')
 
             # Phase
             if plot_phase:
@@ -742,7 +748,7 @@ def bode_plot(
                         label='_nyq_phase_' + sysname)
 
                 # Add a grid to the plot
-                ax_phase.grid(grid and not display_margins, which='both')
+                ax_phase.grid(grid, which='both')
 
         #
         # Display gain and phase margins (SISO only)
@@ -752,6 +758,10 @@ def bode_plot(
             if ninputs > 1 or noutputs > 1:
                 raise NotImplementedError(
                     "margins are not available for MIMO systems")
+
+            if display_margins == 'overlay' and len(data) > 1:
+                raise NotImplementedError(
+                    f"{display_margins=} not supported for multi-trace plots")
 
             # Compute stability margins for the system
             margins = stability_margins(response, method=margins_method)
@@ -844,12 +854,12 @@ def bode_plot(
 
             else:
                 # Put the title underneath the suptitle (one line per system)
-                ax = ax_mag if ax_mag else ax_phase
-                axes_title = ax.get_title()
+                ax_ = ax_mag if ax_mag else ax_phase
+                axes_title = ax_.get_title()
                 if axes_title is not None and axes_title != "":
                     axes_title += "\n"
                 with plt.rc_context(rcParams):
-                    ax.set_title(
+                    ax_.set_title(
                         axes_title + f"{sysname}: "
                         "Gm = %.2f %s(at %.2f %s), "
                         "Pm = %.2f %s (at %.2f %s)" %
