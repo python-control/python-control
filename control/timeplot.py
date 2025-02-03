@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from . import config
-from .ctrlplot import ControlPlot, _make_legend_labels,\
+from .ctrlplot import ControlPlot, _make_legend_labels, \
     _process_legend_keywords, _update_plot_title
 
 __all__ = ['time_response_plot', 'combine_time_responses']

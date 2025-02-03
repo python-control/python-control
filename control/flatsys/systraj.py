@@ -37,7 +37,9 @@
 # SUCH DAMAGE.
 
 import numpy as np
+
 from ..timeresp import TimeResponseData
+
 
 class SystemTrajectory:
     """Class representing a trajectory for a flat system.

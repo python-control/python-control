@@ -11,9 +11,10 @@ Created on Thu Dec 21 08:06:12 2023
 Author: Henrik Sandberg
 """
 
+import warnings
+
 import numpy as np
 import numpy.linalg as la
-import warnings
 
 import control as ct
 

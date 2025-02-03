@@ -15,12 +15,10 @@ from copy import copy
 from warnings import warn
 
 import numpy as np
-from numpy import absolute, array, empty, eye, imag, linalg, ones, \
-    real, sort
+from numpy import absolute, array, empty, eye, imag, linalg, ones, real, sort
 from scipy.interpolate import splev, splprep
 
-from . import config
-from . import bdalg
+from . import bdalg, config
 from .exception import pandas_check
 from .iosys import InputOutputSystem, NamedSignal, _extended_system_name, \
     _process_iosys_keywords, _process_subsys_index, common_timebase

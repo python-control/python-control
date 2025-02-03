@@ -40,7 +40,9 @@
 
 import numpy as np
 from scipy.special import binom, factorial
+
 from .basis import BasisFamily
+
 
 class BezierFamily(BasisFamily):
     r"""Bezier curve basis functions.

@@ -22,26 +22,25 @@ import numpy as np
 import scipy as sp
 import scipy.linalg
 # array needed in eval() call
-from numpy import array # noqa: F401
-from numpy import any, asarray, concatenate, cos, delete, empty, \
-    exp, eye, isinf, pad, sin, squeeze, zeros
+from numpy import array  # noqa: F401
+from numpy import any, asarray, concatenate, cos, delete, empty, exp, eye, \
+    isinf, pad, sin, squeeze, zeros
 from numpy.linalg import LinAlgError, eigvals, matrix_rank, solve
 from numpy.random import rand, randn
 from scipy.signal import StateSpace as signalStateSpace
 from scipy.signal import cont2discrete
 
-from . import config
-from . import bdalg
+import control
+
+from . import bdalg, config
 from .exception import ControlDimension, ControlMIMONotImplemented, \
     ControlSlycot, slycot_check
 from .frdata import FrequencyResponseData
-from .iosys import InputOutputSystem, NamedSignal, \
-    _process_iosys_keywords, _process_signal_list, _process_subsys_index, \
-    common_timebase, issiso
+from .iosys import InputOutputSystem, NamedSignal, _process_iosys_keywords, \
+    _process_signal_list, _process_subsys_index, common_timebase, issiso
 from .lti import LTI, _process_frequency_response
 from .mateqn import _check_shape
 from .nlsys import InterconnectedSystem, NonlinearIOSystem
-import control
 
 try:
     from slycot import ab13dd

@@ -15,12 +15,12 @@
 # desired (0 = only warnings/errors, 10 = everything).
 
 import inspect
+import re
 import sys
 import warnings
 
-import pytest
-import re
 import numpydoc.docscrape as npd
+import pytest
 
 import control
 import control.flatsys

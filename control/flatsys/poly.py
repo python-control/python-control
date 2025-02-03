@@ -39,7 +39,9 @@
 
 import numpy as np
 from scipy.special import factorial
+
 from .basis import BasisFamily
+
 
 class PolyFamily(BasisFamily):
     r"""Polynomial basis functions.

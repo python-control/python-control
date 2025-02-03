@@ -36,9 +36,11 @@
 # SUCH DAMAGE.
 
 import numpy as np
+
 import control
-from .flatsys import FlatSystem
+
 from ..statesp import StateSpace
+from .flatsys import FlatSystem
 
 
 class LinearFlatSystem(FlatSystem, StateSpace):

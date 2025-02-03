@@ -6,6 +6,7 @@ Date: July 17, 2022
 """
 
 import numpy as np
+
 from control import statesp
 from control.exception import ControlArgument, ControlDimension
 

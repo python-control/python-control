@@ -23,15 +23,13 @@ from warnings import warn
 import numpy as np
 import scipy as sp
 # float64 needed in eval() call
-from numpy import float64 # noqa: F401
-from numpy import array, delete, empty, exp, finfo, ndarray, \
-    nonzero, ones, poly, polyadd, polymul, polyval, real, roots, sqrt, \
-    where, zeros
+from numpy import float64  # noqa: F401
+from numpy import array, delete, empty, exp, finfo, ndarray, nonzero, ones, \
+    poly, polyadd, polymul, polyval, real, roots, sqrt, where, zeros
 from scipy.signal import TransferFunction as signalTransferFunction
 from scipy.signal import cont2discrete, tf2zpk, zpk2tf
 
-from . import config
-from . import bdalg
+from . import bdalg, config
 from .exception import ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
 from .iosys import InputOutputSystem, NamedSignal, _process_iosys_keywords, \

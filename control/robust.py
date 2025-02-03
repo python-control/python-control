@@ -39,9 +39,11 @@
 #
 # $Id$
 
+import warnings
+
 # External packages and modules
 import numpy as np
-import warnings
+
 from .exception import ControlSlycot
 from .statesp import StateSpace
 
@@ -286,7 +288,7 @@ def augw(g, w1=None, w2=None, w3=None):
     h2syn, hinfsyn, mixsyn
     """
 
-    from . import append, ss, connect
+    from . import append, connect, ss
 
     if w1 is None and w2 is None and w3 is None:
         raise ValueError("At least one weighting must not be None")

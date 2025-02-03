@@ -36,13 +36,13 @@
 # SUCH DAMAGE.
 
 import warnings
-import numpy as np
-from numpy import eye, finfo, inexact
 
+import numpy as np
 import scipy as sp
+from numpy import eye, finfo, inexact
 from scipy.linalg import eigvals, solve
 
-from .exception import ControlSlycot, ControlArgument, ControlDimension, \
+from .exception import ControlArgument, ControlDimension, ControlSlycot, \
     slycot_check
 
 # Make sure we have access to the right slycot routines

@@ -70,7 +70,7 @@ def slycot_check():
     global slycot_installed
     if slycot_installed is None:
         try:
-            import slycot # noqa: F401
+            import slycot  # noqa: F401
             slycot_installed = True
         except:
             slycot_installed = False
@@ -84,7 +84,7 @@ def pandas_check():
     global pandas_installed
     if pandas_installed is None:
         try:
-            import pandas # noqa: F401
+            import pandas  # noqa: F401
             pandas_installed = True
         except:
             pandas_installed = False
@@ -97,7 +97,7 @@ def cvxopt_check():
     global cvxopt_installed
     if cvxopt_installed is None:
         try:
-            import cvxopt # noqa: F401
+            import cvxopt  # noqa: F401
             cvxopt_installed = True
         except:
             cvxopt_installed = False

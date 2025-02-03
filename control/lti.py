@@ -4,16 +4,17 @@ The lti module contains the LTI parent class to the child classes StateSpace
 and TransferFunction.  It is designed for use in the python-control library.
 """
 
-import numpy as np
 import math
-
-# todo: override built-in abs
-from numpy import real, abs
+from typing import Callable
 from warnings import warn
+
+import numpy as np
+from numpy import abs, real
+
+import control
+
 from . import config
 from .iosys import InputOutputSystem
-import control
-from typing import Callable
 
 __all__ = ['poles', 'zeros', 'damp', 'evalfr', 'frequency_response',
            'freqresp', 'dcgain', 'bandwidth', 'LTI']

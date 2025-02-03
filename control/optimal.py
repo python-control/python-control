@@ -14,18 +14,18 @@ The docstring examples assume that the following import commands::
 
 """
 
+import logging
+import time
+import warnings
+
 import numpy as np
 import scipy as sp
 import scipy.optimize as opt
+
 import control as ct
-import warnings
-import logging
-import time
 
 from . import config
-from .iosys import _process_labels, \
-    _process_control_disturbance_indices
-
+from .iosys import _process_control_disturbance_indices, _process_labels
 
 # Define module default parameter values
 _optimal_trajectory_methods = {'shooting', 'collocation'}

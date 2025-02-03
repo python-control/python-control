@@ -40,11 +40,13 @@
 #
 # $Id$
 
-# Packages that we need access to
-from . import lti
-import numpy as np
 import math
 import warnings
+
+import numpy as np
+
+# Packages that we need access to
+from . import lti
 
 __all__ = ['unwrap', 'issys', 'db2mag', 'mag2db']
 
