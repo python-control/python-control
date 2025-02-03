@@ -8,13 +8,10 @@ StateSpace and TransferFunction.
 """
 
 import math
-from typing import Callable
 from warnings import warn
 
 import numpy as np
 from numpy import abs, real
-
-import control
 
 from . import config
 from .iosys import InputOutputSystem
@@ -64,7 +61,7 @@ class LTI(InputOutputSystem):
         return wn, zeta, poles
 
     def feedback(self, other=1, sign=-1):
-        """Feedback interconnection between two input/output systems."""
+        """Feedback interconnection between two input/output systems.
 
         Parameters
         ----------
@@ -238,30 +235,100 @@ class LTI(InputOutputSystem):
         from control.passivity import ispassive
         return ispassive(self)
 
-    # convenience aliases
-    # most function are only forward declaraed and patched in the __init__.py to avoid circular imports
+    #
+    # Convenience aliases for conversion functions
+    #
+    # Allow conversion between state space and transfer function types
+    # as methods.  These are just pass throughs to factory functions.
+    #
+    # Note: in order for docstrings to created, these have to set these up
+    # as independent methods, not just assigned to ss() and tf().
+    #
+    # Imports are done within the function to avoid circular imports.
+    #
+    def to_ss(self, *args, **kwargs):
+        """Convert to state space representation.
 
-    # conversions
-    #: Convert to :class:`StateSpace` representation; see :func:`ss`
-    to_ss: Callable
-    #: Convert to :class:`TransferFunction` representation; see :func:`tf`
-    to_tf: Callable
+        See `ss` for details.
+        """
+        from .statesp import ss
+        return ss(self, *args, **kwargs)
 
-    # freq domain plotting
-    #: Bode plot; see :func:`bode_plot`
-    bode_plot: Callable
-    #: Nyquist plot; see :func:`nyquist_plot`
-    nyquist_plot: Callable
-    #: Nichols plot; see :func:`nichols_plot`
-    nichols_plot: Callable
+    def to_tf(self, *args, **kwargs):
+        """Convert to transfer function representation.
 
-    # time domain simulation
-    #: Forced response; see :func:`forced_response`
-    forced_response = control.timeresp.forced_response
-    #: Impulse response; see :func:`impulse_response`
-    impulse_response = control.timeresp.impulse_response
-    #: Step response; see :func:`step_response`
-    step_response = control.timeresp.step_response
+        See `tf` for details.
+        """
+        from .xferfcn import tf
+        return tf(self, *args, **kwargs)
+
+    #
+    # Convenience aliases for plotting and response functions
+    #
+    # Allow standard plots to be generated directly from the system object
+    # in addition to standalone plotting and response functions.
+    #
+    # Note: in order for docstrings to created, these have to set these up as
+    # independent methods, not just assigned to plotting/response functions.
+    #
+    # Imports are done within the function to avoid circular imports.
+    #
+
+    def bode_plot(self, *args, **kwargs):
+        """Generate a Bode plot for the system.
+
+        See `bode_plot` for more information.
+        """
+        from .freqplot import bode_plot
+        return bode_plot(self, *args, **kwargs)
+
+    def nichols_plot(self, *args, **kwargs):
+        """Generate a Nichols plot for the system.
+
+        See `nichols_plot` for more information.
+        """
+        from .nichols import nichols_plot
+        return nichols_plot(self, *args, **kwargs)
+
+    def nyquist_plot(self, *args, **kwargs):
+        """Generate a Nyquist plot for the system.
+
+        See `nyquist_plot` for more information.
+        """
+        from .freqplot import nyquist_plot
+        return nyquist_plot(self, *args, **kwargs)
+
+    def forced_response(self, *args, **kwargs):
+        """Generate the forced response for the system.
+
+        See `forced_response` for more information.
+        """
+        from .timeresp import forced_response
+        return forced_response(self, *args, **kwargs)
+
+    def impulse_response(self, *args, **kwargs):
+        """Generate the impulse response for the system.
+
+        See `impulse_response` for more information.
+        """
+        from .timeresp import impulse_response
+        return impulse_response(self, *args, **kwargs)
+
+    def initial_response(self, *args, **kwargs):
+        """Generate the initial response for the system.
+
+        See `initial_response` for more information.
+        """
+        from .timeresp import initial_response
+        return initial_response(self, *args, **kwargs)
+
+    def step_response(self, *args, **kwargs):
+        """Generate the step response for the system.
+
+        See `step_response` for more information.
+        """
+        from .timeresp import step_response
+        return step_response(self, *args, **kwargs)
 
 
 def poles(sys):

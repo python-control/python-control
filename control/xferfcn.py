@@ -906,8 +906,20 @@ class TransferFunction(LTI):
     def append(self, other):
         """Append a second model to the present model.
 
-        The second model is converted to a transfer function if necessary,
-        inputs and outputs are appended and their order is preserved"""
+        The second model is converted to FRD if necessary, inputs and
+        outputs are appended and their order is preserved.
+
+        Parameters
+        ----------
+        other : `LTI`
+            System to be appended.
+
+        Returns
+        -------
+        sys : `TransferFunction`
+            System model with `other` appended to `self`.
+
+        """
         other = _convert_to_transfer_function(other)
 
         new_tf = bdalg.combine_tf([

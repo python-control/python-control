@@ -1250,7 +1250,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         """Append a second model to the present model.
 
         The second model is converted to state-space if necessary, inputs and
-        outputs are appended and their order is preserved
+        outputs are appended and their order is preserved.
 
         Parameters
         ----------

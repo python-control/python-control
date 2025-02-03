@@ -845,7 +845,19 @@ class FrequencyResponseData(LTI):
         """Append a second model to the present model.
 
         The second model is converted to FRD if necessary, inputs and
-        outputs are appended and their order is preserved"""
+        outputs are appended and their order is preserved.
+
+        Parameters
+        ----------
+        other : `LTI`
+            System to be appended.
+
+        Returns
+        -------
+        sys : `FrequencyResponseData`
+            System model with `other` appended to `self`.
+
+        """
         other = _convert_to_frd(other, omega=self.omega, inputs=other.ninputs,
                                 outputs=other.noutputs)
 
