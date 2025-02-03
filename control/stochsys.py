@@ -433,7 +433,7 @@ def create_estimator_iosystem(
     References
     ----------
     .. [1] R. M. Murray, `Optimization-Based Control
-       <https://fbswiki.org/OBC`_, 2013.
+       <https://fbswiki.org/OBC>`_, 2013.
 
     """
 

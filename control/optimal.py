@@ -7,13 +7,14 @@
 
 This module provides support for optimization-based controllers for
 nonlinear systems with state and input constraints.  An optimal
-control problem can be solved using the `solve_ocp` function or set up
-using the `OptimalControlProblem` class and then solved using the
-`~OptimalControlProblem.compute_trajectory` method.  Utility functions
-are available to define common cost functions and input/state
-constraints.  Optimal estimation problems can be solved using the
-`solve_oep` function or by using the `OptimalEstimationProblem` class
-and the `~OptimalEstimationProblem.compute_estimate` method..
+control problem can be solved using the `solve_optimal_trajectory`
+function or set up using the `OptimalControlProblem` class and then
+solved using the `~OptimalControlProblem.compute_trajectory` method.
+Utility functions are available to define common cost functions and
+input/state constraints.  Optimal estimation problems can be solved
+using the `solve_optimal_estimate` function or by using the
+`OptimalEstimationProblem` class and the
+`~OptimalEstimationProblem.compute_estimate` method..
 
 The docstring examples assume the following import commands::
 
@@ -760,7 +761,6 @@ class OptimalControlProblem():
     #
 
     # Compute the optimal trajectory from the current state
-    # TODO: update docstring to refer to primary function (?)
     def compute_trajectory(
             self, x, squeeze=None, transpose=None, return_states=True,
             initial_guess=None, print_summary=True, **kwargs):
@@ -1017,7 +1017,7 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
 
 
 # Compute the input for a nonlinear, (constrained) optimal control problem
-def solve_ocp(
+def solve_optimal_trajectory(
         sys, timepts, X0, cost, trajectory_constraints=None,
         terminal_cost=None, terminal_constraints=None, initial_guess=None,
         basis=None, squeeze=None, transpose=None, return_states=True,
@@ -1220,7 +1220,7 @@ def create_mpc_iosystem(
 
     constraints : list of tuples, optional
         List of constraints that should hold at each point in the time
-        vector.  See `solve_ocp` for more details.
+        vector.  See `solve_optimal_trajectory` for more details.
 
     terminal_cost : callable, optional
         Function that returns the terminal cost given the final state
@@ -2020,7 +2020,7 @@ class OptimalEstimationResult(sp.optimize.OptimizeResult):
 
 
 # Compute the finite horizon estimate for a nonlinear system
-def solve_oep(
+def solve_optimal_estimate(
         sys, timepts, Y, U, trajectory_cost, X0=None,
         trajectory_constraints=None, initial_guess=None,
         squeeze=None, print_summary=True, **kwargs):
@@ -2047,7 +2047,7 @@ def solve_oep(
         Mean value of the initial condition (defaults to 0).
     trajectory_constraints : list of tuples, optional
         List of constraints that should hold at each point in the time
-        vector.  See `solve_ocp` for more information.
+        vector.  See `solve_optimal_trajectory` for more information.
     control_indices : int, slice, or list of int or string, optional
         Specify the indices in the system input vector that correspond to
         the control inputs.  For more information on possible values, see
@@ -2544,3 +2544,8 @@ def _process_constraints(clist, name):
                  constraint.lb, constraint.ub))
 
     return constraint_list
+
+
+# Convenience aliases
+solve_ocp = solve_optimal_trajectory
+solve_oep = solve_optimal_estimate

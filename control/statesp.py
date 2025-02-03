@@ -774,34 +774,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         in the complex plane, where `x` is `s` for continuous-time systems
         and `z` for discrete-time systems.
 
-        By default, a (complex) scalar will be returned for SISO systems
-        and a p x m array will be return for MIMO systems with m inputs and
-        p outputs.  This can be changed using the `squeeze` keyword.
-
-        To evaluate at a frequency `omega` in radians per second,
-        enter ``x = omega * 1j`` for continuous-time systems,
-        ``x = exp(1j * omega * dt)`` for discrete-time systems, or
-        use the `~LTI.frequency_response` method.
-
-        Parameters
-        ----------
-        x : complex or complex 1D array_like
-            Complex value(s) at which transfer function will be evaluated.
-        squeeze : bool, optional
-            Squeeze output, as described below.  Default value can be set
-            using `config.defaults['control.squeeze_frequency_response']`.
-        warn_infinite : bool, optional If set to False, turn off
-            divide by zero warning.
-
-        Returns
-        -------
-        fresp : complex ndarray
-            The value of the system transfer function at `x`.  If the system
-            is SISO and `squeeze` is not True, the shape of the array matches
-            the shape of `x`.  If the system is not SISO or `squeeze` is
-            False, the first two dimensions of the array are indices for the
-            output and input and the remaining dimensions match `x`.  If
-            `squeeze` is True then single-dimensional axes are removed.
+        See `LTI.__call__` for details.
 
         Examples
         --------

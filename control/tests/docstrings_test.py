@@ -48,7 +48,8 @@ function_skiplist = [
 keyword_skiplist = {
     control.input_output_response: ['method'],
     control.nyquist_plot: ['color'],                        # separate check
-    control.optimal.solve_ocp: ['method', 'return_x'],      # deprecated
+    control.optimal.solve_optimal_trajectory:
+      ['method', 'return_x'],                               # deprecated
     control.sisotool: ['kvect'],                            # deprecated
     control.nyquist_response: ['return_contour'],           # deprecated
     control.create_estimator_iosystem: ['state_labels'],    # deprecated
@@ -61,7 +62,7 @@ keyword_skiplist = {
     control.flatsys.point_to_point: [
         'method', 'options',                                # minimize_kwargs
     ],
-    control.flatsys.solve_flat_ocp: [
+    control.flatsys.solve_flat_optimal: [
         'method', 'options',                                # minimize_kwargs
     ],
     control.optimal.OptimalControlProblem: [

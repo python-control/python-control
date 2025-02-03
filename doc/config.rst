@@ -620,34 +620,35 @@ Optimization parameters
    :value: None
 
    Set the method used by :func:`scipy.optimize.minimize` when called in
-   :func:`solve_ocp` and :func:`solve_oep`.
+   :func:`solve_optimal_trajectory` and :func:`solve_optimal_estimate`.
 
 .. py:data:: optimal.minimize_options
    :type: dict
    :value: {}
 
    Set the value of the options keyword used by
-   :func:`scipy.optimize.minimize` when called in :func:`solve_ocp` and
-   :func:`solve_oep`.
+   :func:`scipy.optimize.minimize` when called in
+   :func:`solve_optimal_trajectory` and :func:`solve_optimal_estimate`.
 
 .. py:data:: optimal.minimize_kwargs
    :type: dict
    :value: {}
 
-   Set the keyword arguments passed to :func:`scipy.optimize.minimize` when
-   called in :func:`solve_ocp` and :func:`solve_oep`.
+   Set the keyword arguments passed to :func:`scipy.optimize.minimize`
+   when called in :func:`solve_optimal_trajectory` and
+   :func:`solve_optimal_estimate`.
 
 .. py:data:: optimal.solve_ivp_method
    :type: str
    :value: None
 
    Set the method used by :func:`scipy.integrate.solve_ivp` when called in
-   :func:`solve_ocp` and :func:`solve_oep`.
+   :func:`solve_optimal_trajectory` and :func:`solve_optimal_estimate`.
 
 .. py:data:: optimal.solve_ivp_options
    :type: dict
    :value: {}
 
    Set the value of the options keyword used by
-   :func:`scipy.integrate.solve_ivp` when called in :func:`solve_ocp` and
-   :func:`solve_oep`.
+   :func:`scipy.integrate.solve_ivp` when called in
+   :func:`solve_optimal_trajectory` and :func:`solve_optimal_estimate`.

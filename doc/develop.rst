@@ -163,8 +163,7 @@ general patterns are emerging:
 
 * Use longer description parameter names that describe the action or
   role (e.g., `trajectory_constraints` and `print_summary` in
-  `optimal.solve_ocp` (which probably should be named
-  `optimal.`find_optimal_trajectory`...).
+  `optimal.solve_optimal_trajectory`.
 
 System-creating commands:
 

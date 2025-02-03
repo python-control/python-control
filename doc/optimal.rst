@@ -127,9 +127,9 @@ state and/or input, along the trajectory and/or at the terminal time.
 The optimal control module operates by converting the optimal control
 problem into a standard optimization problem that can be solved by
 :func:`scipy.optimize.minimize`.  The optimal control problem can be solved
-by using the :func:`~optimal.solve_ocp` function::
+by using the :func:`~optimal.solve_optimal_trajectory` function::
 
-  res = opt.solve_ocp(sys, timepts, X0, cost, constraints)
+  res = opt.solve_optimal_trajectory(sys, timepts, X0, cost, constraints)
 
 The :code:`sys` parameter should be an :class:`InputOutputSystem` and the
 `timepts` parameter should represent a time vector that gives the list
@@ -169,8 +169,8 @@ points on the trajectory.  The `terminal_constraint` parameter can be
 used to specify a constraint that only holds at the final point of the
 trajectory.
 
-The return value for :func:`~optimal.solve_ocp` is a bundle object
-that has the following elements:
+The return value for :func:`~optimal.solve_optimal_trajectory` is a
+bundle object that has the following elements:
 
   * `res.success`: True if the optimization was successfully solved
   * `res.inputs`: optimal input
@@ -274,7 +274,7 @@ Finally, we solve for the optimal inputs:
 .. testcode:: optimal
 
   timepts = np.linspace(0, Tf, 10, endpoint=True)
-  result = opt.solve_ocp(
+  result = opt.solve_optimal_trajectory(
       vehicle, timepts, x0, traj_cost, constraints,
       terminal_cost=term_cost, initial_guess=u0)
 
@@ -355,16 +355,17 @@ solutions do not seem close to optimal, here are a few things to try:
 * Use a smooth basis: as an alternative to parameterizing the optimal
   control inputs using the value of the control at the listed time
   points, you can specify a set of basis functions using the `basis`
-  keyword in :func:`~optimal.solve_ocp` and then parameterize the controller by
-  linear combination of the basis functions.  The :ref:`flatsys
-  sub-package <flatsys-module>` defines several sets of basis
-  functions that can be used.
+  keyword in :func:`~optimal.solve_optimal_trajectory` and then
+  parameterize the controller by linear combination of the basis
+  functions.  The :ref:`flatsys sub-package <flatsys-module>` defines
+  several sets of basis functions that can be used.
 
-* Tweak the optimizer: by using the `minimize_method`, `minimize_options`,
-  and `minimize_kwargs` keywords in :func:`~optimal.solve_ocp`, you can
-  choose the SciPy optimization function that you use and set many
-  parameters.  See :func:`scipy.optimize.minimize` for more information on
-  the optimizers that are available and the options and keywords that they
+* Tweak the optimizer: by using the `minimize_method`,
+  `minimize_options`, and `minimize_kwargs` keywords in
+  :func:`~optimal.solve_optimal_trajectory`, you can choose the SciPy
+  optimization function that you use and set many parameters.  See
+  :func:`scipy.optimize.minimize` for more information on the
+  optimizers that are available and the options and keywords that they
   accept.
 
 * Walk before you run: try setting up a simpler version of the optimization,
@@ -401,7 +402,7 @@ The following classes and functions are defined in the
    optimal.output_poly_constraint
    optimal.output_range_constraint
    optimal.quadratic_cost
-   optimal.solve_ocp
-   optimal.solve_oep
+   optimal.solve_optimal_trajectory
+   optimal.solve_optimal_estimate
    optimal.state_poly_constraint
    optimal.state_range_constraint

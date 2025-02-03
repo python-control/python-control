@@ -196,13 +196,13 @@ a `TimeResponseData` object.
 
 The :func:`~flatsys.point_to_point` function also allows the
 specification of a cost function and/or constraints, in the same
-format as :func:`optimal.solve_ocp`.
+format as :func:`optimal.solve_optimal_trajectory`.
 
-The :func:`~flatsys.solve_flat_ocp` function can be used to solve an
+The :func:`~flatsys.solve_flat_optimal` function can be used to solve an
 optimal control problem for a differentially flat system without a
 final state constraint::
 
-  traj = fs.solve_flat_ocp(
+  traj = fs.solve_flat_optimal(
       sys, timepts, x0, u0, cost, basis=basis)
 
 The `cost` parameter is a function with call signature
@@ -336,7 +336,7 @@ cost:
 
     # Solve the optimal control problem, evaluating cost at timepts
     bspline = fs.BSplineFamily([0, Tf/2, Tf], 4)
-    traj = fs.solve_flat_ocp(
+    traj = fs.solve_flat_optimal(
         vehicle_flat, evalpts, x0, u0, traj_cost,
 	terminal_cost=term_cost, initial_guess=initial_guess, basis=bspline)
 
@@ -385,4 +385,4 @@ compute trajectories:
 
    flatsys.flatsys
    flatsys.point_to_point
-   flatsys.solve_flat_ocp
+   flatsys.solve_flat_optimal

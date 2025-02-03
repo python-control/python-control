@@ -38,7 +38,6 @@ class LTI(InputOutputSystem):
         super().__init__(
             name=name, inputs=inputs, outputs=outputs, states=states, **kwargs)
 
-    # TODO: update ss, tf docstrings to use this one as the primary
     def __call__(self, x, squeeze=None, warn_infinite=True):
         """Evaluate system transfer function at point in complex plane.
 

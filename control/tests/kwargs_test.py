@@ -308,11 +308,15 @@ kwarg_unittest = {
     'zpk': test_unrecognized_kwargs,
     'flatsys.point_to_point':
         flatsys_test.TestFlatSys.test_point_to_point_errors,
+    'flatsys.solve_flat_optimal':
+        flatsys_test.TestFlatSys.test_solve_flat_ocp_errors,
     'flatsys.solve_flat_ocp':
         flatsys_test.TestFlatSys.test_solve_flat_ocp_errors,
     'flatsys.FlatSystem.__init__': test_unrecognized_kwargs,
     'optimal.create_mpc_iosystem': optimal_test.test_mpc_iosystem_rename,
+    'optimal.solve_optimal_trajectory': optimal_test.test_ocp_argument_errors,
     'optimal.solve_ocp': optimal_test.test_ocp_argument_errors,
+    'optimal.solve_optimal_estimate': optimal_test.test_oep_argument_errors,
     'optimal.solve_oep': optimal_test.test_oep_argument_errors,
     'ControlPlot.set_plot_title': freqplot_test.test_suptitle,
     'FrequencyResponseData.__init__':

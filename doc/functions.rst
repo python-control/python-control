@@ -247,7 +247,7 @@ Differentially flat systems
 
    flatsys.flatsys
    flatsys.point_to_point
-   flatsys.solve_flat_ocp
+   flatsys.solve_flat_optimal
 
 
 Optimal control
@@ -271,8 +271,8 @@ Optimal control
    optimal.output_poly_constraint
    optimal.output_range_constraint
    optimal.quadratic_cost
-   optimal.solve_ocp
-   optimal.solve_oep
+   optimal.solve_optimal_trajectory
+   optimal.solve_optimal_estimate
    optimal.state_poly_constraint
    optimal.state_range_constraint
 

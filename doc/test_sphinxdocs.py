@@ -41,6 +41,9 @@ legacy_functions = [
     'rlocus',                   # root_locus_plot
     'rlocus',                   # root_locus_plot
     'root_locus',               # root_locus_plot
+    'solve_ocp',                # solve_optimal_trajectory
+    'solve_oep',                # solve_optimal_estimate
+    'solve_flat_ocp',           # solve_flat_optimal
 ]
 
 # Functons that we can skip

@@ -16,7 +16,7 @@ between two endpoints, written in terms of a set of basis functions defined
 using the `BasisFamily` class.  The resulting trajectory is return
 as a `SystemTrajectory` object and can be evaluated using the
 `SystemTrajectory.eval` member function.  Alternatively, the
-`solve_flat_ocp` function can be used to solve an optimal control
+`solve_flat_optimal` function can be used to solve an optimal control
 problem with trajectory and final costs or constraints.
 
 The docstring examples assume that the following import commands::
@@ -29,9 +29,9 @@ The docstring examples assume that the following import commands::
 
 # Basis function families
 from .basis import BasisFamily as BasisFamily
-from .poly import PolyFamily as PolyFamily
 from .bezier import BezierFamily as BezierFamily
 from .bspline import BSplineFamily as BSplineFamily
+from .poly import PolyFamily as PolyFamily
 
 # Classes
 from .systraj import SystemTrajectory as SystemTrajectory
@@ -41,4 +41,5 @@ from .linflat import LinearFlatSystem as LinearFlatSystem
 
 # Package functions
 from .flatsys import point_to_point as point_to_point
+from .flatsys import solve_flat_optimal as solve_flat_optimal
 from .flatsys import solve_flat_ocp as solve_flat_ocp

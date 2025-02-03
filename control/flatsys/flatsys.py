@@ -656,7 +656,7 @@ def point_to_point(
 
 
 # Solve a point to point trajectory generation problem for a flat system
-def solve_flat_ocp(
+def solve_flat_optimal(
         sys, timepts, x0=0, u0=0, trajectory_cost=None, basis=None,
         terminal_cost=None, trajectory_constraints=None,
         initial_guess=None, params=None, **kwargs):
@@ -996,3 +996,7 @@ def solve_flat_ocp(
 
     # Return a function that computes inputs and states as a function of time
     return systraj
+
+
+# Convenience aliases
+solve_flat_ocp = solve_flat_optimal

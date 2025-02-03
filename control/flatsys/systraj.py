@@ -18,7 +18,7 @@ class SystemTrajectory:
 
     The `SystemTrajectory` class is used to represent the trajectory
     of a (differentially flat) system.  Used by the `point_to_point`
-    and `solve_flat_ocp` functions to return a trajectory.
+    and `solve_flat_optimal` functions to return a trajectory.
 
     Parameters
     ----------
