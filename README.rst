@@ -110,7 +110,7 @@ from the github repository or archive, unpack, and run from within the
 toplevel `python-control` directory::
 
   pip install .
-  
+
 Article and Citation Information
 ================================
 
@@ -128,7 +128,6 @@ the library is available on IEEE Explore. If the Python Control Systems Library 
   }
 
 or the GitHub site: https://github.com/python-control/python-control
-
 
 Development
 ===========
@@ -178,4 +177,3 @@ Your contributions are welcome!  Simply fork the GitHub repository and send a
 Please see the `Developer's Wiki`_ for detailed instructions.
 
 .. _Developer's Wiki: https://github.com/python-control/python-control/wiki
-

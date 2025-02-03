@@ -606,6 +606,33 @@ def _slycot_or_scipy(method):
 
 # Utility function to check matrix dimensions
 def _check_shape(M, n, m, square=False, symmetric=False, name="??"):
+    """Check the shape and properties of a 2D array.
+
+    This function can be used to check to make sure a 2D array_like has the
+    right shape, along with other properties.  If not, an appropriate error
+    message is generated.
+
+    Parameters
+    ----------
+    M : array_like
+        Array to be checked.
+    n : int
+        Expected number of rows.
+    m : int
+        Expected number of columns.
+    square : bool, optional
+        If True, check to make sure the matrix is square.
+    symmetric : bool, optional
+        If True, check to make sure the matrix is symmetric.
+    name : str
+        Name of the matrix (for use in error messages).
+
+    Returns
+    -------
+    M : 2D array
+        Input array, converted to 2D if needed.
+
+    """
     M = np.atleast_2d(M)
 
     if (square or symmetric) and M.shape[0] != M.shape[1]:
