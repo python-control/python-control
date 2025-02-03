@@ -69,8 +69,8 @@ __all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect',
            'combine_tf', 'split_tf']
 
 
-def series(sys1, *sysn, **kwargs):
-    r"""series(sys1, sys2, [..., sysn])
+def series(*sys, **kwargs):
+    r"""series(sys1, sys2[, ..., sysn])
 
     Return series connection (`sysn` \* ...\  \*) `sys2` \* `sys1`.
 
@@ -136,13 +136,13 @@ def series(sys1, *sysn, **kwargs):
     (2, 1, 5)
 
     """
-    sys = reduce(lambda x, y: y * x, sysn, sys1)
+    sys = reduce(lambda x, y: y * x, sys[1:], sys[0])
     sys.update_names(**kwargs)
     return sys
 
 
-def parallel(sys1, *sysn, **kwargs):
-    r"""parallel(sys1, sys2, [..., sysn])
+def parallel(*sys, **kwargs):
+    r"""parallel(sys1, sys2[, ..., sysn])
 
     Return parallel connection `sys1` + `sys2` (+ ...\  + `sysn`).
 
@@ -206,7 +206,7 @@ def parallel(sys1, *sysn, **kwargs):
     (3, 4, 7)
 
     """
-    sys = reduce(lambda x, y: x + y, sysn, sys1)
+    sys = reduce(lambda x, y: x + y, sys[1:], sys[0])
     sys.update_names(**kwargs)
     return sys
 
@@ -354,7 +354,7 @@ def feedback(sys1, sys2=1, sign=-1, **kwargs):
     return sys
 
 def append(*sys, **kwargs):
-    """append(sys1, sys2, [..., sysn])
+    """append(sys1, sys2[, ..., sysn])
 
     Group LTI models by appending their inputs and outputs.
 

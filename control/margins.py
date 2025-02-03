@@ -507,11 +507,13 @@ def phase_crossover_frequencies(sys):
 
 
 def margin(*args):
-    """margin(sysdata)
+    """
+    margin(sys) \
+    margin(mag, phase, omega)
 
     Gain and phase margins and associated crossover frequencies.
 
-    Can be called as ``margin(sys)`` where ``sys`` is a SISO LTI sytem or
+    Can be called as ``margin(sys)`` where ``sys`` is a SISO LTI system or
     ``margin(mag, phase, omega)``.
 
     Parameters

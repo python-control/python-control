@@ -2172,7 +2172,9 @@ def gangof4_response(
 def gangof4_plot(
         *args, omega=None, omega_limits=None, omega_num=None,
         Hz=False, **kwargs):
-    """Plot response of "Gang of 4" transfer functions.
+    """gangof4_plot(response) | gangof4_plot(P, C, omega)
+
+    Plot response of "Gang of 4" transfer functions.
 
     Plots a 2x2 frequency response for the "Gang of 4" sensitivity
     functions [T, PS; CS, S].  Can be called in one of two ways:

@@ -213,8 +213,8 @@ def dlqe(*args, **kwargs):
 
     Parameters
     ----------
-    A, G : 2D array_like
-        Dynamics and noise input matrices.
+    A, G, C : 2D array_like
+        Dynamics, process noise (disturbance), and output matrices.
     QN, RN : 2D array_like
         Process and sensor noise covariance matrices.
     NN : 2D array, optional
