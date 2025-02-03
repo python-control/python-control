@@ -2269,13 +2269,15 @@ def summing_junction(
 def _ssmatrix(data, axis=1, square=None, rows=None, cols=None, name=None):
     """Convert argument to a (possibly empty) 2D state space matrix.
 
-    The axis keyword argument makes it convenient to specify that if the
-    input is a vector, it is a row (axis=1) or column (axis=0) vector.
+    This function can be used to process the matrices that define a
+    state-space system. The axis keyword argument makes it convenient
+    to specify that if the input is a vector, it is a row (axis=1) or
+    column (axis=0) vector.
 
     Parameters
     ----------
     data : array, list, or string
-        Input data defining the contents of the 2D array
+        Input data defining the contents of the 2D array.
     axis : 0 or 1
         If input data is 1D, which axis to use for return object.  The
         default is 1, corresponding to a row matrix.

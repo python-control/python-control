@@ -629,7 +629,9 @@ processing and parsing operations:
    exception.pandas_check
    exception.slycot_check
    iosys._process_iosys_keywords
+   mateqn._check_shape
    statesp._convert_to_statespace
+   statesp._ssmatrix
    xferfcn._convert_to_transfer_function
 
 
