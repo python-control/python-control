@@ -1961,7 +1961,7 @@ def impulse_response(
         #
         # We can't put the impulse into U because there is no numerical
         # representation for it (infinitesimally short, infinitely high).
-        # See also: http://www.mathworks.com/support/tech-notes/1900/1901.html
+        # See also: https://www.mathworks.com/support/tech-notes/1900/1901.html
         #
         if isctime(sys):
             X0 = sys.B[:, i]

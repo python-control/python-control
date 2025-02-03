@@ -1030,7 +1030,7 @@ def bode_plot(
     #
     # Because plots can be built up by multiple calls to plot(), the legend
     # strings are created from the line labels manually.  Thus an initial
-    # call to plot() may not generate any legends (eg, if no signals are
+    # call to plot() may not generate any legends (e.g., if no signals are
     # overlaid), but subsequent calls to plot() will need a legend for each
     # different response (system).
     #

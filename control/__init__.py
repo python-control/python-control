@@ -9,7 +9,7 @@ functions for analyzing and designing feedback control systems.
 
 The initial goal for the package is to implement all of the
 functionality required to work through the examples in the textbook
-`Feedback Systems <http://fbsbook.org>`_ by Astrom and Murray.  In
+`Feedback Systems <https://fbsbook.org>`_ by Astrom and Murray.  In
 addition to standard techniques available for linear control systems,
 support for nonlinear systems (including trajectory generation, gain
 scheduling, phase plane diagrams, and describing functions) is

@@ -60,7 +60,7 @@ generate a warning message when used:
 * Other calling patterns that will not be supported in the future.
 
 The listed items are slated to be removed in future releases (usually
-the next major or minor version update.
+the next major or minor version update).
 
 
 Removals

@@ -78,7 +78,7 @@ class SampleClass():
         self.data = sys.name    # Attribute created within class
 
     def sample_method(self, data):
-        """Sample method within in a class.
+        """Sample method within a class.
 
         This is an example of a method within a class.  Document using
         numpydoc format.
@@ -92,10 +92,10 @@ def sample_function(data, option=False, **kwargs):
 
     This is an example of a public function within the template module.
     This function will usually be placed in the `control` namespace by
-    updating `__init.py` to import the function (often by importing the
+    updating `__init__.py` to import the function (often by importing the
     entire module).
 
-    Docstring should be in standard numpy doc format.  The extended summary
+    Docstring should be in standard numpydoc format.  The extended summary
     (this text) should describe the basic operation of the function, with
     technical details in the "Notes" section.
 

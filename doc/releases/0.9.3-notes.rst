@@ -126,4 +126,4 @@ generate a warning message when used:
   lb, ub)``.
 
 The listed items are slated to be removed in future releases (usually
-the next major or minor version update.
+the next major or minor version update).

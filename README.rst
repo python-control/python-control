@@ -31,7 +31,7 @@ Try out the examples in the examples folder using the binder service.
 
 The package can also be installed on Google Colab using the commands::
 
-  !pip install control
+  %pip install control
   import control as ct
 
 Features
@@ -49,11 +49,11 @@ Features
 Links
 -----
 
-- Project home page: http://python-control.org
+- Project home page: https://python-control.org
 - Source code repository: https://github.com/python-control/python-control
-- Documentation: http://python-control.readthedocs.org/
+- Documentation: https://python-control.readthedocs.io/
 - Issue tracker: https://github.com/python-control/python-control/issues
-- Mailing list: http://sourceforge.net/p/python-control/mailman/
+- Mailing list: https://sourceforge.net/p/python-control/mailman/
 
 Dependencies
 ------------
@@ -158,7 +158,7 @@ License
 -------
 
 This is free software released under the terms of `the BSD 3-Clause
-License <http://opensource.org/licenses/BSD-3-Clause>`_.  There is no
+License <https://opensource.org/licenses/BSD-3-Clause>`_.  There is no
 warranty; not even for merchantability or fitness for a particular
 purpose.  Consult LICENSE for copying conditions.
 

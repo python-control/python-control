@@ -598,7 +598,7 @@ def markov(*args, m=None, transpose=False, dt=None, truncate=False):
     .. [1] J.-N. Juang, M. Phan, L. G.  Horta, and R. W. Longman,
        Identification of observer/Kalman filter Markov parameters - Theory
        and experiments. Journal of Guidance Control and Dynamics, 16(2),
-       320-329, 2012. http://doi.org/10.2514/3.21006
+       320-329, 2012. https://doi.org/10.2514/3.21006
 
     Examples
     --------
@@ -696,7 +696,7 @@ def markov(*args, m=None, transpose=False, dt=None, truncate=False):
     #   J.-N. Juang, M. Phan, L. G. Horta, and R. W. Longman, Identification
     #   of observer/Kalman filter Markov parameters - Theory and
     #   experiments. Journal of Guidance Control and Dynamics, 16(2),
-    #   320-329, 2012. http://doi.org/10.2514/3.21006
+    #   320-329, 2012. https://doi.org/10.2514/3.21006
     #
 
     # Set up the full problem

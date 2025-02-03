@@ -115,7 +115,7 @@ Some Differences from MATLAB
 Users familiar with the MATLAB control systems toolbox will find much
 of the functionality implemented in `python-control`, though using
 Python constructs and coding conventions.  The python-control package
-makes heavy use of `NumPy <http://www.numpy.org>`_ and `SciPy
+makes heavy use of `NumPy <https://www.numpy.org>`_ and `SciPy
 <https://www.scipy.org>`_ and many differences are reflected in the
 use of those .  A list of general differences between NumPy and MATLAB
 can be found `here

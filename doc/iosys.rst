@@ -139,7 +139,7 @@ Illustrative example
 
 To illustrate the use of the :func:`interconnect` function, we create a
 model for a predator/prey system, following the notation and parameter
-values in `Feedback Systems <http://fbsbook.org>`_.
+values in `Feedback Systems <https://fbsbook.org>`_.
 
 We begin by defining the dynamics of the system:
 
@@ -219,7 +219,7 @@ system and computing the linearization about that point.
 We next compute a controller that stabilizes the equilibrium point using
 eigenvalue placement and computing the feedforward gain using the number of
 lynxes as the desired output (following `Feedback Systems
-<http://fbsbook.org>`_, Example 7.5):
+<https://fbsbook.org>`_, Example 7.5):
 
 .. testcode:: predprey
 
@@ -692,7 +692,7 @@ A reference gain controller can be created with the command::
       sys, K, kf, feedfwd_pattern='refgain')
 
 This reference gain design pattern is described in more detail in
-`Feedback Systems <http://fbsbook.org>`_, Section 7.2 (Stabilization
+`Feedback Systems <https://fbsbook.org>`_, Section 7.2 (Stabilization
 by State Feedback) and the trajectory generation design pattern is
 described in Section 8.5 (State Space Controller Design).
 

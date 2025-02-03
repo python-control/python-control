@@ -272,7 +272,7 @@ def use_matlab_defaults():
 def use_fbs_defaults():
     """Use Feedback Systems (FBS) compatible settings.
 
-    The following conventions from `Feedback Systems <http://fbsbook.org>`_
+    The following conventions from `Feedback Systems <https://fbsbook.org>`_
     are used:
 
         * Bode plots plot gain in powers of ten, phase in degrees,

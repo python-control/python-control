@@ -14,7 +14,7 @@ record.txt
 .coverage
 doc/_build
 doc/generated
-examples/.ipynb_checkpoints/
+.ipynb_checkpoints/
 .settings/org.eclipse.core.resources.prefs
 .pydevproject
 .project

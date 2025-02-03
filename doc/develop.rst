@@ -16,11 +16,11 @@ Package Structure
 The python-control package is maintained on GitHub, with documentation
 hosted by ReadTheDocs and a mailing list on SourceForge:
 
-  * Project home page: http://python-control.org
+  * Project home page: https://python-control.org
   * Source code repository: https://github.com/python-control/python-control
-  * Documentation: http://python-control.readthedocs.org/
+  * Documentation: https://python-control.readthedocs.io/
   * Issue tracker: https://github.com/python-control/python-control/issues
-  * Mailing list: http://sourceforge.net/p/python-control/mailman/
+  * Mailing list: https://sourceforge.net/p/python-control/mailman/
 
 GitHub repository file and directory layout:
   - **python-control/** - main repository
@@ -56,7 +56,7 @@ GitHub repository file and directory layout:
 
       + **matlab/** - MATLAB compatibility subpackage
 
-        - __init.py, timeresp.py, wrappers.py - subpackage files
+        - __init__.py, timeresp.py, wrappers.py - subpackage files
 
       + **tests/** - unit tests
 
@@ -222,7 +222,7 @@ frequency, etc:
         timepts, outputs, states=states, inputs=inputs)
 
   In the last command, note that states precedes inputs because not
-  all TimeResponseData elements have inputs (eg, `initial_response`).
+  all TimeResponseData elements have inputs (e.g., `initial_response`).
 
 * The default order for providing arguments in the frequency domain is
   system/response first, then frequency::
@@ -566,7 +566,7 @@ Sphinx files guidelines:
   - The Python built-ins occur frequently and are capitalized, and so
     the additional formatting doesn't add much and would be
     inconsistent if you jump from the User Guide to the Reference
-    Manual (eg, to look at a function more closely via a link in the
+    Manual (e.g., to look at a function more closely via a link in the
     User Guide).
 
 

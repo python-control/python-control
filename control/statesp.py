@@ -1749,7 +1749,7 @@ def ss(*args, **kwargs):
                 warn("state labels specified for "
                      "non-unique state space realization")
 
-            # Allow method to be specified (eg, tf2ss)
+            # Allow method to be specified (e.g., tf2ss)
             method = kwargs.pop('method', None)
 
             # Create a state space system from an LTI system

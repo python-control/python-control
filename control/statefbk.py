@@ -558,7 +558,7 @@ def create_statefbk_iosystem(
         ctrl, clsys = ct.create_statefbk_iosystem(sys, K)
 
     where `sys` is the process dynamics and `K` is the state (+ integral)
-    feedback gain (eg, from LQR).  The function returns the controller
+    feedback gain (e.g., from LQR).  The function returns the controller
     `ctrl` and the closed loop systems `clsys`, both as I/O systems.
 
     A gain scheduled controller can also be created, by passing a list of

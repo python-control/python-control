@@ -24,7 +24,7 @@ feedback control systems.
 
 - GitHub repository: https://github.com/python-control/python-control
 - Issue tracker: https://github.com/python-control/python-control/issues
-- Mailing list: http://sourceforge.net/p/python-control/mailman/
+- Mailing list: https://sourceforge.net/p/python-control/mailman/
 
 .. rubric:: How to cite
 
