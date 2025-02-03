@@ -1,4 +1,4 @@
-"""statesp_test.py - test state space class
+"""Tests for the StateSpace class.
 
 RMM, 30 Mar 2011 based on TestStateSp from v0.4a)
 RMM, 14 Jun 2019 statesp_array_test.py coverted from statesp_test.py to test
@@ -7,22 +7,23 @@ BG,  26 Jul 2020 merge statesp_array_test.py differences into statesp_test.py
                  convert to pytest
 """
 
-import numpy as np
-from numpy.testing import assert_array_almost_equal
-import pytest
 import operator
+
+import numpy as np
+import pytest
 from numpy.linalg import solve
+from numpy.testing import assert_array_almost_equal
 from scipy.linalg import block_diag, eigvals
 
 import control as ct
 from control.config import defaults
 from control.dtime import sample_system
 from control.lti import evalfr
-from control.statesp import StateSpace, _convert_to_statespace, tf2ss, \
-    _statesp_defaults, _rss_generate, linfnorm, ss, rss, drss
-from control.xferfcn import TransferFunction, ss2tf, _tf_close_coeff
-
-from .conftest import editsdefaults, slycotonly
+from control.statesp import (StateSpace, _convert_to_statespace, _rss_generate,
+                             _statesp_defaults, drss, linfnorm, rss, ss, tf2ss)
+from control.tests.conftest import (assert_tf_close_coeff, editsdefaults,
+                                    slycotonly)
+from control.xferfcn import TransferFunction, ss2tf
 
 
 class TestStateSpace:
@@ -381,7 +382,7 @@ class TestStateSpace:
             (StateSpace.__rsub__, -expected_sub),
         ]:
             result = op(ss_mimo, ss_siso)
-            assert _tf_close_coeff(
+            assert_tf_close_coeff(
                 expected.minreal(),
                 ss2tf(result).minreal(),
             )
@@ -401,7 +402,7 @@ class TestStateSpace:
             (StateSpace.__rsub__, -expected_sub),
         ]:
             result = op(ss_siso, np.eye(2))
-            assert _tf_close_coeff(
+            assert_tf_close_coeff(
                 expected.minreal(),
                 ss2tf(result).minreal(),
             )
@@ -476,7 +477,7 @@ class TestStateSpace:
     )
     def test_mul_mimo_siso(self, left, right, expected):
         result = tf2ss(left).__mul__(right)
-        assert _tf_close_coeff(
+        assert_tf_close_coeff(
             expected.minreal(),
             ss2tf(result).minreal(),
         )
@@ -551,60 +552,53 @@ class TestStateSpace:
     )
     def test_rmul_mimo_siso(self, left, right, expected):
         result = tf2ss(right).__rmul__(left)
-        assert _tf_close_coeff(
+        assert_tf_close_coeff(
             expected.minreal(),
             ss2tf(result).minreal(),
         )
 
     @slycotonly
-    def test_pow(self, sys222, sys322):
+    @pytest.mark.parametrize("power", [0, 1, 3, -3])
+    @pytest.mark.parametrize("sysname", ["sys222", "sys322"])
+    def test_pow(self, request, sysname, power):
         """Test state space powers."""
-        for sys in [sys222, sys322]:
-            # Power of 0
-            result = sys**0
-            expected = StateSpace([], [], [], np.eye(2), dt=0)
-            np.testing.assert_allclose(expected.A, result.A)
-            np.testing.assert_allclose(expected.B, result.B)
-            np.testing.assert_allclose(expected.C, result.C)
-            np.testing.assert_allclose(expected.D, result.D)
-            # Power of 1
-            result = sys**1
-            expected = sys
-            np.testing.assert_allclose(expected.A, result.A)
-            np.testing.assert_allclose(expected.B, result.B)
-            np.testing.assert_allclose(expected.C, result.C)
-            np.testing.assert_allclose(expected.D, result.D)
-            # Power of -1 (inverse of biproper system)
-            # Testing transfer function representations to avoid the
-            # non-uniqueness of the state-space representation. Once MIMO
-            # canonical forms are supported, can check canonical state-space
-            # matrices instead.
-            result = (sys * sys**-1).minreal()
-            expected = StateSpace([], [], [], np.eye(2), dt=0)
-            assert _tf_close_coeff(
-                ss2tf(expected).minreal(),
-                ss2tf(result).minreal(),
-            )
-            result = (sys**-1 * sys).minreal()
-            expected = StateSpace([], [], [], np.eye(2), dt=0)
-            assert _tf_close_coeff(
-                ss2tf(expected).minreal(),
-                ss2tf(result).minreal(),
-            )
-            # Power of 3
-            result = sys**3
-            expected = sys * sys * sys
-            np.testing.assert_allclose(expected.A, result.A)
-            np.testing.assert_allclose(expected.B, result.B)
-            np.testing.assert_allclose(expected.C, result.C)
-            np.testing.assert_allclose(expected.D, result.D)
-            # Power of -3
-            result = sys**-3
-            expected = sys**-1 * sys**-1 * sys**-1
-            np.testing.assert_allclose(expected.A, result.A)
-            np.testing.assert_allclose(expected.B, result.B)
-            np.testing.assert_allclose(expected.C, result.C)
-            np.testing.assert_allclose(expected.D, result.D)
+        sys = request.getfixturevalue(sysname)
+        result = sys**power
+        if power == 0:
+             expected = StateSpace([], [], [], np.eye(sys.ninputs), dt=0)
+        else:
+            sign = 1 if power > 0 else -1
+            expected = sys**sign
+            for i in range(1,abs(power)):
+                expected *= sys**sign
+        np.testing.assert_allclose(expected.A, result.A)
+        np.testing.assert_allclose(expected.B, result.B)
+        np.testing.assert_allclose(expected.C, result.C)
+        np.testing.assert_allclose(expected.D, result.D)
+
+    @slycotonly
+    @pytest.mark.parametrize("order", ["left", "right"])
+    @pytest.mark.parametrize("sysname", ["sys121", "sys222", "sys322"])
+    def test_pow_inv(self, request, sysname, order):
+        """Check for identity when multiplying by inverse.
+
+        This holds approximately true for a few steps but is very
+        unstable due to numerical precision. Don't assume this in
+        real life. For testing purposes only!
+        """
+        sys = request.getfixturevalue(sysname)
+        if order == "left":
+            combined = sys**-1 * sys
+        else:
+            combined = sys * sys**-1
+        combined = combined.minreal()
+        np.testing.assert_allclose(combined.dcgain(), np.eye(sys.ninputs),
+                                   atol=1e-7)
+        T = np.linspace(0., 0.3, 100)
+        U = np.random.rand(sys.ninputs, len(T))
+        R = combined.forced_response(T=T, U=U, squeeze=False)
+        # Check that the output is the same as the input
+        np.testing.assert_allclose(R.outputs, U)
 
     @slycotonly
     def test_truediv(self, sys222, sys322):
@@ -613,14 +607,14 @@ class TestStateSpace:
             # Divide by self
             result = (sys.__truediv__(sys)).minreal()
             expected = StateSpace([], [], [], np.eye(2), dt=0)
-            assert _tf_close_coeff(
+            assert_tf_close_coeff(
                 ss2tf(expected).minreal(),
                 ss2tf(result).minreal(),
             )
             # Divide by TF
             result = sys.__truediv__(TransferFunction.s)
             expected = ss2tf(sys) / TransferFunction.s
-            assert _tf_close_coeff(
+            assert_tf_close_coeff(
                 expected.minreal(),
                 ss2tf(result).minreal(),
             )
@@ -631,14 +625,14 @@ class TestStateSpace:
         for sys in [sys222, sys322]:
             result = (sys.__rtruediv__(sys)).minreal()
             expected = StateSpace([], [], [], np.eye(2), dt=0)
-            assert _tf_close_coeff(
+            assert_tf_close_coeff(
                 ss2tf(expected).minreal(),
                 ss2tf(result).minreal(),
             )
             # Divide TF by SS
             result = sys.__rtruediv__(TransferFunction.s)
             expected = TransferFunction.s / sys
-            assert _tf_close_coeff(
+            assert_tf_close_coeff(
                 expected.minreal(),
                 result.minreal(),
             )
@@ -646,7 +640,7 @@ class TestStateSpace:
         sys = tf2ss(TransferFunction([1, 2], [2, 1]))
         result = sys.__rtruediv__(np.eye(2))
         expected = TransferFunction([2, 1], [1, 2]) * np.eye(2)
-        assert _tf_close_coeff(
+        assert_tf_close_coeff(
             expected.minreal(),
             ss2tf(result).minreal(),
         )
