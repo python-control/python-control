@@ -64,8 +64,9 @@ class LTI(InputOutputSystem):
 
     def feedback(self, other=1, sign=-1):
         """Feedback interconnection between two LTI objects."""
-        # Implemented in subclasses, but documented here
-        return NotImplemented
+        raise NotImplementedError(
+            "feedback not implemented for base "
+            f"{self.__class__.__name__} objects")
 
     def frequency_response(self, omega=None, squeeze=None):
         """Evaluate LTI system response at an array of frequencies.
@@ -217,9 +218,6 @@ class LTI(InputOutputSystem):
         # importing here prevents circular dependancy
         from control.passivity import ispassive
         return ispassive(self)
-    
-    def feedback(self, other=1, sign=-1):
-        raise NotImplementedError(f"feedback not implemented for base {self.__class__.__name__} objects")
 
     # convenience aliases
     # most function are only forward declaraed and patched in the __init__.py to avoid circular imports

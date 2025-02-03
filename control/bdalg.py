@@ -638,7 +638,7 @@ def split_tf(transfer_function):
                                             array([1, 1]),
                                             name='G', outputs=1, inputs=1)]],
           dtype=object)
-    
+
     """
     tf_split_lst = []
     for i_out in range(transfer_function.noutputs):

@@ -4,15 +4,16 @@
 
 """
 
-import numpy as np
-from scipy.signal import zpk2tf
 import warnings
 from warnings import warn
 
+import numpy as np
+from scipy.signal import zpk2tf
+
+from ..exception import ControlArgument
+from ..lti import LTI
 from ..statesp import ss
 from ..xferfcn import tf
-from ..lti import LTI
-from ..exception import ControlArgument
 
 __all__ = ['bode', 'nyquist', 'ngrid', 'rlocus', 'pzmap', 'dcgain', 'connect']
 
@@ -127,7 +128,7 @@ def nyquist(*args, plot=True, **kwargs):
         Frequencies in rad/s.
 
     """
-    from ..freqplot import nyquist_response, nyquist_plot
+    from ..freqplot import nyquist_plot, nyquist_response
 
     # If first argument is a list, assume python-control calling format
     if hasattr(args[0], '__iter__'):
@@ -311,6 +312,8 @@ def pzmap(*args, **kwargs):
 
 
 from ..nichols import nichols_grid
+
+
 def ngrid():
     return nichols_grid()
 ngrid.__doc__ = nichols_grid.__doc__
@@ -378,6 +381,8 @@ def dcgain(*args):
 
 
 from ..bdalg import connect as ct_connect
+
+
 def connect(*args):
     """connect(sys, Q, inputv, outputv)
 
