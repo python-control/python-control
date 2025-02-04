@@ -47,14 +47,16 @@ _phaseplot_defaults = {
 
 def phase_plane_plot(
         sys, pointdata=None, timedata=None, gridtype=None, gridspec=None,
-        plot_streamlines=True, plot_vectorfield=False, plot_equilpoints=True,
-        plot_separatrices=True, ax=None, suppress_warnings=False, title=None,
-        plot_streamplot=False, **kwargs
+        plot_streamlines=None, plot_vectorfield=None, plot_streamplot=None,
+        plot_equilpoints=True, plot_separatrices=True, ax=None,
+        suppress_warnings=False, title=None, **kwargs
 ):
     """Plot phase plane diagram.
 
     This function plots phase plane data, including vector fields, stream
     lines, equilibrium points, and contour curves.
+    If none of plot_streamlines, plot_vectorfield, or plot_streamplot are
+    set, then plot_streamlines is used by default.
 
     Parameters
     ----------
@@ -129,15 +131,15 @@ def phase_plane_plot(
         'both' to flow both forward and backward.  The amount of time to
         simulate in each direction is given by the `timedata` argument.
     plot_streamlines : bool or dict, optional
-        If True (default) then plot streamlines based on the pointdata
-        and gridtype.  If set to a dict, pass on the key-value pairs in
-        the dict as keywords to `streamlines`.
+        If then plot streamlines based on the pointdata and gridtype.  If set
+        to a dict, pass on the key-value pairs in the dict as keywords to
+        `streamlines`.
     plot_vectorfield : bool or dict, optional
-        If True (default) then plot the vector field based on the pointdata
-        and gridtype.  If set to a dict, pass on the key-value pairs in
-        the dict as keywords to `phaseplot.vectorfield`.
+        If then plot the vector field based on the pointdata and gridtype.
+        If set to a dict, pass on the key-value pairs in the dict as keywords
+        to `phaseplot.vectorfield`.
     plot_streamplot : bool or dict, optional
-        If True then use :func:`matplotlib.axes.Axes.streamplot` function
+        If then use :func:`matplotlib.axes.Axes.streamplot` function
         to plot the streamlines.  If set to a dict, pass on the key-value
         pairs in the dict as keywords to :func:`~control.phaseplot.streamplot`.
     plot_equilpoints : bool or dict, optional
@@ -157,6 +159,16 @@ def phase_plane_plot(
         Set the title of the plot.  Defaults to plot type and system name(s).
 
     """
+    if (
+        plot_streamlines is None
+        and plot_vectorfield is None
+        and plot_streamplot is None
+    ):
+        plot_streamlines = True
+
+    if plot_streamplot and not plot_streamlines and not plot_vectorfield:
+        gridspec = gridspec or [25, 25]
+
     # Process arguments
     params = kwargs.get('params', None)
     sys = _create_system(sys, params)
@@ -378,12 +390,12 @@ def streamplot(
         Plot the vector field in the given color.
     vary_color : bool, optional
         If set to True, vary the color of the streamlines based on the magnitude
-    vary_linewidth : bool, optional
-        If set to True, vary the linewidth of the streamlines based on the magnitude
+    vary_linewidth : bool, optional.
+        If set to True, vary the linewidth of the streamlines based on the magnitude.
     cmap : str or Colormap, optional
-        Colormap to use for varying the color of the streamlines
+        Colormap to use for varying the color of the streamlines.
     norm : `matplotlib.colors.Normalize`, optional
-        An instance of Normalize to use for scaling the colormap and linewidths
+        An instance of Normalize to use for scaling the colormap and linewidths.
     ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
@@ -391,7 +403,7 @@ def streamplot(
     -------
     out : StreamplotSet
 
-    Other parameters
+    Other Parameters
     ----------------
     rcParams : dict
         Override the default parameters used for generating plots.
