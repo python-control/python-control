@@ -181,7 +181,7 @@ class NonlinearIOSystem(InputOutputSystem):
 
         """
         # Make sure the call makes sense
-        if not sys._isstatic():
+        if sys.nstates != 0:
             raise TypeError(
                 "function evaluation is only supported for static "
                 "input/output systems")
@@ -199,7 +199,7 @@ class NonlinearIOSystem(InputOutputSystem):
     def __mul__(self, other):
         """Multiply two input/output systems (series interconnection)"""
         # Convert 'other' to an I/O system if needed
-        other = _convert_static_iosystem(other)
+        other = _convert_to_iosystem(other)
         if not isinstance(other, InputOutputSystem):
             return NotImplemented
 
@@ -231,7 +231,7 @@ class NonlinearIOSystem(InputOutputSystem):
     def __rmul__(self, other):
         """Pre-multiply an input/output systems by a scalar/matrix"""
         # Convert other to an I/O system if needed
-        other = _convert_static_iosystem(other)
+        other = _convert_to_iosystem(other)
         if not isinstance(other, InputOutputSystem):
             return NotImplemented
 
@@ -263,7 +263,7 @@ class NonlinearIOSystem(InputOutputSystem):
     def __add__(self, other):
         """Add two input/output systems (parallel interconnection)"""
         # Convert other to an I/O system if needed
-        other = _convert_static_iosystem(other)
+        other = _convert_to_iosystem(other)
         if not isinstance(other, InputOutputSystem):
             return NotImplemented
 
@@ -284,7 +284,7 @@ class NonlinearIOSystem(InputOutputSystem):
     def __radd__(self, other):
         """Parallel addition of input/output system to a compatible object."""
         # Convert other to an I/O system if needed
-        other = _convert_static_iosystem(other)
+        other = _convert_to_iosystem(other)
         if not isinstance(other, InputOutputSystem):
             return NotImplemented
 
@@ -305,7 +305,7 @@ class NonlinearIOSystem(InputOutputSystem):
     def __sub__(self, other):
         """Subtract two input/output systems (parallel interconnection)"""
         # Convert other to an I/O system if needed
-        other = _convert_static_iosystem(other)
+        other = _convert_to_iosystem(other)
         if not isinstance(other, InputOutputSystem):
             return NotImplemented
 
@@ -329,7 +329,7 @@ class NonlinearIOSystem(InputOutputSystem):
     def __rsub__(self, other):
         """Parallel subtraction of I/O system to a compatible object."""
         # Convert other to an I/O system if needed
-        other = _convert_static_iosystem(other)
+        other = _convert_to_iosystem(other)
         if not isinstance(other, InputOutputSystem):
             return NotImplemented
         return other - self
@@ -354,6 +354,10 @@ class NonlinearIOSystem(InputOutputSystem):
             return self * (1/other)
         else:
             return NotImplemented
+
+    # Determine if a system is static (memoryless)
+    def _isstatic(self):
+        return self.nstates == 0
 
     def _update_params(self, params):
         # Update the current parameter values
@@ -484,7 +488,7 @@ class NonlinearIOSystem(InputOutputSystem):
 
         """
         # Convert sys2 to an I/O system if needed
-        other = _convert_static_iosystem(other)
+        other = _convert_to_iosystem(other)
 
         # Make sure systems can be interconnected
         if self.noutputs != other.ninputs or other.noutputs != self.ninputs:
@@ -932,6 +936,7 @@ class InterconnectedSystem(NonlinearIOSystem):
         # Make the full set of subsystem outputs to system output
         return self.output_map @ ylist
 
+    # Find steady state (static) inputs and outputs
     def _compute_static_io(self, t, x, u):
         # Figure out the total number of inputs and outputs
         (ninputs, noutputs) = self.connect_map.shape
@@ -1711,8 +1716,8 @@ def input_output_response(
         dt = (t - T[idx-1]) / (T[idx] - T[idx-1])
         return U[..., idx-1] * (1. - dt) + U[..., idx] * dt
 
-    # Check to make sure this is not a static function
-    if sys._isstatic():
+    # Check to make sure see if this is a static function
+    if sys.nstates == 0:
         # Make sure the user gave a time vector for evaluation (or 'T')
         if t_eval is None:
             # User overrode t_eval with None, but didn't give us the times...
@@ -2924,8 +2929,8 @@ def _process_vector_argument(arg, name, size):
     return val, nelem
 
 
-# Utility function to create an I/O system from a static gain
-def _convert_static_iosystem(sys):
+# Utility function to create an I/O system (from number or array)
+def _convert_to_iosystem(sys):
     # If we were given an I/O system, do nothing
     if isinstance(sys, InputOutputSystem):
         return sys

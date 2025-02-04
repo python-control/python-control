@@ -23,6 +23,11 @@ Discrete time systems are also supported and have dynamics of the form
    x[t+1] &= f(t, x[t], u[t], \theta), \\
    y[t] &= h(t, x[t], u[t], \theta).
 
+A nonlinear input/output model is said to be "static" if the output
+:math:`y(t)` at any given time :math:`t` depends only on the input
+:math:`u(t)` at that same time :math:`t` and not on past or future
+values of :math:`u`.
+
 
 .. _sec-nonlinear-models:
 
@@ -47,7 +52,9 @@ dynamics of the system can be in continuous or discrete time (use the
 The output function `outfcn` is used to specify the outputs of the
 system and has the same calling signature as `updfcn`.  If it is not
 specified, then the output of the system is set equal to the system
-state.  Otherwise, it should return an array of shape (p,).
+state.  Otherwise, it should return an array of shape (p,).  If a
+input/output system is static, the state `x` should still be passed to
+the output function, but the state is ignored.
 
 Note that the number of states, inputs, and outputs should generally
 be explicitly specified, although some operations can infer the
