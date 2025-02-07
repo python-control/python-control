@@ -56,7 +56,7 @@ def phase_plane_plot(
     This function plots phase plane data, including vector fields, stream
     lines, equilibrium points, and contour curves.
     If none of plot_streamlines, plot_vectorfield, or plot_streamplot are
-    set, then plot_streamlines is used by default.
+    set, then plot_streamplot is used by default.
 
     Parameters
     ----------
@@ -164,7 +164,7 @@ def phase_plane_plot(
         and plot_vectorfield is None
         and plot_streamplot is None
     ):
-        plot_streamlines = True
+        plot_streamplot = True
 
     if plot_streamplot and not plot_streamlines and not plot_vectorfield:
         gridspec = gridspec or [25, 25]
@@ -191,7 +191,10 @@ def phase_plane_plot(
         return new_kwargs
 
     # Create list for storing outputs
-    out = np.array([[], None, None], dtype=object)
+    out = np.array([[], None, None, None], dtype=object)
+
+    # the maximum zorder of stramlines, vectorfield or streamplot
+    flow_zorder = None
 
     # Plot out the main elements
     if plot_streamlines:
@@ -201,6 +204,9 @@ def phase_plane_plot(
         out[0] += streamlines(
             sys, pointdata, timedata, _check_kwargs=False,
             suppress_warnings=suppress_warnings, **kwargs_local)
+        
+        new_zorder = max(elem.get_zorder() for elem in out[0])
+        flow_zorder = max(flow_zorder, new_zorder) if flow_zorder else new_zorder
 
         # Get rid of keyword arguments handled by streamlines
         for kw in ['arrows', 'arrow_size', 'arrow_style', 'color',
@@ -211,39 +217,56 @@ def phase_plane_plot(
     if gridtype not in [None, 'boxgrid', 'meshgrid']:
         gridspec = None
 
-    if plot_separatrices:
-        kwargs_local = _create_kwargs(
-            kwargs, plot_separatrices, gridspec=gridspec, ax=ax)
-        out[0] += separatrices(
-            sys, pointdata, _check_kwargs=False, **kwargs_local)
-
-        # Get rid of keyword arguments handled by separatrices
-        for kw in ['arrows', 'arrow_size', 'arrow_style', 'params']:
-            initial_kwargs.pop(kw, None)
-
     if plot_vectorfield:
         kwargs_local = _create_kwargs(
             kwargs, plot_vectorfield, gridspec=gridspec, ax=ax)
         out[1] = vectorfield(
             sys, pointdata, _check_kwargs=False, **kwargs_local)
+        
+        new_zorder = out[1].get_zorder()
+        flow_zorder = max(flow_zorder, new_zorder) if flow_zorder else new_zorder
 
         # Get rid of keyword arguments handled by vectorfield
         for kw in ['color', 'params']:
             initial_kwargs.pop(kw, None)
 
     if plot_streamplot:
+        if gridtype not in [None, 'meshgrid']:
+            raise ValueError("gridtype must be 'meshgrid' when using streamplot")
+
         kwargs_local = _create_kwargs(
             kwargs, plot_streamplot, gridspec=gridspec, ax=ax)
-        streamplot(
+        out[3] = streamplot(
             sys, pointdata, _check_kwargs=False, **kwargs_local)
+        
+        new_zorder = max(out[3].lines.get_zorder(), out[3].arrows.get_zorder())
+        flow_zorder = max(flow_zorder, new_zorder) if flow_zorder else new_zorder
 
         # Get rid of keyword arguments handled by streamplot
         for kw in ['color', 'params']:
             initial_kwargs.pop(kw, None)
 
+    sep_zorder = flow_zorder + 1 if flow_zorder else None
+
+    if plot_separatrices:
+        kwargs_local = _create_kwargs(
+            kwargs, plot_separatrices, gridspec=gridspec, ax=ax)
+        kwargs_local['zorder'] = kwargs_local.get('zorder', sep_zorder)
+        out[0] += separatrices(
+            sys, pointdata, _check_kwargs=False,  **kwargs_local)
+        
+        sep_zorder = max(elem.get_zorder() for elem in out[0])
+
+        # Get rid of keyword arguments handled by separatrices
+        for kw in ['arrows', 'arrow_size', 'arrow_style', 'params']:
+            initial_kwargs.pop(kw, None)
+
+    equil_zorder = sep_zorder + 1 if sep_zorder else None
+
     if plot_equilpoints:
         kwargs_local = _create_kwargs(
             kwargs, plot_equilpoints, gridspec=gridspec, ax=ax)
+        kwargs_local['zorder'] = kwargs_local.get('zorder', equil_zorder)
         out[2] = equilpoints(
             sys, pointdata, _check_kwargs=False, **kwargs_local)
 
@@ -267,8 +290,8 @@ def phase_plane_plot(
 
 
 def vectorfield(
-        sys, pointdata, gridspec=None, ax=None, suppress_warnings=False,
-        _check_kwargs=True, **kwargs):
+        sys, pointdata, gridspec=None, zorder=None, ax=None,
+        suppress_warnings=False, _check_kwargs=True, **kwargs):
     """Plot a vector field in the phase plane.
 
     This function plots a vector field for a two-dimensional state
@@ -302,6 +325,9 @@ def vectorfield(
         dict with key 'args' and value given by a tuple (passed to callable).
     color : matplotlib color spec, optional
         Plot the vector field in the given color.
+    zorder : float, optional
+        Set the zorder for the separatrices.  In not specified, it will be
+        automatically chosen by `matplotlib.axes.Axes.quiver`.
     ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
@@ -354,19 +380,19 @@ def vectorfield(
     with plt.rc_context(rcParams):
         out = ax.quiver(
             vfdata[:, 0], vfdata[:, 1], vfdata[:, 2], vfdata[:, 3],
-            angles='xy', color=color)
+            angles='xy', color=color, zorder=zorder)
 
     return out
 
 
 def streamplot(
-        sys, pointdata, gridspec=None, ax=None, vary_color=False,
+        sys, pointdata, gridspec=None, zorder=None, ax=None, vary_color=False,
         vary_linewidth=False, cmap=None, norm=None, suppress_warnings=False,
         _check_kwargs=True, **kwargs):
-    """Plot a vector field in the phase plane.
+    """Plot streamlines in the phase plane.
 
-    This function plots a vector field for a two-dimensional state
-    space system.
+    This function plots the streamlines for a two-dimensional state
+    space system using the `matplotlib.axes.Axes.streamplot` function.
 
     Parameters
     ----------
@@ -376,9 +402,7 @@ def streamplot(
         `params` keyword.
     pointdata : list or 2D array
         List of the form [xmin, xmax, ymin, ymax] describing the
-        boundaries of the phase plot or an array of shape (N, 2)
-        giving points from which to make the streamplot. In the latter case,
-        the points lie on a grid like that generated by `meshgrid`.
+        boundaries of the phase plot.
     gridspec : list, optional
         Specifies the size of the grid in the x and y axes on which to
         generate points.
@@ -396,6 +420,9 @@ def streamplot(
         Colormap to use for varying the color of the streamlines.
     norm : `matplotlib.colors.Normalize`, optional
         An instance of Normalize to use for scaling the colormap and linewidths.
+    zorder : float, optional
+        Set the zorder for the separatrices.  In not specified, it will be
+        automatically chosen by `matplotlib.axes.Axes.streamplot`.
     ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
@@ -423,15 +450,6 @@ def streamplot(
 
     # Determine the points on which to generate the streamplot field
     points, gridspec = _make_points(pointdata, gridspec, 'meshgrid')
-
-    # attempt to recover the grid by counting the jumps in xvals
-    if gridspec is None:
-        nrows = np.sum(np.diff(points[:, 0]) < 0) + 1
-        ncols = points.shape[0] // nrows
-        if nrows * ncols != points.shape[0]:
-            raise ValueError("Could not recover grid from points.")
-        gridspec = [nrows, ncols]
-
     grid_arr_shape = gridspec[::-1]
     xs, ys = points[:, 0].reshape(grid_arr_shape), points[:, 1].reshape(grid_arr_shape)
 
@@ -465,13 +483,15 @@ def streamplot(
         linewidths = normalized * (max_lw - min_lw) + min_lw if vary_linewidth else None
         color = magnitudes if vary_color else color
 
-        out = ax.streamplot(xs, ys, us, vs, color=color, linewidth=linewidths, cmap=cmap, norm=norm)
+        out = ax.streamplot(xs, ys, us, vs, color=color, linewidth=linewidths,
+                            cmap=cmap, norm=norm, zorder=zorder)
 
     return out
 
 def streamlines(
         sys, pointdata, timedata=1, gridspec=None, gridtype=None, dir=None,
-        ax=None, _check_kwargs=True, suppress_warnings=False, **kwargs):
+        zorder=None, ax=None, _check_kwargs=True, suppress_warnings=False,
+        **kwargs):
     """Plot stream lines in the phase plane.
 
     This function plots stream lines for a two-dimensional state space
@@ -513,6 +533,9 @@ def streamlines(
         dict with key 'args' and value given by a tuple (passed to callable).
     color : str
         Plot the streamlines in the given color.
+    zorder : float, optional
+        Set the zorder for the separatrices.  In not specified, it will be
+        automatically chosen by `matplotlib.axes.Axes.plot`.
     ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
@@ -591,7 +614,7 @@ def streamlines(
         # Plot the trajectory (if there is one)
         if traj.shape[1] > 1:
             with plt.rc_context(rcParams):
-                out += ax.plot(traj[0], traj[1], color=color)
+                out += ax.plot(traj[0], traj[1], color=color, zorder=zorder)
 
                 # Add arrows to the lines at specified intervals
                 _add_arrows_to_line2D(
@@ -600,7 +623,7 @@ def streamlines(
 
 
 def equilpoints(
-        sys, pointdata, gridspec=None, color='k', ax=None,
+        sys, pointdata, gridspec=None, color='k', zorder=None, ax=None,
         _check_kwargs=True, **kwargs):
     """Plot equilibrium points in the phase plane.
 
@@ -634,6 +657,9 @@ def equilpoints(
         dict with key 'args' and value given by a tuple (passed to callable).
     color : str
         Plot the equilibrium points in the given color.
+    zorder : float, optional
+        Set the zorder for the separatrices.  In not specified, it will be
+        automatically chosen by `matplotlib.axes.Axes.plot`.
     ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
@@ -679,12 +705,12 @@ def equilpoints(
     out = []
     for xeq in equilpts:
         with plt.rc_context(rcParams):
-            out += ax.plot(xeq[0], xeq[1], marker='o', color=color)
+            out += ax.plot(xeq[0], xeq[1], marker='o', color=color, zorder=zorder)
     return out
 
 
 def separatrices(
-        sys, pointdata, timedata=None, gridspec=None, ax=None,
+        sys, pointdata, timedata=None, gridspec=None, zorder=None, ax=None,
         _check_kwargs=True, suppress_warnings=False, **kwargs):
     """Plot separatrices in the phase plane.
 
@@ -726,6 +752,9 @@ def separatrices(
         separatrices.  If a tuple is given, the first element is used as
         the color specification for stable separatrices and the second
         element for unstable separatrices.
+    zorder : float, optional
+        Set the zorder for the separatrices.  In not specified, it will be
+        automatically chosen by `matplotlib.axes.Axes.plot`.
     ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
@@ -802,7 +831,7 @@ def separatrices(
     for i, xeq in enumerate(equilpts):
         # Plot the equilibrium points
         with plt.rc_context(rcParams):
-            out += ax.plot(xeq[0], xeq[1], marker='o', color='k')
+            out += ax.plot(xeq[0], xeq[1], marker='o', color='k', zorder=zorder)
 
         # Figure out the linearization and eigenvectors
         evals, evecs = np.linalg.eig(sys.linearize(xeq, 0, params=params).A)
@@ -844,7 +873,7 @@ def separatrices(
                 if traj.shape[1] > 1:
                     with plt.rc_context(rcParams):
                         out += ax.plot(
-                            traj[0], traj[1], color=color, linestyle=linestyle)
+                            traj[0], traj[1], color=color, linestyle=linestyle, zorder=zorder)
 
                     # Add arrows to the lines at specified intervals
                     with plt.rc_context(rcParams):
