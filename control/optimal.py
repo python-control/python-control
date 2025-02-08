@@ -35,6 +35,7 @@ import scipy.optimize as opt
 import control as ct
 
 from . import config
+from .config import _process_param, _process_kwargs
 from .iosys import _process_control_disturbance_indices, _process_labels
 
 # Define module default parameter values
@@ -1722,17 +1723,17 @@ class OptimalEstimationProblem():
     # Optimal estimate computations
     #
     def compute_estimate(
-            self, Y, U, X0=None, initial_guess=None,
-            squeeze=None, print_summary=True):
+            self, outputs=None, inputs=None, initial_state=None,
+            initial_guess=None, squeeze=None, print_summary=True, **kwargs):
         """Compute the optimal input at state x.
 
         Parameters
         ----------
-        Y : 2D array
+        outputs (or Y) : 2D array
             Measured outputs at each time point.
-        U : 2D array
+        inputs (or U) : 2D array
             Applied inputs at each time point.
-        X0 : 1D array
+        initial_state (or X0) : 1D array
             Expected initial value of the state.
         initial_guess : 2-tuple of 2D arrays
             A 2-tuple consisting of the estimated states and disturbance
@@ -1762,6 +1763,20 @@ class OptimalEstimationProblem():
             Estimated measurement noise for the system trajectory.
 
         """
+        # Argument and keyword processing
+        aliases = {
+            'outputs': (['Y'], []),
+            'inputs': (['U'], []),
+            'initial_state': (['X0'], []),
+        }
+        _process_kwargs(kwargs, aliases)
+        Y = _process_param('outputs', outputs, kwargs, aliases)
+        U = _process_param('inputs', inputs, kwargs, aliases)
+        X0 = _process_param('initial_state', initial_state, kwargs, aliases)
+
+        if kwargs:
+            raise TypeError("unrecognized keyword(s): ", str(kwargs))
+
         # Store the inputs and outputs (for use in _constraint_function)
         self.u = np.atleast_1d(U).reshape(-1, self.timepts.size)
         self.y = np.atleast_1d(Y).reshape(-1, self.timepts.size)
@@ -1912,7 +1927,7 @@ class OptimalEstimationProblem():
 
             # Compute the new states and disturbances
             est = self.compute_estimate(
-                Y, U, X0=xhat[:, 0], initial_guess=(xhat, V),
+                Y, U, initial_state=xhat[:, 0], initial_guess=(xhat, V),
                 print_summary=False)
 
             # Restack the new state
@@ -2021,8 +2036,8 @@ class OptimalEstimationResult(sp.optimize.OptimizeResult):
 
 # Compute the finite horizon estimate for a nonlinear system
 def solve_optimal_estimate(
-        sys, timepts, Y, U, trajectory_cost, X0=None,
-        trajectory_constraints=None, initial_guess=None,
+        sys, timepts, outputs=None, inputs=None, trajectory_cost=None,
+        initial_state=None, trajectory_constraints=None, initial_guess=None,
         squeeze=None, print_summary=True, **kwargs):
 
     """Compute the solution to a finite horizon estimation problem.
@@ -2038,12 +2053,14 @@ def solve_optimal_estimate(
         I/O system for which the optimal input will be computed.
     timepts : 1D array_like
         List of times at which the optimal input should be computed.
-    Y, U : 2D array_like
-        Values of the outputs and inputs at each time point.
+    outputs (or Y) : 2D array_like
+        Values of the outputs at each time point.
+    inputs (or U) : 2D array_like
+        Values of the inputs at each time point.
     trajectory_cost : callable
         Function that returns the cost given the current state
         and input.  Called as ``cost(y, u, x0)``.
-    X0 : 1D array_like, optional
+    initial_state (or X0) : 1D array_like, optional
         Mean value of the initial condition (defaults to 0).
     trajectory_constraints : list of tuples, optional
         List of constraints that should hold at each point in the time
@@ -2094,6 +2111,17 @@ def solve_optimal_estimate(
     `OptimalControlProblem` for more information.
 
     """
+    # Argument and keyword processing
+    aliases = {
+        'outputs': (['Y'], []),
+        'inputs': (['U'], []),
+        'initial_state': (['X0'], []),
+    }
+    _process_kwargs(kwargs, aliases)
+    Y = _process_param('outputs', outputs, kwargs, aliases)
+    U = _process_param('inputs', inputs, kwargs, aliases)
+    X0 = _process_param('initial_state', initial_state, kwargs, aliases)
+
     # Set up the optimal control problem
     oep = OptimalEstimationProblem(
         sys, timepts, trajectory_cost,
@@ -2101,7 +2129,7 @@ def solve_optimal_estimate(
 
     # Solve for the optimal input from the current state
     return oep.compute_estimate(
-        Y, U, X0=X0, initial_guess=initial_guess,
+        Y, U, initial_state=X0, initial_guess=initial_guess,
         squeeze=squeeze, print_summary=print_summary)
 
 

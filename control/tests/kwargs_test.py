@@ -30,6 +30,7 @@ import control.tests.statesp_test as statesp_test
 import control.tests.statefbk_test as statefbk_test
 import control.tests.stochsys_test as stochsys_test
 import control.tests.timeplot_test as timeplot_test
+import control.tests.timeresp_test as timeresp_test
 import control.tests.trdata_test as trdata_test
 
 
@@ -260,9 +261,12 @@ kwarg_unittest = {
     'find_eqpt': iosys_test.test_find_operating_point,
     'find_operating_point': iosys_test.test_find_operating_point,
     'flatsys.flatsys': test_unrecognized_kwargs,
+    'forced_response': timeresp_test.test_timeresp_aliases,
     'frd': frd_test.TestFRD.test_unrecognized_keyword,
     'gangof4': test_matplotlib_kwargs,
     'gangof4_plot': test_matplotlib_kwargs,
+    'impulse_response': timeresp_test.test_timeresp_aliases,
+    'initial_response': timeresp_test.test_timeresp_aliases,
     'input_output_response': test_unrecognized_kwargs,
     'interconnect': interconnect_test.test_interconnect_exceptions,
     'time_response_plot': timeplot_test.test_errors,
@@ -294,6 +298,8 @@ kwarg_unittest = {
     'set_defaults': test_unrecognized_kwargs,
     'singular_values_plot': test_matplotlib_kwargs,
     'ss': test_unrecognized_kwargs,
+    'step_info': timeresp_test.test_timeresp_aliases,
+    'step_response': timeresp_test.test_timeresp_aliases,
     'LTI.to_ss': test_unrecognized_kwargs,          # tested via 'ss'
     'ss2io': test_unrecognized_kwargs,
     'ss2tf': test_unrecognized_kwargs,
@@ -342,6 +348,7 @@ kwarg_unittest = {
     'NonlinearIOSystem.__init__':
         interconnect_test.test_interconnect_exceptions,
     'StateSpace.__init__': test_unrecognized_kwargs,
+    'StateSpace.initial_response': timeresp_test.test_timeresp_aliases,
     'StateSpace.sample': test_unrecognized_kwargs,
     'TimeResponseData.__call__': trdata_test.test_response_copy,
     'TimeResponseData.plot': timeplot_test.test_errors,
@@ -356,6 +363,8 @@ kwarg_unittest = {
         optimal_test.test_ocp_argument_errors,
     'optimal.OptimalEstimationProblem.__init__':
         optimal_test.test_oep_argument_errors,
+    'optimal.OptimalEstimationProblem.compute_estimate':
+        stochsys_test.test_oep,
     'optimal.OptimalEstimationProblem.create_mhe_iosystem':
         optimal_test.test_oep_argument_errors,
     'phaseplot.streamlines': test_matplotlib_kwargs,

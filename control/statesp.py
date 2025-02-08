@@ -1525,7 +1525,7 @@ class StateSpace(NonlinearIOSystem, LTI):
             return (self.C @ x).reshape((-1,)) \
                 + (self.D @ u).reshape((-1,))  # return as row vector
 
-    # convenience alias, import needs to go over the submodule to avoid circular imports
+    # convenience alias, import needs submodule to avoid circular imports
     initial_response = control.timeresp.initial_response
 
 

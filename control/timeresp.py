@@ -45,6 +45,7 @@ from numpy import einsum, maximum, minimum
 from scipy.linalg import eig, eigvals, matrix_balance, norm
 
 from . import config
+from . config import _process_kwargs, _process_param
 from .exception import pandas_check
 from .iosys import NamedSignal, isctime, isdtime
 from .timeplot import time_response_plot
@@ -197,7 +198,7 @@ class TimeResponseData:
     names of the appropriate signals::
 
       sys = ct.rss(4, 2, 1)
-      resp = ct.initial_response(sys, X0=[1, 1, 1, 1])
+      resp = ct.initial_response(sys, initial_state=[1, 1, 1, 1])
       plt.plot(resp.time, resp.outputs['y[0]'])
 
     In the case of multi-trace data, the responses should be indexed using
@@ -738,6 +739,19 @@ class TimeResponseList(list):
                         lines[row, col] += cplt.lines[row, col]
         return ControlPlot(lines, cplt.axes, cplt.figure)
 
+# Dictionary of aliases for time response commands
+_timeresp_aliases = {
+    # param:            ([alias, ...], [legacy, ...])
+    'timepts':          (['T'],        []),
+    'inputs':           (['U'],        ['u']),
+    'initial_state':    (['X0'],       ['x0']),
+    'final_output':     (['yfinal'],   []),
+    'return_states':    (['return_x'], []),
+    'evaluation_times': (['t_eval'],   []),
+    'timepts_num':      (['T_num'],    []),
+    'input_indices':    (['input'],    []),
+    'output_indices':   (['output'],   []),
+}
 
 # Process signal labels
 def _process_labels(labels, signal, length):
@@ -900,8 +914,10 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
 
 
 # Forced response of a linear system
-def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
-                    interpolate=False, return_x=None, squeeze=None):
+def forced_response(
+        sysdata, timepts=None, inputs=0., initial_state=0., transpose=False,
+        params=None, interpolate=False, return_states=None, squeeze=None,
+        **kwargs):
     """Compute the output of a linear system given the input.
 
     As a convenience for parameters `U`, `X0`: Numbers (scalars) are
@@ -915,46 +931,36 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
     ----------
     sysdata : I/O system or list of I/O systems
         I/O system(s) for which forced response is computed.
-
-    T : array_like, optional for discrete LTI `sys`
+    timepts (or T) : array_like, optional for discrete LTI `sys`
         Time steps at which the input is defined; values must be evenly
-        spaced.  If None, `U` must be given and ``len(U)`` time steps of
-        sys.dt are simulated. If sys.dt is None or True (undetermined
-        time step), a time step of 1.0 is assumed.
-
-    U : array_like or float, optional
-        Input array giving input at each time `T`.  If `U` is None or 0,
-        `T` must be given, even for discrete-time systems. In this case,
-        for continuous-time systems, a direct calculation of the matrix
-        exponential is used, which is faster than the general interpolating
-        algorithm used otherwise.
-
-    X0 : array_like or float, default=0.
+        spaced.  If None, `inputs` must be given and ``len(inputs)`` time
+        steps of `sys.dt` are simulated. If `sys.dt` is None or True
+        (undetermined time step), a time step of 1.0 is assumed.
+    inputs (or U) : array_like or float, optional
+        Input array giving input at each time in `timepts`.  If `inputs` is
+        None or 0, `timepts` must be given, even for discrete-time
+        systems. In this case, for continuous-time systems, a direct
+        calculation of the matrix exponential is used, which is faster than
+        the general interpolating algorithm used otherwise.
+    initial_state (or X0) : array_like or float, default=0.
         Initial condition.
-
     params : dict, optional
         If system is a nonlinear I/O system, set parameter values.
-
     transpose : bool, default=False
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and `scipy.signal.lsim`).
-
     interpolate : bool, default=False
         If True and system is a discrete-time system, the input will
         be interpolated between the given time steps and the output
         will be given at system sampling rate.  Otherwise, only return
         the output at the times given in `T`.  No effect on continuous
         time simulations.
-
-    return_x : bool, default=None
-        Used if the time response data is assigned to a tuple:
-
-            * If False, return only the time and output vectors.
-            * If True, also return the the state vector.
-            * If None, determine the returned variables by
-              `config.defaults['forced_response.return_x']`, which was True
-              before version 0.9 and is False since then.
-
+    return_states (or return_x) : bool, default=None
+        Used if the time response data is assigned to a tuple.  If False,
+        return only the time and output vectors.  If True, also return the
+        the state vector.  If None, determine the returned variables by
+        `config.defaults['forced_response.return_x']`, which was True
+        before version 0.9 and is False since then.
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then
         the output response is returned as a 1D array (indexed by time).
@@ -1027,13 +1033,26 @@ def forced_response(sysdata, T=None, U=0., X0=0., transpose=False, params=None,
     from .statesp import StateSpace, _convert_to_statespace
     from .xferfcn import TransferFunction
 
+    # Process keyword arguments
+    _process_kwargs(kwargs, _timeresp_aliases)
+    T = _process_param('timepts', timepts, kwargs, _timeresp_aliases)
+    U = _process_param('inputs', inputs, kwargs, _timeresp_aliases, sigval=0.)
+    X0 = _process_param(
+        'initial_state', initial_state, kwargs, _timeresp_aliases, sigval=0.)
+    return_x = _process_param(
+        'return_states', return_states, kwargs, _timeresp_aliases, sigval=None)
+
+    if kwargs:
+        raise TypeError("unrecognized keyword(s): ", str(kwargs))
+
     # If passed a list, recursively call individual responses with given T
     if isinstance(sysdata, (list, tuple)):
         responses = []
         for sys in sysdata:
             responses.append(forced_response(
-                sys, T, U=U, X0=X0, transpose=transpose, params=params,
-                interpolate=interpolate, return_x=return_x, squeeze=squeeze))
+                sys, T, inputs=U, initial_state=X0, transpose=transpose,
+                params=params, interpolate=interpolate,
+                return_states=return_x, squeeze=squeeze))
         return TimeResponseList(responses)
     else:
         sys = sysdata
@@ -1309,8 +1328,9 @@ def _process_time_response(
 
 
 def step_response(
-        sysdata, T=None, X0=0, input=None, output=None, T_num=None,
-        transpose=False, return_x=False, squeeze=None, params=None):
+        sysdata, timepts=None, initial_state=0., input_indices=None,
+        output_indices=None, timepts_num=None, transpose=False,
+        return_states=False, squeeze=None, params=None, **kwargs):
     # pylint: disable=W0622
     """Compute the step response for a linear system.
 
@@ -1327,8 +1347,7 @@ def step_response(
     ----------
     sysdata : I/O system or list of I/O systems
         I/O system(s) for which step response is computed.
-
-    T : array_like or float, optional
+    timepts (or T) : array_like or float, optional
         Time vector, or simulation time duration if a number. If `T` is not
         provided, an attempt is made to create it automatically from the
         dynamics of the system. If the system continuous time, the time
@@ -1338,37 +1357,29 @@ def step_response(
         this results in too many time steps (>5000), dt is reduced. If the
         system is discrete time, only tfinal is computed, and final is
         reduced if it requires too many simulation steps.
-
-    X0 : array_like or float, optional
+    initial_state (or X0) : array_like or float, optional
         Initial condition (default = 0).  This can be used for a nonlinear
         system where the origin is not an equilibrium point.
-
-    input : int, optional
+    input_indices (or input) : int or list of int, optional
         Only compute the step response for the listed input.  If not
         specified, the step responses for each independent input are
         computed (as separate traces).
-
-    output : int, optional
+    output_indices (or output) : int, optional
         Only report the step response for the listed output.  If not
         specified, all outputs are reported.
-
     params : dict, optional
         If system is a nonlinear I/O system, set parameter values.
-
-    T_num : int, optional
+    timepts_num (or T_num) : int, optional
         Number of time steps to use in simulation if `T` is not provided as
         an array (auto-computed if not given); ignored if the system is
         discrete time.
-
     transpose : bool, optional
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and `scipy.signal.lsim`).  Default
         value is False.
-
-    return_x : bool, optional
+    return_states (or return_x) : bool, optional
         If True, return the state vector when assigning to a tuple
         (default = False).  See `forced_response` for more details.
-
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then
         the output response is returned as a 1D array (indexed by time).
@@ -1405,6 +1416,23 @@ def step_response(
     from .statesp import _convert_to_statespace
     from .xferfcn import TransferFunction
 
+    # Process keyword arguments
+    _process_kwargs(kwargs, _timeresp_aliases)
+    T = _process_param('timepts', timepts, kwargs, _timeresp_aliases)
+    X0 = _process_param(
+        'initial_state', initial_state, kwargs, _timeresp_aliases, sigval=0.)
+    input = _process_param(
+        'input_indices', input_indices, kwargs, _timeresp_aliases)
+    output = _process_param(
+        'output_indices', output_indices, kwargs, _timeresp_aliases)
+    return_x = _process_param(
+        'return_states', return_states, kwargs, _timeresp_aliases, sigval=False)
+    T_num = _process_param(
+        'timepts_num', timepts_num, kwargs, _timeresp_aliases)
+
+    if kwargs:
+        raise TypeError("unrecognized keyword(s): ", str(kwargs))
+
     # Create the time and input vectors
     if T is None or np.asarray(T).size == 1:
         T = _default_time_vector(sysdata, N=T_num, tfinal=T, is_step=True)
@@ -1417,8 +1445,9 @@ def step_response(
         responses = []
         for sys in sysdata:
             responses.append(step_response(
-                sys, T, X0=X0, input=input, output=output, T_num=T_num,
-                transpose=transpose, return_x=return_x, squeeze=squeeze,
+                sys, T, initial_state=X0, input_indices=input,
+                output_indices=output, timepts_num=T_num,
+                transpose=transpose, return_states=return_x, squeeze=squeeze,
                 params=params))
         return TimeResponseList(responses)
     else:
@@ -1434,6 +1463,21 @@ def step_response(
     # Convert to state space so that we can simulate
     if isinstance(sys, LTI) and sys.nstates is None:
         sys = _convert_to_statespace(sys)
+
+    # Only single input and output are allowed for now
+    if isinstance(input, (list, tuple)):
+        if len(input_indices) > 1:
+            raise NotImplementedError("list of input indices not allowed")
+        input = input[0]
+    elif isinstance(input, str):
+        raise NotImplementedError("named inputs not allowed")
+
+    if isinstance(output, (list, tuple)):
+        if len(output_indices) > 1:
+            raise NotImplementedError("list of output indices not allowed")
+        output = output[0]
+    elif isinstance(output, str):
+        raise NotImplementedError("named outputs not allowed")
 
     # Set up arrays to handle the output
     ninputs = sys.ninputs if input is None else 1
@@ -1482,8 +1526,10 @@ def step_response(
         trace_types=trace_types, plot_inputs=False)
 
 
-def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
-              SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1, 0.9)):
+def step_info(
+        sysdata, timepts=None, timepts_num=None, final_output=None,
+        params=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1, 0.9),
+        **kwargs):
     """Step response characteristics (rise time, settling time, etc).
 
     Parameters
@@ -1491,15 +1537,15 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
     sysdata : `StateSpace` or `TransferFunction` or array_like
         The system data. Either LTI system to simulate (`StateSpace`,
         `TransferFunction`), or a time series of step response data.
-    T : array_like or float, optional
+    timepts (or T) : array_like or float, optional
         Time vector, or simulation time duration if a number (time vector is
         auto-computed if not given, see `step_response` for more detail).
         Required, if sysdata is a time series of response data.
-    T_num : int, optional
+    timepts_num (or T_num) : int, optional
         Number of time steps to use in simulation if `T` is not provided as
         an array; auto-computed if not given; ignored if sysdata is a
         discrete-time system or a time series or response data.
-    yfinal : scalar or array_like, optional
+    final_output (or yfinal) : scalar or array_like, optional
         Steady-state response. If not given, sysdata.dcgain() is used for
         systems to simulate and the last value of the the response data is
         used for a given time series of response data. Scalar for SISO,
@@ -1580,6 +1626,17 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
     from .nlsys import NonlinearIOSystem
     from .statesp import StateSpace
     from .xferfcn import TransferFunction
+
+    # Process keyword arguments
+    _process_kwargs(kwargs, _timeresp_aliases)
+    T = _process_param('timepts', timepts, kwargs, _timeresp_aliases)
+    yfinal = _process_param(
+        'final_output', final_output, kwargs, _timeresp_aliases)
+    T_num = _process_param(
+        'timepts_num', timepts_num, kwargs, _timeresp_aliases)
+
+    if kwargs:
+        raise TypeError("unrecognized keyword(s): ", str(kwargs))
 
     if isinstance(sysdata, (StateSpace, TransferFunction, NonlinearIOSystem)):
         T, Yout = step_response(sysdata, T, squeeze=False, params=params)
@@ -1700,8 +1757,9 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None, params=None,
 
 
 def initial_response(
-        sysdata, T=None, X0=0, output=None, T_num=None, params=None,
-        transpose=False, return_x=False, squeeze=None):
+        sysdata, timepts=None, initial_state=0, output_indices=None,
+        timepts_num=None, params=None, transpose=False, return_states=False,
+        squeeze=None, **kwargs):
     # pylint: disable=W0622
     """Compute the initial condition response for a linear system.
 
@@ -1716,39 +1774,28 @@ def initial_response(
     ----------
     sysdata : I/O system or list of I/O systems
         I/O system(s) for which initial response is computed.
-
-    sys : `StateSpace` or `TransferFunction`
-        LTI system to simulate.
-
-    T :  array_like or float, optional
+    timepts (or T) :  array_like or float, optional
         Time vector, or simulation time duration if a number (time vector is
         auto-computed if not given; see  `step_response` for more detail).
-
-    X0 : array_like or float, optional
+    initial_state (or X0) : array_like or float, optional
         Initial condition (default = 0).  Numbers are converted to constant
         arrays with the correct shape.
-
-    output : int
+    output_indices (or output) : int
         Index of the output that will be used in this simulation. Set
         to None to not trim outputs.
-
-    T_num : int, optional
-        Number of time steps to use in simulation if `T` is not provided as
-        an array (auto-computed if not given); ignored if the system is
-        discrete time.
-
+    timepts_num (or T_num) : int, optional
+        Number of time steps to use in simulation if `timepts` is not
+        provided as an array (auto-computed if not given); ignored if the
+        system is discrete time.
     params : dict, optional
         If system is a nonlinear I/O system, set parameter values.
-
     transpose : bool, optional
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and `scipy.signal.lsim`).  Default
         value is False.
-
-    return_x : bool, optional
+    return_states (or return_x) : bool, optional
         If True, return the state vector when assigning to a tuple
         (default = False).  See `forced_response` for more details.
-
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then
         the output response is returned as a 1D array (indexed by time).
@@ -1781,6 +1828,21 @@ def initial_response(
     >>> T, yout = ct.initial_response(G)
 
     """
+    # Process keyword arguments
+    _process_kwargs(kwargs, _timeresp_aliases)
+    T = _process_param('timepts', timepts, kwargs, _timeresp_aliases)
+    X0 = _process_param(
+        'initial_state', initial_state, kwargs, _timeresp_aliases, sigval=0.)
+    output = _process_param(
+        'output_indices', output_indices, kwargs, _timeresp_aliases)
+    return_x = _process_param(
+        'return_states', return_states, kwargs, _timeresp_aliases, sigval=False)
+    T_num = _process_param(
+        'timepts_num', timepts_num, kwargs, _timeresp_aliases)
+
+    if kwargs:
+        raise TypeError("unrecognized keyword(s): ", str(kwargs))
+
     # Create the time and input vectors
     if T is None or np.asarray(T).size == 1:
         T = _default_time_vector(sysdata, N=T_num, tfinal=T, is_step=False)
@@ -1793,8 +1855,9 @@ def initial_response(
         responses = []
         for sys in sysdata:
             responses.append(initial_response(
-                sys, T, X0=X0, output=output, T_num=T_num, transpose=transpose,
-                return_x=return_x, squeeze=squeeze, params=params))
+                sys, T, initial_state=X0, output_indices=output,
+                timepts_num=T_num, transpose=transpose,
+                return_states=return_x, squeeze=squeeze, params=params))
         return TimeResponseList(responses)
     else:
         sys = sysdata
@@ -1820,8 +1883,9 @@ def initial_response(
 
 
 def impulse_response(
-        sysdata, T=None, input=None, output=None, T_num=None,
-        transpose=False, return_x=False, squeeze=None):
+        sysdata, timepts=None, input_indices=None, output_indices=None,
+        timepts_num=None, transpose=False, return_states=False, squeeze=None,
+        **kwargs):
     # pylint: disable=W0622
     """Compute the impulse response for a linear system.
 
@@ -1838,34 +1902,27 @@ def impulse_response(
     ----------
     sysdata : I/O system or list of I/O systems
         I/O system(s) for which impulse response is computed.
-
-    T : array_like or float, optional
+    timepts (or T) : array_like or float, optional
         Time vector, or simulation time duration if a scalar (time vector is
         auto-computed if not given; see `step_response` for more detail).
-
-    input : int, optional
+    input_indices (or input) : int, optional
         Only compute the impulse response for the listed input.  If not
         specified, the impulse responses for each independent input are
         computed.
-
-    output : int, optional
+    output_indices (or output) : int, optional
         Only report the step response for the listed output.  If not
         specified, all outputs are reported.
-
-    T_num : int, optional
+    timepts_num (or T_num) : int, optional
         Number of time steps to use in simulation if `T` is not provided as
         an array (auto-computed if not given); ignored if the system is
         discrete time.
-
     transpose : bool, optional
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and `scipy.signal.lsim`).  Default
         value is False.
-
-    return_x : bool, optional
+    return_states (or return_x) : bool, optional
         If True, return the state vector when assigning to a tuple
         (default = False).  See `forced_response` for more details.
-
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then
         the output response is returned as a 1D array (indexed by time).
@@ -1904,6 +1961,21 @@ def impulse_response(
     from .lti import LTI
     from .statesp import _convert_to_statespace
 
+    # Process keyword arguments
+    _process_kwargs(kwargs, _timeresp_aliases)
+    T = _process_param('timepts', timepts, kwargs, _timeresp_aliases)
+    input = _process_param(
+        'input_indices', input_indices, kwargs, _timeresp_aliases)
+    output = _process_param(
+        'output_indices', output_indices, kwargs, _timeresp_aliases)
+    return_x = _process_param(
+        'return_states', return_states, kwargs, _timeresp_aliases, sigval=False)
+    T_num = _process_param(
+        'timepts_num', timepts_num, kwargs, _timeresp_aliases)
+
+    if kwargs:
+        raise TypeError("unrecognized keyword(s): ", str(kwargs))
+
     # Create the time and input vectors
     if T is None or np.asarray(T).size == 1:
         T = _default_time_vector(sysdata, N=T_num, tfinal=T, is_step=False)
@@ -1937,6 +2009,20 @@ def impulse_response(
                       "output.\n"
                       "Results may be meaningless!")
 
+    # Only single input and output are allowed for now
+    if isinstance(input, (list, tuple)):
+        if len(input_indices) > 1:
+            raise NotImplementedError("list of input indices not allowed")
+        input = input[0]
+    elif isinstance(input, str):
+        raise NotImplementedError("named inputs not allowed")
+
+    if isinstance(output, (list, tuple)):
+        if len(output_indices) > 1:
+            raise NotImplementedError("list of output indices not allowed")
+        output = output[0]
+    elif isinstance(output, str):
+        raise NotImplementedError("named outputs not allowed")
 
     # Set up arrays to handle the output
     ninputs = sys.ninputs if input is None else 1

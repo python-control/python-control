@@ -384,6 +384,9 @@ def use_legacy_defaults(version):
 def _process_legacy_keyword(kwargs, oldkey, newkey, newval, warn_oldkey=True):
     """Utility function for processing legacy keywords.
 
+    .. deprecated:: 0.10.2
+        Replace with `_process_param` or `_process_kwargs`.
+
     Use this function to handle a legacy keyword that has been renamed.
     This function pops the old keyword off of the kwargs dictionary and
     issues a warning.  If both the old and new keyword are present, a
@@ -412,6 +415,9 @@ def _process_legacy_keyword(kwargs, oldkey, newkey, newval, warn_oldkey=True):
         Value of the (new) keyword.
 
     """
+    warnings.warn(
+        "replace `_process_legacy_keyword` with `_process_param` "
+        "or `_process_kwargs`", PendingDeprecationWarning)
     if oldkey in kwargs:
         if warn_oldkey:
             warnings.warn(
@@ -424,3 +430,144 @@ def _process_legacy_keyword(kwargs, oldkey, newkey, newval, warn_oldkey=True):
             return kwargs.pop(oldkey)
     else:
         return newval
+
+
+def _process_param(name, defval, kwargs, alias_mapping, sigval=None):
+    """Process named parameter, checking aliases and legacy usage.
+
+    Helper function to process function arguments by mapping aliases to
+    either their default keywords or to a named argument.  The alias
+    mapping is a dictionary that returns a tuple consisting of valid
+    aliases and legacy aliases::
+
+       alias_mapping = {
+            'argument_name_1', (['alias', ...], ['legacy', ...]),
+            ...}
+
+    If `param` is a named keyword in the function signature with default
+    value `defval`, a typical calling sequence at the start of a function
+    is::
+
+        param = _process_param('param', defval, kwargs, function_aliases)
+
+    If `param` is a variable keyword argument (in `kwargs`), `defval` can
+    be pssed as either None or the default value to use if `param` is not
+    present in `kwargs`.
+
+    Parameters
+    ----------
+    name : str
+        Name of the parameter to be checked.
+    defval : object or dict
+        Default value for the parameter.
+    kwargs : dict
+        Dictionary of varaible keyword arguments.
+    alias_mapping : dict
+        Dictionary providing aliases and legacy names.
+    sigval : object, optional
+        Default value specified in the function signature (default = None).
+        If specified, an error will be generated if `defval` is different
+        than `sigval` and an alias or legacy keyword is given.
+
+    Returns
+    -------
+    newval : object
+        New value of the named parameter.
+
+    Raises
+    ------
+    TypeError
+        If multiple keyword aliased are used for the same parameter.
+
+    Warns
+    -----
+    PendingDeprecationWarning
+        If legacy name is used to set the value for the variable.
+
+    """
+    # Check to see if the parameter is in the keyword list
+    if name in kwargs:
+        if defval != sigval:
+            raise TypeError(f"multiple values for parameter {name}")
+        newval = kwargs.pop(name)
+    else:
+        newval = defval
+
+    # Get the list of aliases and legacy names
+    aliases, legacy = alias_mapping[name]
+
+    for kw in legacy:
+        if kw in kwargs:
+            warnings.warn(
+                f"alias `{kw}` is legacy name; use `{name}` instead",
+                PendingDeprecationWarning)
+            kwval = kwargs.pop(kw)
+            if newval != defval and kwval != newval:
+                raise TypeError(
+                    f"multiple values for parameter `{name}` (via {kw})")
+            newval = kwval
+
+    for kw in aliases:
+        if kw in kwargs:
+            kwval = kwargs.pop(kw)
+            if newval != defval and kwval != newval:
+                raise TypeError(
+                    f"multiple values for parameter `{name}` (via {kw})")
+            newval = kwval
+
+    return newval
+
+
+def _process_kwargs(kwargs, alias_mapping):
+    """Process aliases and legacy keywords.
+
+    Helper function to process function arguments by mapping aliases to
+    their default keywords.  The alias mapping is a dictionary that returns
+    a tuple consisting of valid aliases and legacy aliases::
+
+       alias_mapping = {
+            'argument_name_1', (['alias', ...], ['legacy', ...]),
+            ...}
+
+    If an alias is present in the dictionary of keywords, it will be used
+    to set the value of the argument.  If a legacy keyword is used, a
+    warning is issued.
+
+    Parameters
+    ----------
+    kwargs : dict
+        Dictionary of variable keyword arguments.
+    alias_mapping : dict
+        Dictionary providing aliases and legacy names.
+
+    Raises
+    ------
+    TypeError
+        If multiple keyword aliased are used for the same parameter.
+
+    Warns
+    -----
+    PendingDeprecationWarning
+        If legacy name is used to set the value for the variable.
+
+    """
+    for name in alias_mapping or []:
+        aliases, legacy = alias_mapping[name]
+        newval = None
+
+        for kw in legacy:
+            if kw in kwargs:
+                warnings.warn(
+                    f"alias `{kw}` is legacy name; use `{name}` instead",
+                    PendingDeprecationWarning)
+                if name in kwargs:
+                    raise TypeError(
+                        f"multiple values for parameter `{name}` (via {kw})")
+                kwargs[name] = kwargs.pop(kw)
+
+        for kw in aliases:
+            if kw in kwargs:
+                if name in kwargs:
+                    raise TypeError(
+                        f"multiple values for parameter `{name}` (via {kw})")
+                kwargs[name] = kwargs.pop(kw)

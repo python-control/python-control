@@ -375,7 +375,8 @@ Given noisy measurements :math:`y` and control inputs :math:`u`, an
 estimate of the states over the time points can be computed using the
 :func:`~optimal.OptimalEstimationProblem.compute_estimate` method::
 
-  estim = oep.compute_optimal(Y, U[, X0=x0, initial_guess=(xhat, v)])
+  estim = oep.compute_optimal(
+      Y, U[, initial_state=x0, initial_guess=(xhat, v)])
   xhat, v, w = estim.states, estim.inputs, estim.outputs
 
 For discrete-time systems, the

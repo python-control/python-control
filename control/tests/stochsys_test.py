@@ -404,6 +404,10 @@ def test_oep(dt):
     np.testing.assert_allclose(
         est3.states[:, -1], res3.states[:, -1], atol=meas_mag, rtol=meas_mag)
 
+    # Make sure unknown keywords generate an error
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        est3 = oep1.compute_estimate(Y3, U, unknown=True)
+
 
 @pytest.mark.slow
 def test_mhe():
