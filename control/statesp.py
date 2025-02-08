@@ -229,6 +229,9 @@ class StateSpace(NonlinearIOSystem, LTI):
         self.C = C
         self.D = D
 
+        # Determine if the system is static (memoryless)
+        static = (A.size == 0)
+
         #
         # Process keyword arguments
         #
@@ -242,7 +245,7 @@ class StateSpace(NonlinearIOSystem, LTI):
             {'inputs': B.shape[1], 'outputs': C.shape[0],
              'states': A.shape[0]}
         name, inputs, outputs, states, dt = _process_iosys_keywords(
-            kwargs, defaults, static=(A.size == 0))
+            kwargs, defaults, static=static)
 
         # Create updfcn and outfcn
         updfcn = lambda t, x, u, params: \
@@ -257,7 +260,7 @@ class StateSpace(NonlinearIOSystem, LTI):
             states=states, dt=dt, **kwargs)
 
         # Reset shapes if the system is static
-        if self._isstatic():
+        if static:
             A.shape = (0, 0)
             B.shape = (0, self.ninputs)
             C.shape = (self.noutputs, 0)

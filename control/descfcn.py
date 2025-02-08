@@ -152,7 +152,7 @@ def describing_function(
     #
     # The describing function of a nonlinear function F() can be computed by
     # evaluating the nonlinearity over a sinusoid.  The Fourier series for a
-    # static nonlinear function evaluated on a sinusoid can be written as
+    # nonlinear function evaluated on a sinusoid can be written as
     #
     # F(A\sin\omega t) = \sum_{k=1}^\infty M_k(A) \sin(k\omega t + \phi_k(A))
     #
@@ -226,10 +226,10 @@ class DescribingFunctionResponse:
     """Results of describing function analysis.
 
     Describing functions allow analysis of a linear I/O systems with a
-    static nonlinear feedback function.  The DescribingFunctionResponse
-    class is used by the `describing_function_response`
-    function to return the results of a describing function analysis.  The
-    response object can be used to obtain information about the describing
+    nonlinear feedback function.  The DescribingFunctionResponse class
+    is used by the `describing_function_response` function to return
+    the results of a describing function analysis.  The response
+    object can be used to obtain information about the describing
     function analysis or generate a Nyquist plot showing the frequency
     response of the linear systems and the describing function for the
     nonlinear element.
@@ -283,16 +283,16 @@ def describing_function_response(
     """Compute the describing function response of a system.
 
     This function uses describing function analysis to analyze a closed
-    loop system consisting of a linear system with a static nonlinear
-    function in the feedback path.
+    loop system consisting of a linear system with a nonlinear function in
+    the feedback path.
 
     Parameters
     ----------
     H : LTI system
         Linear time-invariant (LTI) system (state space, transfer function,
         or FRD).
-    F : static nonlinear function
-        A static nonlinearity, either a scalar function or a single-input,
+    F : nonlinear function
+        Feedback nonlinearity, either a scalar function or a single-input,
         single-output, static input/output system.
     A : list
         List of amplitudes to be used for the describing function plot.
@@ -405,8 +405,7 @@ def describing_function_plot(
     Nyquist plot with describing function for a nonlinear system.
 
     This function generates a Nyquist plot for a closed loop system
-    consisting of a linear system with a static nonlinear function in the
-    feedback path.
+    consisting of a linear system with a nonlinearity in the feedback path.
 
     The function may be called in one of two forms:
 
@@ -426,9 +425,9 @@ def describing_function_plot(
     H : LTI system
         Linear time-invariant (LTI) system (state space, transfer function,
         or FRD).
-    F : static nonlinear function
-        A static nonlinearity, either a scalar function or a single-input,
-        single-output, static input/output system.
+    F : nonlinear function
+        Nonlinearity in the feedback path, either a scalar function or a
+        single-input, single-output, static input/output system.
     A : list
         List of amplitudes to be used for the describing function plot.
     omega : list, optional

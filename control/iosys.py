@@ -757,10 +757,6 @@ class InputOutputSystem():
         """Check to see if a system is single input, single output."""
         return self.ninputs == 1 and self.noutputs == 1
 
-    def _isstatic(self):
-        """Check to see if a system is a static system (no states)"""
-        return self.nstates == 0
-
 
 # Test to see if a system is SISO
 def issiso(sys, strict=False):

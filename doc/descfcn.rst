@@ -6,13 +6,20 @@ Describing Functions
 ====================
 
 For nonlinear systems consisting of a feedback connection between a
-linear system and a static nonlinearity, it is possible to obtain a
+linear system and a nonlinearity, it is possible to obtain a
 generalization of Nyquist's stability criterion based on the idea of
 describing functions.  The basic concept involves approximating the
-response of a static nonlinearity to an input :math:`u = A e^{j \omega
-t}` as an output :math:`y = N(A) (A e^{j \omega t})`, where :math:`N(A)
-\in \mathbb{C}` represents the (amplitude-dependent) gain and phase
+response of a nonlinearity to an input :math:`u = A e^{j \omega t}` as
+an output :math:`y = N(A) (A e^{j \omega t})`, where :math:`N(A) \in
+\mathbb{C}` represents the (amplitude-dependent) gain and phase
 associated with the nonlinearity.
+
+In the most common case, the nonlinearity will be a static,
+time-invariant nonlinear function :math:`y = h(u)`.  However,
+describing functions can be defined for nonlinear input/output systems
+that have some internal memory, such as hysteresis or backlash.  For
+simplicity, we take the nonlinearity to be static (memoryless) in the
+description below, unless otherwise specified.
 
 Stability analysis of a linear system :math:`H(s)` with a feedback
 nonlinearity :math:`F(x)` is done by looking for amplitudes :math:`A`

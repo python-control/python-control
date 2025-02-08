@@ -219,15 +219,22 @@ class TransferFunction(LTI):
             raise ValueError("display_format must be 'poly' or 'zpk',"
                              " got '%s'" % self.display_format)
 
-        # Determine if the transfer function is static (needed for dt)
+        #
+        # Determine if the transfer function is static (memoryless)
+        #
+        # True if and only if all of the numerator and denominator
+        # polynomials of the (MIMO) transfer function are zeroth order.
+        #
         static = True
         for arr in [num, den]:
+            # Iterate using refs_OK since num and den are ndarrays of ndarrays
             for poly_ in np.nditer(arr, flags=['refs_ok']):
                 if poly_.item().size > 1:
                     static = False
                     break
             if not static:
                 break
+        self._static = static           # retain for later usage
 
         defaults = args[0] if len(args) == 1 else \
             {'inputs': num.shape[1], 'outputs': num.shape[0]}
@@ -1283,16 +1290,9 @@ class TransferFunction(LTI):
         """
         return self._dcgain(warn_infinite)
 
+    # Determine if a system is static (memoryless)
     def _isstatic(self):
-        """returns True if and only if all of the numerator and denominator
-        polynomials of the (possibly MIMO) transfer function are zeroth order,
-        that is, if the system has no dynamics. """
-        for list_of_polys in self.num, self.den:
-            for row in list_of_polys:
-                for poly_ in row:
-                    if len(poly_) > 1:
-                        return False
-        return True
+        return self._static             # Check done at initialization
 
     # Attributes for differentiation and delay
     #
