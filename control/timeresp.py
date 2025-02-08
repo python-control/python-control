@@ -1632,8 +1632,6 @@ def step_info(
     T = _process_param('timepts', timepts, kwargs, _timeresp_aliases)
     yfinal = _process_param(
         'final_output', final_output, kwargs, _timeresp_aliases)
-    T_num = _process_param(
-        'timepts_num', timepts_num, kwargs, _timeresp_aliases)
 
     if kwargs:
         raise TypeError("unrecognized keyword(s): ", str(kwargs))

@@ -553,7 +553,6 @@ def _process_kwargs(kwargs, alias_mapping):
     """
     for name in alias_mapping or []:
         aliases, legacy = alias_mapping[name]
-        newval = None
 
         for kw in legacy:
             if kw in kwargs:

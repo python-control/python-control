@@ -2042,7 +2042,8 @@ def find_operating_point(
         'return_outputs': ([], ['return_y']),
     }
     _process_kwargs(kwargs, aliases)
-    x0 = _process_param('initial_state', initial_state, kwargs, aliases)
+    x0 = _process_param(
+        'initial_state', initial_state, kwargs, aliases, sigval=0.)
     u0 = _process_param('inputs', inputs, kwargs, aliases)
     y0 = _process_param('outputs', outputs, kwargs, aliases)
     dx0 = _process_param('derivs', derivs, kwargs, aliases)
