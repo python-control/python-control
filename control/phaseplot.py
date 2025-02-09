@@ -159,6 +159,21 @@ def phase_plane_plot(
         Set the title of the plot.  Defaults to plot type and system name(s).
 
     """
+    # Check for legacy usage of plot_streamlines
+    streamline_keywords = [
+        'arrows', 'arrow_size', 'arrow_style', 'color', 'dir', 'params']    
+    if plot_streamlines is None:
+        if any([kw in kwargs for kw in streamline_keywords]):
+            warnings.warn(
+                "detected streamline keywords; use plot_streamlines to set",
+                FutureWarning)
+            plot_streamlines = True
+        if gridtype not in [None, 'meshgrid']:
+            warnings.warn(
+                "streamplots only support gridtype='meshgrid'; "
+                "falling back to streamlines")
+            plot_streamlines = True
+
     if (
         plot_streamlines is None
         and plot_vectorfield is None
