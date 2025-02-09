@@ -829,10 +829,6 @@ def separatrices(
     # Plot separatrices by flowing backwards in time along eigenspaces
     out = []
     for i, xeq in enumerate(equilpts):
-        # Plot the equilibrium points
-        with plt.rc_context(rcParams):
-            out += ax.plot(xeq[0], xeq[1], marker='o', color='k', zorder=zorder)
-
         # Figure out the linearization and eigenvectors
         evals, evecs = np.linalg.eig(sys.linearize(xeq, 0, params=params).A)
 
