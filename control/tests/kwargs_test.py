@@ -13,7 +13,6 @@
 import inspect
 import warnings
 
-import matplotlib.pyplot as plt
 import pytest
 
 import control

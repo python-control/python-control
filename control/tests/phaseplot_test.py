@@ -19,7 +19,6 @@ import pytest
 import control as ct
 import control.phaseplot as pp
 from control import phase_plot
-from control.tests.conftest import mplcleanup
 
 
 # Legacy tests

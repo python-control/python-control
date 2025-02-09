@@ -18,7 +18,6 @@ import scipy
 
 import control as ct
 import control.flatsys as fs
-from control.tests.conftest import slycotonly
 
 class TestIOSys:
 

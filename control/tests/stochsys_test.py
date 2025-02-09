@@ -6,7 +6,7 @@ import pytest
 
 import control as ct
 import control.optimal as opt
-from control import lqe, dlqe, rss, drss, tf, ss, ControlArgument, slycot_check
+from control import lqe, dlqe, rss, tf, ControlArgument, slycot_check
 from math import log, pi
 
 # Utility function to check LQE answer
@@ -476,7 +476,6 @@ def test_indices(ctrl_indices, dist_indices):
     sysm = ct.ss(sys.A, sys.B[:, ctrl_idx], sys.C, sys.D[:, ctrl_idx])
 
     # Set the simulation time based on the slowest system pole
-    from math import log
     T = 10
 
     # Generate a system response with no disturbances

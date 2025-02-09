@@ -3,8 +3,6 @@
 RvP, 4 Oct 2012
 """
 
-import sys as pysys
-
 import numpy as np
 import matplotlib.pyplot as plt
 import pytest
@@ -13,7 +11,7 @@ import control as ct
 from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
 from control.frdata import frd, _convert_to_frd, FrequencyResponseData
-from control import bdalg, evalfr, freqplot
+from control import bdalg, freqplot
 from control.tests.conftest import slycotonly
 from control.exception import pandas_check
 

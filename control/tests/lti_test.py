@@ -12,8 +12,6 @@ from control.exception import slycot_check
 from control.lti import LTI, bandwidth, damp, dcgain, evalfr, poles, zeros
 from control.tests.conftest import slycotonly
 
-from .conftest import editsdefaults
-
 
 class TestLTI:
     @pytest.mark.parametrize("fun, args", [

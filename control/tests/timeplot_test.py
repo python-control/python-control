@@ -7,8 +7,7 @@ import numpy as np
 import pytest
 
 import control as ct
-from control.tests.conftest import mplcleanup, slycotonly
-
+from control.tests.conftest import slycotonly
 
 # Detailed test of (almost) all functionality
 #

@@ -8,7 +8,6 @@ import numpy as np
 import pytest
 
 import control as ct
-from control.tests.conftest import editsdefaults, slycotonly
 
 pytestmark = pytest.mark.usefixtures("mplcleanup")
 

@@ -8,7 +8,6 @@ operations on input/output objects.  Separate unit tests should be
 created for that purpose.
 """
 
-import re
 from copy import copy
 import warnings
 

@@ -15,7 +15,6 @@ functionality implemented in the interconnect() function itself.
 import pytest
 
 import numpy as np
-import scipy as sp
 import math
 
 import control as ct

@@ -11,11 +11,9 @@ should be created for that purpose.
 
 import numpy as np
 import pytest
-import scipy as sp
 
 import control as ct
 import control.flatsys as fs
-import control.optimal as opt
 
 def test_bspline_basis():
     Tf = 10

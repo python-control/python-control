@@ -161,7 +161,6 @@ class TestRootLocus:
         # that will take a long time to do the calculation (minutes).
         #
         import scipy as sp
-        import signal
 
         # Define a system that exhibits this behavior
         sys = ct.tf(*sp.signal.zpk2tf(

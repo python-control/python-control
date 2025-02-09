@@ -5,7 +5,6 @@ from math import isclose
 
 import numpy as np
 import pytest
-import scipy as sp
 
 import control as ct
 from control import StateSpace, TransferFunction, c2d, isctime, ss2tf, tf2ss
