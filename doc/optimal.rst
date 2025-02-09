@@ -294,7 +294,7 @@ Plotting the results:
   # Simulate the system dynamics (open loop)
   resp = ct.input_output_response(
       vehicle, timepts, result.inputs, x0,
-      t_eval=np.linspace(0, Tf, 100))
+      evaluation_times=np.linspace(0, Tf, 100))
   t, y, u = resp.time, resp.outputs, resp.inputs
 
   plt.subplot(3, 1, 1)

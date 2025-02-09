@@ -217,7 +217,7 @@ frequency, etc:
 
     def model_update(t, x, u, params)
     resp = initial_response(sys, timepts, x0)             # x0 required
-    resp = input_output_response(sys, timepts, u, x0=x0)  # u required
+    resp = input_output_response(sys, timepts, u, x0)     # u required
     resp = TimeResponseData(
         timepts, outputs, states=states, inputs=inputs)
 
@@ -299,6 +299,157 @@ Time and frequency responses:
       fresp = ct.frequency_response(sys)
       omega, response = fresp.omega, fresp.response
       mag, phase, omega = fresp.magnitude, fresp.phase, fresp.omega
+
+
+Parameter aliases
+-----------------
+
+As described above, parameter names are generally longer strings that
+describe the purpose fo the paramater.  Similar to `matplotlib` (e.g.,
+the use of `lw` as an alias for `linewidth`), some commonly used
+parameter names can be specified using an "alias" that allows the use
+of a shorter key.
+
+Named parameter and keyword variable aliases are processed using the
+:func:`config._process_kwargs` and :func:`config._process_param`
+functions.  These functions allow the specification of a list of
+aliases and a list of legacy keys for a given named parameter or
+keyword.  To make use of these functions, the
+:func:`~config._process_kwargs` is first called to update the `kwargs`
+variable by replacing aliases with the full key::
+
+  _process_kwargs(kwargs, aliases)
+
+The values for named parameters can then be assigned to a local
+variable using a call to :func:`~config.process_param` of the form::
+
+  var = _process_kwargs('param', param, kwargs, aliases)
+
+where 'param` is the named parameter used in the function signature
+and var is the local variable in the function (may also be `param`,
+but doesn't have to be).
+
+For example, the following structure is used in `input_output_response`::
+
+  def input_output_response(
+          sys, timepts=None, inputs=0., initial_state=0., params=None,
+          ignore_errors=False, transpose=False, return_states=False,
+          squeeze=None, solve_ivp_kwargs=None, evaluation_times='T', **kwargs):
+      """Compute the output response of a system to a given input.
+
+      ... rest of docstring ...
+
+      """
+      _process_kwargs(kwargs, _timeresp_aliases)
+      T = _process_param('timepts', timepts, kwargs, _timeresp_aliases)
+      U = _process_param('inputs', inputs, kwargs, _timeresp_aliases, sigval=0.)
+      X0 = _process_param(
+          'initial_state', initial_state, kwargs, _timeresp_aliases, sigval=0.)
+
+Note that named parameters that have a default value other than None
+must given the signature value (`sigval`) so that
+`~config._process_param` can detect if the value has been set (and
+issue an error if there is an attempt to set the value multiple times
+using alias or legacy keys).
+
+The alias mapping is a dictionary that returns a tuple consisting of
+valid aliases and legacy aliases::
+
+  alias_mapping = {
+      'argument_name_1', (['alias', ...], ['legacy', ...]),
+       ...}
+
+If an alias is present in the dictionary of keywords, it will be used
+to set the value of the argument.  If a legacy keyword is used, a
+warning is issued.
+
+The following tables summarize the aliases that are currently in use
+through the python-control package:
+
+Time response aliases (via `timeresp._timeresp_aliases`):
+
+  .. list-table::
+     :header-rows: 1
+
+     * - Key
+       - Aliases
+       - Legacy keys
+       - Comment
+     * - evaluation_times
+       - t_eval
+       -
+       - List of times to evaluate the time response (defaults to `timepts`).
+     * - final_output
+       - yfinal
+       -
+       - Final value of the output (used for :func:`step_info`)
+     * - initial_state
+       - X0
+       - x0
+       - Initial value of the state variable.
+     * - input_indices
+       - input
+       -
+       - Index(es) to use for the input (used in
+         :func:`step_response`, :func:`impulse_response`.
+     * - inputs
+       - U
+       - u
+       - Value(s) of the input variable (time trace or individual point).
+     * - output_indices
+       - output
+       -
+       - Index(es) to use for the output (used in
+         :func:`step_response`, :func:`impulse_response`.
+     * - outputs
+       - Y
+       - y
+       - Value(s) of the output variable (time trace or individual point).
+     * - return_states
+       - return_x
+       -
+       - Return the state when accessing a response via a tuple.
+     * - timepts
+       - T
+       -
+       - List of time points for time response functions.
+     * - timepts_num
+       - T_num
+       -
+       - Number of points to use (e.g., if `timepts` is just the final time).
+
+Optimal control aliases (via `optimal._optimal_aliases`:
+
+  .. list-table::
+     :header-rows: 1
+
+     * - Key
+       - Aliases
+       - Comment
+     * - final_state
+       - xf
+       - Final state for trajectory generation problems (flatsys, optimal).
+     * - final_input
+       - uf
+       - Final input for trajectory generation problems (flatsys).
+     * - initial_state
+       - x0, X0
+       - Initial state for optimization problems (flatsys, optimal).
+     * - initial_input
+       - u0, U0
+       - Initial input for trajectory generation problems (flatsys).
+     * - initial_time
+       - T0
+       - Initial time for optimization problems.
+     * - integral_cost
+       - trajectory_cost, cost
+       - Cost function that is integrated along a trajectory.
+     * - return_states
+       - return_x
+       - Return the state when accessing a response via a tuple.
+     * - trajectory_constraints
+       - constraints
+       - List of constraints that hold along a trajectory (flatsys, optimal)
 
 
 Documentation Guidelines
@@ -625,6 +776,8 @@ processing and parsing operations:
    :toctree: generated/
 
    config._process_legacy_keyword
+   config._process_kwargs
+   config._process_param
    exception.cvxopt_check
    exception.pandas_check
    exception.slycot_check
