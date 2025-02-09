@@ -74,7 +74,6 @@ def setup_plot_arguments(resp_fcn, plot_fcn, compute_time_response=True):
         case ct.gangof4_response, _:
             args1 = (sys1, sys1c)
             args2 = (sys2, sys1c)
-            default_labels = ["P=sys[1]", "P=sys[2]"]
 
         case ct.frequency_response, ct.nichols_plot:
             args1 = (sys1, None)        # to allow *fmt in linestyle test
@@ -234,10 +233,10 @@ def test_plot_ax_processing(resp_fcn, plot_fcn):
     # Call the plotting function, passing the axes
     if resp_fcn is not None:
         resp = resp_fcn(*args, **kwargs, **resp_kwargs)
-        cplt4 = resp.plot(**kwargs, **meth_kwargs, ax=ax)
+        resp.plot(**kwargs, **meth_kwargs, ax=ax)
     else:
         # No response function available; just plot the data
-        cplt4 = plot_fcn(*args, **kwargs, **plot_kwargs, ax=ax)
+        plot_fcn(*args, **kwargs, **plot_kwargs, ax=ax)
 
     # Check to make sure original settings did not change
     assert fig._suptitle.get_text() == title
@@ -326,19 +325,9 @@ def test_plot_label_processing(resp_fcn, plot_fcn):
 @pytest.mark.parametrize("resp_fcn, plot_fcn", resp_plot_fcns)
 @pytest.mark.usefixtures('mplcleanup')
 def test_plot_linestyle_processing(resp_fcn, plot_fcn):
-    # Create some systems to use
-    sys1 = ct.rss(2, 1, 1, strictly_proper=True, name="sys[1]")
-    sys1c = ct.rss(4, 1, 1, strictly_proper=True, name="sys[1]_C")
-    sys2 = ct.rss(4, 1, 1, strictly_proper=True, name="sys[2]")
-
     # Set up arguments
     args1, args2, _, kwargs, meth_kwargs, plot_kwargs, resp_kwargs = \
         setup_plot_arguments(resp_fcn, plot_fcn)
-    default_labels = ["sys[1]", "sys[2]"]
-    expected_labels = ["sys1_", "sys2_"]
-    match resp_fcn, plot_fcn:
-        case ct.gangof4_response, _:
-            default_labels = ["P=sys[1]", "P=sys[2]"]
 
     # Set line color
     cplt1 = plot_fcn(*args1, **kwargs, **plot_kwargs, color='r')
@@ -486,16 +475,10 @@ def test_mimo_plot_legend_processing(resp_fcn, plot_fcn):
 @pytest.mark.parametrize("resp_fcn, plot_fcn", resp_plot_fcns)
 @pytest.mark.usefixtures('mplcleanup')
 def test_plot_title_processing(resp_fcn, plot_fcn):
-    # Create some systems to use
-    sys1 = ct.rss(2, 1, 1, strictly_proper=True, name="sys[1]")
-    sys1c = ct.rss(4, 1, 1, strictly_proper=True, name="sys[1]_C")
-    sys2 = ct.rss(2, 1, 1, strictly_proper=True, name="sys[2]")
-
     # Set up arguments
     args1, args2, argsc, kwargs, meth_kwargs, plot_kwargs, resp_kwargs = \
         setup_plot_arguments(resp_fcn, plot_fcn)
     default_title = "sys[1], sys[2]"
-    expected_title = "sys1_, sys2_"
     match resp_fcn, plot_fcn:
         case ct.gangof4_response, _:
             default_title = "P=sys[1], C=sys[1]_C, P=sys[2], C=sys[1]_C"
@@ -582,11 +565,9 @@ def test_plot_title_processing(resp_fcn, plot_fcn):
 @pytest.mark.usefixtures('mplcleanup')
 def test_tickmark_label_processing(plot_fcn):
     # Generate the response that we will use for plotting
-    top_row, bot_row = 0, -1
     match plot_fcn:
         case ct.bode_plot:
             resp = ct.frequency_response(ct.rss(4, 2, 2))
-            top_row = 1
         case ct.time_response_plot:
             resp = ct.step_response(ct.rss(4, 2, 2))
         case ct.gangof4_plot:
@@ -620,20 +601,9 @@ def test_tickmark_label_processing(plot_fcn):
 @pytest.mark.parametrize("resp_fcn, plot_fcn", resp_plot_fcns)
 @pytest.mark.usefixtures('mplcleanup', 'editsdefaults')
 def test_rcParams(resp_fcn, plot_fcn):
-    # Create some systems to use
-    sys1 = ct.rss(2, 1, 1, strictly_proper=True, name="sys[1]")
-    sys1c = ct.rss(4, 1, 1, strictly_proper=True, name="sys[1]_C")
-    sys2 = ct.rss(2, 1, 1, strictly_proper=True, name="sys[2]")
-
     # Set up arguments
     args1, args2, argsc, kwargs, meth_kwargs, plot_kwargs, resp_kwargs = \
         setup_plot_arguments(resp_fcn, plot_fcn)
-    default_title = "sys[1], sys[2]"
-    expected_title = "sys1_, sys2_"
-    match resp_fcn, plot_fcn:
-        case ct.gangof4_response, _:
-            default_title = "P=sys[1], C=sys[1]_C, P=sys[2], C=sys[1]_C"
-
     # Create new set of rcParams
     my_rcParams = {}
     for key in ct.ctrlplot.rcParams:

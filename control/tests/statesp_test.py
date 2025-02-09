@@ -144,7 +144,7 @@ class TestStateSpace:
     def test_constructor_invalid(self, args, exc, errmsg):
         """Test invalid input to StateSpace() constructor"""
 
-        with pytest.raises(exc, match=errmsg) as w:
+        with pytest.raises(exc, match=errmsg):
             StateSpace(*args)
         with pytest.raises(exc, match=errmsg):
             ss(*args)

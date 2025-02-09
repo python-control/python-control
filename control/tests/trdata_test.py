@@ -214,7 +214,7 @@ def test_response_copy():
 
     # Unknown keyword
     with pytest.raises(TypeError, match="unrecognized keywords"):
-        response_bad_kw = response_mimo(input=0)
+        response_mimo(input=0)
 
 
 def test_trdata_labels():

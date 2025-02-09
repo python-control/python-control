@@ -123,11 +123,11 @@ def test_helper_functions(func, args, kwargs):
     sys = ct.nlsys(
         lambda t, x, u, params: [x[0] - 3*x[1], -3*x[0] + x[1]],
         states=2, inputs=0)
-    out = func(sys, [-1, 1, -1, 1], *args, **kwargs)
+    _out = func(sys, [-1, 1, -1, 1], *args, **kwargs)
 
     # Test with function
     rhsfcn = lambda t, x: sys.dynamics(t, x, 0, {})
-    out = func(rhsfcn, [-1, 1, -1, 1], *args, **kwargs)
+    _out = func(rhsfcn, [-1, 1, -1, 1], *args, **kwargs)
 
 
 @pytest.mark.usefixtures('mplcleanup')

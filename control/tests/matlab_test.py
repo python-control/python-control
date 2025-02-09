@@ -130,33 +130,33 @@ class TestMatlab:
 
     def testParallel(self, siso):
         """Call parallel()"""
-        sys1 = parallel(siso.ss1, siso.ss2)
-        sys1 = parallel(siso.ss1, siso.tf2)
-        sys1 = parallel(siso.tf1, siso.ss2)
-        sys1 = parallel(1, siso.ss2)
-        sys1 = parallel(1, siso.tf2)
-        sys1 = parallel(siso.ss1, 1)
-        sys1 = parallel(siso.tf1, 1)
+        _sys1 = parallel(siso.ss1, siso.ss2)
+        _sys1 = parallel(siso.ss1, siso.tf2)
+        _sys1 = parallel(siso.tf1, siso.ss2)
+        _sys1 = parallel(1, siso.ss2)
+        _sys1 = parallel(1, siso.tf2)
+        _sys1 = parallel(siso.ss1, 1)
+        _sys1 = parallel(siso.tf1, 1)
 
     def testSeries(self, siso):
         """Call series()"""
-        sys1 = series(siso.ss1, siso.ss2)
-        sys1 = series(siso.ss1, siso.tf2)
-        sys1 = series(siso.tf1, siso.ss2)
-        sys1 = series(1, siso.ss2)
-        sys1 = series(1, siso.tf2)
-        sys1 = series(siso.ss1, 1)
-        sys1 = series(siso.tf1, 1)
+        _sys1 = series(siso.ss1, siso.ss2)
+        _sys1 = series(siso.ss1, siso.tf2)
+        _sys1 = series(siso.tf1, siso.ss2)
+        _sys1 = series(1, siso.ss2)
+        _sys1 = series(1, siso.tf2)
+        _sys1 = series(siso.ss1, 1)
+        _sys1 = series(siso.tf1, 1)
 
     def testFeedback(self, siso):
         """Call feedback()"""
-        sys1 = feedback(siso.ss1, siso.ss2)
-        sys1 = feedback(siso.ss1, siso.tf2)
-        sys1 = feedback(siso.tf1, siso.ss2)
-        sys1 = feedback(1, siso.ss2)
-        sys1 = feedback(1, siso.tf2)
-        sys1 = feedback(siso.ss1, 1)
-        sys1 = feedback(siso.tf1, 1)
+        _sys1 = feedback(siso.ss1, siso.ss2)
+        _sys1 = feedback(siso.ss1, siso.tf2)
+        _sys1 = feedback(siso.tf1, siso.ss2)
+        _sys1 = feedback(1, siso.ss2)
+        _sys1 = feedback(1, siso.tf2)
+        _sys1 = feedback(siso.ss1, 1)
+        _sys1 = feedback(siso.tf1, 1)
 
     def testPoleZero(self, siso):
         """Call pole() and zero()"""

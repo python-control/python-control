@@ -362,7 +362,6 @@ class TestFRD:
                          np.array([[1.0, 0], [0, 0], [0, 1]]),
                          np.eye(3), np.zeros((3, 2)))
         omega = np.logspace(-1, 2, 10)
-        chkpts = omega[::3]
         f1 = frd(sys, omega)
         np.testing.assert_array_almost_equal(
             (f1.frequency_response([1.0])[0] *
@@ -379,13 +378,13 @@ class TestFRD:
         sys1 = frd([1, 2, 3], [4, 5, 6])
         sys2 = frd([2, 3, 4], [5, 6, 7])
         with pytest.raises(NotImplementedError):
-            sys = sys1 + sys2
+            sys1 + sys2
 
         # One frequency range is a subset of another
         sys1 = frd([1, 2, 3], [4, 5, 6])
         sys2 = frd([2, 3], [4, 5])
         with pytest.raises(NotImplementedError):
-            sys = sys1 + sys2
+            sys1 + sys2
 
     def test_size_mismatch(self):
         sys1 = frd(ct.rss(2, 2, 2), np.logspace(-1, 1, 10))
@@ -393,16 +392,16 @@ class TestFRD:
         # Different number of inputs
         sys2 = frd(ct.rss(3, 1, 2), np.logspace(-1, 1, 10))
         with pytest.raises(ValueError):
-            sys = sys1 + sys2
+            sys1 + sys2
 
         # Different number of outputs
         sys2 = frd(ct.rss(3, 2, 1), np.logspace(-1, 1, 10))
         with pytest.raises(ValueError):
-            sys = sys1 + sys2
+            sys1 + sys2
 
         # Inputs and outputs don't match
         with pytest.raises(ValueError):
-            sys = sys2 * sys1
+            sys2 * sys1
 
         # Feedback mismatch
         with pytest.raises(ValueError):
@@ -801,9 +800,9 @@ Input 2 to output 1:
         h = TransferFunction([1], [1, 2, 2])
         omega = np.logspace(-1, 2, 10)
         with pytest.raises(TypeError, match="unrecognized keyword"):
-            sys = FrequencyResponseData(h, omega, unknown=None)
+            FrequencyResponseData(h, omega, unknown=None)
         with pytest.raises(TypeError, match="unrecognized keyword"):
-            sys = ct.frd(h, omega, unknown=None)
+            ct.frd(h, omega, unknown=None)
 
 
 def test_named_signals():

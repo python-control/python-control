@@ -1178,7 +1178,6 @@ class TestTimeresp:
         # Generate system, time, and input vectors
         sys = ct.rss(nstate, nout, ninp, strictly_proper=True)
         tvec = np.linspace(0, 1, 8)
-        uvec =np.ones((sys.ninputs, 1)) @ np.reshape(np.sin(tvec), (1, 8))
 
         _, yvec = ct.initial_response(sys, tvec, 1, squeeze=squeeze)
         assert yvec.shape == shape
@@ -1303,7 +1302,7 @@ def test_no_pandas():
 
     # Convert to pandas
     with pytest.raises(ImportError, match="pandas"):
-        df = resp.to_pandas()
+        resp.to_pandas()
 
 
 # https://github.com/python-control/python-control/issues/1014

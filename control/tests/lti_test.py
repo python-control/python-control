@@ -26,10 +26,10 @@ class TestLTI:
         np.testing.assert_allclose(poles(sys), 42)
 
         with pytest.raises(AttributeError, match="no attribute 'pole'"):
-            pole_list = sys.pole()
+            sys.pole()
 
         with pytest.raises(AttributeError, match="no attribute 'pole'"):
-            pole_list = ct.pole(sys)
+            ct.pole(sys)
 
     @pytest.mark.parametrize("fun, args", [
         [tf, (126, [-1, 42])],
@@ -41,10 +41,10 @@ class TestLTI:
         np.testing.assert_allclose(zeros(sys), 42)
 
         with pytest.raises(AttributeError, match="no attribute 'zero'"):
-            zero_list = sys.zero()
+            sys.zero()
 
         with pytest.raises(AttributeError, match="no attribute 'zero'"):
-            zero_list = ct.zero(sys)
+            ct.zero(sys)
 
     def test_issiso(self):
         assert issiso(1)
@@ -295,7 +295,7 @@ class TestLTI:
             sys = fcn(ct.rss(2, 1, 1))
 
         with pytest.raises(ValueError, match="unknown squeeze value"):
-            resp = sys.frequency_response([1], squeeze='siso')
+            sys.frequency_response([1], squeeze='siso')
         with pytest.raises(ValueError, match="unknown squeeze value"):
             sys([1j], squeeze='siso')
         with pytest.raises(ValueError, match="unknown squeeze value"):

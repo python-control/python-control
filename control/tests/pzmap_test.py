@@ -111,10 +111,10 @@ def test_pzmap_raises():
     sys1 = ct.rss(2, 1, 1)
     sys2 = sys1.sample(0.1)
     with pytest.raises(ValueError, match="incompatible time bases"):
-        pzdata = ct.pole_zero_plot([sys1, sys2], grid=True)
+        ct.pole_zero_plot([sys1, sys2], grid=True)
 
     with pytest.warns(UserWarning, match="axis already exists"):
-        fig, ax = plt.figure(), plt.axes()
+        _fig, ax = plt.figure(), plt.axes()
         ct.pole_zero_plot(sys1, ax=ax, grid='empty')
 
 

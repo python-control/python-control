@@ -285,7 +285,7 @@ def test_duplicate_sysname():
         # strip out matrix warnings
         warnings.filterwarnings("ignore", "the matrix subclass",
                                 category=PendingDeprecationWarning)
-        res = sys * sys
+        sys * sys
 
     # Generate a warning if the system is named
     sys = ct.rss(4, 1, 1)
@@ -293,7 +293,7 @@ def test_duplicate_sysname():
         sys.updfcn, sys.outfcn, inputs=sys.ninputs, outputs=sys.noutputs,
         states=sys.nstates, name='sys')
     with pytest.warns(UserWarning, match="duplicate object found"):
-        res = sys * sys
+        sys * sys
 
 
 # Finding signals
@@ -332,10 +332,10 @@ def test_find_signals():
 # Invalid signal names
 def test_invalid_signal_names():
     with pytest.raises(ValueError, match="invalid signal name"):
-        sys = ct.rss(4, inputs="input.signal", outputs=1)
+        ct.rss(4, inputs="input.signal", outputs=1)
 
     with pytest.raises(ValueError, match="invalid system name"):
-        sys = ct.rss(4, inputs=1, outputs=1, name="system.subsys")
+        ct.rss(4, inputs=1, outputs=1, name="system.subsys")
 
 
 # Negative system spect
