@@ -161,7 +161,7 @@ def phase_plane_plot(
     """
     # Check for legacy usage of plot_streamlines
     streamline_keywords = [
-        'arrows', 'arrow_size', 'arrow_style', 'color', 'dir', 'params']    
+        'arrows', 'arrow_size', 'arrow_style', 'dir']
     if plot_streamlines is None:
         if any([kw in kwargs for kw in streamline_keywords]):
             warnings.warn(
@@ -270,7 +270,7 @@ def phase_plane_plot(
         out[0] += separatrices(
             sys, pointdata, _check_kwargs=False,  **kwargs_local)
         
-        sep_zorder = max(elem.get_zorder() for elem in out[0])
+        sep_zorder = max(elem.get_zorder() for elem in out[0]) if out[0] else None
 
         # Get rid of keyword arguments handled by separatrices
         for kw in ['arrows', 'arrow_size', 'arrow_style', 'params']:
