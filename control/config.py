@@ -415,9 +415,10 @@ def _process_legacy_keyword(kwargs, oldkey, newkey, newval, warn_oldkey=True):
         Value of the (new) keyword.
 
     """
-    warnings.warn(
-        "replace `_process_legacy_keyword` with `_process_param` "
-        "or `_process_kwargs`", PendingDeprecationWarning)
+    # TODO: turn on this warning when ready to deprecate
+    # warnings.warn(
+    #     "replace `_process_legacy_keyword` with `_process_param` "
+    #     "or `_process_kwargs`", PendingDeprecationWarning)
     if oldkey in kwargs:
         if warn_oldkey:
             warnings.warn(

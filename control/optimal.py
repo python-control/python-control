@@ -37,6 +37,7 @@ import control as ct
 from . import config
 from .config import _process_param, _process_kwargs
 from .iosys import _process_control_disturbance_indices, _process_labels
+from .timeresp import _timeresp_aliases
 
 # Define module default parameter values
 _optimal_trajectory_methods = {'shooting', 'collocation'}
@@ -1017,10 +1018,25 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
         self.states = response.states
 
 
+# Parameter and keyword aliases
+_optimal_aliases = {
+    # param:                  ([alias, ...],                [legacy, ...])
+    'integral_cost':          (['trajectory_cost', 'cost'], []),
+    'initial_state':          (['x0', 'X0'],                []),
+    'initial_input':          (['u0', 'U0'],                []),
+    'final_state':            (['xf'],                      []),
+    'final_input':            (['uf'],                      []),
+    'initial_time':           (['T0'],                      []),
+    'trajectory_constraints': (['constraints'],             []),
+    'return_states':          (['return_x'],                []),
+}
+
+
 # Compute the input for a nonlinear, (constrained) optimal control problem
 def solve_optimal_trajectory(
-        sys, timepts, X0, cost, trajectory_constraints=None,
-        terminal_cost=None, terminal_constraints=None, initial_guess=None,
+        sys, timepts, initial_state=None, integral_cost=None,
+        trajectory_constraints=None, terminal_cost=None,
+        terminal_constraints=None, initial_guess=None,
         basis=None, squeeze=None, transpose=None, return_states=True,
         print_summary=True, log=False, **kwargs):
 
@@ -1045,18 +1061,14 @@ def solve_optimal_trajectory(
     ----------
     sys : `InputOutputSystem`
         I/O system for which the optimal input will be computed.
-
     timepts : 1D array_like
         List of times at which the optimal input should be computed.
-
-    X0 : array_like or number, optional
+    initial_state (or X0) : array_like or number, optional
         Initial condition (default = 0).
-
-    cost : callable
+    integral_cost (or cost) : callable
         Function that returns the integral cost (L) given the current state
-        and input.  Called as ``cost(x, u)``.
-
-    trajectory_constraints : list of tuples, optional
+        and input.  Called as ``integral_cost(x, u)``.
+    trajectory_constraints (or constraints) : list of tuples, optional
         List of constraints that should hold at each point in the time
         vector.  Each element of the list should consist of a tuple with
         first element given by `scipy.optimize.LinearConstraint` or
@@ -1073,51 +1085,22 @@ def solve_optimal_trajectory(
           and compared against the upper and lower bounds.
 
         The constraints are applied at each time point along the trajectory.
-
     terminal_cost : callable, optional
         Function that returns the terminal cost (V) given the final state
         and input.  Called as terminal_cost(x, u).  (For compatibility with
         the form of the cost function, u is passed even though it is often
         not part of the terminal cost.)
-
     terminal_constraints : list of tuples, optional
         List of constraints that should hold at the end of the trajectory.
         Same format as `constraints`.
-
     initial_guess : 1D or 2D array_like
         Initial inputs to use as a guess for the optimal input.  The inputs
         should either be a 2D vector of shape (ninputs, len(timepts)) or a
         1D input of shape (ninputs,) that will be broadcast by extension of
         the time axis.
-
     basis : `BasisFamily`, optional
         Use the given set of basis functions for the inputs instead of
         setting the value of the input at each point in the timepts vector.
-
-    trajectory_method : string, optional
-        Method to use for carrying out the optimization. Currently supported
-        methods are 'shooting' and 'collocation' (continuous time only). The
-        default value is 'shooting' for discrete-time systems and
-        'collocation' for continuous-time systems.
-
-    log : bool, optional
-        If True, turn on logging messages (using Python logging module).
-
-    print_summary : bool, optional
-        If True (default), print a short summary of the computation.
-
-    return_states : bool, optional
-        If True (default), return the values of the state at each time.
-
-    squeeze : bool, optional
-        If True and if the system has a single output, return the system
-        output as a 1D array rather than a 2D array.  If False, return the
-        system output as a 2D array even if the system is SISO.  Default
-        value set by `config.defaults['control.squeeze_time_response']`.
-
-    transpose : bool, optional
-        If True, assume that 2D input arrays are transposed from the standard
-        format.  Used to convert MATLAB-style inputs to our format.
 
     Returns
     -------
@@ -1137,8 +1120,27 @@ def solve_optimal_trajectory(
 
     Other Parameters
     ----------------
+    log : bool, optional
+        If True, turn on logging messages (using Python logging module).
     minimize_method : str, optional
         Set the method used by `scipy.optimize.minimize`.
+    print_summary : bool, optional
+        If True (default), print a short summary of the computation.
+    return_states : bool, optional
+        If True (default), return the values of the state at each time.
+    squeeze : bool, optional
+        If True and if the system has a single output, return the system
+        output as a 1D array rather than a 2D array.  If False, return the
+        system output as a 2D array even if the system is SISO.  Default
+        value set by `config.defaults['control.squeeze_time_response']`.
+    trajectory_method : string, optional
+        Method to use for carrying out the optimization. Currently supported
+        methods are 'shooting' and 'collocation' (continuous time only). The
+        default value is 'shooting' for discrete-time systems and
+        'collocation' for continuous-time systems.
+    transpose : bool, optional
+        If True, assume that 2D input arrays are transposed from the standard
+        format.  Used to convert MATLAB-style inputs to our format.
 
     Notes
     -----
@@ -1157,16 +1159,19 @@ def solve_optimal_trajectory(
     `OptimalControlProblem` for more information.
 
     """
-    # Process keyword arguments
-    trajectory_constraints = config._process_legacy_keyword(
-        kwargs, 'constraints', 'trajectory_constraints',
-        trajectory_constraints)
+    # Process parameter and keyword arguments
+    _process_kwargs(kwargs, _optimal_aliases)
+    X0 = _process_param(
+        'initial_state', initial_state, kwargs, _optimal_aliases, sigval=None)
+    cost = _process_param(
+        'integral_cost', integral_cost, kwargs, _optimal_aliases)
+    trajectory_constraints = _process_param(
+        'trajectory_constraints', trajectory_constraints, kwargs,
+        _optimal_aliases)
+    return_states = _process_param(
+        'return_states', return_states, kwargs, _optimal_aliases, sigval=True)
 
-    # Allow 'return_x` as a synonym for 'return_states'
-    return_states = ct.config._get_param(
-        'optimal', 'return_x', kwargs, return_states, pop=True)
-
-    # Process (legacy) method keyword
+    # Process (legacy) method keyword (could be minimize or trajectory)
     if kwargs.get('method'):
         method = kwargs.pop('method')
         if method not in _optimal_trajectory_methods:
@@ -1198,8 +1203,8 @@ def solve_optimal_trajectory(
 
 # Create a model predictive controller for an optimal control problem
 def create_mpc_iosystem(
-        sys, timepts, cost, constraints=None, terminal_cost=None,
-        terminal_constraints=None, log=False, **kwargs):
+        sys, timepts, integral_cost=None, trajectory_constraints=None,
+        terminal_cost=None, terminal_constraints=None, log=False, **kwargs):
     """Create a model predictive I/O control system.
 
     This function creates an input/output system that implements a model
@@ -1211,26 +1216,20 @@ def create_mpc_iosystem(
     ----------
     sys : `InputOutputSystem`
         I/O system for which the optimal input will be computed.
-
     timepts : 1D array_like
         List of times at which the optimal input should be computed.
-
-    cost : callable
+    integral_cost (or cost) : callable
         Function that returns the integral cost given the current state
-        and input.  Called as cost(x, u).
-
-    constraints : list of tuples, optional
+        and input.  Called as ``integral_cost(x, u)``.
+    trajectory_constraints (or constraints) : list of tuples, optional
         List of constraints that should hold at each point in the time
         vector.  See `solve_optimal_trajectory` for more details.
-
     terminal_cost : callable, optional
         Function that returns the terminal cost given the final state
         and input.  Called as terminal_cost(x, u).
-
     terminal_constraints : list of tuples, optional
         List of constraints that should hold at the end of the trajectory.
         Same format as `constraints`.
-
     **kwargs
         Additional parameters, passed to `scipy.optimize.minimize` and
         `~control.NonlinearIOSystem`.
@@ -1263,6 +1262,14 @@ def create_mpc_iosystem(
 
     """
     from .iosys import InputOutputSystem
+
+    # Process parameter and keyword arguments
+    _process_kwargs(kwargs, _optimal_aliases)
+    cost = _process_param(
+        'integral_cost', integral_cost, kwargs, _optimal_aliases)
+    constraints = _process_param(
+        'trajectory_constraints', trajectory_constraints, kwargs,
+        _optimal_aliases)
 
     # Grab the keyword arguments known by this function
     iosys_kwargs = {}
@@ -1764,11 +1771,7 @@ class OptimalEstimationProblem():
 
         """
         # Argument and keyword processing
-        aliases = {
-            'outputs': (['Y'], []),
-            'inputs': (['U'], []),
-            'initial_state': (['X0'], []),
-        }
+        aliases = _timeresp_aliases | _optimal_aliases
         _process_kwargs(kwargs, aliases)
         Y = _process_param('outputs', outputs, kwargs, aliases)
         U = _process_param('inputs', inputs, kwargs, aliases)
@@ -2036,7 +2039,7 @@ class OptimalEstimationResult(sp.optimize.OptimizeResult):
 
 # Compute the finite horizon estimate for a nonlinear system
 def solve_optimal_estimate(
-        sys, timepts, outputs=None, inputs=None, trajectory_cost=None,
+        sys, timepts, outputs=None, inputs=None, integral_cost=None,
         initial_state=None, trajectory_constraints=None, initial_guess=None,
         squeeze=None, print_summary=True, **kwargs):
 
@@ -2057,7 +2060,7 @@ def solve_optimal_estimate(
         Values of the outputs at each time point.
     inputs (or U) : 2D array_like
         Values of the inputs at each time point.
-    trajectory_cost : callable
+    integral_cost (or cost) : callable
         Function that returns the cost given the current state
         and input.  Called as ``cost(y, u, x0)``.
     initial_state (or X0) : 1D array_like, optional
@@ -2111,16 +2114,14 @@ def solve_optimal_estimate(
     `OptimalControlProblem` for more information.
 
     """
-    # Argument and keyword processing
-    aliases = {
-        'outputs': (['Y'], []),
-        'inputs': (['U'], []),
-        'initial_state': (['X0'], []),
-    }
+    aliases = _timeresp_aliases | _optimal_aliases
     _process_kwargs(kwargs, aliases)
     Y = _process_param('outputs', outputs, kwargs, aliases)
     U = _process_param('inputs', inputs, kwargs, aliases)
-    X0 = _process_param('initial_state', initial_state, kwargs, aliases)
+    X0 = _process_param(
+        'initial_state', initial_state, kwargs, aliases)
+    trajectory_cost = _process_param(
+        'integral_cost', integral_cost, kwargs, aliases)
 
     # Set up the optimal control problem
     oep = OptimalEstimationProblem(

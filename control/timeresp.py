@@ -744,6 +744,7 @@ _timeresp_aliases = {
     # param:            ([alias, ...], [legacy, ...])
     'timepts':          (['T'],        []),
     'inputs':           (['U'],        ['u']),
+    'outputs':          (['Y'],        ['y']),
     'initial_state':    (['X0'],       ['x0']),
     'final_output':     (['yfinal'],   []),
     'return_states':    (['return_x'], []),
@@ -1022,8 +1023,9 @@ def forced_response(
     Examples
     --------
     >>> G = ct.rss(4)
-    >>> T = np.linspace(0, 10)
-    >>> T, yout = ct.forced_response(G, T=T)
+    >>> timepts = np.linspace(0, 10)
+    >>> inputs = np.sin(timepts)
+    >>> tout, yout = ct.forced_response(G, timepts, inputs)
 
     See :ref:`time-series-convention` and
     :ref:`package-configuration-parameters`.
@@ -1630,6 +1632,8 @@ def step_info(
     # Process keyword arguments
     _process_kwargs(kwargs, _timeresp_aliases)
     T = _process_param('timepts', timepts, kwargs, _timeresp_aliases)
+    T_num = _process_param(
+        'timepts_num', timepts_num, kwargs, _timeresp_aliases)
     yfinal = _process_param(
         'final_output', final_output, kwargs, _timeresp_aliases)
 
@@ -1637,7 +1641,8 @@ def step_info(
         raise TypeError("unrecognized keyword(s): ", str(kwargs))
 
     if isinstance(sysdata, (StateSpace, TransferFunction, NonlinearIOSystem)):
-        T, Yout = step_response(sysdata, T, squeeze=False, params=params)
+        T, Yout = step_response(
+            sysdata, T, timepts_num=T_num, squeeze=False, params=params)
         if yfinal:
             InfValues = np.atleast_2d(yfinal)
         else:
