@@ -170,7 +170,8 @@ def test_phaseplane_errors():
                             plot_streamlines=True)
         
     with pytest.raises(ValueError, match="gridtype must be 'meshgrid' when using streamplot"):
-        ct.phase_plane_plot(ct.rss(2, 1, 1), plot_streamplot=True, gridtype='boxgrid')
+        ct.phase_plane_plot(ct.rss(2, 1, 1), plot_streamlines=False,
+                            plot_streamplot=True, gridtype='boxgrid')
 
     # Warning messages for invalid solutions: nonlinear spring mass system
     sys = ct.nlsys(
@@ -220,7 +221,8 @@ def test_phase_plot_zorder():
         if streamplot is not None:
             assert streamplot < separatrices < equilpoints
 
-    sys = ct.rss(2, 1, 1)
+    def sys(t, x):
+        return np.array([4*x[1], -np.sin(4*x[0])])
 
     # ensure correct zordering for all three flow types
     res_streamlines = ct.phase_plane_plot(sys, plot_streamlines=dict(color=key_color))
@@ -239,7 +241,9 @@ def test_phase_plot_zorder():
 
 @pytest.mark.usefixtures('mplcleanup')
 def test_stream_plot_magnitude():
-    sys = ct.rss(2, 1, 1)
+    def sys(t, x):
+        return np.array([4*x[1], -np.sin(4*x[0])])
+
     # plt context with linewidth
     with plt.rc_context({'lines.linewidth': 4}):
         res = ct.phase_plane_plot(sys, plot_streamplot=dict(vary_linewidth=True))
