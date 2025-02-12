@@ -977,16 +977,17 @@ def _create_trajectory(
     # Compute the forward trajectory
     if dir == 'forward' or dir == 'both':
         fwdresp = input_output_response(
-            sys, timepts, X0=X0, params=params, ignore_errors=True)
+            sys, timepts, initial_state=X0, params=params, ignore_errors=True)
         if not fwdresp.success and not suppress_warnings:
-            warnings.warn(f"{X0=}, {fwdresp.message}")
+            warnings.warn(f"initial_state={X0}, {fwdresp.message}")
 
     # Compute the reverse trajectory
     if dir == 'reverse' or dir == 'both':
         revresp = input_output_response(
-            revsys, timepts, X0=X0, params=params, ignore_errors=True)
+            revsys, timepts, initial_state=X0, params=params,
+            ignore_errors=True)
         if not revresp.success and not suppress_warnings:
-            warnings.warn(f"{X0=}, {revresp.message}")
+            warnings.warn(f"initial_state={X0}, {revresp.message}")
 
     # Create the trace to plot
     if dir == 'forward':

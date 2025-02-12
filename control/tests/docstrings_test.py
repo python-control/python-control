@@ -46,7 +46,7 @@ function_skiplist = [
 
 # List of keywords that we can skip testing (special cases)
 keyword_skiplist = {
-    control.input_output_response: ['method'],
+    control.input_output_response: ['method', 't_eval'],    # solve_ivp_kwargs
     control.nyquist_plot: ['color'],                        # separate check
     control.optimal.solve_optimal_trajectory:
       ['method', 'return_x'],                               # deprecated
@@ -637,14 +637,15 @@ def _check_parameter_docs(
         docstring = docstring[start:]
 
     # Look for the parameter name in the docstring
+    argname_ = argname + r"( \(or .*\))*"
     if match := re.search(
-            "\n" + r"((\w+|\.{3}), )*" + argname + r"(, (\w+|\.{3}))*:",
+            "\n" + r"((\w+|\.{3}), )*" + argname_ + r"(, (\w+|\.{3}))*:",
             docstring):
         # Found the string, but not in numpydoc form
         _warn(f"{funcname}: {argname} docstring missing space")
 
     elif not (match := re.search(
-            "\n" + r"((\w+|\.{3}), )*" + argname + r"(, (\w+|\.{3}))* :",
+            "\n" + r"((\w+|\.{3}), )*" + argname_ + r"(, (\w+|\.{3}))* :",
             docstring)):
         if fail_if_missing:
             _fail(f"{funcname} '{argname}' not documented")

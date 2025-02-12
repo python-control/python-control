@@ -341,9 +341,14 @@ class TestTimeresp:
         t = tsystem.t
         yref = tsystem.ystep
         _t, y_00 = step_response(sys, T=t, input=0, output=0)
-        _t, y_11 = step_response(sys, T=t, input=1, output=1)
         np.testing.assert_array_almost_equal(y_00, yref, decimal=4)
+
+        _t, y_11 = step_response(sys, T=t, input=1, output=1)
         np.testing.assert_array_almost_equal(y_11, yref, decimal=4)
+
+        _t, y_01 = step_response(
+            sys, T=t, input_indices=[0], output_indices=[1])
+        np.testing.assert_array_almost_equal(y_01, 0 * yref, decimal=4)
 
         # Make sure we get the same result using MIMO step response
         response = step_response(sys, T=t)
@@ -353,6 +358,11 @@ class TestTimeresp:
         np.testing.assert_allclose(response.u[1, 0, :], 0)
         np.testing.assert_allclose(response.u[0, 1, :], 0)
         np.testing.assert_allclose(response.u[1, 1, :], 1)
+
+        # Index lists not yet implemented
+        with pytest.raises(NotImplementedError, match="list of .* indices"):
+            step_response(
+                sys, timepts=t, input_indices=[0, 1], output_indices=[1])
 
     @pytest.mark.parametrize("tsystem", ["mimo_ss1"], indirect=True)
     def test_step_response_return(self, tsystem):
@@ -520,13 +530,23 @@ class TestTimeresp:
         yref = tsystem.yimpulse
         _t, y_00 = impulse_response(sys, T=t, input=0, output=0)
         np.testing.assert_array_almost_equal(y_00, yref, decimal=4)
+
         _t, y_11 = impulse_response(sys, T=t, input=1, output=1)
         np.testing.assert_array_almost_equal(y_11, yref, decimal=4)
+
+        _t, y_01 = impulse_response(
+            sys, T=t, input_indices=[0], output_indices=[1])
+        np.testing.assert_array_almost_equal(y_01, 0 * yref, decimal=4)
 
         yref_notrim = np.zeros((2, len(t)))
         yref_notrim[:1, :] = yref
         _t, yy = impulse_response(sys, T=t, input=0)
         np.testing.assert_array_almost_equal(yy[:,0,:], yref_notrim, decimal=4)
+
+        # Index lists not yet implemented
+        with pytest.raises(NotImplementedError, match="list of .* indices"):
+            impulse_response(
+                sys, timepts=t, input_indices=[0, 1], output_indices=[1])
 
     @pytest.mark.parametrize("tsystem", ["siso_tf1"], indirect=True)
     def test_discrete_time_impulse(self, tsystem):
@@ -1396,3 +1416,53 @@ def test_signal_labels():
 
     with pytest.raises(ValueError, match=r"unknown signal name 'x\[2\]'"):
         response.states['x[1]', 'x[2]']         # second index = input name
+
+
+def test_timeresp_aliases():
+    sys = ct.rss(2, 1, 1)
+    timepts = np.linspace(0, 10, 10)
+    resp_long = ct.input_output_response(sys, timepts, 1, initial_state=[1, 1])
+
+    # Positional usage
+    resp_posn = ct.input_output_response(sys, timepts, 1, [1, 1])
+    np.testing.assert_allclose(resp_long.states, resp_posn.states)
+
+    # Aliases
+    resp_short = ct.input_output_response(sys, timepts, 1, X0=[1, 1])
+    np.testing.assert_allclose(resp_long.states, resp_posn.states)
+
+    # Legacy
+    with pytest.warns(PendingDeprecationWarning, match="legacy"):
+        resp_legacy = ct.input_output_response(sys, timepts, 1, x0=[1, 1])
+    np.testing.assert_allclose(resp_long.states, resp_posn.states)
+
+    # Check for multiple values: full keyword and alias
+    with pytest.raises(TypeError, match="multiple"):
+        resp_multiple = ct.input_output_response(
+            sys, timepts, 1, initial_state=[1, 2], X0=[1, 1])
+
+    # Check for multiple values: positional and keyword
+    with pytest.raises(TypeError, match="multiple"):
+        resp_multiple = ct.input_output_response(
+            sys, timepts, 1, [1, 2], initial_state=[1, 1])
+
+    # Check for multiple values: positional and alias
+    with pytest.raises(TypeError, match="multiple"):
+        resp_multiple = ct.input_output_response(
+            sys, timepts, 1, [1, 2], X0=[1, 1])
+
+    # Make sure that LTI functions check for keywords
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        resp = ct.forced_response(sys, timepts, 1, unknown=True)
+
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        resp = ct.impulse_response(sys, timepts, unknown=True)
+
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        resp = ct.initial_response(sys, timepts, [1, 2], unknown=True)
+
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        resp = ct.step_response(sys, timepts, unknown=True)
+
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        info = ct.step_info(sys, timepts, unknown=True)
