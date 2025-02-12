@@ -32,19 +32,21 @@ fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
 fig.set_tight_layout(True)
 plt.suptitle("FBS Figure 5.3: damped oscillator")
 
-ct.phase_plane_plot(damposc, [-1, 1, -1, 1], 8, ax=ax1)
+ct.phase_plane_plot(damposc, [-1, 1, -1, 1], 8, ax=ax1, plot_streamlines=True)
 ax1.set_title("boxgrid [-1, 1, -1, 1], 8")
 
-ct.phase_plane_plot(damposc, [-1, 1, -1, 1], ax=ax2, gridtype='meshgrid')
+ct.phase_plane_plot(damposc, [-1, 1, -1, 1], ax=ax2, plot_streamlines=True,
+                    gridtype='meshgrid')
 ax2.set_title("meshgrid [-1, 1, -1, 1]")
 
 ct.phase_plane_plot(
-    damposc, [-1, 1, -1, 1], 4, ax=ax3, gridtype='circlegrid', dir='both')
+    damposc, [-1, 1, -1, 1], 4, ax=ax3, plot_streamlines=True,
+    gridtype='circlegrid', dir='both')
 ax3.set_title("circlegrid [0, 0, 1], 4, both")
 
 ct.phase_plane_plot(
     damposc, [-1, 1, -1, 1], ax=ax4, gridtype='circlegrid',
-    dir='reverse', gridspec=[0.1, 12], timedata=5)
+    plot_streamlines=True, dir='reverse', gridspec=[0.1, 12], timedata=5)
 ax4.set_title("circlegrid [0, 0, 0.1], reverse")
 
 #
@@ -63,21 +65,23 @@ fig.set_tight_layout(True)
 plt.suptitle("FBS Figure 5.4: inverted pendulum")
 
 ct.phase_plane_plot(
-    invpend, [-2*pi, 2*pi, -2, 2], 5, ax=ax1)
+    invpend, [-2*pi, 2*pi, -2, 2], 5, ax=ax1, plot_streamlines=True)
 ax1.set_title("default, 5")
 
 ct.phase_plane_plot(
-    invpend, [-2*pi, 2*pi, -2, 2], gridtype='meshgrid', ax=ax2)
+    invpend, [-2*pi, 2*pi, -2, 2], gridtype='meshgrid', ax=ax2,
+    plot_streamlines=True)
 ax2.set_title("meshgrid")
 
 ct.phase_plane_plot(
     invpend, [-2*pi, 2*pi, -2, 2], 1, gridtype='meshgrid',
-    gridspec=[12, 9], ax=ax3, arrows=1)
+    gridspec=[12, 9], ax=ax3, arrows=1, plot_streamlines=True)
 ax3.set_title("denser grid")
 
 ct.phase_plane_plot(
     invpend, [-2*pi, 2*pi, -2, 2], 4, gridspec=[6, 6],
-    plot_separatrices={'timedata': 20, 'arrows': 4}, ax=ax4)
+    plot_separatrices={'timedata': 20, 'arrows': 4}, ax=ax4,
+    plot_streamlines=True)
 ax4.set_title("custom")
 
 #
@@ -95,28 +99,30 @@ fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
 fig.set_tight_layout(True)
 plt.suptitle("FBS Figure 5.5: Nonlinear oscillator")
 
-ct.phase_plane_plot(oscillator, [-1.5, 1.5, -1.5, 1.5], 3, ax=ax1)
+ct.phase_plane_plot(oscillator, [-1.5, 1.5, -1.5, 1.5], 3, ax=ax1,
+                    plot_streamlines=True)
 ax1.set_title("default, 3")
 ax1.set_aspect('equal')
 
 try:
     ct.phase_plane_plot(
         oscillator, [-1.5, 1.5, -1.5, 1.5], 1, gridtype='meshgrid',
-        dir='forward', ax=ax2)
+        dir='forward', ax=ax2, plot_streamlines=True)
 except RuntimeError as inst:
-    axs[0,1].text(0, 0, "Runtime Error")
+    ax2.text(0, 0, "Runtime Error")
     warnings.warn(inst.__str__())
 ax2.set_title("meshgrid, forward, 0.5")
 ax2.set_aspect('equal')
 
-ct.phase_plane_plot(oscillator, [-1.5, 1.5, -1.5, 1.5], ax=ax3)
+ct.phase_plane_plot(oscillator, [-1.5, 1.5, -1.5, 1.5], ax=ax3,
+                    plot_streamlines=True)
 pp.streamlines(
     oscillator, [-0.5, 0.5, -0.5, 0.5], dir='both', ax=ax3)
 ax3.set_title("outer + inner")
 ax3.set_aspect('equal')
 
 ct.phase_plane_plot(
-    oscillator, [-1.5, 1.5, -1.5, 1.5], 0.9, ax=ax4)
+    oscillator, [-1.5, 1.5, -1.5, 1.5], 0.9, ax=ax4, plot_streamlines=True)
 pp.streamlines(
     oscillator, np.array([[0, 0]]), 1.5,
     gridtype='circlegrid', gridspec=[0.5, 6], dir='both', ax=ax4)
@@ -137,11 +143,11 @@ fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
 fig.set_tight_layout(True)
 plt.suptitle("FBS Figure 5.9: Saddle")
 
-ct.phase_plane_plot(saddle, [-1, 1, -1, 1], ax=ax1)
+ct.phase_plane_plot(saddle, [-1, 1, -1, 1], ax=ax1, plot_streamlines=True)
 ax1.set_title("default")
 
 ct.phase_plane_plot(
-    saddle, [-1, 1, -1, 1], 0.5, gridtype='meshgrid', ax=ax2)
+    saddle, [-1, 1, -1, 1], 0.5, gridtype='meshgrid', ax=ax2, plot_streamlines=True)
 ax2.set_title("meshgrid")
 
 ct.phase_plane_plot(
@@ -150,7 +156,7 @@ ct.phase_plane_plot(
 ax3.set_title("vectorfield")
 
 ct.phase_plane_plot(
-    saddle, [-1, 1, -1, 1], 0.3,
+    saddle, [-1, 1, -1, 1], 0.3, plot_streamlines=True, 
     gridtype='meshgrid', gridspec=[5, 7], ax=ax4)
 ax3.set_title("custom")
 
@@ -182,7 +188,7 @@ plt.suptitle("FBS Figure 5.10: Congestion control")
 
 try:
     ct.phase_plane_plot(
-        congctrl, [0, 10, 100, 500], 120, ax=ax1)
+        congctrl, [0, 10, 100, 500], 120, ax=ax1, plot_streamlines=True)
 except RuntimeError as inst:
     ax1.text(5, 250, "Runtime Error")
     warnings.warn(inst.__str__())
@@ -190,7 +196,7 @@ ax1.set_title("default, T=120")
 
 try:
     ct.phase_plane_plot(
-        congctrl, [0, 10, 100, 500], 120,
+        congctrl, [0, 10, 100, 500], 120, plot_streamlines=True,
         params={'rho': 4e-4, 'c': 20}, ax=ax2)
 except RuntimeError as inst:
     ax2.text(5, 250, "Runtime Error")
@@ -203,7 +209,7 @@ ct.phase_plane_plot(
 ax3.set_title("vector field")
 
 ct.phase_plane_plot(
-    congctrl, [2, 6, 200, 300], 100,
+    congctrl, [2, 6, 200, 300], 100, plot_streamlines=True,
     params={'rho': 4e-4, 'c': 20},
     ax=ax4, plot_vectorfield={'gridspec': [12, 9]})
 ax4.set_title("vector field + streamlines")
