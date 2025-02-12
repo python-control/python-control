@@ -1,7 +1,7 @@
 # config.py - package defaults
 # RMM, 4 Nov 2012
 #
-# TODO: add ability to read/write configuration files (ala matplotlib)
+# TODO: add ability to read/write configuration files (a la matplotlib)
 
 """Functions to access default parameter values.
 
@@ -390,7 +390,7 @@ def _process_legacy_keyword(kwargs, oldkey, newkey, newval, warn_oldkey=True):
     Use this function to handle a legacy keyword that has been renamed.
     This function pops the old keyword off of the kwargs dictionary and
     issues a warning.  If both the old and new keyword are present, a
-    ControlArgument exception is raised.
+    `ControlArgument` exception is raised.
 
     Parameters
     ----------
@@ -442,7 +442,7 @@ def _process_param(name, defval, kwargs, alias_mapping, sigval=None):
     aliases and legacy aliases::
 
        alias_mapping = {
-            'argument_name_1', (['alias', ...], ['legacy', ...]),
+            'argument_name_1': (['alias', ...], ['legacy', ...]),
             ...}
 
     If `param` is a named keyword in the function signature with default
@@ -452,7 +452,7 @@ def _process_param(name, defval, kwargs, alias_mapping, sigval=None):
         param = _process_param('param', defval, kwargs, function_aliases)
 
     If `param` is a variable keyword argument (in `kwargs`), `defval` can
-    be pssed as either None or the default value to use if `param` is not
+    be passed as either None or the default value to use if `param` is not
     present in `kwargs`.
 
     Parameters
@@ -462,7 +462,7 @@ def _process_param(name, defval, kwargs, alias_mapping, sigval=None):
     defval : object or dict
         Default value for the parameter.
     kwargs : dict
-        Dictionary of varaible keyword arguments.
+        Dictionary of variable keyword arguments.
     alias_mapping : dict
         Dictionary providing aliases and legacy names.
     sigval : object, optional
@@ -478,7 +478,7 @@ def _process_param(name, defval, kwargs, alias_mapping, sigval=None):
     Raises
     ------
     TypeError
-        If multiple keyword aliased are used for the same parameter.
+        If multiple keyword aliases are used for the same parameter.
 
     Warns
     -----
@@ -527,7 +527,7 @@ def _process_kwargs(kwargs, alias_mapping):
     a tuple consisting of valid aliases and legacy aliases::
 
        alias_mapping = {
-            'argument_name_1', (['alias', ...], ['legacy', ...]),
+            'argument_name_1': (['alias', ...], ['legacy', ...]),
             ...}
 
     If an alias is present in the dictionary of keywords, it will be used

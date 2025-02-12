@@ -305,7 +305,7 @@ Parameter aliases
 -----------------
 
 As described above, parameter names are generally longer strings that
-describe the purpose fo the paramater.  Similar to `matplotlib` (e.g.,
+describe the purpose of the parameter.  Similar to `matplotlib` (e.g.,
 the use of `lw` as an alias for `linewidth`), some commonly used
 parameter names can be specified using an "alias" that allows the use
 of a shorter key.
@@ -321,11 +321,11 @@ variable by replacing aliases with the full key::
   _process_kwargs(kwargs, aliases)
 
 The values for named parameters can then be assigned to a local
-variable using a call to :func:`~config.process_param` of the form::
+variable using a call to :func:`~config._process_param` of the form::
 
-  var = _process_kwargs('param', param, kwargs, aliases)
+  var = _process_param('param', param, kwargs, aliases)
 
-where 'param` is the named parameter used in the function signature
+where `param` is the named parameter used in the function signature
 and var is the local variable in the function (may also be `param`,
 but doesn't have to be).
 
@@ -356,7 +356,7 @@ The alias mapping is a dictionary that returns a tuple consisting of
 valid aliases and legacy aliases::
 
   alias_mapping = {
-      'argument_name_1', (['alias', ...], ['legacy', ...]),
+      'argument_name_1': (['alias', ...], ['legacy', ...]),
        ...}
 
 If an alias is present in the dictionary of keywords, it will be used

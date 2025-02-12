@@ -54,6 +54,21 @@ __all__ = ['forced_response', 'step_response', 'step_info',
            'initial_response', 'impulse_response', 'TimeResponseData',
            'TimeResponseList']
 
+# Dictionary of aliases for time response commands
+_timeresp_aliases = {
+    # param:            ([alias, ...], [legacy, ...])
+    'timepts':          (['T'],        []),
+    'inputs':           (['U'],        ['u']),
+    'outputs':          (['Y'],        ['y']),
+    'initial_state':    (['X0'],       ['x0']),
+    'final_output':     (['yfinal'],   []),
+    'return_states':    (['return_x'], []),
+    'evaluation_times': (['t_eval'],   []),
+    'timepts_num':      (['T_num'],    []),
+    'input_indices':    (['input'],    []),
+    'output_indices':   (['output'],   []),
+}
+
 
 class TimeResponseData:
     """Input/output system time response data.
@@ -344,7 +359,7 @@ class TimeResponseData:
             # Make sure the shape is OK
             if multi_trace and \
                (self.x.ndim != 3 or self.x.shape[1] != self.ntraces) or \
-               not multi_trace and self.x.ndim != 2 :
+               not multi_trace and self.x.ndim != 2:
                 raise ValueError("State vector is the wrong shape")
 
             # Make sure time dimension of state is the right length
@@ -701,6 +716,7 @@ class TimeResponseData:
         """
         return time_response_plot(self, *args, **kwargs)
 
+
 #
 # Time response data list class
 #
@@ -739,20 +755,6 @@ class TimeResponseList(list):
                         lines[row, col] += cplt.lines[row, col]
         return ControlPlot(lines, cplt.axes, cplt.figure)
 
-# Dictionary of aliases for time response commands
-_timeresp_aliases = {
-    # param:            ([alias, ...], [legacy, ...])
-    'timepts':          (['T'],        []),
-    'inputs':           (['U'],        ['u']),
-    'outputs':          (['Y'],        ['y']),
-    'initial_state':    (['X0'],       ['x0']),
-    'final_output':     (['yfinal'],   []),
-    'return_states':    (['return_x'], []),
-    'evaluation_times': (['t_eval'],   []),
-    'timepts_num':      (['T_num'],    []),
-    'input_indices':    (['input'],    []),
-    'output_indices':   (['output'],   []),
-}
 
 # Process signal labels
 def _process_labels(labels, signal, length):
@@ -991,8 +993,8 @@ def forced_response(
         True, the array is 1D (indexed by time).  If the system is not SISO or
         `squeeze` is False, the array is 2D (indexed by output and time).
     resp.states : array
-        Time evolution of the state vector, represented as a 2D array indexed by
-        state and time.
+        Time evolution of the state vector, represented as a 2D array
+        indexed by state and time.
     resp.inputs : array
         Input(s) to the system, indexed by input and time.
 
@@ -1428,7 +1430,8 @@ def step_response(
     output = _process_param(
         'output_indices', output_indices, kwargs, _timeresp_aliases)
     return_x = _process_param(
-        'return_states', return_states, kwargs, _timeresp_aliases, sigval=False)
+        'return_states', return_states, kwargs, _timeresp_aliases,
+        sigval=False)
     T_num = _process_param(
         'timepts_num', timepts_num, kwargs, _timeresp_aliases)
 
@@ -1839,7 +1842,8 @@ def initial_response(
     output = _process_param(
         'output_indices', output_indices, kwargs, _timeresp_aliases)
     return_x = _process_param(
-        'return_states', return_states, kwargs, _timeresp_aliases, sigval=False)
+        'return_states', return_states, kwargs, _timeresp_aliases,
+        sigval=False)
     T_num = _process_param(
         'timepts_num', timepts_num, kwargs, _timeresp_aliases)
 
@@ -1972,7 +1976,8 @@ def impulse_response(
     output = _process_param(
         'output_indices', output_indices, kwargs, _timeresp_aliases)
     return_x = _process_param(
-        'return_states', return_states, kwargs, _timeresp_aliases, sigval=False)
+        'return_states', return_states, kwargs, _timeresp_aliases,
+        sigval=False)
     T_num = _process_param(
         'timepts_num', timepts_num, kwargs, _timeresp_aliases)
 

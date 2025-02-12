@@ -49,6 +49,19 @@ _optimal_defaults = {
     'optimal.solve_ivp_options': {},
 }
 
+# Parameter and keyword aliases
+_optimal_aliases = {
+    # param:                  ([alias, ...],                [legacy, ...])
+    'integral_cost':          (['trajectory_cost', 'cost'], []),
+    'initial_state':          (['x0', 'X0'],                []),
+    'initial_input':          (['u0', 'U0'],                []),
+    'final_state':            (['xf'],                      []),
+    'final_input':            (['uf'],                      []),
+    'initial_time':           (['T0'],                      []),
+    'trajectory_constraints': (['constraints'],             []),
+    'return_states':          (['return_x'],                []),
+}
+
 
 class OptimalControlProblem():
     """Description of a finite horizon, optimal control problem.
@@ -334,7 +347,8 @@ class OptimalControlProblem():
 
             # Integrate the cost
             costs = np.array(costs)
-           # Approximate the integral using trapezoidal rule
+
+            # Approximate the integral using trapezoidal rule
             cost = np.sum(0.5 * (costs[:-1] + costs[1:]) * dt)
 
         else:
@@ -1018,20 +1032,6 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
         self.states = response.states
 
 
-# Parameter and keyword aliases
-_optimal_aliases = {
-    # param:                  ([alias, ...],                [legacy, ...])
-    'integral_cost':          (['trajectory_cost', 'cost'], []),
-    'initial_state':          (['x0', 'X0'],                []),
-    'initial_input':          (['u0', 'U0'],                []),
-    'final_state':            (['xf'],                      []),
-    'final_input':            (['uf'],                      []),
-    'initial_time':           (['T0'],                      []),
-    'trajectory_constraints': (['constraints'],             []),
-    'return_states':          (['return_x'],                []),
-}
-
-
 # Compute the input for a nonlinear, (constrained) optimal control problem
 def solve_optimal_trajectory(
         sys, timepts, initial_state=None, integral_cost=None,
@@ -1183,7 +1183,8 @@ def solve_optimal_trajectory(
             kwargs['minimize_method'] = method
         else:
             if kwargs.get('trajectory_method'):
-                raise ValueError("'trajectory_method' specified more than once")
+                raise ValueError(
+                    "'trajectory_method' specified more than once")
             warnings.warn(
                 "'method' parameter is deprecated; assuming trajectory_method",
                 FutureWarning)
@@ -1819,7 +1820,6 @@ class OptimalEstimationProblem():
         return OptimalEstimationResult(
             self, res, squeeze=squeeze, print_summary=print_summary)
 
-
     #
     # Create an input/output system implementing an moving horizon estimator
     #
@@ -1827,6 +1827,7 @@ class OptimalEstimationProblem():
     # xhat, u, v, y for all previous time points.  When the system update
     # function is called,
     #
+
     def create_mhe_iosystem(
             self, estimate_labels=None, measurement_labels=None,
             control_labels=None, inputs=None, outputs=None, **kwargs):
@@ -2490,6 +2491,7 @@ def output_range_constraint(sys, lb, ub):
     # Return a nonlinear constraint object based on the polynomial
     return (opt.NonlinearConstraint, _evaluate_output_range_constraint, lb, ub)
 
+
 #
 # Create a constraint on the disturbance input
 #
@@ -2534,6 +2536,7 @@ def disturbance_range_constraint(sys, lb, ub):
 # Utility functions
 #
 
+
 #
 # Process trajectory constraints
 #
@@ -2545,6 +2548,7 @@ def disturbance_range_constraint(sys, lb, ub):
 # internal representation (currently a tuple with the constraint type as the
 # first element.
 #
+
 def _process_constraints(clist, name):
     if clist is None:
         clist = []
@@ -2560,7 +2564,7 @@ def _process_constraints(clist, name):
         if isinstance(constraint, tuple):
             # Original style of constraint
             ctype, fun, lb, ub = constraint
-            if not ctype in [opt.LinearConstraint, opt.NonlinearConstraint]:
+            if ctype not in [opt.LinearConstraint, opt.NonlinearConstraint]:
                 raise TypeError(f"unknown {name} constraint type {ctype}")
             constraint_list.append(constraint)
         elif isinstance(constraint, opt.LinearConstraint):
