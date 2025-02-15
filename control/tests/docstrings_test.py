@@ -309,7 +309,7 @@ def test_deprecated_functions(module, prefix):
 
             # Get the docstring (skip w/ warning if there isn't one)
             if obj.__doc__ is None:
-                _warn(f"{objname} is missing docstring")
+                _warn(f"{obj} is missing docstring")
                 continue
             else:
                 docstring = inspect.getdoc(obj)
@@ -320,13 +320,13 @@ def test_deprecated_functions(module, prefix):
             if ".. deprecated::" in doc_extended:
                 # Make sure a FutureWarning is issued
                 if not re.search("FutureWarning", source):
-                    _fail(f"{objname} deprecated but does not issue "
+                    _fail(f"{obj} deprecated but does not issue "
                           "FutureWarning")
             else:
                 if re.search(name + r"(\(\))? is deprecated", docstring) or \
                    re.search(name + r"(\(\))? is deprecated", source):
                     _fail(
-                        f"{objname} deprecated but with non-standard "
+                        f"{obj} deprecated but with non-standard "
                         "docs/warnings")
 
 #

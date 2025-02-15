@@ -514,7 +514,7 @@ def test_plot_title_processing(resp_fcn, plot_fcn):
         case ct.input_output_response, _:
             title_prefix = "Input/output response for "
         case _:
-            raise RuntimeError(f"didn't recognize {resp_fnc}, {plot_fnc}")
+            raise RuntimeError(f"didn't recognize {resp_fcn}, {plot_fcn}")
 
     # Generate the first plot, with default title
     cplt1 = plot_fcn(*args1, **kwargs, **plot_kwargs)
