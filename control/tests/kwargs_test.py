@@ -13,8 +13,9 @@
 import inspect
 import warnings
 
-import matplotlib.pyplot as plt
 import pytest
+
+import numpy as np
 
 import control
 import control.flatsys

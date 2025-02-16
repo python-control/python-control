@@ -347,19 +347,19 @@ def test_bdalg_udpate_names_errors():
     sys2 = ctrl.rss(2, 1, 1)
 
     with pytest.raises(ValueError, match="number of inputs does not match"):
-        sys = ctrl.series(sys1, sys2, inputs=2)
+        ctrl.series(sys1, sys2, inputs=2)
 
     with pytest.raises(ValueError, match="number of outputs does not match"):
-        sys = ctrl.series(sys1, sys2, outputs=2)
+        ctrl.series(sys1, sys2, outputs=2)
 
     with pytest.raises(ValueError, match="number of states does not match"):
-        sys = ctrl.series(sys1, sys2, states=2)
+        ctrl.series(sys1, sys2, states=2)
 
     with pytest.raises(ValueError, match="number of states does not match"):
-        sys = ctrl.series(ctrl.tf(sys1), ctrl.tf(sys2), states=2)
+        ctrl.series(ctrl.tf(sys1), ctrl.tf(sys2), states=2)
 
     with pytest.raises(TypeError, match="unrecognized keywords"):
-        sys = ctrl.series(sys1, sys2, dt=1)
+        ctrl.series(sys1, sys2, dt=1)
 
 
 class TestEnsureTf:

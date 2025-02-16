@@ -98,7 +98,7 @@ def test_nlsys_impulse():
 
     # Impulse_response (not implemented)
     with pytest.raises(ValueError, match="system must be LTI"):
-        resp_nl = ct.impulse_response(sys_nl, timepts)
+        ct.impulse_response(sys_nl, timepts)
 
 
 # Test nonlinear systems that are missing inputs or outputs

@@ -3,7 +3,6 @@
 RMM, 30 Mar 2011 (based on TestModelSimp from v0.4a)
 """
 
-import math
 import warnings
 
 import numpy as np

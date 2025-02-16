@@ -16,7 +16,6 @@ import scipy.signal
 
 from control.matlab import ss, step, impulse, initial, lsim, dcgain, ss2tf
 from control.timeresp import _check_convert_array
-from control.tests.conftest import slycotonly
 
 
 class TestControlMatlab:
