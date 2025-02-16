@@ -374,7 +374,8 @@ def test_named_signal_repr():
     for signal in ['inputs', 'outputs', 'states']:
         sig_orig = getattr(resp, signal)
         sig_eval = eval(repr(sig_orig),
-                        locals={'array': np.array,
-                                'NamedSignal': ct.NamedSignal})
+                        None,
+                        {'array': np.array,
+                         'NamedSignal': ct.NamedSignal})
         assert sig_eval.signal_labels == sig_orig.signal_labels
         assert sig_eval.trace_labels == sig_orig.trace_labels
