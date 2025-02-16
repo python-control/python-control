@@ -186,7 +186,6 @@ def test_mpc_iosystem_aircraft():
     # compute the steady state values for a particular value of the input
     ud = np.array([0.8, -0.3])
     xd = np.linalg.inv(np.eye(5) - A) @ B @ ud
-    yd = C @ xd
 
     # provide constraints on the system signals
     constraints = [opt.input_range_constraint(sys, [-5, -6], [5, 6])]
