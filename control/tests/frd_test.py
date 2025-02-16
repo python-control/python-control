@@ -572,7 +572,6 @@ class TestFRD:
         omega = np.logspace(-1, 1, 10)
         tf_mimo = TransferFunction([1], [1, 0]) * np.eye(2)
         frd_mimo = frd(tf_mimo, omega)
-        ss_mimo = ct.tf2ss(tf_mimo)
         tf_siso = TransferFunction([1], [1, 1])
         frd_siso = frd(tf_siso, omega)
         expected = frd(tf_mimo.__truediv__(tf_siso), omega)
@@ -601,7 +600,6 @@ class TestFRD:
         ss_mimo = ct.tf2ss(tf_mimo)
         tf_siso = TransferFunction([1], [1, 1])
         frd_siso = frd(tf_siso, omega)
-        ss_siso = ct.tf2ss(tf_siso)
         expected = frd(tf_siso.__rtruediv__(tf_mimo), omega)
 
         # Test division of MIMO FRD by SISO FRD
