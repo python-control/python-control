@@ -368,7 +368,7 @@ def vectorfield(
     suppress_warnings : bool, optional
         If set to True, suppress warning messages in generating trajectories.
     zorder : float, optional
-        Set the zorder for the separatrices.  In not specified, it will be
+        Set the zorder for the vectorfield.  In not specified, it will be
         automatically chosen by `matplotlib.axes.Axes.quiver`.
 
     """
@@ -467,7 +467,7 @@ def streamplot(
         If set to True, vary the linewidth of the streamlines based on the
         magnitude of the vector field.
     zorder : float, optional
-        Set the zorder for the separatrices.  In not specified, it will be
+        Set the zorder for the streamlines.  In not specified, it will be
         automatically chosen by `matplotlib.axes.Axes.streamplot`.
 
     """
@@ -594,7 +594,7 @@ def streamlines(
     suppress_warnings : bool, optional
         If set to True, suppress warning messages in generating trajectories.
     zorder : float, optional
-        Set the zorder for the separatrices.  In not specified, it will be
+        Set the zorder for the streamlines.  In not specified, it will be
         automatically chosen by `matplotlib.axes.Axes.plot`.
 
     """
@@ -707,8 +707,8 @@ def equilpoints(
         Override the default parameters used for generating plots.
         Default is set by `config.defaults['ctrlplot.rcParams']`.
     zorder : float, optional
-        Set the zorder for the separatrices.  In not specified, it will be
-        automatically chosen by `matplotlib.axes.Axes.plot`.
+        Set the zorder for the equilibrium points.  In not specified, it will
+        be automatically chosen by `matplotlib.axes.Axes.plot`.
 
     """
     # Process keywords
