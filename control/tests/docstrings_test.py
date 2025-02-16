@@ -497,13 +497,6 @@ def test_iosys_attribute_lists(cls, ignore_future_warning):
             # Skip hidden and ignored attributes; methods checked elsewhere
             continue
 
-        # Get the object associated with this attribute
-        obj = getattr(cls, name, getattr(sys, name))
-        if getattr(obj, '__module__', None):
-            objname = ".".join([obj.__module__.removeprefix("control."), name])
-        else:
-            objname = name
-
         # Try to find documentation in primary class
         if _check_parameter_docs(
                 cls.__name__, name, docstring, fail_if_missing=False):
