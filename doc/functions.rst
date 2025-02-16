@@ -103,6 +103,7 @@ Phase plane plots
     phaseplot.separatrices
     phaseplot.streamlines
     phaseplot.vectorfield
+    phaseplot.streamplot
 
 
 Frequency Response
