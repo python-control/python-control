@@ -15,6 +15,8 @@ import warnings
 
 import pytest
 
+import numpy as np
+
 import control
 import control.flatsys
 import control.tests.descfcn_test as descfcn_test
