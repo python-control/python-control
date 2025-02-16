@@ -1427,40 +1427,40 @@ def test_timeresp_aliases():
 
     # Aliases
     resp_short = ct.input_output_response(sys, timepts, 1, X0=[1, 1])
-    np.testing.assert_allclose(resp_long.states, resp_posn.states)
+    np.testing.assert_allclose(resp_long.states, resp_short.states)
 
     # Legacy
     with pytest.warns(PendingDeprecationWarning, match="legacy"):
         resp_legacy = ct.input_output_response(sys, timepts, 1, x0=[1, 1])
-    np.testing.assert_allclose(resp_long.states, resp_posn.states)
+    np.testing.assert_allclose(resp_long.states, resp_legacy.states)
 
     # Check for multiple values: full keyword and alias
     with pytest.raises(TypeError, match="multiple"):
-        resp_multiple = ct.input_output_response(
+        ct.input_output_response(
             sys, timepts, 1, initial_state=[1, 2], X0=[1, 1])
 
     # Check for multiple values: positional and keyword
     with pytest.raises(TypeError, match="multiple"):
-        resp_multiple = ct.input_output_response(
+        ct.input_output_response(
             sys, timepts, 1, [1, 2], initial_state=[1, 1])
 
     # Check for multiple values: positional and alias
     with pytest.raises(TypeError, match="multiple"):
-        resp_multiple = ct.input_output_response(
+        ct.input_output_response(
             sys, timepts, 1, [1, 2], X0=[1, 1])
 
     # Make sure that LTI functions check for keywords
     with pytest.raises(TypeError, match="unrecognized keyword"):
-        resp = ct.forced_response(sys, timepts, 1, unknown=True)
+        ct.forced_response(sys, timepts, 1, unknown=True)
 
     with pytest.raises(TypeError, match="unrecognized keyword"):
-        resp = ct.impulse_response(sys, timepts, unknown=True)
+        ct.impulse_response(sys, timepts, unknown=True)
 
     with pytest.raises(TypeError, match="unrecognized keyword"):
-        resp = ct.initial_response(sys, timepts, [1, 2], unknown=True)
+        ct.initial_response(sys, timepts, [1, 2], unknown=True)
 
     with pytest.raises(TypeError, match="unrecognized keyword"):
-        resp = ct.step_response(sys, timepts, unknown=True)
+        ct.step_response(sys, timepts, unknown=True)
 
     with pytest.raises(TypeError, match="unrecognized keyword"):
-        info = ct.step_info(sys, timepts, unknown=True)
+        ct.step_info(sys, timepts, unknown=True)
