@@ -1631,9 +1631,9 @@ def test_convenience_aliases():
     # Make sure that unrecognized keywords for response functions are caught
     for method in [LTI.impulse_response, LTI.initial_response,
                    LTI.step_response]:
-        with pytest.raises(TypeError, match="unexpected keyword"):
+        with pytest.raises(TypeError, match="unrecognized keyword"):
             method(sys, unknown=True)
-    with pytest.raises(TypeError, match="unexpected keyword"):
+    with pytest.raises(TypeError, match="unrecognized keyword"):
         LTI.forced_response(sys, [0, 1], [1, 1], unknown=True)
 
 

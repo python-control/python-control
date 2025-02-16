@@ -2158,7 +2158,8 @@ def test_operating_point():
     assert isinstance(op_point[1], np.ndarray)
     assert isinstance(op_point[2], np.ndarray)
 
-    with pytest.warns(FutureWarning, match="return_outputs"):
+    with pytest.warns(
+            (FutureWarning, PendingDeprecationWarning), match="return_outputs"):
         op_point = ct.find_operating_point(sys, 0, 0, return_y=True)
         assert len(op_point) == 3
         assert isinstance(op_point[0], np.ndarray)

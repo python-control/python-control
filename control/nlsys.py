@@ -22,10 +22,11 @@ import numpy as np
 import scipy as sp
 
 from . import config
+from .config import _process_param, _process_kwargs
 from .iosys import InputOutputSystem, _parse_spec, _process_iosys_keywords, \
     common_timebase, iosys_repr, isctime, isdtime
 from .timeresp import TimeResponseData, TimeResponseList, \
-    _check_convert_array, _process_time_response
+    _check_convert_array, _process_time_response, _timeresp_aliases
 
 __all__ = ['NonlinearIOSystem', 'InterconnectedSystem', 'nlsys',
            'input_output_response', 'find_eqpt', 'linearize',
@@ -1471,9 +1472,9 @@ def nlsys(updfcn, outfcn=None, **kwargs):
 
 
 def input_output_response(
-        sys, T, U=0., X0=0, params=None, ignore_errors=False,
-        transpose=False, return_x=False, squeeze=None,
-        solve_ivp_kwargs=None, t_eval='T', **kwargs):
+        sys, timepts=None, inputs=0., initial_state=0., params=None,
+        ignore_errors=False, transpose=False, return_states=False,
+        squeeze=None, solve_ivp_kwargs=None, evaluation_times='T', **kwargs):
     """Compute the output response of a system to a given input.
 
     Simulate a dynamical system with a given input and return its output
@@ -1483,22 +1484,23 @@ def input_output_response(
     ----------
     sys : `NonlinearIOSystem` or list of `NonlinearIOSystem`
         I/O system(s) for which input/output response is simulated.
-    T : array_like
+    timepts (or T) : array_like
         Time steps at which the input is defined; values must be evenly spaced.
-    U : array_like, list, or number, optional
-        Input array giving input at each time `T` (default = 0).  If a list
-        is specified, each element in the list will be treated as a portion
-        of the input and broadcast (if necessary) to match the time vector.
-    X0 : array_like, list, or number, optional
+    inputs (or U) : array_like, list, or number, optional
+        Input array giving input at each time in `timepts` (default =
+        0). If a list is specified, each element in the list will be
+        treated as a portion of the input and broadcast (if necessary) to
+        match the time vector.
+    initial_state (or X0) : array_like, list, or number, optional
         Initial condition (default = 0).  If a list is given, each element
         in the list will be flattened and stacked into the initial
         condition.  If a smaller number of elements are given that the
         number of states in the system, the initial condition will be padded
         with zeros.
-    t_eval : array-list, optional
+    evaluation_times (or t_eval) : array-list, optional
         List of times at which the time response should be computed.
-        Defaults to `T`.
-    return_x : bool, optional
+        Defaults to `timepts`.
+    return_states (or return_x) : bool, optional
         If True, return the state vector when assigning to a tuple.  See
         `forced_response` for more details.  If True, return the values of
         the state at each time Default is False.
@@ -1523,7 +1525,7 @@ def input_output_response(
         method.  See `TimeResponseData` for more detailed information.
     response.time : array
         Time values of the output.
-    response.output : array
+    response.outputs : array
         Response of the system.  If the system is SISO and `squeeze` is not
         True, the array is 1D (indexed by time).  If the system is not SISO
         or `squeeze` is False, the array is 2D (indexed by output and time).
@@ -1581,6 +1583,18 @@ def input_output_response(
     #
     # Process keyword arguments
     #
+    _process_kwargs(kwargs, _timeresp_aliases)
+    T = _process_param('timepts', timepts, kwargs, _timeresp_aliases)
+    U = _process_param('inputs', inputs, kwargs, _timeresp_aliases, sigval=0.)
+    X0 = _process_param(
+        'initial_state', initial_state, kwargs, _timeresp_aliases, sigval=0.)
+    return_x = _process_param(
+        'return_states', return_states, kwargs, _timeresp_aliases,
+        sigval=False)
+    # TODO: replace default value of evaluation_times with None?
+    t_eval = _process_param(
+        'evaluation_times', evaluation_times, kwargs, _timeresp_aliases,
+        sigval='T')
 
     # Figure out the method to be used
     solve_ivp_kwargs = solve_ivp_kwargs.copy() if solve_ivp_kwargs else {}
@@ -1605,9 +1619,10 @@ def input_output_response(
         sysdata, responses = sys, []
         for sys in sysdata:
             responses.append(input_output_response(
-                sys, T, U=U, X0=X0, params=params, transpose=transpose,
-                return_x=return_x, squeeze=squeeze, t_eval=t_eval,
-                solve_ivp_kwargs=solve_ivp_kwargs, **kwargs))
+                sys, timepts=T, inputs=U, initial_state=X0, params=params,
+                transpose=transpose, return_states=return_x, squeeze=squeeze,
+                evaluation_times=t_eval, solve_ivp_kwargs=solve_ivp_kwargs,
+                **kwargs))
         return TimeResponseList(responses)
 
     # Sanity checking on the input
@@ -1894,8 +1909,9 @@ class OperatingPoint():
 
 
 def find_operating_point(
-        sys, x0, u0=None, y0=None, t=0, params=None, iu=None, iy=None,
-        ix=None, idx=None, dx0=None, root_method=None, root_kwargs=None,
+        sys, initial_state=0., inputs=None, outputs=None, t=0, params=None,
+        input_indices=None, output_indices=None, state_indices=None,
+        deriv_indices=None, derivs=None, root_method=None, root_kwargs=None,
         return_outputs=None, return_result=None, **kwargs):
     """Find an operating point for an input/output system.
 
@@ -1929,13 +1945,13 @@ def find_operating_point(
     ----------
     sys : `NonlinearIOSystem`
         I/O system for which the operating point is sought.
-    x0 : list of initial state values
+    initial_state (or x0) : list of initial state values
         Initial guess for the value of the state near the operating point.
-    u0 : list of input values, optional
+    inputs (or u0) : list of input values, optional
         If `y0` is not specified, sets the value of the input.  If `y0` is
         given, provides an initial guess for the value of the input.  Can
         be omitted if the system does not have any inputs.
-    y0 : list of output values, optional
+    outputs (or y0) : list of output values, optional
         If specified, sets the desired values of the outputs at the
         operating point.
     t : float, optional
@@ -1943,22 +1959,22 @@ def find_operating_point(
     params : dict, optional
         Parameter values for the system.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
-    iu : list of input indices, optional
+    input_indices (or iu) : list of input indices, optional
         If specified, only the inputs with the given indices will be fixed at
         the specified values in solving for an operating point.  All other
         inputs will be varied.  Input indices can be listed in any order.
-    iy : list of output indices, optional
+    output_indices (or iy) : list of output indices, optional
         If specified, only the outputs with the given indices will be fixed
         at the specified values in solving for an operating point.  All other
         outputs will be varied.  Output indices can be listed in any order.
-    ix : list of state indices, optional
+    state_indices (or ix) : list of state indices, optional
         If specified, states with the given indices will be fixed at the
         specified values in solving for an operating point.  All other
         states will be varied.  State indices can be listed in any order.
-    dx0 : list of update values, optional
+    derivs (or dx0) : list of update values, optional
         If specified, the value of update map must match the listed value
         instead of the default value for an equilibrium point.
-    idx : list of state indices, optional
+    deriv_indices (or idx) : list of state indices, optional
         If specified, state updates with the given indices will have their
         update maps fixed at the values given in `dx0`.  All other update
         values will be ignored in solving for an operating point.  State
@@ -2014,8 +2030,29 @@ def find_operating_point(
     from scipy.optimize import root
 
     # Process keyword arguments
-    return_outputs = config._process_legacy_keyword(
-        kwargs, 'return_y', 'return_outputs', return_outputs)
+    aliases = {
+        'initial_state': (['x0', 'X0'], []),
+        'inputs': (['u0'], []),
+        'outputs': (['y0'], []),
+        'derivs': (['dx0'], []),
+        'input_indices': (['iu'], []),
+        'output_indices': (['iy'], []),
+        'state_indices': (['ix'], []),
+        'deriv_indices': (['idx'], []),
+        'return_outputs': ([], ['return_y']),
+    }
+    _process_kwargs(kwargs, aliases)
+    x0 = _process_param(
+        'initial_state', initial_state, kwargs, aliases, sigval=0.)
+    u0 = _process_param('inputs', inputs, kwargs, aliases)
+    y0 = _process_param('outputs', outputs, kwargs, aliases)
+    dx0 = _process_param('derivs', derivs, kwargs, aliases)
+    iu = _process_param('input_indices', input_indices, kwargs, aliases)
+    iy = _process_param('output_indices', output_indices, kwargs, aliases)
+    ix = _process_param('state_indices', state_indices, kwargs, aliases)
+    idx = _process_param('deriv_indices', deriv_indices, kwargs, aliases)
+    return_outputs = _process_param(
+        'return_outputs', return_outputs, kwargs, aliases)
     if kwargs:
         raise TypeError("unrecognized keyword(s): " + str(kwargs))
 
@@ -2025,9 +2062,9 @@ def find_operating_point(
         root_kwargs['method'] = root_method
 
     # Figure out the number of states, inputs, and outputs
-    x0, nstates = _process_vector_argument(x0, "x0", sys.nstates)
-    u0, ninputs = _process_vector_argument(u0, "u0", sys.ninputs)
-    y0, noutputs = _process_vector_argument(y0, "y0", sys.noutputs)
+    x0, nstates = _process_vector_argument(x0, "initial_states", sys.nstates)
+    u0, ninputs = _process_vector_argument(u0, "inputs", sys.ninputs)
+    y0, noutputs = _process_vector_argument(y0, "outputs", sys.noutputs)
 
     # Make sure the input arguments match the sizes of the system
     if len(x0) != nstates or \

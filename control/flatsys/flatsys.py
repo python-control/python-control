@@ -12,9 +12,10 @@ import numpy as np
 import scipy as sp
 import scipy.optimize
 
-from ..config import _process_legacy_keyword
+from ..config import _process_kwargs, _process_param
 from ..exception import ControlArgument
 from ..nlsys import NonlinearIOSystem
+from ..optimal import _optimal_aliases
 from ..timeresp import _check_convert_array
 from .poly import PolyFamily
 from .systraj import SystemTrajectory
@@ -325,7 +326,8 @@ l
 
 # Solve a point to point trajectory generation problem for a flat system
 def point_to_point(
-        sys, timepts, x0=0, u0=0, xf=0, uf=0, T0=0, cost=None, basis=None,
+        sys, timepts, initial_state=0, initial_input=0, final_state=0,
+        final_input=0, initial_time=0, integral_cost=None, basis=None,
         trajectory_constraints=None, initial_guess=None, params=None, **kwargs):
     """Compute trajectory between an initial and final conditions.
 
@@ -340,32 +342,30 @@ def point_to_point(
         and produces the flag of flat outputs and a function
         `~FlatSystem.reverse` that takes the flag of the flat output and
         produces the state and input.
-
     timepts : float or 1D array_like
         The list of points for evaluating cost and constraints, as well as
         the time horizon.  If given as a float, indicates the final time for
         the trajectory (corresponding to xf)
-
-    x0, u0, xf, uf : 1D arrays
-        Define the desired initial and final conditions for the system.  If
-        any of the values are given as None, they are replaced by a vector of
-        zeros of the appropriate dimension.
-
-    T0 : float, optional
+    initial_state (or x0) : 1D array_like
+        Initial state for the system.  Defaults to zero.
+    initial_input (or u0) : 1D array_like
+        Initial input for the system.  Defaults to zero.
+    final_state (or xf) : 1D array_like
+        Final state for the system.  Defaults to zero.
+    final_input (or uf) : 1D array_like
+        Final input for the system.  Defaults to zero.
+    initial_time (or T0) : float, optional
         The initial time for the trajectory (corresponding to x0).  If not
         specified, its value is taken to be zero.
-
     basis : `BasisFamily` object, optional
         The basis functions to use for generating the trajectory.  If not
         specified, the `PolyFamily` basis family
         will be used, with the minimal number of elements required to find a
         feasible trajectory (twice the number of system states)
-
-    cost : callable
+    integral_cost (or cost) : callable
         Function that returns the integral cost given the current state
-        and input.  Called as ``cost(x, u)``.
-
-    trajectory_constraints : list of tuples, optional
+        and input.  Called as ``integral_cost(x, u)``.
+    trajectory_constraints (or constraints) : list of tuples, optional
         List of constraints that should hold at each point in the time
         vector.  Each element of the list should consist of a tuple with
         first element given by `scipy.optimize.LinearConstraint` or
@@ -382,23 +382,12 @@ def point_to_point(
           trajectory and compared against the upper and lower bounds.
 
         The constraints are applied at each time point along the trajectory.
-
     initial_guess : 2D array_like, optional
         Initial guess for the trajectory coefficients (not implemented).
-
     params : dict, optional
         Parameter values for the system.  Passed to the evaluation
         functions for the system as default values, overriding internal
         defaults.
-
-    minimize_method : str, optional
-        Set the method used by `scipy.optimize.minimize`.
-
-    minimize_options : str, optional
-        Set the options keyword used by `scipy.optimize.minimize`.
-
-    minimize_kwargs : str, optional
-        Pass additional keywords to `scipy.optimize.minimize`.
 
     Returns
     -------
@@ -407,6 +396,15 @@ def point_to_point(
         `~SystemTrajectory.eval` function, we can be used to
         compute the value of the state and input and a given time t.
 
+    Other Parameters
+    ----------------
+    minimize_method : str, optional
+        Set the method used by `scipy.optimize.minimize`.
+    minimize_options : str, optional
+        Set the options keyword used by `scipy.optimize.minimize`.
+    minimize_kwargs : str, optional
+        Pass additional keywords to `scipy.optimize.minimize`.
+
     Notes
     -----
     Additional keyword parameters can be used to fine tune the behavior of
@@ -414,6 +412,24 @@ def point_to_point(
     `OptimalControlProblem` for more information.
 
     """
+    # Process parameter and keyword arguments
+    _process_kwargs(kwargs, _optimal_aliases)
+    x0 = _process_param(
+        'initial_state', initial_state, kwargs, _optimal_aliases, sigval=0)
+    u0 = _process_param(
+        'initial_input', initial_input, kwargs, _optimal_aliases, sigval=0)
+    xf = _process_param(
+        'final_state', final_state, kwargs, _optimal_aliases, sigval=0)
+    uf = _process_param(
+        'final_input', final_input, kwargs, _optimal_aliases, sigval=0)
+    T0 = _process_param(
+        'initial_time', initial_time, kwargs, _optimal_aliases, sigval=0)
+    cost = _process_param(
+        'integral_cost', integral_cost, kwargs, _optimal_aliases)
+    trajectory_constraints = _process_param(
+        'trajectory_constraints', trajectory_constraints, kwargs,
+        _optimal_aliases)
+
     #
     # Make sure the problem is one that we can handle
     #
@@ -430,13 +446,6 @@ def point_to_point(
     timepts = np.atleast_1d(timepts)
     Tf = timepts[-1]
     T0 = timepts[0] if len(timepts) > 1 else T0
-
-    # Process keyword arguments
-    trajectory_constraints = _process_legacy_keyword(
-        kwargs, 'constraints', 'trajectory_constraints',
-        trajectory_constraints, warn_oldkey=False)
-    cost = _process_legacy_keyword(
-        kwargs, 'trajectory_cost', 'cost', cost, warn_oldkey=False)
 
     minimize_kwargs = {}
     minimize_kwargs['method'] = kwargs.pop('minimize_method', None)
@@ -657,8 +666,8 @@ def point_to_point(
 
 # Solve a point to point trajectory generation problem for a flat system
 def solve_flat_optimal(
-        sys, timepts, x0=0, u0=0, trajectory_cost=None, basis=None,
-        terminal_cost=None, trajectory_constraints=None,
+        sys, timepts, initial_state=0, initial_input=0, integral_cost=None,
+        basis=None, terminal_cost=None, trajectory_constraints=None,
         initial_guess=None, params=None, **kwargs):
     """Compute trajectory between an initial and final conditions.
 
@@ -673,31 +682,25 @@ def solve_flat_optimal(
         and produces the flag of flat outputs and a function
         `~FlatSystem.reverse` that takes the flag of the flat output and
         produces the state and input.
-
     timepts : float or 1D array_like
         The list of points for evaluating cost and constraints, as well as
         the time horizon.  If given as a float, indicates the final time for
         the trajectory (corresponding to xf)
-
-    x0, u0 : 1D arrays
-        Define the initial conditions for the system.  If either of the
-        values are given as None, they are replaced by a vector of zeros of
-        the appropriate dimension.
-
+    initial_state (or x0), input_input (or u0) : 1D arrays
+        Define the initial conditions for the system (default = 0).
+    initial_input (or u0) : 1D array_like
+        Initial input for the system.  Defaults to zero.
     basis : `BasisFamily` object, optional
         The basis functions to use for generating the trajectory.  If not
         specified, the `PolyFamily` basis family
         will be used, with the minimal number of elements required to find a
         feasible trajectory (twice the number of system states)
-
-    trajectory_cost : callable
+    integral_cost : callable
         Function that returns the integral cost given the current state
         and input.  Called as ``cost(x, u)``.
-
     terminal_cost : callable
         Function that returns the terminal cost given the state and input.
         Called as ``cost(x, u)``.
-
     trajectory_constraints : list of tuples, optional
         List of constraints that should hold at each point in the time
         vector.  Each element of the list should consist of a tuple with
@@ -715,15 +718,22 @@ def solve_flat_optimal(
           trajectory and compared against the upper and lower bounds.
 
         The constraints are applied at each time point along the trajectory.
-
     initial_guess : 2D array_like, optional
         Initial guess for the optimal trajectory of the flat outputs.
-
     params : dict, optional
         Parameter values for the system.  Passed to the evaluation
         functions for the system as default values, overriding internal
         defaults.
 
+    Returns
+    -------
+    traj : `SystemTrajectory`
+        The system trajectory is returned as an object that implements the
+        `SystemTrajectory.eval` function, we can be used to
+        compute the value of the state and input and a given time `t`.
+
+    Other Parameters
+    ----------------
     minimize_method : str, optional
         Set the method used by `scipy.optimize.minimize`.
 
@@ -732,13 +742,6 @@ def solve_flat_optimal(
 
     minimize_kwargs : str, optional
         Pass additional keywords to `scipy.optimize.minimize`.
-
-    Returns
-    -------
-    traj : `SystemTrajectory`
-        The system trajectory is returned as an object that implements the
-        `SystemTrajectory.eval` function, we can be used to
-        compute the value of the state and input and a given time `t`.
 
     Notes
     -----
@@ -758,6 +761,18 @@ def solve_flat_optimal(
     used to overcome these errors.
 
     """
+    # Process parameter and keyword arguments
+    _process_kwargs(kwargs, _optimal_aliases)
+    x0 = _process_param(
+        'initial_state', initial_state, kwargs, _optimal_aliases, sigval=0)
+    u0 = _process_param(
+        'initial_input', initial_input, kwargs, _optimal_aliases, sigval=0)
+    trajectory_cost = _process_param(
+        'integral_cost', integral_cost, kwargs, _optimal_aliases)
+    trajectory_constraints = _process_param(
+        'trajectory_constraints', trajectory_constraints, kwargs,
+        _optimal_aliases)
+
     #
     # Make sure the problem is one that we can handle
     #
@@ -769,12 +784,6 @@ def solve_flat_optimal(
     # Process final time
     timepts = np.atleast_1d(timepts)
     T0 = timepts[0] if len(timepts) > 1 else 0
-
-    # Process keyword arguments
-    trajectory_constraints = _process_legacy_keyword(
-        kwargs, 'constraints', 'trajectory_constraints', trajectory_constraints)
-    trajectory_cost = _process_legacy_keyword(
-        kwargs, 'cost', 'trajectory_cost', trajectory_cost)
 
     minimize_kwargs = {}
     minimize_kwargs['method'] = kwargs.pop('minimize_method', None)

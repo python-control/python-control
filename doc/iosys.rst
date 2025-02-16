@@ -269,7 +269,8 @@ Finally, we simulate the closed loop system:
 
   # Simulate the system
   Ld = 30
-  resp = ct.input_output_response(closed, timepts, U=Ld, X0=[15, 20])
+  resp = ct.input_output_response(
+      closed, timepts, inputs=Ld, initial_state=[15, 20])
   cplt = resp.plot(
       plot_inputs=False, overlay_signals=True, legend_loc='upper left')
   cplt.axes[0, 0].axhline(Ld, linestyle='--', color='black')

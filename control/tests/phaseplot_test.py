@@ -166,7 +166,8 @@ def test_phaseplane_errors():
         lambda t, x, u, params: np.array(
             [x[1], -0.25 * (x[0] - 0.01 * x[0]**3) - 0.1 * x[1]]),
         states=2, inputs=0)
-    with pytest.warns(UserWarning, match=r"X0=array\(.*\), solve_ivp failed"):
+    with pytest.warns(
+            UserWarning, match=r"initial_state=\[.*\], solve_ivp failed"):
         ct.phase_plane_plot(
             sys, [-12, 12, -10, 10], 15, gridspec=[2, 9],
             plot_separatrices=False)
