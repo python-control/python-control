@@ -134,7 +134,7 @@ class TestRootLocus:
         ax_rlocus.set_xlim((-10.813628105112421, 14.760795435937652))
         ax_rlocus.set_ylim((-35.61713798641108, 33.879716621220311))
         plt.get_current_fig_manager().toolbar.mode = 'zoom rect'
-        _RLClickDispatcher(event, system, fig, ax_rlocus, '-')
+        _RLClickDispatcher(event, system, fig, ax_rlocus, '-') # noqa: F821
 
         zoom_x = ax_rlocus.lines[-2].get_data()[0][0:5]
         zoom_y = ax_rlocus.lines[-2].get_data()[1][0:5]
