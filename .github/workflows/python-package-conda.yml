@@ -38,7 +38,9 @@ jobs:
         activate-environment: test-env
         environment-file: .github/conda-env/test-env.yml
         miniforge-version: latest
-        channels: conda-forge
+        channels:
+        - defaults
+        - conda-forge
         channel-priority: strict
         auto-update-conda: false
         auto-activate-base: false
