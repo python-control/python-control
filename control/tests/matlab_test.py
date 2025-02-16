@@ -582,10 +582,11 @@ class TestMatlab:
         # siso.tf1 / siso.ss2
 
     def testUnwrap(self):
-        """Call unwrap()"""
+        # control.matlab.unwrap
         phase = np.array(range(1, 100)) / 10.
         wrapped = phase % (2 * np.pi)
         unwrapped = unwrap(wrapped)
+        np.testing.assert_array_almost_equal(phase, unwrapped)
 
     def testSISOssdata(self, siso):
         """Call ssdata()
