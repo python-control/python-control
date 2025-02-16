@@ -180,11 +180,6 @@ class TestFRD:
             f1.feedback().frequency_response(chkpts)[0],
             h1.feedback().frequency_response(chkpts)[0])
 
-    def testFeedback2(self):
-        h2 = StateSpace([[-1.0, 0], [0, -2.0]], [[0.4], [0.1]],
-                        [[1.0, 0], [0, 1]], [[0.0], [0.0]])
-        # h2.feedback([[0.3, 0.2], [0.1, 0.1]])
-
     def testAppendSiso(self):
         # Create frequency responses
         d1 = np.array([1 + 2j, 1 - 2j, 1 + 4j, 1 - 4j, 1 + 6j, 1 - 6j])
