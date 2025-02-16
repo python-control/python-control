@@ -339,11 +339,8 @@ class TestConfig:
         {'dt': 0.1}
     ])
     def test_repr_format(self, kwargs):
-        from ..statesp import StateSpace
-        from numpy import array
-
         sys = ct.ss([[1]], [[1]], [[1]], [[0]], **kwargs)
-        new = eval(repr(sys))
+        new = eval(repr(sys), locals={'StateSpace':ct.StateSpace, 'array':np.array})
         for attr in ['A', 'B', 'C', 'D']:
             assert getattr(new, attr) == getattr(sys, attr)
         for prop in ['input_labels', 'output_labels', 'state_labels']:

@@ -366,8 +366,6 @@ def test_negative_system_spec():
 
 # Named signal representations
 def test_named_signal_repr():
-    from numpy import array
-    from ..iosys import NamedSignal
     sys = ct.rss(
         states=2, inputs=['u1', 'u2'], outputs=['y1', 'y2'],
         state_prefix='xi')
@@ -375,6 +373,8 @@ def test_named_signal_repr():
 
     for signal in ['inputs', 'outputs', 'states']:
         sig_orig = getattr(resp, signal)
-        sig_eval = eval(repr(sig_orig))
+        sig_eval = eval(repr(sig_orig),
+                        locals={'array': np.array,
+                                'NamedSignal': ct.NamedSignal})
         assert sig_eval.signal_labels == sig_orig.signal_labels
         assert sig_eval.trace_labels == sig_orig.trace_labels
