@@ -143,14 +143,6 @@ def test_parameter_docs(module, prefix):
             continue
 
         # Don't fail on non-top-level functions without parameter lists
-        # TODO: may be able to delete this
-        if prefix != "" and inspect.getmodule(obj) != module and \
-           doc is not None and doc["Parameters"] == [] and \
-           doc["Returns"] == [] and doc["Yields"] == []:
-            fail_if_missing = False
-        else:
-            fail_if_missing = True
-
         _info(f"Checking function {objname} against numpydoc", 2)
         _check_numpydoc_style(obj, doc)
 
