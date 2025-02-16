@@ -115,6 +115,11 @@ def setup_plot_arguments(resp_fcn, plot_fcn, compute_time_response=True):
                 args2 = (sys2, )
                 argsc = ([sys1, sys2], )
 
+        case (None, ct.phase_plane_plot):
+            args1 = (sys1, )
+            args2 = (sys2, )
+            plot_kwargs = {'plot_streamlines': True}
+
         case _, _:
             args1 = (sys1, )
             args2 = (sys2, )

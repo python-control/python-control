@@ -174,6 +174,7 @@ def test_unrecognized_kwargs(function, nsssys, ntfsys, moreargs, kwargs,
      (control.phase_plane_plot, 1, ([-1, 1, -1, 1], 1), {}),
      (control.phaseplot.streamlines, 1, ([-1, 1, -1, 1], 1), {}),
      (control.phaseplot.vectorfield, 1, ([-1, 1, -1, 1], ), {}),
+     (control.phaseplot.streamplot, 1, ([-1, 1, -1, 1], ), {}),
      (control.phaseplot.equilpoints, 1, ([-1, 1, -1, 1], ), {}),
      (control.phaseplot.separatrices, 1, ([-1, 1, -1, 1], ), {}),
      (control.singular_values_plot, 1, (), {})]
@@ -367,6 +368,7 @@ kwarg_unittest = {
         optimal_test.test_oep_argument_errors,
     'phaseplot.streamlines': test_matplotlib_kwargs,
     'phaseplot.vectorfield': test_matplotlib_kwargs,
+    'phaseplot.streamplot': test_matplotlib_kwargs,
     'phaseplot.equilpoints': test_matplotlib_kwargs,
     'phaseplot.separatrices': test_matplotlib_kwargs,
 }
