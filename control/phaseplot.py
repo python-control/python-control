@@ -45,6 +45,7 @@ _phaseplot_defaults = {
     'phaseplot.separatrices_radius': 0.1    # initial radius for separatrices
 }
 
+
 def phase_plane_plot(
         sys, pointdata=None, timedata=None, gridtype=None, gridspec=None,
         plot_streamlines=None, plot_vectorfield=None, plot_streamplot=None,
@@ -131,17 +132,17 @@ def phase_plane_plot(
         'both' to flow both forward and backward.  The amount of time to
         simulate in each direction is given by the `timedata` argument.
     plot_streamlines : bool or dict, optional
-        If then plot streamlines based on the pointdata and gridtype.  If set
-        to a dict, pass on the key-value pairs in the dict as keywords to
-        `streamlines`.
+        If True then plot streamlines based on the pointdata and gridtype.
+        If set to a dict, pass on the key-value pairs in the dict as
+        keywords to `streamlines`.
     plot_vectorfield : bool or dict, optional
-        If then plot the vector field based on the pointdata and gridtype.
-        If set to a dict, pass on the key-value pairs in the dict as keywords
-        to `phaseplot.vectorfield`.
+        If True then plot the vector field based on the pointdata and
+        gridtype.  If set to a dict, pass on the key-value pairs in the
+        dict as keywords to `phaseplot.vectorfield`.
     plot_streamplot : bool or dict, optional
-        If then use :func:`matplotlib.axes.Axes.streamplot` function
+        If True then use `matplotlib.axes.Axes.streamplot` function
         to plot the streamlines.  If set to a dict, pass on the key-value
-        pairs in the dict as keywords to :func:`~control.phaseplot.streamplot`.
+        pairs in the dict as keywords to `phaseplot.streamplot`.
     plot_equilpoints : bool or dict, optional
         If True (default) then plot equilibrium points based in the phase
         plot boundary. If set to a dict, pass on the key-value pairs in the
@@ -157,6 +158,16 @@ def phase_plane_plot(
         If set to True, suppress warning messages in generating trajectories.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
+
+    Notes
+    -----
+    The default method for producing streamlines is determined based on which
+    keywords are specified, with `plot_streamplot` serving as the generic
+    default.  If any of the `arrows`, `arrow_size`, `arrow_style`, or `dir`
+    keywords are used and neither `plot_streamlines` nor `plot_streamplot` is
+    set, then `plot_streamlines` will be set to True.  If neither
+    `plot_streamlines` nor `plot_vectorfield` set set to True, then
+    `plot_streamplot` will be set to True.
 
     """
     # Check for legacy usage of plot_streamlines
@@ -174,11 +185,8 @@ def phase_plane_plot(
                 "falling back to streamlines")
             plot_streamlines = True
 
-    if (
-        plot_streamlines is None
-        and plot_vectorfield is None
-        and plot_streamplot is None
-    ):
+    if plot_streamlines is None and plot_vectorfield is None \
+       and plot_streamplot is None:
         plot_streamplot = True
 
     if plot_streamplot and not plot_streamlines and not plot_vectorfield:
@@ -219,9 +227,10 @@ def phase_plane_plot(
         out[0] += streamlines(
             sys, pointdata, timedata, _check_kwargs=False,
             suppress_warnings=suppress_warnings, **kwargs_local)
-        
+
         new_zorder = max(elem.get_zorder() for elem in out[0])
-        flow_zorder = max(flow_zorder, new_zorder) if flow_zorder else new_zorder
+        flow_zorder = max(flow_zorder, new_zorder) if flow_zorder \
+            else new_zorder
 
         # Get rid of keyword arguments handled by streamlines
         for kw in ['arrows', 'arrow_size', 'arrow_style', 'color',
@@ -237,9 +246,10 @@ def phase_plane_plot(
             kwargs, plot_vectorfield, gridspec=gridspec, ax=ax)
         out[1] = vectorfield(
             sys, pointdata, _check_kwargs=False, **kwargs_local)
-        
+
         new_zorder = out[1].get_zorder()
-        flow_zorder = max(flow_zorder, new_zorder) if flow_zorder else new_zorder
+        flow_zorder = max(flow_zorder, new_zorder) if flow_zorder \
+            else new_zorder
 
         # Get rid of keyword arguments handled by vectorfield
         for kw in ['color', 'params']:
@@ -247,15 +257,17 @@ def phase_plane_plot(
 
     if plot_streamplot:
         if gridtype not in [None, 'meshgrid']:
-            raise ValueError("gridtype must be 'meshgrid' when using streamplot")
+            raise ValueError(
+                "gridtype must be 'meshgrid' when using streamplot")
 
         kwargs_local = _create_kwargs(
             kwargs, plot_streamplot, gridspec=gridspec, ax=ax)
         out[3] = streamplot(
             sys, pointdata, _check_kwargs=False, **kwargs_local)
-        
+
         new_zorder = max(out[3].lines.get_zorder(), out[3].arrows.get_zorder())
-        flow_zorder = max(flow_zorder, new_zorder) if flow_zorder else new_zorder
+        flow_zorder = max(flow_zorder, new_zorder) if flow_zorder \
+            else new_zorder
 
         # Get rid of keyword arguments handled by streamplot
         for kw in ['color', 'params']:
@@ -269,8 +281,9 @@ def phase_plane_plot(
         kwargs_local['zorder'] = kwargs_local.get('zorder', sep_zorder)
         out[0] += separatrices(
             sys, pointdata, _check_kwargs=False,  **kwargs_local)
-        
-        sep_zorder = max(elem.get_zorder() for elem in out[0]) if out[0] else None
+
+        sep_zorder = max(elem.get_zorder() for elem in out[0]) if out[0] \
+            else None
 
         # Get rid of keyword arguments handled by separatrices
         for kw in ['arrows', 'arrow_size', 'arrow_style', 'params']:
@@ -340,9 +353,6 @@ def vectorfield(
         dict with key 'args' and value given by a tuple (passed to callable).
     color : matplotlib color spec, optional
         Plot the vector field in the given color.
-    zorder : float, optional
-        Set the zorder for the separatrices.  In not specified, it will be
-        automatically chosen by `matplotlib.axes.Axes.quiver`.
     ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
@@ -357,6 +367,9 @@ def vectorfield(
         Default is set by `config.defaults['ctrlplot.rcParams']`.
     suppress_warnings : bool, optional
         If set to True, suppress warning messages in generating trajectories.
+    zorder : float, optional
+        Set the zorder for the separatrices.  In not specified, it will be
+        automatically chosen by `matplotlib.axes.Axes.quiver`.
 
     """
     # Process keywords
@@ -427,31 +440,35 @@ def streamplot(
         dict with key 'args' and value given by a tuple (passed to callable).
     color : matplotlib color spec, optional
         Plot the vector field in the given color.
-    vary_color : bool, optional
-        If set to True, vary the color of the streamlines based on the magnitude
-    vary_linewidth : bool, optional.
-        If set to True, vary the linewidth of the streamlines based on the magnitude.
-    cmap : str or Colormap, optional
-        Colormap to use for varying the color of the streamlines.
-    norm : `matplotlib.colors.Normalize`, optional
-        An instance of Normalize to use for scaling the colormap and linewidths.
-    zorder : float, optional
-        Set the zorder for the separatrices.  In not specified, it will be
-        automatically chosen by `matplotlib.axes.Axes.streamplot`.
     ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
     Returns
     -------
     out : StreamplotSet
+        Containter object with lines and arrows contained in the
+        streamplot. See `matplotlib.axes.Axes.streamplot` for details.
 
     Other Parameters
     ----------------
+    cmap : str or Colormap, optional
+        Colormap to use for varying the color of the streamlines.
+    norm : `matplotlib.colors.Normalize`, optional
+        Normalization map to use for scaling the colormap and linewidths.
     rcParams : dict
         Override the default parameters used for generating plots.
         Default is set by `config.default['ctrlplot.rcParams']`.
     suppress_warnings : bool, optional
         If set to True, suppress warning messages in generating trajectories.
+    vary_color : bool, optional
+        If set to True, vary the color of the streamlines based on the
+        magnitude of the vector field.
+    vary_linewidth : bool, optional.
+        If set to True, vary the linewidth of the streamlines based on the
+        magnitude of the vector field.
+    zorder : float, optional
+        Set the zorder for the separatrices.  In not specified, it will be
+        automatically chosen by `matplotlib.axes.Axes.streamplot`.
 
     """
     # Process keywords
@@ -466,7 +483,8 @@ def streamplot(
     # Determine the points on which to generate the streamplot field
     points, gridspec = _make_points(pointdata, gridspec, 'meshgrid')
     grid_arr_shape = gridspec[::-1]
-    xs, ys = points[:, 0].reshape(grid_arr_shape), points[:, 1].reshape(grid_arr_shape)
+    xs = points[:, 0].reshape(grid_arr_shape)
+    ys = points[:, 1].reshape(grid_arr_shape)
 
     # Create axis if needed
     if ax is None:
@@ -484,24 +502,28 @@ def streamplot(
 
     # Generate phase plane (quiver) data
     sys._update_params(params)
-    us_flat, vs_flat = np.transpose([sys._rhs(0, x, np.zeros(sys.ninputs)) for x in points])
+    us_flat, vs_flat = np.transpose(
+        [sys._rhs(0, x, np.zeros(sys.ninputs)) for x in points])
     us, vs = us_flat.reshape(grid_arr_shape), vs_flat.reshape(grid_arr_shape)
 
     magnitudes = np.linalg.norm([us, vs], axis=0)
     norm = norm or mpl.colors.Normalize()
     normalized = norm(magnitudes)
-    cmap =  plt.get_cmap(cmap)
+    cmap = plt.get_cmap(cmap)
 
     with plt.rc_context(rcParams):
         default_lw = plt.rcParams['lines.linewidth']
         min_lw, max_lw = 0.25*default_lw, 2*default_lw
-        linewidths = normalized * (max_lw - min_lw) + min_lw if vary_linewidth else None
+        linewidths = normalized * (max_lw - min_lw) + min_lw \
+            if vary_linewidth else None
         color = magnitudes if vary_color else color
 
-        out = ax.streamplot(xs, ys, us, vs, color=color, linewidth=linewidths,
-                            cmap=cmap, norm=norm, zorder=zorder)
+        out = ax.streamplot(
+            xs, ys, us, vs, color=color, linewidth=linewidths, cmap=cmap,
+            norm=norm, zorder=zorder)
 
     return out
+
 
 def streamlines(
         sys, pointdata, timedata=1, gridspec=None, gridtype=None, dir=None,
@@ -548,9 +570,6 @@ def streamlines(
         dict with key 'args' and value given by a tuple (passed to callable).
     color : str
         Plot the streamlines in the given color.
-    zorder : float, optional
-        Set the zorder for the separatrices.  In not specified, it will be
-        automatically chosen by `matplotlib.axes.Axes.plot`.
     ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
@@ -574,6 +593,9 @@ def streamlines(
         Default is set by `config.defaults['ctrlplot.rcParams']`.
     suppress_warnings : bool, optional
         If set to True, suppress warning messages in generating trajectories.
+    zorder : float, optional
+        Set the zorder for the separatrices.  In not specified, it will be
+        automatically chosen by `matplotlib.axes.Axes.plot`.
 
     """
     # Process keywords
@@ -672,9 +694,6 @@ def equilpoints(
         dict with key 'args' and value given by a tuple (passed to callable).
     color : str
         Plot the equilibrium points in the given color.
-    zorder : float, optional
-        Set the zorder for the separatrices.  In not specified, it will be
-        automatically chosen by `matplotlib.axes.Axes.plot`.
     ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
@@ -687,6 +706,9 @@ def equilpoints(
     rcParams : dict
         Override the default parameters used for generating plots.
         Default is set by `config.defaults['ctrlplot.rcParams']`.
+    zorder : float, optional
+        Set the zorder for the separatrices.  In not specified, it will be
+        automatically chosen by `matplotlib.axes.Axes.plot`.
 
     """
     # Process keywords
@@ -720,7 +742,8 @@ def equilpoints(
     out = []
     for xeq in equilpts:
         with plt.rc_context(rcParams):
-            out += ax.plot(xeq[0], xeq[1], marker='o', color=color, zorder=zorder)
+            out += ax.plot(
+                xeq[0], xeq[1], marker='o', color=color, zorder=zorder)
     return out
 
 
@@ -767,9 +790,6 @@ def separatrices(
         separatrices.  If a tuple is given, the first element is used as
         the color specification for stable separatrices and the second
         element for unstable separatrices.
-    zorder : float, optional
-        Set the zorder for the separatrices.  In not specified, it will be
-        automatically chosen by `matplotlib.axes.Axes.plot`.
     ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
@@ -784,6 +804,9 @@ def separatrices(
         Default is set by `config.defaults['ctrlplot.rcParams']`.
     suppress_warnings : bool, optional
         If set to True, suppress warning messages in generating trajectories.
+    zorder : float, optional
+        Set the zorder for the separatrices.  In not specified, it will be
+        automatically chosen by `matplotlib.axes.Axes.plot`.
 
     Notes
     -----
@@ -884,7 +907,8 @@ def separatrices(
                 if traj.shape[1] > 1:
                     with plt.rc_context(rcParams):
                         out += ax.plot(
-                            traj[0], traj[1], color=color, linestyle=linestyle, zorder=zorder)
+                            traj[0], traj[1], color=color,
+                            linestyle=linestyle, zorder=zorder)
 
                     # Add arrows to the lines at specified intervals
                     with plt.rc_context(rcParams):
@@ -984,6 +1008,7 @@ def circlegrid(centers, radius, num):
             theta in np.linspace(0, 2 * math.pi, num, endpoint=False)])
     return grid
 
+
 #
 # Internal utility functions
 #
@@ -1003,6 +1028,7 @@ def _create_system(sys, params):
     _output = lambda t, x, u, params: np.array([])
     return NonlinearIOSystem(
         _update, _output, states=2, inputs=0, outputs=0, name="_callable")
+
 
 # Set axis limits for the plot
 def _set_axis_limits(ax, pointdata):
