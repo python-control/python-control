@@ -731,8 +731,6 @@ def test_optimal_doc(method, npts, initial_guess, fail):
         initial_guess[0, :] = (xf[0] - x0[0]) / Tf
 
         # Steering = rate required to turn to proper slope in first segment
-        straight_seg_length = timepts[-2] - timepts[1]
-        curved_seg_length = (Tf - straight_seg_length)/2
         approximate_angle = math.atan2(xf[1] - x0[1], xf[0] - x0[0])
         initial_guess[1, 0] = approximate_angle / (timepts[1] - timepts[0])
         initial_guess[1, -1] = -approximate_angle / (timepts[-1] - timepts[-2])
