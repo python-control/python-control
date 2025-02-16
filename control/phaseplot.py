@@ -451,6 +451,10 @@ def streamplot(
 
     Other Parameters
     ----------------
+    cmap : str or Colormap, optional
+        Colormap to use for varying the color of the streamlines.
+    norm : `matplotlib.colors.Normalize`, optional
+        Normalization map to use for scaling the colormap and linewidths.
     rcParams : dict
         Override the default parameters used for generating plots.
         Default is set by `config.default['ctrlplot.rcParams']`.
@@ -462,10 +466,6 @@ def streamplot(
     vary_linewidth : bool, optional.
         If set to True, vary the linewidth of the streamlines based on the
         magnitude of the vector field.
-    cmap : str or Colormap, optional
-        Colormap to use for varying the color of the streamlines.
-    norm : `matplotlib.colors.Normalize`, optional
-        Normalization map to use for scaling the colormap and linewidths.
     zorder : float, optional
         Set the zorder for the separatrices.  In not specified, it will be
         automatically chosen by `matplotlib.axes.Axes.streamplot`.

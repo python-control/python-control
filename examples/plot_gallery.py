@@ -102,7 +102,6 @@ with create_figure("Phase plane plot"):
     invpend = ct.nlsys(invpend_update, states=2, inputs=1, name='invpend')
     ct.phase_plane_plot(
         invpend, [-2*pi, 2*pi, -2, 2], 5,
-        gridtype='meshgrid', gridspec=[5, 8], arrows=3,
         plot_separatrices={'gridspec': [12, 9]},
         params={'m': 1, 'l': 1, 'b': 0.2, 'g': 1})
 
