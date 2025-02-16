@@ -123,6 +123,7 @@ class TestModelsimp:
         inp = np.array([1, 2])
         outp = np.array([2, 4])
         mrk = markov(outp, inp, 1, transpose=False)
+        np.testing.assert_almost_equal(mrk, 2.)
 
         # Test mimo example
         # Mechanical Vibrations: Theory and Application, SI Edition, 1st ed.
