@@ -524,7 +524,6 @@ def test_iosys_container_classes(cls):
     # Create a system that we can scan for attributes
     sys = cls(states=2, outputs=1, inputs=1)
 
-    docstring = inspect.getdoc(cls)
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')     # debug via sphinx, not here
         doc = npd.FunctionDoc(cls)
