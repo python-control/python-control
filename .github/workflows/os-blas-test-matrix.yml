@@ -126,6 +126,7 @@ jobs:
           activate-environment: build-env
           environment-file: .github/conda-env/build-env.yml
           miniforge-version: latest
+          channels: conda-forge,defaults
           channel-priority: strict
           auto-update-conda: false
           auto-activate-base: false
@@ -297,6 +298,7 @@ jobs:
           miniforge-version: latest
           activate-environment: test-env
           environment-file: .github/conda-env/test-env.yml
+          channels: conda-forge,defaults
           channel-priority: strict
           auto-activate-base: false
       - name: Download conda packages
