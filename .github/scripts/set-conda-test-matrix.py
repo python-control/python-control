@@ -1,6 +1,8 @@
 """Create test matrix for conda packages in OS/BLAS test matrix workflow."""
 
+import json
 from pathlib import Path
+import re
 
 osmap = {'linux': 'ubuntu',
          'osx': 'macos',
