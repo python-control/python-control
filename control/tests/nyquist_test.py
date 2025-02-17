@@ -436,7 +436,7 @@ def test_nyquist_legacy():
     sys = (0.02 * s**3 - 0.1 * s) / (s**4 + s**3 + s**2 + 0.25 * s + 0.04)
 
     with pytest.warns(UserWarning, match="indented contour may miss"):
-        response = ct.nyquist_plot(sys)
+        ct.nyquist_plot(sys)
 
 def test_discrete_nyquist():
     # TODO: add tests to make sure plots make sense
@@ -512,7 +512,7 @@ def test_nyquist_frd():
 
     # Computing Nyquist response w/ different frequencies OK if given as a list
     nyqresp = ct.nyquist_response([sys1, sys2])
-    cplt = nyqresp.plot()
+    nyqresp.plot()
 
     warnings.resetwarnings()
 
@@ -522,7 +522,7 @@ def test_no_indent_pole():
     sys = ((1 + 5/s)/(1 + 0.5/s))**2   # Double-Lag-Compensator
 
     with pytest.raises(RuntimeError, match="evaluate at a pole"):
-        resp = ct.nyquist_response(
+        ct.nyquist_response(
             sys, warn_encirclements=False, indent_direction='none')
 
 

@@ -543,7 +543,6 @@ class TestFlatSys:
         x0 = [1, 0]; u0 = [0]
         xf = [0, 0]; uf = [0]
         Tf = 10
-        T = np.linspace(0, Tf, 500)
 
         # Cost function
         timepts = np.linspace(0, Tf, 10)
@@ -658,7 +657,6 @@ class TestFlatSys:
         x0 = [1, 0]; u0 = [0]
         xf = [0, 0]; uf = [0]
         Tf = 10
-        T = np.linspace(0, Tf, 500)
 
         # Cost function
         timepts = np.linspace(0, Tf, 10)
