@@ -860,7 +860,7 @@ class TestStatefbk:
         K, _, _ = ct.lqr(
             sys, np.eye(sys.nstates + nintegrators), np.eye(sys.ninputs),
             integral_action=C_int)
-        Kp, Ki = K[:, :sys.nstates], K[:, sys.nstates:]
+        Kp, _Ki = K[:, :sys.nstates], K[:, sys.nstates:]
 
         # Create an I/O system for the controller
         ctrl, clsys = ct.create_statefbk_iosystem(
@@ -1237,19 +1237,9 @@ def test_create_statefbk_errors():
 
 
 def test_create_statefbk_params(unicycle):
-    # Speeds and angles at which to compute the gains
-    speeds = [1, 5, 10]
-    angles = np.linspace(0, pi/2, 4)
-    points = list(itertools.product(speeds, angles))
-
-    # Gains for each speed (using LQR controller)
     Q = np.identity(unicycle.nstates)
     R = np.identity(unicycle.ninputs)
     gain, _, _ = ct.lqr(unicycle.linearize([0, 0, 0], [5, 0]), Q, R)
-
-    #
-    # Schedule on desired speed and angle
-    #
 
     # Create a linear controller
     ctrl, clsys = ct.create_statefbk_iosystem(unicycle, gain)

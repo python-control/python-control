@@ -8,7 +8,6 @@ BG,  26 Jul 2020 merge statesp_array_test.py differences into statesp_test.py
 """
 
 import operator
-import platform
 
 import numpy as np
 import pytest
@@ -23,10 +22,7 @@ from control.lti import LTI, evalfr
 from control.statesp import StateSpace, _convert_to_statespace, \
     _rss_generate, _statesp_defaults, drss, linfnorm, rss, ss, tf2ss
 from control.xferfcn import TransferFunction, ss2tf
-
-from .conftest import assert_tf_close_coeff, editsdefaults, \
-    ignore_future_warning, slycotonly
-
+from .conftest import assert_tf_close_coeff, slycotonly
 
 class TestStateSpace:
     """Tests for the StateSpace class."""
@@ -144,7 +140,7 @@ class TestStateSpace:
     def test_constructor_invalid(self, args, exc, errmsg):
         """Test invalid input to StateSpace() constructor"""
 
-        with pytest.raises(exc, match=errmsg) as w:
+        with pytest.raises(exc, match=errmsg):
             StateSpace(*args)
         with pytest.raises(exc, match=errmsg):
             ss(*args)

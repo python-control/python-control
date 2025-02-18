@@ -7,8 +7,7 @@ import numpy as np
 import pytest
 
 import control as ct
-from control.tests.conftest import mplcleanup, slycotonly
-
+from control.tests.conftest import slycotonly
 
 # Detailed test of (almost) all functionality
 #
@@ -312,15 +311,15 @@ def test_combine_time_responses():
 
     with pytest.raises(ValueError, match="must have the same number"):
         resp = ct.step_response(ct.rss(4, 2, 3), timepts)
-        combresp = ct.combine_time_responses([resp1, resp])
+        ct.combine_time_responses([resp1, resp])
 
     with pytest.raises(ValueError, match="trace labels does not match"):
-        combresp = ct.combine_time_responses(
+        ct.combine_time_responses(
             [resp1, resp2], trace_labels=["T1", "T2", "T3"])
 
     with pytest.raises(ValueError, match="must have the same time"):
         resp = ct.step_response(ct.rss(4, 2, 3), timepts/2)
-        combresp6 = ct.combine_time_responses([resp1, resp])
+        ct.combine_time_responses([resp1, resp])
 
 
 @pytest.mark.parametrize("resp_fcn", [
@@ -415,13 +414,10 @@ def test_timeplot_trace_labels(resp_fcn):
     # Figure out the expected shape of the system
     match resp_fcn:
         case ct.step_response | ct.impulse_response:
-            shape = (2, 2)
             kwargs = {}
         case ct.initial_response:
-            shape = (2, 1)
             kwargs = {}
         case ct.forced_response | ct.input_output_response:
-            shape = (4, 1)      # outputs and inputs both plotted
             T = np.linspace(0, 10)
             U = [np.sin(T), np.cos(T)]
             kwargs = {'T': T, 'U': U}
