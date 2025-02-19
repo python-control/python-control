@@ -3,8 +3,6 @@
 RvP, 4 Oct 2012
 """
 
-import sys as pysys
-
 import numpy as np
 import matplotlib.pyplot as plt
 import pytest
@@ -13,7 +11,7 @@ import control as ct
 from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
 from control.frdata import frd, _convert_to_frd, FrequencyResponseData
-from control import bdalg, evalfr, freqplot
+from control import bdalg, freqplot
 from control.tests.conftest import slycotonly
 from control.exception import pandas_check
 
@@ -181,11 +179,6 @@ class TestFRD:
         np.testing.assert_array_almost_equal(
             f1.feedback().frequency_response(chkpts)[0],
             h1.feedback().frequency_response(chkpts)[0])
-
-    def testFeedback2(self):
-        h2 = StateSpace([[-1.0, 0], [0, -2.0]], [[0.4], [0.1]],
-                        [[1.0, 0], [0, 1]], [[0.0], [0.0]])
-        # h2.feedback([[0.3, 0.2], [0.1, 0.1]])
 
     def testAppendSiso(self):
         # Create frequency responses
@@ -362,7 +355,6 @@ class TestFRD:
                          np.array([[1.0, 0], [0, 0], [0, 1]]),
                          np.eye(3), np.zeros((3, 2)))
         omega = np.logspace(-1, 2, 10)
-        chkpts = omega[::3]
         f1 = frd(sys, omega)
         np.testing.assert_array_almost_equal(
             (f1.frequency_response([1.0])[0] *
@@ -379,13 +371,13 @@ class TestFRD:
         sys1 = frd([1, 2, 3], [4, 5, 6])
         sys2 = frd([2, 3, 4], [5, 6, 7])
         with pytest.raises(NotImplementedError):
-            sys = sys1 + sys2
+            sys1 + sys2
 
         # One frequency range is a subset of another
         sys1 = frd([1, 2, 3], [4, 5, 6])
         sys2 = frd([2, 3], [4, 5])
         with pytest.raises(NotImplementedError):
-            sys = sys1 + sys2
+            sys1 + sys2
 
     def test_size_mismatch(self):
         sys1 = frd(ct.rss(2, 2, 2), np.logspace(-1, 1, 10))
@@ -393,16 +385,16 @@ class TestFRD:
         # Different number of inputs
         sys2 = frd(ct.rss(3, 1, 2), np.logspace(-1, 1, 10))
         with pytest.raises(ValueError):
-            sys = sys1 + sys2
+            sys1 + sys2
 
         # Different number of outputs
         sys2 = frd(ct.rss(3, 2, 1), np.logspace(-1, 1, 10))
         with pytest.raises(ValueError):
-            sys = sys1 + sys2
+            sys1 + sys2
 
         # Inputs and outputs don't match
         with pytest.raises(ValueError):
-            sys = sys2 * sys1
+            sys2 * sys1
 
         # Feedback mismatch
         with pytest.raises(ValueError):
@@ -580,7 +572,6 @@ class TestFRD:
         omega = np.logspace(-1, 1, 10)
         tf_mimo = TransferFunction([1], [1, 0]) * np.eye(2)
         frd_mimo = frd(tf_mimo, omega)
-        ss_mimo = ct.tf2ss(tf_mimo)
         tf_siso = TransferFunction([1], [1, 1])
         frd_siso = frd(tf_siso, omega)
         expected = frd(tf_mimo.__truediv__(tf_siso), omega)
@@ -609,7 +600,6 @@ class TestFRD:
         ss_mimo = ct.tf2ss(tf_mimo)
         tf_siso = TransferFunction([1], [1, 1])
         frd_siso = frd(tf_siso, omega)
-        ss_siso = ct.tf2ss(tf_siso)
         expected = frd(tf_siso.__rtruediv__(tf_mimo), omega)
 
         # Test division of MIMO FRD by SISO FRD
@@ -801,9 +791,9 @@ Input 2 to output 1:
         h = TransferFunction([1], [1, 2, 2])
         omega = np.logspace(-1, 2, 10)
         with pytest.raises(TypeError, match="unrecognized keyword"):
-            sys = FrequencyResponseData(h, omega, unknown=None)
+            FrequencyResponseData(h, omega, unknown=None)
         with pytest.raises(TypeError, match="unrecognized keyword"):
-            sys = ct.frd(h, omega, unknown=None)
+            ct.frd(h, omega, unknown=None)
 
 
 def test_named_signals():

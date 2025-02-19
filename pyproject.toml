@@ -61,7 +61,6 @@ filterwarnings = [
 
 # TODO: expand to cover all code
 include = ['control/**.py']
-exclude = ['control/tests/*.py']
 
 [tool.ruff.lint]
 select = [

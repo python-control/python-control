@@ -15,7 +15,6 @@ functionality implemented in the interconnect() function itself.
 import pytest
 
 import numpy as np
-import scipy as sp
 import math
 
 import control as ct
@@ -46,15 +45,15 @@ def test_summing_junction(inputs, output, dimension, D):
 def test_summation_exceptions():
     # Bad input description
     with pytest.raises(ValueError, match="could not parse input"):
-        sumblk = ct.summing_junction(np.pi, 'y')
+        ct.summing_junction(np.pi, 'y')
 
     # Bad output description
     with pytest.raises(ValueError, match="could not parse output"):
-        sumblk = ct.summing_junction('u', np.pi)
+        ct.summing_junction('u', np.pi)
 
     # Bad input dimension
     with pytest.raises(ValueError, match="unrecognized dimension"):
-        sumblk = ct.summing_junction('u', 'y', dimension=False)
+        ct.summing_junction('u', 'y', dimension=False)
 
 
 @pytest.mark.parametrize("dim", [1, 3])
@@ -346,7 +345,7 @@ def test_interconnect_exceptions():
 
     # NonlinearIOSytem
     with pytest.raises(TypeError, match="unrecognized keyword"):
-        nlios =  ct.NonlinearIOSystem(
+        ct.NonlinearIOSystem(
             None, lambda t, x, u, params: u*u, input_count=1, output_count=1)
 
     # Summing junction

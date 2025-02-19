@@ -143,14 +143,6 @@ def test_parameter_docs(module, prefix):
             continue
 
         # Don't fail on non-top-level functions without parameter lists
-        # TODO: may be able to delete this
-        if prefix != "" and inspect.getmodule(obj) != module and \
-           doc is not None and doc["Parameters"] == [] and \
-           doc["Returns"] == [] and doc["Yields"] == []:
-            fail_if_missing = False
-        else:
-            fail_if_missing = True
-
         _info(f"Checking function {objname} against numpydoc", 2)
         _check_numpydoc_style(obj, doc)
 
@@ -309,7 +301,7 @@ def test_deprecated_functions(module, prefix):
 
             # Get the docstring (skip w/ warning if there isn't one)
             if obj.__doc__ is None:
-                _warn(f"{objname} is missing docstring")
+                _warn(f"{obj} is missing docstring")
                 continue
             else:
                 docstring = inspect.getdoc(obj)
@@ -320,13 +312,13 @@ def test_deprecated_functions(module, prefix):
             if ".. deprecated::" in doc_extended:
                 # Make sure a FutureWarning is issued
                 if not re.search("FutureWarning", source):
-                    _fail(f"{objname} deprecated but does not issue "
+                    _fail(f"{obj} deprecated but does not issue "
                           "FutureWarning")
             else:
                 if re.search(name + r"(\(\))? is deprecated", docstring) or \
                    re.search(name + r"(\(\))? is deprecated", source):
                     _fail(
-                        f"{objname} deprecated but with non-standard "
+                        f"{obj} deprecated but with non-standard "
                         "docs/warnings")
 
 #
@@ -505,13 +497,6 @@ def test_iosys_attribute_lists(cls, ignore_future_warning):
             # Skip hidden and ignored attributes; methods checked elsewhere
             continue
 
-        # Get the object associated with this attribute
-        obj = getattr(cls, name, getattr(sys, name))
-        if getattr(obj, '__module__', None):
-            objname = ".".join([obj.__module__.removeprefix("control."), name])
-        else:
-            objname = name
-
         # Try to find documentation in primary class
         if _check_parameter_docs(
                 cls.__name__, name, docstring, fail_if_missing=False):
@@ -539,7 +524,6 @@ def test_iosys_container_classes(cls):
     # Create a system that we can scan for attributes
     sys = cls(states=2, outputs=1, inputs=1)
 
-    docstring = inspect.getdoc(cls)
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')     # debug via sphinx, not here
         doc = npd.FunctionDoc(cls)

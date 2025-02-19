@@ -13,8 +13,9 @@
 import inspect
 import warnings
 
-import matplotlib.pyplot as plt
 import pytest
+
+import numpy as np
 
 import control
 import control.flatsys
@@ -343,9 +344,6 @@ kwarg_unittest = {
     'PoleZeroList.plot': test_response_plot_kwargs,
     'InterconnectedSystem.__init__':
         interconnect_test.test_interconnect_exceptions,
-    'StateSpace.__init__':
-        interconnect_test.test_interconnect_exceptions,
-    'StateSpace.sample': test_unrecognized_kwargs,
     'NonlinearIOSystem.__init__':
         interconnect_test.test_interconnect_exceptions,
     'StateSpace.__init__': test_unrecognized_kwargs,

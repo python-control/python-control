@@ -1,8 +1,5 @@
 """conftest.py - pytest local plugins, fixtures, marks and functions."""
 
-import os
-from contextlib import contextmanager
-
 import matplotlib as mpl
 import numpy as np
 import pytest

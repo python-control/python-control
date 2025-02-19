@@ -8,7 +8,6 @@ import numpy as np
 import pytest
 
 import control as ct
-from control.tests.conftest import editsdefaults, slycotonly
 
 pytestmark = pytest.mark.usefixtures("mplcleanup")
 
@@ -167,7 +166,7 @@ def test_line_styles(plt_fcn):
     sys3 = ct.tf([0.2, 0.1], [1, 0.1, 0.3, 0.1, 0.1], name='sys3')
 
     # Create a plot for the first system, with custom styles
-    lines_default = plt_fcn(sys1)
+    plt_fcn(sys1)
 
     # Now create a plot using *fmt customization
     lines_fmt = plt_fcn(sys2, None, 'r--')

@@ -81,7 +81,7 @@ def test_finite_horizon_simple(method):
         sys, time, x0, cost, constraints, squeeze=True,
         trajectory_method=method,
         terminal_cost=cost)     # include to match MPT3 formulation
-    t, u_openloop = res.time, res.inputs
+    _t, u_openloop = res.time, res.inputs
     np.testing.assert_almost_equal(
         u_openloop, [-1, -1, 0.1393, 0.3361, -5.204e-16], decimal=4)
 
@@ -186,7 +186,6 @@ def test_mpc_iosystem_aircraft():
     # compute the steady state values for a particular value of the input
     ud = np.array([0.8, -0.3])
     xd = np.linalg.inv(np.eye(5) - A) @ B @ ud
-    yd = C @ xd
 
     # provide constraints on the system signals
     constraints = [opt.input_range_constraint(sys, [-5, -6], [5, 6])]
@@ -264,7 +263,7 @@ def test_mpc_iosystem_continuous():
 
     # Continuous time MPC controller not implemented
     with pytest.raises(NotImplementedError):
-        ctrl = opt.create_mpc_iosystem(sys, T, cost)
+        opt.create_mpc_iosystem(sys, T, cost)
 
 
 # Test various constraint combinations; need to use a somewhat convoluted
@@ -315,7 +314,7 @@ def test_constraint_specification(constraint_list):
     # Compute optimal control and compare against MPT3 solution
     x0 = [4, 0]
     res = optctrl.compute_trajectory(x0, squeeze=True)
-    t, u_openloop = res.time, res.inputs
+    _t, u_openloop = res.time, res.inputs
     np.testing.assert_almost_equal(
         u_openloop, [-1, -1, 0.1393, 0.3361, -5.204e-16], decimal=3)
 
@@ -352,7 +351,7 @@ def test_terminal_constraints(sys_args):
     # Find a path to the origin
     x0 = np.array([4, 3])
     res = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
-    t, u1, x1 = res.time, res.inputs, res.states
+    _t, u1, x1 = res.time, res.inputs, res.states
 
     # Bug prior to SciPy 1.6 will result in incorrect results
     if NumpyVersion(sp.__version__) < '1.6.0':
@@ -401,7 +400,7 @@ def test_terminal_constraints(sys_args):
         # Find a path to the origin
         res = optctrl.compute_trajectory(
             x0, squeeze=True, return_x=True, initial_guess=u1)
-        t, u2, x2 = res.time, res.inputs, res.states
+        _t, u2, x2 = res.time, res.inputs, res.states
 
         # Not all configurations are able to converge (?)
         if res.success:
@@ -416,7 +415,7 @@ def test_terminal_constraints(sys_args):
         optctrl = opt.OptimalControlProblem(
             sys, time, cost, constraints, terminal_constraints=final_point)
         res = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
-        t, u3, x3 = res.time, res.inputs, res.states
+        _t, u3, x3 = res.time, res.inputs, res.states
 
         # Check the answers only if we converged
         if res.success:
@@ -448,7 +447,7 @@ def test_optimal_logging(capsys):
     # Solve it, with logging turned on (with warning due to mixed constraints)
     with pytest.warns(sp.optimize.OptimizeWarning,
                         match="Equality and inequality .* same element"):
-        res = opt.solve_optimal_trajectory(
+        opt.solve_optimal_trajectory(
             sys, time, x0, cost, input_constraint, terminal_cost=cost,
             terminal_constraints=state_constraint, log=True)
 
@@ -513,21 +512,21 @@ def test_ocp_argument_errors():
 
     # Trajectory constraints not in the right form
     with pytest.raises(TypeError, match="constraints must be a list"):
-        res = opt.solve_optimal_trajectory(sys, time, x0, cost, np.eye(2))
+        opt.solve_optimal_trajectory(sys, time, x0, cost, np.eye(2))
 
     # Terminal constraints not in the right form
     with pytest.raises(TypeError, match="constraints must be a list"):
-        res = opt.solve_optimal_trajectory(
+        opt.solve_optimal_trajectory(
             sys, time, x0, cost, constraints, terminal_constraints=np.eye(2))
 
     # Initial guess in the wrong shape
     with pytest.raises(ValueError, match="initial guess is the wrong shape"):
-        res = opt.solve_optimal_trajectory(
+        opt.solve_optimal_trajectory(
             sys, time, x0, cost, constraints, initial_guess=np.zeros((4,1,1)))
 
     # Unrecognized arguments
     with pytest.raises(TypeError, match="unrecognized keyword"):
-        res = opt.solve_optimal_trajectory(
+        opt.solve_optimal_trajectory(
             sys, time, x0, cost, constraints, terminal_constraint=None)
 
     with pytest.raises(TypeError, match="unrecognized keyword"):
@@ -541,21 +540,21 @@ def test_ocp_argument_errors():
     # Unrecognized trajectory constraint type
     constraints = [(None, np.eye(3), [0, 0, 0], [0, 0, 0])]
     with pytest.raises(TypeError, match="unknown trajectory constraint type"):
-        res = opt.solve_optimal_trajectory(
+        opt.solve_optimal_trajectory(
             sys, time, x0, cost, trajectory_constraints=constraints)
 
     # Unrecognized terminal constraint type
     with pytest.raises(TypeError, match="unknown terminal constraint type"):
-        res = opt.solve_optimal_trajectory(
+        opt.solve_optimal_trajectory(
             sys, time, x0, cost, terminal_constraints=constraints)
 
     # Discrete time system checks: solve_ivp keywords not allowed
     sys = ct.rss(2, 1, 1, dt=True)
     with pytest.raises(TypeError, match="solve_ivp method, kwargs not allowed"):
-        res = opt.solve_optimal_trajectory(
+        opt.solve_optimal_trajectory(
             sys, time, x0, cost, solve_ivp_method='LSODA')
     with pytest.raises(TypeError, match="solve_ivp method, kwargs not allowed"):
-        res = opt.solve_optimal_trajectory(
+        opt.solve_optimal_trajectory(
             sys, time, x0, cost, solve_ivp_kwargs={'eps': 0.1})
 
 
@@ -629,7 +628,7 @@ def test_equality_constraints():
     # Find a path to the origin
     x0 = np.array([4, 3])
     res = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
-    t, u1, x1 = res.time, res.inputs, res.states
+    _t, u1, x1 = res.time, res.inputs, res.states
 
     # Bug prior to SciPy 1.6 will result in incorrect results
     if NumpyVersion(sp.__version__) < '1.6.0':
@@ -649,7 +648,7 @@ def test_equality_constraints():
     # Find a path to the origin
     x0 = np.array([4, 3])
     res = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
-    t, u2, x2 = res.time, res.inputs, res.states
+    _t, u2, x2 = res.time, res.inputs, res.states
     np.testing.assert_almost_equal(x2[:,-1], 0, decimal=4)
     np.testing.assert_almost_equal(u1, u2)
     np.testing.assert_almost_equal(x1, x2)
@@ -732,8 +731,6 @@ def test_optimal_doc(method, npts, initial_guess, fail):
         initial_guess[0, :] = (xf[0] - x0[0]) / Tf
 
         # Steering = rate required to turn to proper slope in first segment
-        straight_seg_length = timepts[-2] - timepts[1]
-        curved_seg_length = (Tf - straight_seg_length)/2
         approximate_angle = math.atan2(xf[1] - x0[1], xf[0] - x0[0])
         initial_guess[1, 0] = approximate_angle / (timepts[1] - timepts[0])
         initial_guess[1, -1] = -approximate_angle / (timepts[-1] - timepts[-2])
@@ -794,7 +791,7 @@ def test_oep_argument_errors():
 
     # Unrecognized arguments
     with pytest.raises(TypeError, match="unrecognized keyword"):
-        res = opt.solve_optimal_estimate(sys, timepts, Y, U, cost, unknown=True)
+        opt.solve_optimal_estimate(sys, timepts, Y, U, cost, unknown=True)
 
     with pytest.raises(TypeError, match="unrecognized keyword"):
         oep = opt.OptimalEstimationProblem(sys, timepts, cost, unknown=True)
@@ -807,4 +804,4 @@ def test_oep_argument_errors():
     # Incorrect number of signals
     with pytest.raises(ValueError, match="incorrect length"):
         oep = opt.OptimalEstimationProblem(sys, timepts, cost)
-        mhe = oep.create_mhe_iosystem(estimate_labels=['x1', 'x2', 'x3'])
+        oep.create_mhe_iosystem(estimate_labels=['x1', 'x2', 'x3'])
