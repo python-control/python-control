@@ -60,7 +60,7 @@ filterwarnings = [
 [tool.ruff]
 
 # TODO: expand to cover all code
-include = ['control/**.py']
+include = ['control/**.py', 'benchmarks/*.py']
 
 [tool.ruff.lint]
 select = [

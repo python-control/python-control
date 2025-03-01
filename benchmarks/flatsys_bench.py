@@ -7,7 +7,6 @@
 
 import numpy as np
 import math
-import control as ct
 import control.flatsys as flat
 import control.optimal as opt
 
