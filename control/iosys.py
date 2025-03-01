@@ -314,6 +314,9 @@ class InputOutputSystem():
     def _repr_html_(self):
         # Defaults to using __repr__; override in subclasses
         return None
+    
+    def _repr_markdown_(self):
+        return self._repr_html_()
 
     @property
     def repr_format(self):
