@@ -64,8 +64,6 @@ def _pvtol_flat_forward(states, inputs, params={}):
     F1, F2 = inputs
 
     # Use equations of motion for higher derivates
-    x1ddot = (F1 * cos(theta) - F2 * sin(theta)) / m
-    x2ddot = (F1 * sin(theta) + F2 * cos(theta) - m * g) / m
     thddot = (r * F1) / J
 
     # Flat output is a point above the vertical axis
@@ -110,7 +108,6 @@ def _pvtol_flat_reverse(zflag, params={}):
     J = params.get('J', 0.0475)         # inertia around pitch axis
     r = params.get('r', 0.25)           # distance to center of force
     g = params.get('g', 9.8)            # gravitational constant
-    c = params.get('c', 0.05)           # damping factor (estimated)
 
     # Given the flat variables, solve for the state
     theta = np.arctan2(-zflag[0][2],  zflag[1][2] + g)
@@ -185,10 +182,6 @@ pvtol_windy = ct.NonlinearIOSystem(
 def _noisy_update(t, x, u, params):
     # Get the inputs
     F1, F2, Dx, Dy = u[:4]
-    if u.shape[0] > 4:
-        Nx, Ny, Nth = u[4:]
-    else:
-        Nx, Ny, Nth = 0, 0, 0
 
     # Get the system response from the original dynamics
     xdot, ydot, thetadot, xddot, yddot, thddot = \
@@ -196,7 +189,6 @@ def _noisy_update(t, x, u, params):
 
     # Get the parameter values we need
     m = params.get('m', 4.)             # mass of aircraft
-    J = params.get('J', 0.0475)         # inertia around pitch axis
 
     # Now add the disturbances
     xddot += Dx / m
@@ -219,7 +211,6 @@ pvtol_noisy = ct.NonlinearIOSystem(
 def pvtol_noisy_A(x, u, params={}):
     # Get the parameter values we need
     m = params.get('m', 4.)             # mass of aircraft
-    J = params.get('J', 0.0475)         # inertia around pitch axis
     c = params.get('c', 0.05)           # damping factor (estimated)
 
     # Get the angle and compute sine and cosine

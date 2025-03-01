@@ -1,7 +1,7 @@
-# bdalg-matlab.py - demonstrate some MATLAB commands for block diagram altebra
+# bdalg-matlab.py - demonstrate some MATLAB commands for block diagram algebra
 # RMM, 29 May 09
 
-from control.matlab import *    # MATLAB-like functions
+from control.matlab import ss, ss2tf, tf, tf2ss    # MATLAB-like functions
 
 # System matrices
 A1 = [[0, 1.], [-4, -1]]

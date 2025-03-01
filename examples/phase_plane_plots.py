@@ -5,9 +5,8 @@
 # using the phaseplot module.  Most of these figures line up with examples
 # in FBS2e, with different display options shown as different subplots.
 
-import time
 import warnings
-from math import pi, sqrt
+from math import pi
 
 import matplotlib.pyplot as plt
 import numpy as np

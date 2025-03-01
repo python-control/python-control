@@ -3,7 +3,8 @@
 
 import os
 import matplotlib.pyplot as plt   # MATLAB plotting functions
-from control.matlab import *  # MATLAB-like functions
+import numpy as np
+from control.matlab import ss, step, bode, nyquist, rlocus # MATLAB-like functions
 
 # Parameters defining the system
 m = 250.0           # system mass
@@ -24,7 +25,7 @@ plt.show(block=False)
 
 # Bode plot for the system
 plt.figure(2)
-mag, phase, om = bode(sys, logspace(-2, 2), plot=True)
+mag, phase, om = bode(sys, np.logspace(-2, 2), plot=True)
 plt.show(block=False)
 
 # Nyquist plot for the system
@@ -32,7 +33,7 @@ plt.figure(3)
 nyquist(sys)
 plt.show(block=False)
 
-# Root lcous plot for the system
+# Root locus plot for the system
 rlocus(sys)
 
 if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:
