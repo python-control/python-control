@@ -1440,6 +1440,7 @@ def test_html_repr(gmats, ref, dt, dtref, repr_type, num_format, editsdefaults):
     dt_html = dtref.format(dt=dt, fmt=defaults['statesp.latex_num_format'])
     ref_html = ref[refkey].format(dt=dt_html)
     assert g._repr_html_() == ref_html
+    assert g._repr_html_() == g._repr_markdown_()
 
 
 @pytest.mark.parametrize(
