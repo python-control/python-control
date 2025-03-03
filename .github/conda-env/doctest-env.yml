@@ -7,7 +7,7 @@ dependencies:
   - numpy
   - matplotlib
   - scipy
-  - sphinx
+  - sphinx<8.2
   - sphinx_rtd_theme
   - ipykernel
   - nbsphinx
