@@ -20,7 +20,8 @@ jobs:
            --quiet --yes \
            python=3.12 pip \
            numpy matplotlib scipy \
-           slycot pmw jupyter
+           slycot pmw jupyter \
+           ipython!=9.0
 
     - name: Install from source
       run: |
