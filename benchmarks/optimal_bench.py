@@ -6,7 +6,6 @@
 # performance of the functions used for optimization-base control.
 
 import numpy as np
-import math
 import control as ct
 import control.flatsys as fs
 import control.optimal as opt
@@ -20,7 +19,6 @@ integrator_table = {
     'default': (None, {}),
     'RK23': ('RK23', {}),
     'RK23_sloppy': ('RK23', {'atol': 1e-4, 'rtol': 1e-2}),
-    'RK45': ('RK45', {}),
     'RK45': ('RK45', {}),
     'RK45_sloppy': ('RK45', {'atol': 1e-4, 'rtol': 1e-2}),
     'LSODA': ('LSODA', {}),
@@ -129,9 +127,6 @@ def time_optimal_lq_methods(integrator_name, minimizer_name, method):
     Tf = 10
     timepts = np.linspace(0, Tf, 20)
 
-    # Create the basis function to use
-    basis = get_basis('poly', 12, Tf)
-
     res = opt.solve_ocp(
         sys, timepts, x0, traj_cost, constraints, terminal_cost=term_cost,
         solve_ivp_method=integrator[0], solve_ivp_kwargs=integrator[1],
@@ -223,8 +218,6 @@ def time_discrete_aircraft_mpc(minimizer_name):
     # compute the steady state values for a particular value of the input
     ud = np.array([0.8, -0.3])
     xd = np.linalg.inv(np.eye(5) - A) @ B @ ud
-    yd = C @ xd
-
     # provide constraints on the system signals
     constraints = [opt.input_range_constraint(sys, [-5, -6], [5, 6])]
 
@@ -234,7 +227,6 @@ def time_discrete_aircraft_mpc(minimizer_name):
     cost = opt.quadratic_cost(model, Q, R, x0=xd, u0=ud)
 
     # Set the time horizon and time points
-    Tf = 3
     timepts = np.arange(0, 6) * 0.2
 
     # Get the minimizer parameters to use

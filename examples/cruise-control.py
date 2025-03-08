@@ -247,7 +247,6 @@ def pi_update(t, x, u, params={}):
     # Assign variables for inputs and states (for readability)
     v = u[0]                    # current velocity
     vref = u[1]                 # reference velocity
-    z = x[0]                    # integrated error
 
     # Compute the nominal controller output (needed for anti-windup)
     u_a = pi_output(t, x, u, params)
@@ -394,7 +393,7 @@ def sf_output(t, z, u, params={}):
     ud = params.get('ud', 0)
 
     # Get the system state and reference input
-    x, y, r = u[0], u[1], u[2]
+    x, r = u[0], u[2]
 
     return ud - K * (x - xd) - ki * z + kf * (r - yd)
 
@@ -440,13 +439,13 @@ theta_hill = [
     4./180. * pi for t in T]
 t, y = ct.input_output_response(
     cruise_sf, T, [vref, gear, theta_hill], [X0[0], 0],
-    params={'K': K, 'kf': kf, 'ki': 0.0, 'kf': kf, 'xd': xd, 'ud': ud, 'yd': yd})
+    params={'K': K, 'kf': kf, 'ki': 0.0, 'xd': xd, 'ud': ud, 'yd': yd})
 subplots = cruise_plot(cruise_sf, t, y, label='Proportional', linetype='b--')
 
 # Response of the system with state feedback + integral action
 t, y = ct.input_output_response(
     cruise_sf, T, [vref, gear, theta_hill], [X0[0], 0],
-    params={'K': K, 'kf': kf, 'ki': 0.1, 'kf': kf, 'xd': xd, 'ud': ud, 'yd': yd})
+    params={'K': K, 'kf': kf, 'ki': 0.1, 'xd': xd, 'ud': ud, 'yd': yd})
 cruise_plot(cruise_sf, t, y, label='PI control', t_hill=8, linetype='b-',
             subplots=subplots, legend=True)
 

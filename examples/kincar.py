@@ -3,7 +3,6 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-import control as ct
 import control.flatsys as fs
 
 #

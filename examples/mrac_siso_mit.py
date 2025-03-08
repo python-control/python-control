@@ -46,7 +46,6 @@ def adaptive_controller_state(t, xc, uc, params):
     # Parameters
     gam = params["gam"]
     Am = params["Am"]
-    Bm = params["Bm"]
     signB = params["signB"]
 
     # Controller inputs

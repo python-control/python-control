@@ -10,7 +10,6 @@
 
 import os
 import matplotlib.pyplot as plt  # MATLAB plotting functions
-from control.matlab import *    # MATLAB-like functions
 import numpy as np
 import math
 import control as ct
@@ -23,12 +22,12 @@ g = 9.8         # gravitational constant
 c = 0.05        # damping factor (estimated)
 
 # Transfer functions for dynamics
-Pi = tf([r], [J, 0, 0])  # inner loop (roll)
-Po = tf([1], [m, c, 0])  # outer loop (position)
+Pi = ct.tf([r], [J, 0, 0])  # inner loop (roll)
+Po = ct.tf([1], [m, c, 0])  # outer loop (position)
 
 # Use state space versions
-Pi = tf2ss(Pi)
-Po = tf2ss(Po)
+Pi = ct.tf2ss(Pi)
+Po = ct.tf2ss(Po)
 
 #
 # Inner loop control design
@@ -40,10 +39,10 @@ Po = tf2ss(Po)
 
 # Design a simple lead controller for the system
 k, a, b = 200, 2, 50
-Ci = k*tf([1, a], [1, b])  # lead compensator
+Ci = k*ct.tf([1, a], [1, b])  # lead compensator
 
 # Convert to statespace
-Ci = tf2ss(Ci)
+Ci = ct.tf2ss(Ci)
 
 # Compute the loop transfer function for the inner loop
 Li = Pi*Ci
@@ -51,49 +50,49 @@ Li = Pi*Ci
 
 # Bode plot for the open loop process
 plt.figure(1)
-bode(Pi)
+ct.bode(Pi)
 
 # Bode plot for the loop transfer function, with margins
 plt.figure(2)
-bode(Li)
+ct.bode(Li)
 
 # Compute out the gain and phase margins
 #! Not implemented
 # (gm, pm, wcg, wcp) = margin(Li);
 
 # Compute the sensitivity and complementary sensitivity functions
-Si = feedback(1, Li)
+Si = ct.feedback(1, Li)
 Ti = Li*Si
 
 # Check to make sure that the specification is met
 plt.figure(3)
-gangof4(Pi, Ci)
+ct.gangof4(Pi, Ci)
 
 # Compute out the actual transfer function from u1 to v1 (see L8.2 notes)
 # Hi = Ci*(1-m*g*Pi)/(1+Ci*Pi);
-Hi = parallel(feedback(Ci, Pi), -m*g*feedback(Ci*Pi, 1))
+Hi = ct.parallel(ct.feedback(Ci, Pi), -m*g*ct.feedback(Ci*Pi, 1))
 
 plt.figure(4)
 plt.clf()
-bode(Hi)
+ct.bode(Hi)
 
 # Now design the lateral control system
 a, b, K = 0.02, 5, 2
-Co = -K*tf([1, 0.3], [1, 10])  # another lead compensator
+Co = -K*ct.tf([1, 0.3], [1, 10])  # another lead compensator
 
 # Convert to statespace
-Co = tf2ss(Co)
+Co = ct.tf2ss(Co)
 
 # Compute the loop transfer function for the outer loop
 Lo = -m*g*Po*Co
 
 plt.figure(5)
-bode(Lo, display_margins=True)  # margin(Lo)
+ct.bode(Lo, display_margins=True)  # margin(Lo)
 
 # Finally compute the real outer-loop loop gain + responses
 L = Co*Hi*Po
-S = feedback(1, L)
-T = feedback(L, 1)
+S = ct.feedback(1, L)
+T = ct.feedback(L, 1)
 
 # Compute stability margins
 #! Not yet implemented
@@ -101,7 +100,7 @@ T = feedback(L, 1)
 
 plt.figure(6)
 plt.clf()
-out = ct.bode(L, logspace(-4, 3), initial_phase=-math.pi/2)
+out = ct.bode(L, np.logspace(-4, 3), initial_phase=-math.pi/2)
 axs = ct.get_plot_axes(out)
 
 # Add crossover line to magnitude plot
@@ -111,7 +110,7 @@ axs[0, 0].semilogx([1e-4, 1e3], 20*np.log10([1, 1]), 'k-')
 # Nyquist plot for complete design
 #
 plt.figure(7)
-nyquist(L)
+ct.nyquist(L)
 
 # set up the color
 color = 'b'
@@ -126,10 +125,10 @@ color = 'b'
 #  'EdgeColor', color, 'FaceColor', color);
 
 plt.figure(9)
-Yvec, Tvec = step(T, linspace(1, 20))
+Yvec, Tvec = ct.step_response(T, np.linspace(1, 20))
 plt.plot(Tvec.T, Yvec.T)
 
-Yvec, Tvec = step(Co*S, linspace(1, 20))
+Yvec, Tvec = ct.step_response(Co*S, np.linspace(1, 20))
 plt.plot(Tvec.T, Yvec.T)
 
 #TODO: PZmap for statespace systems has not yet been implemented.
@@ -142,7 +141,7 @@ plt.plot(Tvec.T, Yvec.T)
 # Gang of Four
 plt.figure(11)
 plt.clf()
-gangof4(Hi*Po, Co, linspace(-2, 3))
+ct.gangof4(Hi*Po, Co, np.linspace(-2, 3))
 
 if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:
     plt.show()
