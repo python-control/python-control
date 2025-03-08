@@ -48,7 +48,6 @@ legacy_functions = [
 
 # Functons that we can skip
 object_skiplist = [
-    control.NamedSignal,                # np.ndarray members cause errors
     control.FrequencyResponseList,      # Use FrequencyResponseData
     control.TimeResponseList,           # Use TimeResponseData
     control.common_timebase,            # mainly internal use

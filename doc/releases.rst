@@ -27,6 +27,7 @@ the ability to index systems and signal using signal labels.
 .. toctree::
    :maxdepth: 1
 
+   releases/0.10.2-notes
    releases/0.10.1-notes
    releases/0.10.0-notes
 
