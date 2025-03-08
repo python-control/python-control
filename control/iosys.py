@@ -46,6 +46,24 @@ class NamedSignal(np.ndarray):
     This class modifies the `numpy.ndarray` class and allows signals to
     be accessed using the signal name in addition to indices and slices.
 
+    Signals can be either a 2D array, index by signal and time, or a 3D
+    array, indexed by signal, trace, and time.
+
+    Attributes
+    ----------
+    signal_labels : list of str
+        Label names for each of the signal elements in the signal.
+    trace_labels : list of str, optional
+        Label names for each of the traces in the signal (if multi-trace).
+
+    Examples
+    --------
+    >>> sys = ct.rss(
+    ...     states=['p1', 'p2', 'p3'], inputs=['u1', 'u2'], outputs=['y'])
+    >>> resp = ct.step_response(sys)
+    >>> resp.states['p1', 'u1']  # Step response from u1 to p1
+    NamedSignal(...)
+
     """
     def __new__(cls, input_array, signal_labels=None, trace_labels=None):
         # See https://numpy.org/doc/stable/user/basics.subclassing.html
