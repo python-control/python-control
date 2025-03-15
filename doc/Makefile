@@ -1,7 +1,7 @@
 # Makefile for python-control Sphinx documentation
 # RMM, 15 Jan 2025
 
-FIGS = figures/classes.pdf
+FIGS = figures/classes.svg
 RST_FIGS = figures/flatsys-steering-compare.png				\
   figures/iosys-predprey-open.png					\
   figures/timeplot-servomech-combined.png				\

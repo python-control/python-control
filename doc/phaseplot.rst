@@ -43,7 +43,7 @@ on a grid, equilibrium points and separatrices if they exist. A variety
 of options are available to modify the information that is plotted,
 including plotting a grid of vectors instead of streamlines, plotting
 streamlines from arbitrary starting points and turning on and off
-various features of the plot. 
+various features of the plot.
 
 To illustrate some of these possibilities, consider a phase plane plot for
 an inverted pendulum system, which is created using a mesh grid:

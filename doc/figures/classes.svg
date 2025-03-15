@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Creator: fig2dev Version 3.2.9 -->
+<!-- CreationDate: 2025-03-14 21:08:46 -->
+<!-- Magnification: 1 -->
+<svg	xmlns="http://www.w3.org/2000/svg"
+	xmlns:xlink="http://www.w3.org/1999/xlink"
+	width="387pt" height="187pt"
+	viewBox="2365 1707 6443 3108">
+<g fill="none">
+<!-- Text -->
+<text xml:space="preserve" x="5175" y="4800" fill="#ffffff" font-family="Helvetica" font-style="normal" font-weight="normal" font-size="144" text-anchor="middle">.</text>
+<!-- Line -->
+<defs>
+<clipPath id="cp0">
+	<path clip-rule="evenodd" d="M 2365,1707 H 8808 V 4815 H 2365 z
+		M 6806,2901 6849,2944 6915,2850 6900,2835z"/>
+</clipPath>
+</defs>
+<polyline points=" 6900,2850 6300,3450" clip-path="url(#cp0)"
+	stroke="#0000ff" stroke-width="15px"/>
+<!-- Backward arrow to point 6900,2850 -->
+<polygon points=" 6849,2944 6891,2859 6806,2901 6849,2944"
+	stroke="#0000ff" stroke-width="8px" stroke-miterlimit="8"/>
+<!-- Line -->
+<defs>
+<clipPath id="cp1">
+	<path clip-rule="evenodd" d="M 2365,1707 H 8808 V 4815 H 2365 z
+		M 4629,2896 4668,2940 4740,2851 4726,2835z"/>
+</clipPath>
+</defs>
+<polyline points=" 4725,2850 4050,3450" clip-path="url(#cp1)"
+	stroke="#0000ff" stroke-width="15px"/>
+<!-- Backward arrow to point 4725,2850 -->
+<polygon points=" 4668,2940 4716,2858 4629,2896 4668,2940"
+	stroke="#0000ff" stroke-width="8px" stroke-miterlimit="8"/>
+<!-- Line -->
+<defs>
+<clipPath id="cp2">
+	<path clip-rule="evenodd" d="M 2365,1707 H 8808 V 4815 H 2365 z
+		M 5601,1991 5639,2037 5715,1952 5702,1935z"/>
+</clipPath>
+</defs>
+<polyline points=" 5700,1950 4950,2550" clip-path="url(#cp2)"
+	stroke="#0000ff" stroke-width="15px"/>
+<!-- Backward arrow to point 5700,1950 -->
+<polygon points=" 5639,2037 5690,1958 5601,1991 5639,2037"
+	stroke="#0000ff" stroke-width="8px" stroke-miterlimit="8"/>
+<!-- Line -->
+<defs>
+<clipPath id="cp3">
+	<path clip-rule="evenodd" d="M 2365,1707 H 8808 V 4815 H 2365 z
+		M 7290,2907 7307,2849 7193,2837 7187,2857z"/>
+</clipPath>
+</defs>
+<polyline points=" 7200,2850 8250,3150" clip-path="url(#cp3)"
+	stroke="#0000ff" stroke-width="15px"/>
+<!-- Backward arrow to point 7200,2850 -->
+<polygon points=" 7307,2849 7212,2853 7290,2907 7307,2849"
+	stroke="#0000ff" stroke-width="8px" stroke-miterlimit="8"/>
+<!-- Line -->
+<defs>
+<clipPath id="cp4">
+	<path clip-rule="evenodd" d="M 2365,1707 H 8808 V 4815 H 2365 z
+		M 7107,2940 7146,2896 7049,2835 7035,2851z"/>
+</clipPath>
+</defs>
+<polyline points=" 7050,2850 7725,3450" clip-path="url(#cp4)"
+	stroke="#0000ff" stroke-width="15px"/>
+<!-- Backward arrow to point 7050,2850 -->
+<polygon points=" 7146,2896 7059,2858 7107,2940 7146,2896"
+	stroke="#0000ff" stroke-width="8px" stroke-miterlimit="8"/>
+<!-- Line -->
+<defs>
+<clipPath id="cp5">
+	<path clip-rule="evenodd" d="M 2365,1707 H 8808 V 4815 H 2365 z
+		M 5236,2937 5274,2891 5173,2835 5160,2852z"/>
+</clipPath>
+</defs>
+<polyline points=" 5175,2850 5925,3450" clip-path="url(#cp5)"
+	stroke="#0000ff" stroke-width="15px"/>
+<!-- Backward arrow to point 5175,2850 -->
+<polygon points=" 5274,2891 5185,2858 5236,2937 5274,2891"
+	stroke="#0000ff" stroke-width="8px" stroke-miterlimit="8"/>
+<!-- Line -->
+<defs>
+<clipPath id="cp6">
+	<path clip-rule="evenodd" d="M 2365,1707 H 8808 V 4815 H 2365 z
+		M 4111,3837 4149,3791 4048,3735 4035,3752z"/>
+</clipPath>
+</defs>
+<polyline points=" 4050,3750 4800,4350" clip-path="url(#cp6)"
+	stroke="#0000ff" stroke-width="15px"/>
+<!-- Backward arrow to point 4050,3750 -->
+<polygon points=" 4149,3791 4060,3758 4111,3837 4149,3791"
+	stroke="#0000ff" stroke-width="8px" stroke-miterlimit="8"/>
+<!-- Line -->
+<defs>
+<clipPath id="cp7">
+	<path clip-rule="evenodd" d="M 2365,1707 H 8808 V 4815 H 2365 z
+		M 4243,2854 4262,2911 4363,2857 4357,2837z"/>
+</clipPath>
+</defs>
+<polyline points=" 4350,2850 3450,3150" clip-path="url(#cp7)"
+	stroke="#0000ff" stroke-width="15px"/>
+<!-- Backward arrow to point 4350,2850 -->
+<polygon points=" 4262,2911 4338,2854 4243,2854 4262,2911"
+	stroke="#0000ff" stroke-width="8px" stroke-miterlimit="8"/>
+<!-- Line -->
+<defs>
+<clipPath id="cp8">
+	<path clip-rule="evenodd" d="M 2365,1707 H 8808 V 4815 H 2365 z
+		M 6570,2047 6615,2007 6526,1935 6510,1949z"/>
+</clipPath>
+</defs>
+<polyline points=" 6525,1950 7050,2550" clip-path="url(#cp8)"
+	stroke="#0000ff" stroke-width="15px"/>
+<!-- Backward arrow to point 6525,1950 -->
+<polygon points=" 6615,2007 6533,1959 6570,2047 6615,2007"
+	stroke="#0000ff" stroke-width="8px" stroke-miterlimit="8"/>
+<!-- Text -->
+<text xml:space="preserve" x="4050" y="3675" fill="#0000ff" font-family="Helvetica" font-style="normal" font-weight="normal" font-size="144" text-anchor="middle">InterconnectedSystem</text>
+<!-- Text -->
+<text xml:space="preserve" x="7950" y="3675" fill="#0000ff" font-family="Helvetica" font-style="normal" font-weight="normal" font-size="144" text-anchor="middle">TransferFunction</text>
+<!-- Text -->
+<text xml:space="preserve" x="7050" y="2775" fill="#0000ff" font-family="Times" font-style="normal" font-weight="normal" font-size="144" text-anchor="middle">LTI</text>
+<!-- Text -->
+<text xml:space="preserve" x="5175" y="2775" fill="#0000ff" font-family="Helvetica" font-style="normal" font-weight="normal" font-size="144" text-anchor="middle">NonlinearIOSystem</text>
+<!-- Text -->
+<text xml:space="preserve" x="6150" y="3675" fill="#0000ff" font-family="Helvetica" font-style="normal" font-weight="normal" font-size="144" text-anchor="middle">StateSpace</text>
+<!-- Text -->
+<text xml:space="preserve" x="5175" y="4575" fill="#0000ff" font-family="Helvetica" font-style="normal" font-weight="normal" font-size="144" text-anchor="middle">LinearICSystem</text>
+<!-- Text -->
+<text xml:space="preserve" x="3375" y="3225" fill="#0000ff" font-family="Helvetica" font-style="normal" font-weight="normal" font-size="144" text-anchor="end">FlatSystem</text>
+<!-- Text -->
+<text xml:space="preserve" x="8400" y="3225" fill="#0000ff" font-family="Helvetica" font-style="normal" font-weight="normal" font-size="144" text-anchor="start">FRD</text>
+<!-- Text -->
+<text xml:space="preserve" x="6300" y="1875" fill="#0000ff" font-family="Helvetica" font-style="normal" font-weight="normal" font-size="144" text-anchor="middle">InputOutputSystem</text>
+<!-- Line -->
+<defs>
+<clipPath id="cp9">
+	<path clip-rule="evenodd" d="M 2365,1707 H 8808 V 4815 H 2365 z
+		M 5829,3796 5868,3840 5940,3751 5926,3735z"/>
+</clipPath>
+</defs>
+<polyline points=" 5925,3750 5250,4350" clip-path="url(#cp9)"
+	stroke="#0000ff" stroke-width="15px"/>
+<!-- Backward arrow to point 5925,3750 -->
+<polygon points=" 5868,3840 5916,3758 5829,3796 5868,3840"
+	stroke="#0000ff" stroke-width="8px" stroke-miterlimit="8"/>
+</g>
+</svg>
