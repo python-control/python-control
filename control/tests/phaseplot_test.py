@@ -167,7 +167,7 @@ def test_phaseplane_errors():
         ct.phase_plane_plot(
             invpend_ode, [-5, 5, 2, 2], params={'stuff': (1, 1, 0.2, 1)},
                             plot_streamlines=True)
-        
+
     with pytest.raises(ValueError, match="gridtype must be 'meshgrid' when using streamplot"):
         ct.phase_plane_plot(ct.rss(2, 1, 1), plot_streamlines=False,
                             plot_streamplot=True, gridtype='boxgrid')
@@ -190,7 +190,7 @@ def test_phaseplane_errors():
             sys, [-12, 12, -10, 10], 15, gridspec=[2, 9],
             plot_streamlines=True, plot_separatrices=False,
             suppress_warnings=True)
-        
+
 @pytest.mark.usefixtures('mplcleanup')
 def test_phase_plot_zorder():
     # some of these tests are a bit akward since the streamlines and separatrices
@@ -211,7 +211,7 @@ def test_phase_plot_zorder():
         assert cplt.lines[3] == None or isinstance(cplt.lines[3], mpl.streamplot.StreamplotSet)
         streamplot = max(cplt.lines[3].lines.get_zorder(), cplt.lines[3].arrows.get_zorder()) if cplt.lines[3] else None
         return streamlines, quiver, streamplot, separatrices, equilpoints
-    
+
     def assert_orders(streamlines, quiver, streamplot, separatrices, equilpoints):
         print(streamlines, quiver, streamplot, separatrices, equilpoints)
         if streamlines is not None:
@@ -260,8 +260,6 @@ def test_stream_plot_magnitude():
 
     # make sure changing the norm at least doesn't throw an error
     ct.phase_plane_plot(sys, plot_streamplot=dict(vary_color=True, norm=mpl.colors.LogNorm()))
-
-    
 
 
 @pytest.mark.usefixtures('mplcleanup')

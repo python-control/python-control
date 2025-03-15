@@ -2,8 +2,8 @@
 
 .. _version-0.10.2:
 
-Version 0.10.2 Release Notes
-----------------------------
+Version 0.10.2 Release Notes (current)
+--------------------------------------
 
 * Released: date of release
 * `GitHub release page
@@ -59,7 +59,7 @@ The following bugs have been fixed in this release:
   `cplt.lines`.
 
 * Processing of the timebase parameter (`dt`) for I/O systems is now
-  handled uniformly across all I/O system factor functions.  This
+  handled uniformly across all I/O system factory functions.  This
   affected the `zpk` function, which was defaulting to a discrete time
   system to have timebase None instead of 0.
 
@@ -104,15 +104,15 @@ were implemented in this release:
 * User documentation is now divided into a User Guide that provides a
   description of the main functionality of the python-control package,
   along with a Reference Manual describing classes, functions, and
-  parameter in more detail.  
+  parameters in more detail.
 
 * Signal responses and I/O subsystem specifications can now use signal
   names in addition to indices to get the desired inputs, outputs, and
   states (e.g., `response.outputs['y0', 'y1']`).  This is implemented
   via a new `NamedSignal` object, which generalizes `numpy.ndarray`.
-  
+
 * `find_operating_point` (legacy `find_eqpt`): accepts new parameters
-  `root_method` and `root_keyword` to set the root finding algorithm
+  `root_method` and `root_kwargs` to set the root finding algorithm
   that is used.
 
 * `root_locus_map` now correctly handles the degenerate case of being
@@ -131,7 +131,7 @@ were implemented in this release:
   functions to be given as a means of creating a MIMO transfer
   function (use the new `combine_tf` function).
 
-* The `nlsys` factor function can now create a `NonlinearIOSystem`
+* The `nlsys` factory function can now create a `NonlinearIOSystem`
   representation of a `StateSpace` system (passed as the first
   argument to `nlsys`).
 
@@ -168,8 +168,9 @@ were implemented in this release:
 * `FrequencyResponseData`: use `~FrequencyResponseData.complex` to
   access the (squeeze processed) complex frequency response (instead
   of the legacy `response` property) and
-  `~FrequencyResponseData.frdata` to access the 3D frequency response
-  data array (instead of the legacy `fresp` attribute).
+  `~FrequencyResponseData.frdata <FrequencyResponseData>` to access
+  the 3D frequency response data array (instead of the legacy `fresp`
+  attribute).
 
 * Time response and optimization function keywords have been
   regularized to allow consistent use of keywords across related
@@ -182,7 +183,7 @@ were implemented in this release:
   - Variables associated with inputs, outputs, states and time use
     those words plus an appropriate modifier: `initial_state`,
     `final_output`, `input_indices`, etc.
-    
+
   - Aliases are used both to maintain backward compatibility and to
     allow shorthand descriptions: e.g., `U`, `Y`, `X0`. Short form
     aliases are documented in docstrings by listing the parameter as
@@ -207,7 +208,7 @@ generate a warning message when used:
 * `FrequencyResponseData.response`: use
   `FrequencyResponseData.complex` to return the complex value of the
   frequency response.
-  
+
 * `FrequencyResponseData.fresp`: use `FrequencyResponseData.frdata
   <FrequencyResponseData>` to access the raw 3D frequency response
   data array.
