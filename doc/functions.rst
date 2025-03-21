@@ -212,7 +212,7 @@ System ID and Model Reduction
     model_reduction
     eigensys_realization
     markov
-
+    observer_kalman_identification
 
 Nonlinear System Support
 ========================
