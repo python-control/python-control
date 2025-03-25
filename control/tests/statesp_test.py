@@ -136,6 +136,7 @@ class TestStateSpace:
          ((np.ones((3, 3)), np.ones((3, 2)),
            np.ones((2, 3)), np.ones((2, 3))), ValueError,
           r"Incompatible dimensions of D matrix; expected \(2, 2\)"),
+         (([1j], 2, 3, 0), TypeError, "real number, not 'complex'"),
         ])
     def test_constructor_invalid(self, args, exc, errmsg):
         """Test invalid input to StateSpace() constructor"""

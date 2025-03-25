@@ -1954,6 +1954,7 @@ def _clean_part(data, name="<unknown>"):
 
     """
     valid_types = (int, float, complex, np.number)
+    unsupported_types = (complex, np.complexfloating)
     valid_collection = (list, tuple, ndarray)
 
     if isinstance(data, np.ndarray) and data.ndim == 2 and \
@@ -1998,8 +1999,11 @@ def _clean_part(data, name="<unknown>"):
     for i in range(out.shape[0]):
         for j in range(out.shape[1]):
             for k in range(len(out[i, j])):
-                if isinstance(out[i, j][k], (int, np.int32, np.int64)):
+                if isinstance(out[i, j][k], (int, np.integer)):
                     out[i, j][k] = float(out[i, j][k])
+                elif isinstance(out[i, j][k], unsupported_types):
+                    raise TypeError(
+                        f"unsupported data type: {type(out[i, j][k])}")
     return out
 
 
