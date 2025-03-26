@@ -2,8 +2,8 @@
 
 .. _version-0.10.1:
 
-Version 0.10.1 Release Notes (current)
---------------------------------------
+Version 0.10.1 Release Notes
+----------------------------
 
 * Released: 17 Aug 2024
 * `GitHub release page
