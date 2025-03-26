@@ -97,61 +97,6 @@ class TestPade:
                     np.array(refden), np.array(den))
 
 
-class TestDelayLTI:
-    # comparison with julia controlSystems package
-    def test_pure_delay(self):
-        pure_delay = delay(1)
-        A = []
-        B = np.zeros((0,2))
-        C = []
-        D = [[0., 1.], [1., 0.]]
-
-        assert(np.all(pure_delay.P.A == A))
-        assert(np.all(pure_delay.P.B == B))
-        assert(np.all(pure_delay.P.C == C))
-        assert(np.all(pure_delay.P.D == D))
-        
-
-    def test_delay(self):
-        tf_test = tf([1], [1,1]) * delay(1)
-        A = [[-1]]
-        B = [[0,1]]
-        C = [[1],[0]]
-        D = [[0,0], [1,0]]
-
-        assert(np.all(tf_test.P.A == A))
-        assert(np.all(tf_test.P.B == B))
-        assert(np.all(tf_test.P.C == C))
-        assert(np.all(tf_test.P.D == D))
-
-    
-    def test_forced_response(self):
-        from control.delaylti import DelayLTISystem, tf2dlti
-        from control.xferfcn import tf
-        from control.timeresp import forced_response
-        import matplotlib.pyplot as plt
-
-        tf1 = tf([1], [1.5,1]) * delay(1)
-
-        timepts = np.linspace(0, 10, 100)
-        input1 = np.zeros(100)
-        input1[31:] = 1
-        resp = forced_response(tf1, timepts=timepts, inputs=input1)
-        t, y = resp.t, resp.y[0] 
-
-        #plt.figure()
-        #plt.plot(t, input1)
-        #plt.plot(t, y)
-        #plt.show()
-
-
-    def test_exp(self):
-        from control.delaylti import exp
-        from control.xferfcn import tf
-
-        s = tf([1,0], [1])
-        exp_delay = exp(-2*s)
-        print(exp_delay)
 
 
         

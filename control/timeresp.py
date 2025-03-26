@@ -1190,21 +1190,21 @@ def forced_response(
             ##print("D11", sys.D11)
             #print("D12", sys.D12)
             #print("x", x)
-            print("U", U)
-            print("ndim U", np.ndim(U))
+            #print("U", U)
+            #print("ndim U", np.ndim(U))
             #print("wf(zs)", wf(zs))
             #print("interp U", np.interp(t, T, U))
 
-            print("C1", P.C1)
-            print("x", np.array(x))
+            #print("C1", P.C1)
+            #print("x", np.array(x))
 
-            print("D11", P.D11)
-            print("inter U", inter_u(t))
+            #print("D11", P.D11)
+            #print("inter U", inter_u(t))
 
-            print("D12", P.D12)
-            print("wf(zs)", wf(zs))
+            #print("D12", P.D12)
+            #print("wf(zs)", wf(zs))
 
-            print("")
+            #print("")
 
             y = P.C1 @ np.array(x) + P.D11 @ inter_u(t) + P.D12 @ wf(zs)
 
@@ -1659,7 +1659,7 @@ def step_response(
         U = np.zeros((sys.ninputs, T.size))
         U[i, :] = np.ones_like(T)
 
-        print(U)
+        #print(U)
 
         response = forced_response(sys, T, U, X0, squeeze=True, params=params)
         inpidx = i if input is None else 0

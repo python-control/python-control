@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.linalg import block_diag, inv
+from scipy.linalg import block_diag, inv, solve, LinAlgError
 
 from .statesp import ss, StateSpace
 
@@ -13,6 +13,12 @@ class PartitionedStateSpace:
         self.B = self.sys.B
         self.C = self.sys.C
         self.D = self.sys.D
+
+        self.nstates = sys.nstates
+        self.noutputs_total = sys.noutputs
+        self.ninputs_total = sys.ninputs
+        self.nu2 = self.ninputs_total - self.nu1 # Dimension of external input w
+        self.ny2 = self.noutputs_total - self.ny1 # Dimension of external output z
 
     @property
     def B1(self):
@@ -144,56 +150,46 @@ class PartitionedStateSpace:
         return PartitionedStateSpace(P, other.nu1, self.ny1)
 
     def feedback(self, other):
-        """
-        Feedback connection of two PartitionedStateSpace systems.
-        """
         if not isinstance(other, PartitionedStateSpace):
             raise TypeError("Feedback connection only defined for PartitionedStateSpace objects.")
 
         # Pre-calculate repeated inverses
-        I1 = np.eye(other.D11.shape[0])
-        I2 = np.eye(self.D11.shape[0])
+        I_self = np.eye(self.D11.shape[0])
+        I_other = np.eye(other.D11.shape[0])
 
-        try:
-            inv_I_plus_D211_D111 = inv(I1 + other.D11 @ self.D11)
-            inv_I_plus_D111_D211 = inv(I2 + self.D11 @ other.D11)
-        except np.linalg.LinAlgError:
-            raise ValueError("Singular matrix encountered. Feedback connection may not be well-posed.")
+        X_11 = solve(I_other + other.D11 @ self.D11, np.hstack((-other.D11 @ self.C1, -other.C1)))
+        X_21 = solve(I_self + self.D11 @ other.D11, np.hstack((self.C1, -self.D11 @ other.C1)))
 
+        X_12 = solve(I_other + other.D11 @ self.D11, np.hstack((I_other, -other.D11 @ self.D12, -other.D12))) # maybe I_other
+        X_22 = solve(I_self + self.D11 @ other.D11, np.hstack((self.D11, self.D12, -self.D11 @ other.D12)))
 
-        X_11 = inv_I_plus_D211_D111 @ (-other.D11 @ self.C1 - other.C1)
-        X_21 = inv_I_plus_D111_D211 @ (self.C1 - self.D11 @ other.C1)
-        X_12 = inv_I_plus_D211_D111 @ (I1 - other.D11 @ self.D12 - other.D12)
-        X_22 = inv_I_plus_D111_D211 @ (self.D11 + self.D12 - self.D11 @ other.D12)
+        A_new = np.vstack((self.B1 @ X_11, other.B1 @ X_21)) + block_diag(self.A, other.A)
 
+        B_new = np.vstack((self.B1 @ X_12, other.B1 @ X_22))
+        tmp = block_diag(self.B2, other.B2)
+        B_new[:, -tmp.shape[1]:] += tmp
 
-        A = np.block([
-            [self.A + self.B1 @ X_11, self.B1 @ X_11[ : , self.C1.shape[1]:]],
-            [other.B1 @ X_21[:other.C1.shape[0], :], other.A + other.B1 @ X_21]
+        C_new = np.vstack([
+            self.D11 @ X_11,
+            self.D21 @ X_11,
+            other.D21 @ X_21,
+        ]) + np.vstack([
+            np.hstack([self.C1, np.zeros((self.C1.shape[0], other.C1.shape[1]))]),
+            block_diag(self.C2, other.C2),
         ])
 
-
-        B = np.block([
-            [self.B1 @ X_12, self.B1 @ X_12[:, I1.shape[1]: ] + self.B2],
-            [other.B1 @ X_22[:, :self.D11.shape[0]], other.B1 @ X_22[:, self.D11.shape[0]:] + other.B2]
+        D_new = np.vstack([
+            self.D11 @ X_12,
+            self.D21 @ X_12,
+            other.D21 @ X_22,
         ])
-
-        C = np.block([
-            [self.C1 + self.D11 @ X_11, self.D11 @ X_11[:, self.C1.shape[1]:]],
-            [self.C2 + self.D21 @ X_11, self.D21 @ X_11[:, self.C1.shape[1]:]],
-            [other.D21 @ X_21, other.C2 + other.D21 @ X_21[:, other.C1.shape[1]:]]
+        tmp = np.vstack([
+            np.hstack([self.D12, np.zeros((self.D12.shape[0], other.D12.shape[1]))]),
+            block_diag(self.D22, other.D22),
         ])
+        D_new[:, -tmp.shape[1]:] += tmp
 
-        D = np.block([
-            [self.D11 @ X_12, self.D11 @ X_12[:, I1.shape[1]:] + self.D12],
-            [self.D21 @ X_12, self.D21 @ X_12[:, I1.shape[1]:] + self.D22],
-            [other.D21 @ X_22[:, :self.D11.shape[0]], other.D21 @ X_22[:, self.D11.shape[0]:] + other.D22]
-        ])
+        P_new = StateSpace(A_new, B_new, C_new, D_new)
 
-
-        P = ss(A, B, C, D)
-        return PartitionedStateSpace(P, other.nu1, self.ny1)
-
-
-
+        return PartitionedStateSpace(P_new, other.nu1, self.ny1)
 
