@@ -43,6 +43,7 @@ import numpy as np
 import scipy as sp
 from numpy import einsum, maximum, minimum
 from scipy.linalg import eig, eigvals, matrix_balance, norm
+from scipy.integrate import LSODA
 
 from . import config
 from . config import _process_kwargs, _process_param
@@ -921,6 +922,7 @@ def forced_response(
         sysdata, timepts=None, inputs=0., initial_state=0., transpose=False,
         params=None, interpolate=False, return_states=None, squeeze=None,
         **kwargs):
+    from .delaylti import DelayLTISystem
     """Compute the output of a linear system given the input.
 
     As a convenience for parameters `U`, `X0`: Numbers (scalars) are
@@ -1061,7 +1063,7 @@ def forced_response(
     else:
         sys = sysdata
 
-    if not isinstance(sys, (StateSpace, TransferFunction)):
+    if not isinstance(sys, (StateSpace, TransferFunction, DelayLTISystem)):
         if isinstance(sys, NonlinearIOSystem):
             if interpolate:
                 warnings.warn(
@@ -1090,176 +1092,323 @@ def forced_response(
             "Internal conversion to state space used; may not be consistent "
             "with given X0.")
 
-    sys = _convert_to_statespace(sys)
-    A, B, C, D = np.asarray(sys.A), np.asarray(sys.B), np.asarray(sys.C), \
-        np.asarray(sys.D)
-    # d_type = A.dtype
-    n_states = A.shape[0]
-    n_inputs = B.shape[1]
-    n_outputs = C.shape[0]
+    if isinstance(sys, DelayLTISystem):
+        P = sys.P
+        n_states = P.A.shape[0]
+        n_inputs = P.B1.shape[1]
+        n_outputs = P.C1.shape[0]
+        # Convert inputs to numpy arrays for easier shape checking
+        if U is not None:
+            U = np.asarray(U)
+        if T is not None:
+            # T must be array_like
+            T = np.asarray(T)
+        # Set and/or check time vector in discrete-time case
+        # if isdtime(sys):
+        #     if T is None:
+        #         if U is None or (U.ndim == 0 and U == 0.):
+        #             raise ValueError('Parameters `T` and `U` can\'t both be '
+        #                             'zero for discrete-time simulation')
+        #         # Set T to equally spaced samples with same length as U
+        #         if U.ndim == 1:
+        #             n_steps = U.shape[0]
+        #         else:
+        #             n_steps = U.shape[1]
+        #         dt = 1. if sys.dt in [True, None] else sys.dt
+        #         T = np.array(range(n_steps)) * dt
+        #     else:
+        #         if U.ndim == 0:
+        #             U = np.full((n_inputs, T.shape[0]), U)
+        # else:
+        #     if T is None:
+        #         raise ValueError('Parameter `T` is mandatory for continuous '
+        #                         'time systems.')
 
-    # Convert inputs to numpy arrays for easier shape checking
-    if U is not None:
-        U = np.asarray(U)
-    if T is not None:
-        # T must be array_like
-        T = np.asarray(T)
+        # Test if T has shape (n,) or (1, n);
+        T = _check_convert_array(T, [('any',), (1, 'any')],
+                                'Parameter `T`: ', squeeze=True,
+                                transpose=transpose)
 
-    # Set and/or check time vector in discrete-time case
-    if isdtime(sys):
-        if T is None:
-            if U is None or (U.ndim == 0 and U == 0.):
-                raise ValueError('Parameters `T` and `U` can\'t both be '
-                                 'zero for discrete-time simulation')
-            # Set T to equally spaced samples with same length as U
-            if U.ndim == 1:
-                n_steps = U.shape[0]
+        n_steps = T.shape[0]            # number of simulation steps
+
+        # equally spaced also implies strictly monotonic increase,
+        dt = (T[-1] - T[0]) / (n_steps - 1)
+        if not np.allclose(np.diff(T), dt):
+            raise ValueError("Parameter `T`: time values must be equally "
+                            "spaced.")
+
+        # create X0 if not given, test if X0 has correct shape
+        X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
+                                'Parameter `X0`: ', squeeze=True)
+
+        # Test if U has correct shape and type
+        legal_shapes = [(n_steps,), (1, n_steps)] if n_inputs == 1 else \
+            [(n_inputs, n_steps)]
+        U = _check_convert_array(U, legal_shapes,
+                                'Parameter `U`: ', squeeze=False,
+                                transpose=transpose)
+
+        xout = np.zeros((n_states, n_steps))
+        xout[:, 0] = X0
+        yout = np.zeros((n_outputs, n_steps))
+        # adaptation of robust control from Python Skotesgrad
+        # keep tracks delays
+        dtss = [int(np.round(delay / dt)) for delay in sys.tau]
+        zs = []
+        def wf(zs):
+            ws = []
+            for i, dts in enumerate(dtss):
+                if len(zs) <= dts:
+                    ws.append(0)
+                elif dts == 0:
+                    ws.append(zs[-1][i])
+                else:
+                    ws.append(zs[-dts][i])
+            return np.array(ws)
+
+        def inter_u(t):
+            if np.ndim(U) == 1:
+                return np.array([np.interp(t, T, U)])
+            elif np.ndim(U) == 0:
+                print("U is a scalar !")
+                return U
             else:
-                n_steps = U.shape[1]
-            dt = 1. if sys.dt in [True, None] else sys.dt
-            T = np.array(range(n_steps)) * dt
-        else:
-            if U.ndim == 0:
-                U = np.full((n_inputs, T.shape[0]), U)
-    else:
-        if T is None:
-            raise ValueError('Parameter `T` is mandatory for continuous '
-                             'time systems.')
+                return np.array([np.interp(t, T, ui) for ui in U])
 
-    # Test if T has shape (n,) or (1, n);
-    T = _check_convert_array(T, [('any',), (1, 'any')],
-                             'Parameter `T`: ', squeeze=True,
-                             transpose=transpose)
+        def f(t, x):
+            # TODO: verify interp
+            return P.A @ x + P.B1 @ inter_u(t) + P.B2 @ wf(zs)
 
-    n_steps = T.shape[0]            # number of simulation steps
+        solver = LSODA(f, T[0], X0, t_bound=T[-1], max_step=dt)
 
-    # equally spaced also implies strictly monotonic increase,
-    dt = (T[-1] - T[0]) / (n_steps - 1)
-    if not np.allclose(np.diff(T), dt):
-        raise ValueError("Parameter `T`: time values must be equally "
-                         "spaced.")
+        xs = [X0]
+        ts = [T[0]]
+        while solver.status == "running":
+            t = ts[-1]
+            x = xs[-1]
+            #print("C1", sys.C1)
+            ##print("D11", sys.D11)
+            #print("D12", sys.D12)
+            #print("x", x)
+            print("U", U)
+            print("ndim U", np.ndim(U))
+            #print("wf(zs)", wf(zs))
+            #print("interp U", np.interp(t, T, U))
 
-    # create X0 if not given, test if X0 has correct shape
-    X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
-                              'Parameter `X0`: ', squeeze=True)
+            print("C1", P.C1)
+            print("x", np.array(x))
 
-    # Test if U has correct shape and type
-    legal_shapes = [(n_steps,), (1, n_steps)] if n_inputs == 1 else \
-        [(n_inputs, n_steps)]
-    U = _check_convert_array(U, legal_shapes,
-                             'Parameter `U`: ', squeeze=False,
-                             transpose=transpose)
+            print("D11", P.D11)
+            print("inter U", inter_u(t))
 
-    xout = np.zeros((n_states, n_steps))
-    xout[:, 0] = X0
-    yout = np.zeros((n_outputs, n_steps))
+            print("D12", P.D12)
+            print("wf(zs)", wf(zs))
 
-    # Separate out the discrete and continuous-time cases
-    if isctime(sys, strict=True):
-        # Solve the differential equation, copied from scipy.signal.ltisys.
+            print("")
 
-        # Faster algorithm if U is zero
-        # (if not None, it was converted to array above)
-        if U is None or np.all(U == 0):
-            # Solve using matrix exponential
-            expAdt = sp.linalg.expm(A * dt)
-            for i in range(1, n_steps):
-                xout[:, i] = expAdt @ xout[:, i-1]
-            yout = C @ xout
+            y = P.C1 @ np.array(x) + P.D11 @ inter_u(t) + P.D12 @ wf(zs)
 
-        # General algorithm that interpolates U in between output points
-        else:
-            # convert input from 1D array to 2D array with only one row
-            if U.ndim == 1:
-                U = U.reshape(1, -1)  # pylint: disable=E1103
+            z = P.C2 @ np.array(x) + P.D21 @ inter_u(t) + P.D22 @ wf(zs)
+            zs.append(list(z))
 
-            # Algorithm: to integrate from time 0 to time dt, with linear
-            # interpolation between inputs u(0) = u0 and u(dt) = u1, we solve
-            #   xdot = A x + B u,        x(0) = x0
-            #   udot = (u1 - u0) / dt,   u(0) = u0.
-            #
-            # Solution is
-            #   [ x(dt) ]       [ A*dt  B*dt  0 ] [  x0   ]
-            #   [ u(dt) ] = exp [  0     0    I ] [  u0   ]
-            #   [u1 - u0]       [  0     0    0 ] [u1 - u0]
+            solver.step()
+            t = solver.t
+            ts.append(t)
 
-            M = np.block([[A * dt, B * dt, np.zeros((n_states, n_inputs))],
-                         [np.zeros((n_inputs, n_states + n_inputs)),
-                          np.identity(n_inputs)],
-                         [np.zeros((n_inputs, n_states + 2 * n_inputs))]])
-            expM = sp.linalg.expm(M)
-            Ad = expM[:n_states, :n_states]
-            Bd1 = expM[:n_states, n_states+n_inputs:]
-            Bd0 = expM[:n_states, n_states:n_states + n_inputs] - Bd1
+            x = solver.y.copy()
+            xs.append(list(x))
 
-            for i in range(1, n_steps):
-                xout[:, i] = (Ad @ xout[:, i-1]
-                              + Bd0 @ U[:, i-1] + Bd1 @ U[:, i])
-            yout = C @ xout + D @ U
+            for it, ti in enumerate(T):
+                if ts[-2] < ti <= ts[-1]:
+                    xi = solver.dense_output()(ti)
+                    xout[:, it] = xi
+                    yout[:, it] = P.C1 @ np.array(xi) + P.D11 @ inter_u(t) + P.D12 @ wf(zs)
+
+        #xout = np.transpose(xout)
+        #yout = np.transpose(yout)
         tout = T
 
     else:
-        # Discrete type system => use SciPy signal processing toolbox
+        sys = _convert_to_statespace(sys)
+        A, B, C, D = np.asarray(sys.A), np.asarray(sys.B), np.asarray(sys.C), \
+            np.asarray(sys.D)
+        # d_type = A.dtype
+        n_states = A.shape[0]
+        n_inputs = B.shape[1]
+        n_outputs = C.shape[0]
 
-        # sp.signal.dlsim assumes T[0] == 0
-        spT = T - T[0]
+        # Convert inputs to numpy arrays for easier shape checking
+        if U is not None:
+            U = np.asarray(U)
+        if T is not None:
+            # T must be array_like
+            T = np.asarray(T)
 
-        if sys.dt is not True and sys.dt is not None:
-            # Make sure that the time increment is a multiple of sampling time
+        # Set and/or check time vector in discrete-time case
+        if isdtime(sys):
+            if T is None:
+                if U is None or (U.ndim == 0 and U == 0.):
+                    raise ValueError('Parameters `T` and `U` can\'t both be '
+                                    'zero for discrete-time simulation')
+                # Set T to equally spaced samples with same length as U
+                if U.ndim == 1:
+                    n_steps = U.shape[0]
+                else:
+                    n_steps = U.shape[1]
+                dt = 1. if sys.dt in [True, None] else sys.dt
+                T = np.array(range(n_steps)) * dt
+            else:
+                if U.ndim == 0:
+                    U = np.full((n_inputs, T.shape[0]), U)
+        else:
+            if T is None:
+                raise ValueError('Parameter `T` is mandatory for continuous '
+                                'time systems.')
 
-            # First make sure that time increment is bigger than sampling time
-            # (with allowance for small precision errors)
-            if dt < sys.dt and not np.isclose(dt, sys.dt):
-                raise ValueError("Time steps `T` must match sampling time")
+        # Test if T has shape (n,) or (1, n);
+        T = _check_convert_array(T, [('any',), (1, 'any')],
+                                'Parameter `T`: ', squeeze=True,
+                                transpose=transpose)
 
-            # Now check to make sure it is a multiple (with check against
-            # sys.dt because floating point mod can have small errors
-            if not (np.isclose(dt % sys.dt, 0) or
-                    np.isclose(dt % sys.dt, sys.dt)):
-                raise ValueError("Time steps `T` must be multiples of "
-                                 "sampling time")
-            sys_dt = sys.dt
+        n_steps = T.shape[0]            # number of simulation steps
 
-            # sp.signal.dlsim returns not enough samples if
-            # T[-1] - T[0] < sys_dt * decimation * (n_steps - 1)
-            # due to rounding errors.
-            # https://github.com/scipyscipy/blob/v1.6.1/scipy/signal/ltisys.py#L3462
-            scipy_out_samples = int(np.floor(spT[-1] / sys_dt)) + 1
-            if scipy_out_samples < n_steps:
-                # parentheses: order of evaluation is important
-                spT[-1] = spT[-1] * (n_steps / (spT[-1] / sys_dt + 1))
+        # equally spaced also implies strictly monotonic increase,
+        dt = (T[-1] - T[0]) / (n_steps - 1)
+        if not np.allclose(np.diff(T), dt):
+            raise ValueError("Parameter `T`: time values must be equally "
+                            "spaced.")
+        
+        # create X0 if not given, test if X0 has correct shape
+        X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
+                                'Parameter `X0`: ', squeeze=True)
+
+        # Test if U has correct shape and type
+        legal_shapes = [(n_steps,), (1, n_steps)] if n_inputs == 1 else \
+            [(n_inputs, n_steps)]
+        U = _check_convert_array(U, legal_shapes,
+                                'Parameter `U`: ', squeeze=False,
+                                transpose=transpose)
+
+
+        xout = np.zeros((n_states, n_steps))
+        xout[:, 0] = X0
+        yout = np.zeros((n_outputs, n_steps))
+
+        # Separate out the discrete and continuous-time cases
+        if isctime(sys, strict=True):
+            # Solve the differential equation, copied from scipy.signal.ltisys.
+
+            # Faster algorithm if U is zero
+            # (if not None, it was converted to array above)
+            if U is None or np.all(U == 0):
+                # Solve using matrix exponential
+                expAdt = sp.linalg.expm(A * dt)
+                for i in range(1, n_steps):
+                    xout[:, i] = expAdt @ xout[:, i-1]
+                yout = C @ xout
+
+            # General algorithm that interpolates U in between output points
+            else:
+                # convert input from 1D array to 2D array with only one row
+                if U.ndim == 1:
+                    U = U.reshape(1, -1)  # pylint: disable=E1103
+
+                # Algorithm: to integrate from time 0 to time dt, with linear
+                # interpolation between inputs u(0) = u0 and u(dt) = u1, we solve
+                #   xdot = A x + B u,        x(0) = x0
+                #   udot = (u1 - u0) / dt,   u(0) = u0.
+                #
+                # Solution is
+                #   [ x(dt) ]       [ A*dt  B*dt  0 ] [  x0   ]
+                #   [ u(dt) ] = exp [  0     0    I ] [  u0   ]
+                #   [u1 - u0]       [  0     0    0 ] [u1 - u0]
+
+                M = np.block([[A * dt, B * dt, np.zeros((n_states, n_inputs))],
+                            [np.zeros((n_inputs, n_states + n_inputs)),
+                            np.identity(n_inputs)],
+                            [np.zeros((n_inputs, n_states + 2 * n_inputs))]])
+                expM = sp.linalg.expm(M)
+                Ad = expM[:n_states, :n_states]
+                Bd1 = expM[:n_states, n_states+n_inputs:]
+                Bd0 = expM[:n_states, n_states:n_states + n_inputs] - Bd1
+    
+                for i in range(1, n_steps):
+                    xout[:, i] = (Ad @ xout[:, i-1]
+                                + Bd0 @ U[:, i-1] + Bd1 @ U[:, i])
+                yout = C @ xout + D @ U
+            tout = T
 
         else:
-            sys_dt = dt         # For unspecified sampling time, use time incr
+            # Discrete type system => use SciPy signal processing toolbox
 
-        # Discrete time simulation using signal processing toolbox
-        dsys = (A, B, C, D, sys_dt)
+            # sp.signal.dlsim assumes T[0] == 0
+            spT = T - T[0]
 
-        # Use signal processing toolbox for the discrete-time simulation
-        # Transpose the input to match toolbox convention
-        tout, yout, xout = sp.signal.dlsim(dsys, np.transpose(U), spT, X0)
-        tout = tout + T[0]
+            if sys.dt is not True and sys.dt is not None:
+                # Make sure that the time increment is a multiple of sampling time
 
-        if not interpolate:
-            # If dt is different from sys.dt, resample the output
-            inc = int(round(dt / sys_dt))
-            tout = T            # Return exact list of time steps
-            yout = yout[::inc, :]
-            xout = xout[::inc, :]
-        else:
-            # Interpolate the input to get the right number of points
-            U = sp.interpolate.interp1d(T, U)(tout)
+                # First make sure that time increment is bigger than sampling time
+                # (with allowance for small precision errors)
+                if dt < sys.dt and not np.isclose(dt, sys.dt):
+                    raise ValueError("Time steps `T` must match sampling time")
 
-        # Transpose the output and state vectors to match local convention
-        xout = np.transpose(xout)
-        yout = np.transpose(yout)
+                # Now check to make sure it is a multiple (with check against
+                # sys.dt because floating point mod can have small errors
+                if not (np.isclose(dt % sys.dt, 0) or
+                        np.isclose(dt % sys.dt, sys.dt)):
+                    raise ValueError("Time steps `T` must be multiples of "
+                                    "sampling time")
+                sys_dt = sys.dt
+
+                # sp.signal.dlsim returns not enough samples if
+                # T[-1] - T[0] < sys_dt * decimation * (n_steps - 1)
+                # due to rounding errors.
+                # https://github.com/scipyscipy/blob/v1.6.1/scipy/signal/ltisys.py#L3462
+                scipy_out_samples = int(np.floor(spT[-1] / sys_dt)) + 1
+                if scipy_out_samples < n_steps:
+                    # parentheses: order of evaluation is important
+                    spT[-1] = spT[-1] * (n_steps / (spT[-1] / sys_dt + 1))
+
+            else:
+                sys_dt = dt         # For unspecified sampling time, use time incr
+
+            # Discrete time simulation using signal processing toolbox
+            dsys = (A, B, C, D, sys_dt)
+
+            # Use signal processing toolbox for the discrete-time simulation
+            # Transpose the input to match toolbox convention
+            tout, yout, xout = sp.signal.dlsim(dsys, np.transpose(U), spT, X0)
+            tout = tout + T[0]
+
+            if not interpolate:
+                # If dt is different from sys.dt, resample the output
+                inc = int(round(dt / sys_dt))
+                tout = T            # Return exact list of time steps
+                yout = yout[::inc, :]
+                xout = xout[::inc, :]
+            else:
+                # Interpolate the input to get the right number of points
+                U = sp.interpolate.interp1d(T, U)(tout)
+
+            # Transpose the output and state vectors to match local convention
+            xout = np.transpose(xout)
+            yout = np.transpose(yout)
 
     return TimeResponseData(
-        tout, yout, xout, U, params=params, issiso=sys.issiso(),
-        output_labels=sys.output_labels, input_labels=sys.input_labels,
-        state_labels=sys.state_labels, sysname=sys.name, plot_inputs=True,
-        title="Forced response for " + sys.name, trace_types=['forced'],
-        transpose=transpose, return_x=return_x, squeeze=squeeze)
+        tout, yout, xout, U, 
+        params=params, 
+        issiso=sys.issiso(),
+        output_labels=sys.output_labels, 
+        input_labels=sys.input_labels,
+        state_labels=sys.state_labels, 
+        sysname=sys.name, 
+        plot_inputs=True,
+        title="Forced response for " + sys.name, 
+        trace_types=['forced'],
+        transpose=transpose, 
+        return_x=return_x, 
+        squeeze=squeeze
+    )
 
 
 # Process time responses in a uniform way
@@ -1467,7 +1616,11 @@ def step_response(
 
     # Convert to state space so that we can simulate
     if isinstance(sys, LTI) and sys.nstates is None:
-        sys = _convert_to_statespace(sys)
+        if (isinstance(sys, TransferFunction) and hasattr(sys, 'delays')):
+            from .delayssp import _convert_to_delaystatespace
+            sys = _convert_to_delaystatespace(sys)
+        else:
+            sys = _convert_to_statespace(sys)
 
     # Only single input and output are allowed for now
     if isinstance(input, (list, tuple)):
@@ -1505,6 +1658,8 @@ def step_response(
         # Create a set of single inputs system for simulation
         U = np.zeros((sys.ninputs, T.size))
         U[i, :] = np.ones_like(T)
+
+        print(U)
 
         response = forced_response(sys, T, U, X0, squeeze=True, params=params)
         inpidx = i if input is None else 0
