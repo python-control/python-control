@@ -49,6 +49,10 @@ class TestXferFcn:
                               [[4, 5], [6, 7]]],
                              [[[6, 7], [4, 5]],
                               [[2, 3]]])
+
+        with pytest.raises(TypeError, match="unsupported data type"):
+            ct.tf([1j], [1, 2, 3])
+
         # good input
         TransferFunction([[[0, 1], [2, 3]],
                           [[4, 5], [6, 7]]],

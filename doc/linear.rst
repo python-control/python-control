@@ -39,7 +39,7 @@ of linear time-invariant (LTI) systems:
   y &= C x + D u
 
 where :math:`u` is the input, :math:`y` is the output, and :math:`x`
-is the state.
+is the state.  All vectors and matrices must be real-valued.
 
 To create a state space system, use the :func:`ss` function:
 
@@ -94,7 +94,8 @@ transfer functions
               {b_0 s^n + b_1 s^{n-1} + \cdots + b_n},
 
 where :math:`n` is greater than or equal to :math:`m` for a proper
-transfer function.  Improper transfer functions are also allowed.
+transfer function.  Improper transfer functions are also allowed.  All
+coefficients must be real-valued.
 
 To create a transfer function, use the :func:`tf` function::
 
