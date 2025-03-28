@@ -274,44 +274,6 @@ class DelayLTISystem(LTI):
                  f"P={self.P.__repr__()}, tau={self.tau.__repr__()})")
 
 
-
-
-
-def delay(tau):
-    # ... (keep existing implementation) ...
-    if isinstance(tau, (int, float)):
-        tau_arr = np.array([float(tau)])
-    elif isinstance(tau, (list, np.ndarray)):
-        tau_arr = np.asarray(tau, dtype=float)
-    else:
-        raise TypeError("tau must be a number, list, or NumPy array")
-
-    n_delays = len(tau_arr)
-    if n_delays == 0:
-         # Should return identity? Or error? Let's return identity for now.
-         # A static gain system is StateSpace with empty A, B, C.
-         return DelayLTISystem.from_ss(StateSpace(np.eye(1)))
-
-    # Create the P matrix for a pure delay block w(t) = z(t-tau)
-    # y = w, z = u
-    # P maps [u, w] -> [y, z]
-    # y = 0*u + 1*w => D11=0, D12=I
-    # z = 1*u + 0*w => D21=I, D22=0
-    D = np.block([
-        [np.zeros((n_delays, n_delays)), np.eye(n_delays)],
-        [np.eye(n_delays)             , np.zeros((n_delays, n_delays))]
-    ])
-    # No states needed for pure delay block representation
-    A = np.zeros((0,0))
-    B = np.zeros((0, 2 * n_delays))
-    C = np.zeros((2 * n_delays, 0))
-
-    # Partition: external input u -> nu1, external output y -> ny1
-    P = PartitionedStateSpace(StateSpace(A, B, C, D), nu1=n_delays, ny1=n_delays)
-    return DelayLTISystem(P, tau_arr)
-
-
-
 def delay(tau):
     """
     Pure delay
@@ -365,7 +327,6 @@ def tf2dlti(tf: TransferFunction):
     return DelayLTISystem.from_ss(ss_tf)
     
 
-
 def _promote_delay_system_types(sys1, sys2):
     """Determine the numeric and delay types for combined systems."""
     # Promote numeric types based on underlying StateSpace
@@ -391,3 +352,32 @@ def _convert_to_delay_lti(sys):
         return tf2dlti(sys)
     else:
         raise TypeError("Unsupported system type for DelayLTISystem conversion: {}".format(type(sys)))
+    
+
+def vcat(*systems: list[DelayLTISystem]) -> DelayLTISystem:
+    from .partitionedssp import vcat_pss
+
+    if not all(isinstance(sys, DelayLTISystem) for sys in systems):
+        raise TypeError("All inputs must be DelayLTISystems")
+
+    part_ssp = [sys.P for sys in systems]
+    P = vcat_pss(*part_ssp)
+    tau = np.concatenate([sys.tau for sys in systems])
+    return DelayLTISystem(P, tau)
+    
+
+def hcat(*systems: list[DelayLTISystem]) -> DelayLTISystem:
+    from .partitionedssp import hcat_pss
+
+    if not(all(isinstance(sys, DelayLTISystem) for sys in systems)):
+        raise TypeError("All inputs must be DelayLTISystems")
+    
+    part_ssp = [sys.P for sys in systems]
+    P = hcat_pss(*part_ssp)
+    tau = np.concatenate([sys.tau for sys in systems])
+    return DelayLTISystem(P, tau)
+    
+
+def mimo_delay(array: np.ndarray[DelayLTISystem]):
+    rows = [hcat(*row) for row in array]
+    return vcat(*rows)
