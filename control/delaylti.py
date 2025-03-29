@@ -4,7 +4,7 @@ from .partitionedssp import PartitionedStateSpace
 from .statesp import ss, StateSpace, tf2ss
 from .xferfcn import TransferFunction
 from .iosys import _process_iosys_keywords
-from scipy.linalg import solve, LinAlgError
+from scipy.linalg import solve, LinAlgError, inv
 
 
 
@@ -156,15 +156,9 @@ class DelayLTISystem(LTI):
         """
 
         if isinstance(other, DelayLTISystem):
-            psys_new = self.P.feedback(other.P) # Use PartitionedStateSpace.feedback
-
-            # Concatenate the delay vectors
+            psys_new = self.P.feedback(other.P)
             tau_new = np.concatenate([self.tau, other.tau])
-
-            # Determine result types and construct the new DelayLTISystem
-            T, S = _promote_delay_system_types(self, other)
-            ResType = type(self)._most_specific_constructor(T, S)
-            return ResType(psys_new, tau_new)
+            return DelayLTISystem(psys_new, tau_new)
         
         elif isinstance(other, (StateSpace, TransferFunction)):
             other_delay_lti = _convert_to_delay_lti(other)
@@ -239,27 +233,42 @@ class DelayLTISystem(LTI):
             # Determine result types and construct the new DelayLTISystem
             # Need to promote delay type S with potential default float
             _, S = _promote_delay_system_types(self, self)
-            ResType = type(self)._most_specific_constructor(T, S)
-            return ResType(clsys_part, taus)
+            return DelayLTISystem(clsys_part, taus)
+        
+    def frequency_response(self, omega=None, squeeze=None):
+        from .frdata import FrequencyResponseData
 
-    # Helper to get the most specific constructor like DelayLtiSystem{T,S}
-    @classmethod
-    def _most_specific_constructor(cls, T_num, S_delay):
-        # This is a bit of a workaround for Python's type system.
-        # It assumes the class name is DelayLTISystem and reconstructs it.
-        # If you rename your class, you'll need to change this.
-        # It also doesn't handle potential subclasses gracefully.
-        base_name = cls.__name__
-        if base_name == "DelayLTISystem":
-             # Need to create the types dynamically if they don't exist? No, just use them.
-             # This relies on the generic class DelayLTISystem being available.
-             # We might need to import it specifically if this method is called
-             # from outside the class definition scope in some contexts.
-             return DelayLTISystem # Return the generic type, __init__ will handle types
-        else:
-             # Fallback or error for subclasses?
-             return cls # Return the current class type
+        if omega is None:
+            # Use default frequency range
+            from .freqplot import _default_frequency_range
+            omega = _default_frequency_range(self)
 
+        omega = np.sort(np.array(omega, ndmin=1))
+
+        ny = self.noutputs
+        nu = self.ninputs
+        response = np.empty((ny, nu, len(omega)), dtype=complex)
+
+        P_fr = self.P.sys(1j * omega)
+        
+        for i,w in enumerate(omega):
+            P11_fr = P_fr[:ny, :nu, i]
+            P12_fr = P_fr[:ny, nu:, i]
+            P21_fr = P_fr[ny:, :nu, i]
+            P22_fr = P_fr[ny:, nu:, i]
+            delay_term_inv = np.exp(1j * w * self.tau)
+            delay_term_fr = np.diag(delay_term_inv)
+            response[:,:,i] = P11_fr + P12_fr @  inv(delay_term_fr - P22_fr) @ P21_fr
+
+        return FrequencyResponseData(
+            response, omega, return_magphase=True, squeeze=squeeze,
+            dt=self.dt, sysname=self.name, inputs=self.input_labels,
+            outputs=self.output_labels, plot_type='bode')
+    
+    def issiso(self):
+        """Check if the system is single-input, single-output."""
+        # Based on EXTERNAL dimensions
+        return self.ninputs == 1 and self.noutputs == 1
 
     def __str__(self):
         # ... (existing string representation) ...
