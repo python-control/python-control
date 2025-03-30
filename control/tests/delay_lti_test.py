@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import matplotlib.pyplot as plt
 
 from dataclasses import dataclass
 from control.delaylti import delay, tf2dlti, exp, hcat, vcat, mimo_delay
@@ -43,21 +44,6 @@ def delay_siso_tf2():
 
 @pytest.fixture
 def wood_berry():
-    P11_tf = 12.8 / (16.7*s + 1)
-    P12_tf = -18.9 / (21.0*s + 1)
-    P21_tf = 6.6 / (10.9*s + 1)
-    P22_tf = -19.4 / (14.4*s + 1)
-    G11 = P11_tf * delay(1.0)
-    G12 = P12_tf * delay(3.0)
-    G21 = P21_tf * delay(7.0)
-    G22 = P22_tf * delay(3.0)
-    Row1 = hcat(G11, G12)
-    Row2 = hcat(G21, G22)
-    G_wb = vcat(Row1, Row2) 
-    return G_wb
-
-@pytest.fixture
-def array_wood_berry():
     G_wb = mimo_delay([
         [12.8 / (16.7*s + 1) * exp(-s),  -18.9 / (21.0*s + 1) * exp(-3*s)],
         [6.6 / (10.9*s + 1) * exp(-7*s), -19.4 / (14.4*s + 1) * exp(-3*s)]
@@ -106,19 +92,12 @@ class TestConstructors:
         assert(np.allclose(delay_lti_tf_one.C, julia_C))
         assert(np.allclose(delay_lti_tf_one.D, julia_D))
 
-    def test_hcat_vcat(self, wood_berry, julia_wood_berry):
+    def test_mimo_delay(self, wood_berry, julia_wood_berry):
         assert(np.allclose(wood_berry.A, julia_wood_berry.A))
         assert(np.allclose(wood_berry.B, julia_wood_berry.B))
         assert(np.allclose(wood_berry.C, julia_wood_berry.C))
         assert(np.allclose(wood_berry.D, julia_wood_berry.D))
         assert(np.allclose(wood_berry.tau, julia_wood_berry.tau))
-
-    def test_mimo_delay(self, array_wood_berry, julia_wood_berry):
-        assert(np.allclose(array_wood_berry.A, julia_wood_berry.A))
-        assert(np.allclose(array_wood_berry.B, julia_wood_berry.B))
-        assert(np.allclose(array_wood_berry.C, julia_wood_berry.C))
-        assert(np.allclose(array_wood_berry.D, julia_wood_berry.D))
-        assert(np.allclose(array_wood_berry.tau, julia_wood_berry.tau))
 
 class TestOperators: 
     def test_add(self, delay_siso_tf, delay_siso_tf2):
@@ -259,56 +238,13 @@ class TestPureDelay:
         assert(np.allclose(G.tau , julia_delays))
 
 
-class TestDelayLTI:
-    # comparison with julia controlSystems package
-
-    def test_delay(self):
-        tf_test = tf([1], [1,1]) * delay(1)
-        A = [[-1]]
-        B = [[0,1]]
-        C = [[1],[0]]
-        D = [[0,0], [1,0]]
-
-        assert(np.allclose(tf_test.P.A , A))
-        assert(np.allclose(tf_test.P.B , B))
-        assert(np.allclose(tf_test.P.C , C))
-        assert(np.allclose(tf_test.P.D , D))
-
-    
-    def test_forced_response(self):
-        from control.delaylti import DelayLTISystem, tf2dlti
-        from control.xferfcn import tf
-        from control.timeresp import forced_response
-        import matplotlib.pyplot as plt
-
-        tf1 = tf([1], [1.5,1]) * delay(1)
-
-        timepts = np.linspace(0, 10, 100)
-        input1 = np.zeros(100)
-        input1[31:] = 1
-        resp = forced_response(tf1, timepts=timepts, inputs=input1)
-        t, y = resp.t, resp.y[0] 
-
-        #plt.figure()
-        #plt.plot(t, input1)
-        #plt.plot(t, y)
-        #plt.show()
-
-
-    def test_exp(self):
-        from control.delaylti import exp
-        from control.xferfcn import tf
-
-        s = tf([1,0], [1])
-        exp_delay = exp(-2*s)
-
-
-
 class TestFreqResp:
 
     def test_siso_freq_resp(self, delay_siso_tf):
+        from control.lti import frequency_response
         w = np.logspace(-2, 2, 10, base=10)
         resp = delay_siso_tf.frequency_response(w)
+        fun_resp = frequency_response(delay_siso_tf, w)
         julia_freq_resp = np.array([
             0.9996375439798979 - 0.024995812946127068*1j,
             0.9971959288676081 - 0.06947384247065888*1j,
@@ -322,3 +258,61 @@ class TestFreqResp:
             0.007217967580181465 - 0.006920328388981937*1j
         ], dtype=complex)
         assert(np.allclose(np.array(resp.complex), julia_freq_resp))
+        assert(np.allclose(np.array(fun_resp.complex), julia_freq_resp))
+
+    def test_bode_plot(self, delay_siso_tf):
+        from control.freqplot import bode_plot
+        import matplotlib.pyplot as plt
+        w = np.logspace(-2, 2, 100, base=10)
+        #bode_plot(delay_siso_tf, w)
+        #plt.show() comparison with julia notebook
+
+    def test_mimo_freq_resp(self, wood_berry):
+        from control.lti import frequency_response
+        w = np.logspace(-2, 2, 10, base=10)
+        fresp = frequency_response(wood_berry, w)
+        julia_freq_resp = np.array([
+            [[12.4313-2.20402*1j, 10.3867-5.1827*1j, 4.29712-6.54633*1j,  0.190665-3.42239*1j, -0.609851-1.11652*1j,
+              -0.458323+0.0281868*1j, 0.164539+0.0138042*1j, -0.0200415-0.0558575*1j, 0.0209361+0.0040665*1j, 0.00388508-0.00660706*1j],
+             [-17.9795+4.34262*1j, -13.3537+9.37895*1j, -3.10627+9.40135*1j, 1.69596+3.70969*1j, 1.48013-0.221262*1j,
+              -0.520719+0.140405*1j, 0.189103+0.0428153*1j, 0.0602249+0.035053*1j, 0.0210585+0.0135532*1j, -0.00899771-0.000203154*1j]],
+            [[6.45681-1.16541*1j, 5.57492-2.9683*1j, 1.62412-4.7752*1j, -2.31095-1.16016*1j, 0.783909+0.618326*1j,
+              0.293676-0.212413*1j, -0.113486-0.0642809*1j, -0.0303737+0.0357106*1j, -0.00395567-0.0163775*1j, -0.00329842+0.00507779*1j],
+             [-18.9152+3.30571*1j, -16.0995+8.06846*1j, -6.19676+11.3748*1j, 1.954+5.6218*1j, 2.2183-0.250236*1j,
+              -0.781793+0.199879*1j, 0.282749+0.0654171*1j, 0.090062+0.0526232*1j, 0.0315105+0.0203071*1j, -0.0134687-0.000307044*1j]]
+        ],dtype=complex)
+        assert(np.allclose(fresp.complex, julia_freq_resp))
+
+
+
+class TestTimeResp:
+
+    def test_siso_step_response(self, delay_siso_tf):
+        from control.timeresp import step_response
+        timepts1 = np.arange(0, 11, 1)
+        t1, y1 = step_response(delay_siso_tf)
+        timepts2 = np.arange(0, 10.1, 0.1)
+        t2, y2 = step_response(delay_siso_tf, timepts=timepts2)
+        julia_resp = [0.0, 0.0, 0.3934701171707952, 0.7768701219836066, 0.917915094373695, 0.9698026491618251, 0.9888910143620181, 0.9959132295791787, 0.9984965605514581, 0.9994469148973136, 0.9997965302422651]
+        plt.figure()
+        plt.plot(t1, y1, label="python step 1")
+        plt.plot(timepts1, julia_resp, label="julia")
+        plt.plot(t2, y2, label="python step 0.1")
+        plt.legend()
+        plt.show()
+        
+
+
+
+    def test_forced_response(self, delay_siso_tf):
+        from control.timeresp import forced_response
+
+        timepts = np.arange(0, 10.1, 0.1)
+        input1 = np.zeros(101)
+        input1[31:] = 1
+        resp = forced_response(delay_siso_tf, timepts=timepts, inputs=input1)
+        t, y = resp.t, resp.y[0] 
+        #plt.figure()
+        #plt.plot(t, input1)
+        #plt.plot(t, y)
+        #plt.show()

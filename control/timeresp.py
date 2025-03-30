@@ -922,7 +922,7 @@ def forced_response(
         sysdata, timepts=None, inputs=0., initial_state=0., transpose=False,
         params=None, interpolate=False, return_states=None, squeeze=None,
         **kwargs):
-    from .delaylti import DelayLTISystem
+    from .delaylti import DelayLTI
     """Compute the output of a linear system given the input.
 
     As a convenience for parameters `U`, `X0`: Numbers (scalars) are
@@ -1063,7 +1063,7 @@ def forced_response(
     else:
         sys = sysdata
 
-    if not isinstance(sys, (StateSpace, TransferFunction, DelayLTISystem)):
+    if not isinstance(sys, (StateSpace, TransferFunction, DelayLTI)):
         if isinstance(sys, NonlinearIOSystem):
             if interpolate:
                 warnings.warn(
@@ -1092,7 +1092,7 @@ def forced_response(
             "Internal conversion to state space used; may not be consistent "
             "with given X0.")
 
-    if isinstance(sys, DelayLTISystem):
+    if isinstance(sys, DelayLTI):
         P = sys.P
         n_states = P.A.shape[0]
         n_inputs = P.B1.shape[1]
@@ -1616,10 +1616,6 @@ def step_response(
 
     # Convert to state space so that we can simulate
     if isinstance(sys, LTI) and sys.nstates is None:
-        if (isinstance(sys, TransferFunction) and hasattr(sys, 'delays')):
-            from .delayssp import _convert_to_delaystatespace
-            sys = _convert_to_delaystatespace(sys)
-        else:
             sys = _convert_to_statespace(sys)
 
     # Only single input and output are allowed for now
@@ -2296,6 +2292,7 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
 
     """
     from .statesp import _convert_to_statespace
+    from .delaylti import DelayLTI
 
     sqrt_eps = np.sqrt(np.spacing(1.))
     default_tfinal = 5                  # Default simulation horizon
