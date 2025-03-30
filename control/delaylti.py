@@ -234,41 +234,32 @@ class DelayLTISystem(LTI):
             # Need to promote delay type S with potential default float
             _, S = _promote_delay_system_types(self, self)
             return DelayLTISystem(clsys_part, taus)
-        
-    def frequency_response(self, omega=None, squeeze=None):
-        from .frdata import FrequencyResponseData
-
-        if omega is None:
-            # Use default frequency range
-            from .freqplot import _default_frequency_range
-            omega = _default_frequency_range(self)
-
-        omega = np.sort(np.array(omega, ndmin=1))
-
-        ny = self.noutputs
-        nu = self.ninputs
-        response = np.empty((ny, nu, len(omega)), dtype=complex)
-
-        P_fr = self.P.sys(1j * omega)
-        
-        for i,w in enumerate(omega):
-            P11_fr = P_fr[:ny, :nu, i]
-            P12_fr = P_fr[:ny, nu:, i]
-            P21_fr = P_fr[ny:, :nu, i]
-            P22_fr = P_fr[ny:, nu:, i]
-            delay_term_inv = np.exp(1j * w * self.tau)
-            delay_term_fr = np.diag(delay_term_inv)
-            response[:,:,i] = P11_fr + P12_fr @  inv(delay_term_fr - P22_fr) @ P21_fr
-
-        return FrequencyResponseData(
-            response, omega, return_magphase=True, squeeze=squeeze,
-            dt=self.dt, sysname=self.name, inputs=self.input_labels,
-            outputs=self.output_labels, plot_type='bode')
     
     def issiso(self):
         """Check if the system is single-input, single-output."""
         # Based on EXTERNAL dimensions
         return self.ninputs == 1 and self.noutputs == 1
+    
+    def __call__(self, x, squeeze=None, warn_infinite=True):
+        x_arr = np.atleast_1d(x).astype(complex, copy=False)
+
+        if len(x_arr.shape) > 1:
+            raise ValueError("input list must be 1D")
+        
+        out = np.empty((self.noutputs, self.ninputs, len(x_arr)), dtype=complex)
+
+        sys_call = self.P.sys(x, squeeze=squeeze, warn_infinite=warn_infinite)
+        ny = self.noutputs
+        nu = self.ninputs
+        for i, xi in enumerate(x):
+            P11_fr = sys_call[:ny, :nu, i]
+            P12_fr = sys_call[:ny, nu:, i]
+            P21_fr = sys_call[ny:, :nu, i]
+            P22_fr = sys_call[ny:, nu:, i]
+            delay_term_inv = np.exp(xi * self.tau)
+            delay_term_fr = np.diag(delay_term_inv)
+            out[:,:,i] = P11_fr + P12_fr @  inv(delay_term_fr - P22_fr) @ P21_fr
+        return out
 
     def __str__(self):
         # ... (existing string representation) ...
