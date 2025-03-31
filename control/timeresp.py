@@ -50,6 +50,7 @@ from . config import _process_kwargs, _process_param
 from .exception import pandas_check
 from .iosys import NamedSignal, isctime, isdtime
 from .timeplot import time_response_plot
+from .dde import dde_response
 
 __all__ = ['forced_response', 'step_response', 'step_info',
            'initial_response', 'impulse_response', 'TimeResponseData',
@@ -1093,141 +1094,11 @@ def forced_response(
             "with given X0.")
 
     if isinstance(sys, DelayLTI):
-        P = sys.P
-        n_states = P.A.shape[0]
-        n_inputs = P.B1.shape[1]
-        n_outputs = P.C1.shape[0]
-        # Convert inputs to numpy arrays for easier shape checking
-        if U is not None:
-            U = np.asarray(U)
-        if T is not None:
-            # T must be array_like
-            T = np.asarray(T)
-        # Set and/or check time vector in discrete-time case
-        # if isdtime(sys):
-        #     if T is None:
-        #         if U is None or (U.ndim == 0 and U == 0.):
-        #             raise ValueError('Parameters `T` and `U` can\'t both be '
-        #                             'zero for discrete-time simulation')
-        #         # Set T to equally spaced samples with same length as U
-        #         if U.ndim == 1:
-        #             n_steps = U.shape[0]
-        #         else:
-        #             n_steps = U.shape[1]
-        #         dt = 1. if sys.dt in [True, None] else sys.dt
-        #         T = np.array(range(n_steps)) * dt
-        #     else:
-        #         if U.ndim == 0:
-        #             U = np.full((n_inputs, T.shape[0]), U)
-        # else:
-        #     if T is None:
-        #         raise ValueError('Parameter `T` is mandatory for continuous '
-        #                         'time systems.')
-
-        # Test if T has shape (n,) or (1, n);
-        T = _check_convert_array(T, [('any',), (1, 'any')],
-                                'Parameter `T`: ', squeeze=True,
-                                transpose=transpose)
-
-        n_steps = T.shape[0]            # number of simulation steps
-
-        # equally spaced also implies strictly monotonic increase,
-        dt = (T[-1] - T[0]) / (n_steps - 1)
-        if not np.allclose(np.diff(T), dt):
-            raise ValueError("Parameter `T`: time values must be equally "
-                            "spaced.")
-
-        # create X0 if not given, test if X0 has correct shape
-        X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
-                                'Parameter `X0`: ', squeeze=True)
-
-        # Test if U has correct shape and type
-        legal_shapes = [(n_steps,), (1, n_steps)] if n_inputs == 1 else \
-            [(n_inputs, n_steps)]
-        U = _check_convert_array(U, legal_shapes,
-                                'Parameter `U`: ', squeeze=False,
-                                transpose=transpose)
-
-        xout = np.zeros((n_states, n_steps))
-        xout[:, 0] = X0
-        yout = np.zeros((n_outputs, n_steps))
-        # adaptation of robust control from Python Skotesgrad
-        # keep tracks delays
-        dtss = [int(np.round(delay / dt)) for delay in sys.tau]
-        zs = []
-        def wf(zs):
-            ws = []
-            for i, dts in enumerate(dtss):
-                if len(zs) <= dts:
-                    ws.append(0)
-                elif dts == 0:
-                    ws.append(zs[-1][i])
-                else:
-                    ws.append(zs[-dts][i])
-            return np.array(ws)
-
-        def inter_u(t):
-            if np.ndim(U) == 1:
-                return np.array([np.interp(t, T, U)])
-            elif np.ndim(U) == 0:
-                print("U is a scalar !")
-                return U
-            else:
-                return np.array([np.interp(t, T, ui) for ui in U])
-
-        def f(t, x):
-            # TODO: verify interp
-            return P.A @ x + P.B1 @ inter_u(t) + P.B2 @ wf(zs)
-
-        solver = LSODA(f, T[0], X0, t_bound=T[-1], max_step=dt)
-
-        xs = [X0]
-        ts = [T[0]]
-        while solver.status == "running":
-            t = ts[-1]
-            x = xs[-1]
-            #print("C1", sys.C1)
-            ##print("D11", sys.D11)
-            #print("D12", sys.D12)
-            #print("x", x)
-            #print("U", U)
-            #print("ndim U", np.ndim(U))
-            #print("wf(zs)", wf(zs))
-            #print("interp U", np.interp(t, T, U))
-
-            #print("C1", P.C1)
-            #print("x", np.array(x))
-
-            #print("D11", P.D11)
-            #print("inter U", inter_u(t))
-
-            #print("D12", P.D12)
-            #print("wf(zs)", wf(zs))
-
-            #print("")
-
-            y = P.C1 @ np.array(x) + P.D11 @ inter_u(t) + P.D12 @ wf(zs)
-
-            z = P.C2 @ np.array(x) + P.D21 @ inter_u(t) + P.D22 @ wf(zs)
-            zs.append(list(z))
-
-            solver.step()
-            t = solver.t
-            ts.append(t)
-
-            x = solver.y.copy()
-            xs.append(list(x))
-
-            for it, ti in enumerate(T):
-                if ts[-2] < ti <= ts[-1]:
-                    xi = solver.dense_output()(ti)
-                    xout[:, it] = xi
-                    yout[:, it] = P.C1 @ np.array(xi) + P.D11 @ inter_u(t) + P.D12 @ wf(zs)
-
-        #xout = np.transpose(xout)
-        #yout = np.transpose(yout)
-        tout = T
-
+        # step size must be small enough to ensure accuracy. 
+        # Stiff problems may require very small step size or specific dde solver
+        return dde_response(
+            sysdata, T=timepts, U=inputs, X0=initial_state, params=params,
+            transpose=transpose, return_x=return_states, squeeze=squeeze, method="LSODA")
     else:
         sys = _convert_to_statespace(sys)
         A, B, C, D = np.asarray(sys.A), np.asarray(sys.B), np.asarray(sys.C), \

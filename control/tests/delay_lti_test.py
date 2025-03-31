@@ -239,7 +239,6 @@ class TestPureDelay:
 
 
 class TestFreqResp:
-
     def test_siso_freq_resp(self, delay_siso_tf):
         from control.lti import frequency_response
         w = np.logspace(-2, 2, 10, base=10)
@@ -286,11 +285,10 @@ class TestFreqResp:
 
 
 class TestTimeResp:
-
     def test_siso_step_response(self, delay_siso_tf):
         from control.timeresp import step_response
         timepts1 = np.arange(0, 11, 1)
-        t1, y1 = step_response(delay_siso_tf)
+        t1, y1 = step_response(delay_siso_tf, timepts=timepts1)
         timepts2 = np.arange(0, 10.1, 0.1)
         t2, y2 = step_response(delay_siso_tf, timepts=timepts2)
         julia_resp = [0.0, 0.0, 0.3934701171707952, 0.7768701219836066, 0.917915094373695, 0.9698026491618251, 0.9888910143620181, 0.9959132295791787, 0.9984965605514581, 0.9994469148973136, 0.9997965302422651]
