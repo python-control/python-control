@@ -3,7 +3,7 @@ import pytest
 import matplotlib.pyplot as plt
 
 from dataclasses import dataclass
-from control.delaylti import delay, tf2dlti, exp, hcat, vcat, mimo_delay
+from control.delaylti import delay, tf2dlti, exp, hcat, vcat, mimo_delay, ss2dlti
 from control.statesp import ss
 from control.xferfcn import tf
 
@@ -28,7 +28,6 @@ def tf_one():
 @pytest.fixture
 def pure_delay():
     return delay(1)
-
 
 @pytest.fixture
 def delay_siso_tf():
@@ -77,26 +76,78 @@ def julia_wood_berry():
     )
 
 
-class TestConstructors:
-    def test_from_ss(self, simple_siso_tf):
-        pass
+class TestDelayLti:
+    def test_from_tf(self):
+        sys = tf([1], [1, 1])
+        dlti = tf2dlti(sys)
+        assert np.allclose(dlti.P.A, [[-1]])
+        assert np.allclose(dlti.P.B1, [[1]])
+        assert np.allclose(dlti.P.C1, [[1]])
+        assert np.allclose(dlti.P.D11, [[0]])
+        assert np.allclose(dlti.tau, [])
 
-    def test_from_tf(self, tf_one):
+    def test_tf2dlti(self, tf_one):
         delay_lti_tf_one = tf2dlti(tf_one)
         julia_A = []
         julia_B = []
         julia_C = []
         julia_D = [[1.]]
-        assert(np.allclose(delay_lti_tf_one.A, julia_A))
-        assert(np.allclose(delay_lti_tf_one.B, julia_B))
-        assert(np.allclose(delay_lti_tf_one.C, julia_C))
-        assert(np.allclose(delay_lti_tf_one.D, julia_D))
+        assert(np.allclose(delay_lti_tf_one.P.A, julia_A))
+        assert(np.allclose(delay_lti_tf_one.P.B, julia_B))
+        assert(np.allclose(delay_lti_tf_one.P.C, julia_C))
+        assert(np.allclose(delay_lti_tf_one.P.D, julia_D))
 
+    def test_poles(self):
+        sys = ss([[-1]], [[1]], [[1]], [[0]])
+        dlti = ss2dlti(sys)
+        assert np.allclose(dlti.poles(), [-1])
+
+    def test_zeros(self):
+        sys = ss([[-1]], [[1]], [[1]], [[0]])
+        dlti = ss2dlti(sys)
+        assert np.allclose(dlti.zeros(), [])
+
+    def test_issiso(self, delay_siso_tf, delay_siso_tf2):
+        assert delay_siso_tf.issiso() == True
+        assert delay_siso_tf.issiso() == True
+
+    def test_call(self):
+        sys = tf([1], [1, 1])
+        dlti = tf2dlti(sys) * delay(1)
+        freq_resp = dlti(1j*2*np.pi)
+        assert np.allclose(freq_resp, 1/(2*np.pi*1j + 1))
+
+    def test_vcat(self):
+        sys1 = ss([[-1]], [[1]], [[1]], [[0]])
+        dlti1 = ss2dlti(sys1) * delay(1)
+        dlti2 = ss2dlti(sys1) * delay(2)
+        dlti3 = vcat(dlti1, dlti2)
+        assert np.allclose(dlti3.P.A, [[-1, 0], [0, -1]])
+        assert np.allclose(dlti3.tau, [1, 2])
+
+    def test_hcat(self):
+        sys1 = ss([[-1]], [[1]], [[1]], [[0]])
+        dlti1 = ss2dlti(sys1) * delay(1)
+        dlti2 = ss2dlti(sys1) * delay(2)
+        dlti3 = hcat(dlti1, dlti2)
+        assert np.allclose(dlti3.P.A, [[-1, 0], [0, -1]])
+        assert np.allclose(dlti3.tau, [1, 2])
+
+    def test_mimo_delay(self):
+        sys1 = ss([[-1]], [[1]], [[1]], [[0]])
+        dlti1 = ss2dlti(sys1) * delay(1)
+        dlti2 = ss2dlti(sys1) * delay(2)
+        dlti3 = mimo_delay(np.array([[dlti1, dlti2]]))
+        assert np.allclose(dlti3.P.A, [[-1, 0], [0, -1]])
+        assert np.allclose(dlti3.tau, [1, 2])
+
+
+class TestConstructors:
     def test_mimo_delay(self, wood_berry, julia_wood_berry):
-        assert(np.allclose(wood_berry.A, julia_wood_berry.A))
-        assert(np.allclose(wood_berry.B, julia_wood_berry.B))
-        assert(np.allclose(wood_berry.C, julia_wood_berry.C))
-        assert(np.allclose(wood_berry.D, julia_wood_berry.D))
+        assert(np.allclose(wood_berry.P.A, julia_wood_berry.A))
+        assert(np.allclose(wood_berry.P.B, julia_wood_berry.B))
+        assert(np.allclose(wood_berry.P.C, julia_wood_berry.C))
+        assert(np.allclose(wood_berry.P.D, julia_wood_berry.D))
         assert(np.allclose(wood_berry.tau, julia_wood_berry.tau))
 
 class TestOperators: 
@@ -107,10 +158,10 @@ class TestOperators:
         julia_C = [[1., 1.5], [0., 0.], [0., 0.]]
         julia_D = [[0., 0., 0.], [1., 0., 0.], [1., 0., 0.]]
         julia_delays = [1.5, 0.5]
-        assert(np.allclose(G.A , julia_A))
-        assert(np.allclose(G.B , julia_B))
-        assert(np.allclose(G.C , julia_C))
-        assert(np.allclose(G.D , julia_D))
+        assert(np.allclose(G.P.A , julia_A))
+        assert(np.allclose(G.P.B , julia_B))
+        assert(np.allclose(G.P.C , julia_C))
+        assert(np.allclose(G.P.D , julia_D))
         assert(np.allclose(G.tau , julia_delays))
 
     def test_add_constant(self, delay_siso_tf):
@@ -120,10 +171,13 @@ class TestOperators:
         julia_C = [[1.], [0.]]
         julia_D = [[2.5, 0.], [1., 0.]]
         julia_delays = [1.5]
-        assert(np.allclose(G.A , julia_A))
-        assert(np.allclose(G.B , julia_B))
-        assert(np.allclose(G.C , julia_C))
-        assert(np.allclose(G.D , julia_D))
+
+        print("D", G.P.D)
+
+        assert(np.allclose(G.P.A , julia_A))
+        assert(np.allclose(G.P.B , julia_B))
+        assert(np.allclose(G.P.C , julia_C))
+        assert(np.allclose(G.P.D , julia_D))
         assert(np.allclose(G.tau , julia_delays))
         
     def test_mul(self, delay_siso_tf, delay_siso_tf2):
@@ -133,23 +187,23 @@ class TestOperators:
         julia_C = [[1., 0.], [0., 1.5], [0., 0.]]
         julia_D = [[0., 0., 0.], [0., 0., 0.], [1., 0., 0.]]
         julia_delays = [1.5, 0.5]
-        assert(np.allclose(G.A , julia_A))
-        assert(np.allclose(G.B , julia_B))
-        assert(np.allclose(G.C , julia_C))
-        assert(np.allclose(G.D , julia_D))
+        assert(np.allclose(G.P.A , julia_A))
+        assert(np.allclose(G.P.B , julia_B))
+        assert(np.allclose(G.P.C , julia_C))
+        assert(np.allclose(G.P.D , julia_D))
         assert(np.allclose(G.tau , julia_delays))
 
-    def test_gain_mul(self, delay_siso_tf):
+    def test_constant_mul(self, delay_siso_tf):
         G2 = 2 * delay_siso_tf
         julia_A = [[-1.]]
         julia_B = [[0., 1.]]
         julia_C = [[2.], [0.]]
         julia_D = [[0., 0.], [1., 0.]]
         julia_delays = [1.5]
-        assert(np.allclose(G2.A , julia_A))
-        assert(np.allclose(G2.B , julia_B))
-        assert(np.allclose(G2.C , julia_C))
-        assert(np.allclose(G2.D , julia_D))
+        assert(np.allclose(G2.P.A , julia_A))
+        assert(np.allclose(G2.P.B , julia_B))
+        assert(np.allclose(G2.P.C , julia_C))
+        assert(np.allclose(G2.P.D , julia_D))
         assert(np.allclose(G2.tau , julia_delays))
 
     def test_tf_mul_delay(self, simple_siso_tf):
@@ -159,15 +213,15 @@ class TestOperators:
         julia_C = [[1.], [0.]]
         julia_D = [[0., 0.], [1., 0.]]
         julia_delays = [0.5]
-        assert(np.allclose(G.A , julia_A))
-        assert(np.allclose(G.B , julia_B))
-        assert(np.allclose(G.C , julia_C))
-        assert(np.allclose(G.D , julia_D))
+        assert(np.allclose(G.P.A , julia_A))
+        assert(np.allclose(G.P.B , julia_B))
+        assert(np.allclose(G.P.C , julia_C))
+        assert(np.allclose(G.P.D , julia_D))
         assert(np.allclose(G.tau , julia_delays))
 
 
 class TestFeedback:
-    def test_feedback_one(self, delay_siso_tf):
+    def test_feedback_siso(self, delay_siso_tf):
         G = delay_siso_tf
         H = G.feedback()
         julia_A = [[-1.]]
@@ -175,10 +229,10 @@ class TestFeedback:
         julia_C = [[1.], [-1.]]
         julia_D = [[0., 0.], [1., 0.]]
         julia_delays = [1.5]
-        assert(np.allclose(H.A , julia_A))
-        assert(np.allclose(H.B , julia_B))
-        assert(np.allclose(H.C , julia_C))
-        assert(np.allclose(H.D , julia_D))
+        assert(np.allclose(H.P.A , julia_A))
+        assert(np.allclose(H.P.B , julia_B))
+        assert(np.allclose(H.P.C , julia_C))
+        assert(np.allclose(H.P.D , julia_D))
         assert(np.allclose(H.tau , julia_delays))
 
     def test_feedback_tf_one(self, delay_siso_tf, tf_one):
@@ -189,10 +243,10 @@ class TestFeedback:
         julia_C = [[1.], [-1.]]
         julia_D = [[0., 0.], [1., 0.]]
         julia_delays = [1.5]
-        assert(np.allclose(H.A , julia_A))
-        assert(np.allclose(H.B , julia_B))
-        assert(np.allclose(H.C , julia_C))
-        assert(np.allclose(H.D , julia_D))
+        assert(np.allclose(H.P.A , julia_A))
+        assert(np.allclose(H.P.B , julia_B))
+        assert(np.allclose(H.P.C , julia_C))
+        assert(np.allclose(H.P.D , julia_D))
         assert(np.allclose(H.tau , julia_delays))
 
     
@@ -204,24 +258,28 @@ class TestFeedback:
         julia_C = [[1., 0.], [0., -1.], [1., 0.]]
         julia_D = [[0., 0., 0.], [1., 0., 0], [0., 0., 0.]]
         julia_delays = [1.5, 1.5]
-        assert(np.allclose(H.A , julia_A))
-        assert(np.allclose(H.B , julia_B))
-        assert(np.allclose(H.C , julia_C))
-        assert(np.allclose(H.D , julia_D))
+        assert(np.allclose(H.P.A , julia_A))
+        assert(np.allclose(H.P.B , julia_B))
+        assert(np.allclose(H.P.C , julia_C))
+        assert(np.allclose(H.P.D , julia_D))
         assert(np.allclose(H.tau , julia_delays))
 
 
 class TestPureDelay:
+    def test_delay(self):
+        dlti = delay(1)
+        assert np.allclose(dlti.tau, [1.0])
+
     def test_unit_delay(self, pure_delay):
         A = np.empty((0,0))
         B = np.empty((0,2))
         C = np.empty((2,0))
         D = [[0., 1.], [1., 0.]]
         julia_delays = [1.0]
-        assert(np.allclose(pure_delay.A , A))
-        assert(np.allclose(pure_delay.B , B))
-        assert(np.allclose(pure_delay.C , C))
-        assert(np.allclose(pure_delay.D , D))
+        assert(np.allclose(pure_delay.P.A , A))
+        assert(np.allclose(pure_delay.P.B , B))
+        assert(np.allclose(pure_delay.P.C , C))
+        assert(np.allclose(pure_delay.P.D , D))
         assert(np.allclose(pure_delay.tau , julia_delays))
 
     def test_exp_delay(self):
@@ -231,11 +289,16 @@ class TestPureDelay:
         C = np.empty((2,0))
         D = [[0., 1.], [1., 0.]]
         julia_delays = [2.0]
-        assert(np.allclose(G.A , A))
-        assert(np.allclose(G.B , B))
-        assert(np.allclose(G.C , C))
-        assert(np.allclose(G.D , D))
+        assert(np.allclose(G.P.A , A))
+        assert(np.allclose(G.P.B , B))
+        assert(np.allclose(G.P.C , C))
+        assert(np.allclose(G.P.D , D))
         assert(np.allclose(G.tau , julia_delays))
+
+    def test_two_ways(self):
+        delay_exp = exp(-3.5 * s)
+        delay_pure = delay(3.5)
+        assert(delay_exp == delay_pure)
 
 
 class TestFreqResp:
@@ -283,7 +346,6 @@ class TestFreqResp:
         assert(np.allclose(fresp.complex, julia_freq_resp))
 
 
-
 class TestTimeResp:
     def test_siso_step_response(self, delay_siso_tf):
         from control.timeresp import step_response
@@ -292,16 +354,13 @@ class TestTimeResp:
         timepts2 = np.arange(0, 10.1, 0.1)
         t2, y2 = step_response(delay_siso_tf, timepts=timepts2)
         julia_resp = [0.0, 0.0, 0.3934701171707952, 0.7768701219836066, 0.917915094373695, 0.9698026491618251, 0.9888910143620181, 0.9959132295791787, 0.9984965605514581, 0.9994469148973136, 0.9997965302422651]
-        plt.figure()
-        plt.plot(t1, y1, label="python step 1")
-        plt.plot(timepts1, julia_resp, label="julia")
-        plt.plot(t2, y2, label="python step 0.1")
-        plt.legend()
-        plt.show()
+#        plt.figure()
+#        plt.plot(t1, y1, label="python step 1")
+#        plt.plot(timepts1, julia_resp, label="julia")
+#        plt.plot(t2, y2, label="python step 0.1")
+#        plt.legend()
+#        plt.show()
         
-
-
-
     def test_forced_response(self, delay_siso_tf):
         from control.timeresp import forced_response
 
@@ -314,3 +373,20 @@ class TestTimeResp:
         #plt.plot(t, input1)
         #plt.plot(t, y)
         #plt.show()
+
+    def test_compare_step_responses(self, delay_siso_tf, simple_siso_tf):
+        from control.timeresp import step_response
+
+        timepts = np.linspace(0,10,1001)
+        step = step_response(simple_siso_tf, timepts=timepts)
+        delay_step = step_response(delay_siso_tf, timepts=timepts)
+
+
+        hand_delayed_step = np.zeros_like(step.y[0][0])
+        count = 0
+        for i, t in enumerate(step.t):
+            if t >= 1.5:
+                hand_delayed_step[i] = step.y[0][0][count]
+                count += 1
+                
+        assert(np.allclose(delay_step.y[0][0], hand_delayed_step))

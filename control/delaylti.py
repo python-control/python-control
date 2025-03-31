@@ -9,41 +9,117 @@ from scipy.linalg import solve, LinAlgError, inv, eigvals
 
 
 class DelayLTI(LTI):
-    
-    def __init__(self, P: PartitionedStateSpace, tau: np.ndarray = [], **kwargs):
+    """Delay Linear Time Invariant (DelayLTI) class.
 
+    The DelayLTI class is a subclass of the LTI class that represents a
+    linear time-invariant (LTI) system with time delays. It is designed to
+    handle systems where the output depends not only on the current input
+    but also on past inputs.
+
+    Parameters
+    ----------
+    P : PartitionedStateSpace
+        The underlying partitioned state-space representation of the system.
+    tau : array_like, optional
+        An array of time delays associated with the system.
+    **kwargs : keyword arguments
+        Additional keyword arguments for the LTI system.
+
+    Attributes
+    ----------
+    P : PartitionedStateSpace
+        The underlying partitioned state-space representation of the system.
+    tau : array_like
+        An array of time delays associated with the system.
+    A : array_like
+        The state matrix.
+    B : array_like
+        The input matrix.
+    C : array_like
+        The output matrix.
+    D : array_like
+        The direct feedthrough matrix.
+    B1 : array_like
+        The input matrix for external inputs.
+    B2 : array_like
+        The input matrix for delayed inputs.
+    C1 : array_like
+        The output matrix for external outputs.
+    C2 : array_like
+        The output matrix for delayed outputs.
+    D11 : array_like
+        The direct feedthrough matrix for external inputs to external outputs.
+    D12 : array_like
+        The direct feedthrough matrix for delayed inputs to external outputs.
+    D21 : array_like
+        The direct feedthrough matrix for external inputs to delayed outputs.
+    D22 : array_like
+        The direct feedthrough matrix for delayed inputs to delayed outputs.
+    ninputs : int
+        The number of external inputs.
+    noutputs : int
+        The number of external outputs.
+    nstates : int
+        The number of states.
+
+    Methods
+    -------
+    from_ss(sys, tau)
+        Create a DelayLTI system from a StateSpace system.
+    from_tf(sys, tau)
+        Create a DelayLTI system from a TransferFunction system.
+    size()
+        Return the number of outputs and inputs.
+    """
+
+    def __init__(self, P: PartitionedStateSpace, tau = None, **kwargs):
+        """Initialize the DelayLTI object.
+
+        Parameters
+        ----------
+        P : PartitionedStateSpace
+            The underlying partitioned state-space representation of the system.
+        tau : array_like, optional
+            An array of time delays associated with the system.
+        **kwargs : keyword arguments
+            Additional keyword arguments for the LTI system.
+
+        """
+        if not isinstance(P, PartitionedStateSpace):
+            raise TypeError("Input must be a PartitionedStateSpace")
+        
         self.P = P
-        self.tau = tau
+        self.tau = np.array([]) if tau is None else np.array(tau)
+        
+        static = (self.P.A.size == 0)
 
-        self.A = P.A
-        self.B = P.B
-        self.C = P.C
-        self.D = P.D
+        self.nu = self.P.sys.ninputs - len(self.tau)
+        self.ny = self.P.sys.noutputs - len(self.tau)
 
-        self.B1 = P.B1
-        self.B2 = P.B2
-        self.C1 = P.C1
-        self.C2 = P.C2
-        self.D11 = P.D11
-        self.D12 = P.D12
-        self.D21 = P.D21
-        self.D22 = P.D22
-
-        static = (self.A.size == 0)
-
-        self.ninputs = self.P.sys.ninputs - len(self.tau)
-        self.noutputs = self.P.sys.noutputs - len(self.tau)
-        self.nstates = self.P.sys.nstates
-
-        defaults = {'inputs': self.B1.shape[1], 'outputs': self.C1.shape[0],
-             'states': self.A.shape[0]}
-        name, inputs, outputs, states, dt = _process_iosys_keywords(
-            kwargs, defaults, static=static)
-
-        super().__init__(inputs, outputs, states, name)
+        super().__init__(self.nu, self.ny, self.P.sys.nstates)
 
     @classmethod
-    def from_ss(cls, sys: StateSpace, tau: np.ndarray = []):
+    def from_ss(cls, sys: StateSpace, tau: np.ndarray = None):
+        """Create a DelayLTI system from a StateSpace system.
+
+        Parameters
+        ----------
+        sys : StateSpace
+            The underlying state-space representation of the system.
+        tau : array_like, optional
+            An array of time delays associated with the system.
+
+        Returns
+        -------
+        DelayLTI
+            The DelayLTI system.
+
+        """
+        if not isinstance(sys, StateSpace):
+            raise TypeError("Input must be a StateSpace")
+        
+        tau = np.array([]) if tau is None else np.array(tau)
+        
         nu = sys.D.shape[1] - len(tau)
         ny = sys.D.shape[0] - len(tau)
 
@@ -54,16 +130,34 @@ class DelayLTI(LTI):
         return cls(psys, tau)
     
     @classmethod
-    def from_tf(cls, sys: TransferFunction, tau: np.ndarray = []):
+    def from_tf(cls, sys: TransferFunction, tau: np.ndarray = None):
+        """Create a DelayLTI system from a TransferFunction system.
+
+        Parameters
+        ----------
+        sys : TransferFunction
+            The underlying transfer function representation of the system.
+        tau : array_like, optional
+            An array of time delays associated with the system.
+
+        Returns
+        -------
+        DelayLTI
+            The DelayLTI system.
+
+        """
+        if not isinstance(sys, TransferFunction):
+            raise TypeError("Input must be a TransferFunction")
         return DelayLTI.from_ss(tf2ss(sys), tau)
 
     def size(self):
+        """Return the number of outputs and inputs."""
         return (self.noutputs, self.ninputs)
     
     def poles(self):
         """Compute the poles of a delay lti system."""
 
-        return eigvals(self.A).astype(complex) if self.nstates \
+        return eigvals(self.P.A).astype(complex) if self.nstates \
             else np.array([])
 
     def zeros(self):
@@ -77,8 +171,8 @@ class DelayLTI(LTI):
         try:
             from slycot import ab08nd
 
-            out = ab08nd(self.A.shape[0], self.B.shape[1], self.C.shape[0],
-                         self.A, self.B, self.C, self.D)
+            out = ab08nd(self.P.A.shape[0], self.P.B.shape[1], self.P.C.shape[0],
+                         self.P.A, self.P.B, self.P.C, self.P.D)
             nu = out[0]
             if nu == 0:
                 return np.array([])
@@ -88,7 +182,7 @@ class DelayLTI(LTI):
                                          out[9][0:nu, 0:nu]).astype(complex)
 
         except ImportError:  # Slycot unavailable. Fall back to SciPy.
-            if self.C.shape[0] != self.D.shape[1]:
+            if self.P.C.shape[0] != self.P.D.shape[1]:
                 raise NotImplementedError(
                     "StateSpace.zero only supports systems with the same "
                     "number of inputs as outputs.")
@@ -103,18 +197,37 @@ class DelayLTI(LTI):
             #
             # The generalized eigenvalue problem is only solvable if its
             # arguments are square matrices.
-            L = np.concatenate((np.concatenate((self.A, self.B), axis=1),
-                             np.concatenate((self.C, self.D), axis=1)), axis=0)
-            M = np.pad(np.eye(self.A.shape[0]), ((0, self.C.shape[0]),
-                                           (0, self.B.shape[1])), "constant")
+            L = np.concatenate((np.concatenate((self.P.A, self.P.B), axis=1),
+                             np.concatenate((self.P.C, self.P.D), axis=1)), axis=0)
+            M = np.pad(np.eye(self.P.A.shape[0]), ((0, self.P.C.shape[0]),
+                                           (0, self.P.B.shape[1])), "constant")
             return np.array([x for x in eigvals(L, M,
                                                           overwrite_a=True)
                              if not np.isinf(x)], dtype=complex)
         
     def _isstatic(self):
+        """Check if the system is static."""
         return self.nstates == 0
 
     def __mul__(self, other):
+        """Multiply two DelayLTI systems or a DelayLTI system with a scalar.
+
+        Parameters
+        ----------
+        other : DelayLTI, scalar, TransferFunction, StateSpace
+            The other system or scalar to multiply with.
+
+        Returns
+        -------
+        DelayLTI
+            The resulting DelayLTI system.
+
+        Raises
+        ------
+        TypeError
+            If the operand type is not supported.
+        """
+
         if isinstance(other, (int, float, complex)):
             new_C = np.block([[self.P.C1 * other], [self.P.C2]])
             new_D = np.block([[self.P.D11 * other, self.P.D12 * other], [self.P.D21, self.P.D22]])
@@ -137,6 +250,7 @@ class DelayLTI(LTI):
             raise TypeError("Unsupported operand type(s) for *: '{}' and '{}'".format(type(self), type(other)))
         
     def __rmul__(self, other):
+        
         if isinstance(other, (int, float, complex)):
             return self * other
         
@@ -151,10 +265,28 @@ class DelayLTI(LTI):
             raise TypeError("Unsupported operand type(s) for *: '{}' and '{}'".format(type(other), type(self)))
 
     def __add__(self, other):
+        """Add two DelayLTI systems or a DelayLTI system with a scalar.
+
+        Parameters
+        ----------
+        other : DelayLTI, scalar, TransferFunction, StateSpace
+            The other system or scalar to add.
+
+        Returns
+        -------
+        DelayLTI
+            The resulting DelayLTI system.
+
+        Raises
+        ------
+        TypeError
+            If the operand type is not supported.
+        """
+
         if isinstance(other, (int, float, complex)):
             new_D = self.P.sys.D.copy()
-            new_D[:self.noutputs, :self.ninputs] += other
-            pnew = PartitionedStateSpace(ss(self.A, self.B, self.C, new_D), self.P.nu1, self.P.ny1)
+            new_D[:self.ny, :self.nu] += other
+            pnew = PartitionedStateSpace(ss(self.P.A, self.P.B, self.P.C, new_D), self.P.nu1, self.P.ny1)
             return DelayLTI(pnew, self.tau)
         elif isinstance(other, DelayLTI):
             psys_new = self.P + other.P
@@ -176,12 +308,8 @@ class DelayLTI(LTI):
 
     def __eq__(self, other):
         if not isinstance(other, DelayLTI):
-            return False
-        return (np.allclose(self.A, other.A) and
-                np.allclose(self.B, other.B) and
-                np.allclose(self.C, other.C) and
-                np.allclose(self.D, other.D) and
-                np.allclose(self.tau, other.tau))
+            raise TypeError(f"{other} is not a DelayLTI object, is {type(other)}")
+        return (self.P == other.P) and (self.tau == other.tau)
     
     def feedback(self, other=1, sign=-1):
         """Standard or LFT feedback interconnection for DelayLTI.
@@ -228,15 +356,15 @@ class DelayLTI(LTI):
                 K = np.asarray(other, dtype=float)
                 if K.ndim == 0: K = K.reshape(1,1)
                 elif K.ndim == 1:
-                     if self.noutputs != 1: raise ValueError("1D array feedback requires SISO system G.")
+                     if self.nu != 1: raise ValueError("1D array feedback requires SISO system G.")
                      K = K.reshape(self.ninputs, 1)
                 elif K.ndim != 2: raise ValueError("Feedback gain must be scalar, 1D, or 2D array.")
             else:
                  raise TypeError(f"Unsupported type for static feedback: {type(other)}")
 
             # Check dimensions of K
-            if K.shape != (self.ninputs, self.noutputs):
-                raise ValueError(f"Feedback gain K has incompatible shape. Expected ({self.ninputs}, {self.noutputs}), got {K.shape}.")
+            if K.shape != (self.nu, self.ny):
+                raise ValueError(f"Feedback gain K has incompatible shape. Expected ({self.nu}, {self.ny}), got {K.shape}.")
 
             # Get matrices from self's underlying PartitionedStateSpace
             P_g = self.P
@@ -246,21 +374,19 @@ class DelayLTI(LTI):
             D21_g, D22_g = P_g.D21, P_g.D22
             taus = self.tau
             n_states = self.nstates
-            n_u = self.ninputs      # G's external input dimension
-            n_y = self.noutputs     # G's external output dimension
             n_w = B2_g.shape[1]     # Delay input dimension
             n_z = C2_g.shape[0]     # Delay output dimension
-            n_r = n_u               # Reference input dimension
+            n_r = self.nu           # Reference input dimension
 
             # Promote types, handle empty states
             T = np.promote_types(A_g.dtype if A_g.size > 0 else float, K.dtype)
             if n_states == 0: A_g = np.zeros((0,0), dtype=T)
 
             # Calculate closed-loop matrices for map [r, w] -> [y, z]
-            F = np.eye(n_u, dtype=T) - sign * K @ D11_g
+            F = np.eye(self.nu, dtype=T) - sign * K @ D11_g
             try:
                 invF_signK = solve(F, sign * K)
-                invF = solve(F, np.eye(n_u, dtype=T))
+                invF = solve(F, np.eye(self.nu, dtype=T))
             except LinAlgError:
                 raise ValueError("Algebraic loop; I - sign*K*D11 is singular.")
 
@@ -275,52 +401,67 @@ class DelayLTI(LTI):
             D22_new = D22_g + D21_g @ invF_signK @ D12_g
 
             B_new = np.hstack([B1_new, B2_new]) if B1_new.size > 0 or B2_new.size > 0 else np.zeros((n_states, n_r + n_w), dtype=T)
-            C_new = np.vstack([C1_new, C2_new]) if C1_new.size > 0 or C2_new.size > 0 else np.zeros((n_y + n_z, n_states), dtype=T)
-            D_new = np.block([[D11_new, D12_new], [D21_new, D22_new]]) if D11_new.size>0 or D12_new.size>0 or D21_new.size>0 or D22_new.size>0 else np.zeros((n_y + n_z, n_r + n_w), dtype=T)
+            C_new = np.vstack([C1_new, C2_new]) if C1_new.size > 0 or C2_new.size > 0 else np.zeros((self.ny + n_z, n_states), dtype=T)
+            D_new = np.block([[D11_new, D12_new], [D21_new, D22_new]]) if D11_new.size>0 or D12_new.size>0 or D21_new.size>0 or D22_new.size>0 else np.zeros((self.ny + n_z, n_r + n_w), dtype=T)
 
-            # Create the new StateSpace system
             clsys_ss = StateSpace(A_new, B_new, C_new, D_new, self.dt)
-
-            # Partition it correctly: inputs [r, w], outputs [y, z]
-            clsys_part = PartitionedStateSpace(clsys_ss, nu1=n_r, ny1=n_y)
-
-            # Determine result types and construct the new DelayLTI
-            # Need to promote delay type S with potential default float
-            _, S = _promote_delay_system_types(self, self)
+            clsys_part = PartitionedStateSpace(clsys_ss, nu1=n_r, ny1=self.ny)
             return DelayLTI(clsys_part, taus)
     
     def issiso(self):
         """Check if the system is single-input, single-output."""
         # Based on EXTERNAL dimensions
-        return self.ninputs == 1 and self.noutputs == 1
+        return self.nu == 1 and self.ny == 1
     
-    def __call__(self, x, squeeze=None, warn_infinite=True):
+    def __call__(self, x, squeeze=False, warn_infinite=True):
+        """Evaluate the frequency response of the system.
+
+        Parameters
+        ----------
+        x : array_like
+            Complex frequencies at which to evaluate the frequency response.
+        squeeze : bool, optional
+            If squeeze=True, access to the output response will remove
+            single-dimensional entries from the shape of the inputs,
+            outputs, and states even if the system is not SISO. If
+            squeeze=False, keep the input as a 2D or 3D array (indexed
+            by the input (if multi-input), trace (if single input) and
+            time) and the output and states as a 3D array (indexed by the
+            output/state, trace, and time) even if the system is SISO.
+        warn_infinite : bool, optional
+            If True, issue a warning if an infinite value is found in the
+            frequency response.
+
+        Returns
+        -------
+        out : array_like
+            Frequency response of the system.
+        """
         x_arr = np.atleast_1d(x).astype(complex, copy=False)
 
         if len(x_arr.shape) > 1:
             raise ValueError("input list must be 1D")
         
-        out = np.empty((self.noutputs, self.ninputs, len(x_arr)), dtype=complex)
+        out = np.empty((self.ny, self.nu, len(x_arr)), dtype=complex)
 
-        sys_call = self.P.sys(x, squeeze=squeeze, warn_infinite=warn_infinite)
-        ny = self.noutputs
-        nu = self.ninputs
-        for i, xi in enumerate(x):
-            P11_fr = sys_call[:ny, :nu, i]
-            P12_fr = sys_call[:ny, nu:, i]
-            P21_fr = sys_call[ny:, :nu, i]
-            P22_fr = sys_call[ny:, nu:, i]
+        sys_call = self.P.sys(x_arr, squeeze=squeeze, warn_infinite=warn_infinite)
+        for i, xi in enumerate(x_arr):
+            P11_fr = sys_call[:self.ny, :self.nu, i]
+            P12_fr = sys_call[:self.ny, self.nu:, i]
+            P21_fr = sys_call[self.ny:, :self.nu, i]
+            P22_fr = sys_call[self.ny:, self.nu:, i]
             delay_term_inv = np.exp(xi * self.tau)
             delay_term_fr = np.diag(delay_term_inv)
             out[:,:,i] = P11_fr + P12_fr @  inv(delay_term_fr - P22_fr) @ P21_fr
         return out
 
     def __str__(self):
-        # ... (existing string representation) ...
+        # To be improved
         s = f"DelayLTI with {self.noutputs} outputs, {self.ninputs} inputs, " \
             f"{self.nstates} states, and {len(self.tau)} delays.\n"
         s += f"Delays: {self.tau}\n"
         s += "Underlying PartitionedStateSpace P:\n" + str(self.P)
+        s += "\n"
         return s
 
     def __repr__(self):
@@ -330,7 +471,24 @@ class DelayLTI(LTI):
 
 def delay(tau):
     """
-    Pure delay
+    Create a pure delay system.
+
+    Parameters
+    ----------
+    tau : float, list, or NumPy array
+        The time delay(s) for the system. If a list or NumPy array is
+        provided, each element represents a separate delay.
+
+    Returns
+    -------
+    DelayLTI
+        A DelayLTI system representing the pure delay.
+
+    Raises
+    ------
+    TypeError
+        If tau is not a number, list, or NumPy array.
+
     """
 
     if isinstance(tau, (int, float)):
@@ -359,7 +517,22 @@ def delay(tau):
 
 def exp(G):
     """
-    create delay in the form of exp(-τ*s) where s=tf("s")
+    Create delay in the form of exp(-τ*s) where s=tf("s")
+
+    Parameters
+    ----------
+    G : TransferFunction
+        The transfer function representing the delay.
+
+    Returns
+    -------
+    DelayLTI
+        A DelayLTI system representing the pure delay.
+
+    Raises
+    ------
+    ValueError
+        If the input is not of the form -τ*s, τ>0.
     """
     num = G.num[0][0]
     den = G.den[0][0]
@@ -379,21 +552,13 @@ def tf2dlti(tf: TransferFunction):
     
     ss_tf = tf2ss(tf)
     return DelayLTI.from_ss(ss_tf)
-    
 
-def _promote_delay_system_types(sys1, sys2):
-    """Determine the numeric and delay types for combined systems."""
-    # Promote numeric types based on underlying StateSpace
-    T = np.promote_types(
-        sys1.P.sys.A.dtype if sys1.P.sys.A.size > 0 else float,
-        sys2.P.sys.A.dtype if sys2.P.sys.A.size > 0 else float
-    )
-    # Promote delay types
-    S = np.promote_types(
-        np.asarray(sys1.tau).dtype if len(sys1.tau) > 0 else float,
-        np.asarray(sys2.tau).dtype if len(sys2.tau) > 0 else float
-    )
-    return T, S
+
+def ss2dlti(ss: StateSpace):
+    """
+    Convert a StateSpace to a DelayLTI
+    """
+    return DelayLTI.from_ss(ss)
 
 
 def _convert_to_delay_lti(sys):
@@ -409,6 +574,24 @@ def _convert_to_delay_lti(sys):
     
 
 def vcat(*systems: list[DelayLTI]) -> DelayLTI:
+    """Vertically concatenate a list of DelayLTI systems.
+
+    Parameters
+    ----------
+    *systems : list of DelayLTI
+        The systems to be concatenated.
+
+    Returns
+    -------
+    DelayLTI
+        The resulting DelayLTI system.
+
+    Raises
+    ------
+    TypeError
+        If any of the inputs are not DelayLTI systems.
+    """
+
     from .partitionedssp import vcat_pss
 
     if not all(isinstance(sys, DelayLTI) for sys in systems):
@@ -421,6 +604,24 @@ def vcat(*systems: list[DelayLTI]) -> DelayLTI:
     
 
 def hcat(*systems: list[DelayLTI]) -> DelayLTI:
+    """Horizontally concatenate a list of DelayLTI systems.
+
+    Parameters
+    ----------
+    *systems : list of DelayLTI
+        The systems to be concatenated.
+
+    Returns
+    -------
+    DelayLTI
+        The resulting DelayLTI system.
+
+    Raises
+    ------
+    TypeError
+        If any of the inputs are not DelayLTI systems.
+    """
+
     from .partitionedssp import hcat_pss
 
     if not(all(isinstance(sys, DelayLTI) for sys in systems)):
@@ -433,5 +634,22 @@ def hcat(*systems: list[DelayLTI]) -> DelayLTI:
     
 
 def mimo_delay(array: np.ndarray[DelayLTI]):
+    """Create a MIMO delay system from an array of DelayLTI systems.
+
+    Parameters
+    ----------
+    array : np.ndarray of DelayLTI
+        An array of DelayLTI systems.
+
+    Returns
+    -------
+    DelayLTI
+        The resulting DelayLTI system.
+
+    """
+
+    if not all(isinstance(item, DelayLTI) for row in array for item in row):
+        raise TypeError("All elements in the array must be DelayLTI systems")
+
     rows = [hcat(*row) for row in array]
     return vcat(*rows)

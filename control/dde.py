@@ -6,16 +6,59 @@ from scipy.integrate import LSODA
 def dde_response(delay_sys, T, U=0, X0=0, params=None,
                  transpose=False, return_x=False, squeeze=None,
                  method=None):
-    
+    """Compute the output of a delay linear system given the input.
+
+    Parameters
+    ----------
+    delay_sys : DelayLTI
+        Delay I/O system for which forced response is computed.
+    T : array_like
+        An array representing the time points where the input is specified. 
+        The time points must be uniformly spaced.
+    U : array_like or float, optional
+        Input array giving input at each time in `T`.
+    X0 : array_like or float, default=0.
+        Initial condition.
+    params : dict, optional
+        If system is a nonlinear I/O system, set parameter values.
+    transpose : bool, default=False
+        If set to True, the input and output arrays will be transposed
+        to match the format used in certain legacy systems or libraries.
+    return_x : bool, default=None
+        Used if the time response data is assigned to a tuple.  If False,
+        return only the time and output vectors.  If True, also return the
+        the state vector.  If None, determine the returned variables by
+        `config.defaults['forced_response.return_x']`, which was True
+        before version 0.9 and is False since then.
+    squeeze : bool, optional
+        By default, if a system is single-input, single-output (SISO) then
+        the output response is returned as a 1D array (indexed by time).
+        If `squeeze` is True, remove single-dimensional entries from
+        the shape of the output even if the system is not SISO. If
+        `squeeze` is False, keep the output as a 2D array (indexed by
+        the output number and time) even if the system is SISO. The default
+        behavior can be overridden by
+        `config.defaults['control.squeeze_time_response']`.
+    method : str, default=None
+        Method used to solve the DDE. If None, use the Skogestad-Python
+        solver. If 'LSODA', use the LSODA solver.
+
+    Returns
+    -------
+    resp : `TimeResponseData`
+        Input/output response data object.  When accessed as a tuple,
+        returns ``(time, outputs)`` (default) or ``(time, outputs, states)``
+        if `return_
+    """
     from .timeresp import TimeResponseData, _check_convert_array
     from .delaylti import DelayLTI
     if not isinstance(delay_sys, DelayLTI):
          raise TypeError("Input must be a DelayLTI")
 
-    A, B1, B2 = delay_sys.A, delay_sys.B1, delay_sys.B2
-    C1, C2 = delay_sys.C1, delay_sys.C2
-    D11, D12 = delay_sys.D11, delay_sys.D12
-    D21, D22 = delay_sys.D21, delay_sys.D22
+    A, B1, B2 = delay_sys.P.A, delay_sys.P.B1, delay_sys.P.B2
+    C1, C2 = delay_sys.P.C1, delay_sys.P.C2
+    D11, D12 = delay_sys.P.D11, delay_sys.P.D12
+    D21, D22 = delay_sys.P.D21, delay_sys.P.D22
     tau = delay_sys.tau
 
     n_states = A.shape[0]
@@ -64,9 +107,6 @@ def dde_response(delay_sys, T, U=0, X0=0, params=None,
         tout, yout, xout, U, 
         params=params, 
         issiso=delay_sys.issiso(),
-        output_labels=delay_sys.output_labels, 
-        input_labels=delay_sys.input_labels,
-        state_labels=delay_sys.state_labels, 
         sysname=delay_sys.name, 
         plot_inputs=True,
         title="Forced response for " + delay_sys.name, 
@@ -81,22 +121,48 @@ def Skogestad_Python_solver(delay_sys, dt, T, U, X0, xout, yout):
     """
     Method from Skogestad-Python: https://github.com/alchemyst/Skogestad-Python/blob/master/robustcontrol/InternalDelay.py#L446
     RK integration.
+    
+    Parameters
+    ----------
+    delay_sys : DelayLTI
+        Delay I/O system for which forced response is computed.
+    dt : float
+        Time step for the integration.
+    T : array_like
+        An array representing the time points where the input is specified. 
+        The time points must be uniformly spaced.
+    U : array_like or float, optional
+        Input array giving input at each time in `T`.
+    X0 : array_like or float, default=0.
+        Initial condition.
+    xout : array_like
+        Array to store the state vector at each time step.
+    yout : array_like
+        Array to store the output vector at each time step.
+
+    Returns
+    -------
+    xout : array_like
+        Array containing the state vector at each time step.
+    yout : array_like
+        Array containing the output vector at each time step.
+
     """
     dtss = [int(np.round(delay / dt)) for delay in delay_sys.tau]
     zs = []
     
     def f(t, x):
-        return delay_sys.A @ x + delay_sys.B1 @ linear_interp_u(t, T, U) + delay_sys.B2 @ wf(zs, dtss)
+        return delay_sys.P.A @ x + delay_sys.P.B1 @ linear_interp_u(t, T, U) + delay_sys.P.B2 @ wf(zs, dtss)
     
     xs = [X0]
     ys = []
     for i,t in enumerate(T):
         x = xs[-1]
 
-        y = delay_sys.C1 @ np.array(x) + delay_sys.D11 @ linear_interp_u(t, T, U) + delay_sys.D12 @ wf(zs, dtss)
+        y = delay_sys.P.C1 @ np.array(x) + delay_sys.P.D11 @ linear_interp_u(t, T, U) + delay_sys.P.D12 @ wf(zs, dtss)
         ys.append(list(y))
 
-        z = delay_sys.C2 @ np.array(x) + delay_sys.D21 @ linear_interp_u(t, T, U) + delay_sys.D22 @ wf(zs, dtss)
+        z = delay_sys.P.C2 @ np.array(x) + delay_sys.P.D21 @ linear_interp_u(t, T, U) + delay_sys.P.D22 @ wf(zs, dtss)
         zs.append(list(z))
 
         # x integration
@@ -115,11 +181,41 @@ def Skogestad_Python_solver(delay_sys, dt, T, U, X0, xout, yout):
     
 
 def Skogestad_Python_LSODA(delay_sys, dt, T, U, X0, xout, yout):
+    """
+    Method using LSODA solver.
+    
+    Parameters
+    ----------
+    delay_sys : DelayLTI
+        Delay I/O system for which forced response is computed.
+    dt : float
+        Time step for the integration.
+    T : array_like
+        An array representing the time points where the input is specified. 
+        The time points must be uniformly spaced.
+    U : array_like or float, optional
+        Input array giving input at each time in `T`.
+    X0 : array_like or float, default=0.
+        Initial condition.
+    xout : array_like
+        Array to store the state vector at each time step.
+    yout : array_like
+        Array to store the output vector at each time step.
+
+    Returns
+    -------
+    xout : array_like
+        Array containing the state vector at each time step.
+    yout : array_like
+        Array containing the output vector at each time step.
+
+    """
+
     dtss = [int(np.round(delay / dt)) for delay in delay_sys.tau]
     zs = []
     
     def f(t, x):
-        return delay_sys.A @ x + delay_sys.B1 @ linear_interp_u(t, T, U) + delay_sys.B2 @ wf(zs, dtss)
+        return delay_sys.P.A @ x + delay_sys.P.B1 @ linear_interp_u(t, T, U) + delay_sys.P.B2 @ wf(zs, dtss)
     
     solver = LSODA(f, T[0], X0, t_bound=T[-1], max_step=dt)
 
@@ -128,8 +224,8 @@ def Skogestad_Python_LSODA(delay_sys, dt, T, U, X0, xout, yout):
     while solver.status == "running":
         t = ts[-1]
         x = xs[-1]
-        y = delay_sys.C1 @ np.array(x) + delay_sys.D11 @ linear_interp_u(t, T, U) + delay_sys.D12 @ wf(zs, dtss)
-        z = delay_sys.C2 @ np.array(x) + delay_sys.D21 @ linear_interp_u(t, T, U) + delay_sys.D22 @ wf(zs, dtss)
+        y = delay_sys.P.C1 @ np.array(x) + delay_sys.P.D11 @ linear_interp_u(t, T, U) + delay_sys.P.D12 @ wf(zs, dtss)
+        z = delay_sys.P.C2 @ np.array(x) + delay_sys.P.D21 @ linear_interp_u(t, T, U) + delay_sys.P.D22 @ wf(zs, dtss)
         zs.append(list(z))
 
         solver.step()
@@ -143,12 +239,31 @@ def Skogestad_Python_LSODA(delay_sys, dt, T, U, X0, xout, yout):
             if ts[-2] < ti <= ts[-1]:
                 xi = solver.dense_output()(ti)
                 xout[:, it] = xi
-                yout[:, it] = delay_sys.C1 @ np.array(xi) + delay_sys.D11 @ linear_interp_u(t, T, U) + delay_sys.D12 @ wf(zs, dtss)
+                yout[:, it] = delay_sys.P.C1 @ np.array(xi) + delay_sys.P.D11 @ linear_interp_u(t, T, U) + delay_sys.P.D12 @ wf(zs, dtss)
     
     return xout, yout
 
 
 def linear_interp_u(t, T, U):
+    """
+    Linearly interpolate the input U at time t.
+
+    Parameters
+    ----------
+    t : float
+        Time at which to interpolate.
+    T : array_like
+        Array of time points.
+    U : array_like
+        Array of input values.
+
+    Returns
+    -------
+    u : array_like
+        Interpolated input value at time t.
+
+    """
+
     if np.ndim(U) == 1:
         return np.array([np.interp(t, T, U)])
     elif np.ndim(U) == 0:
@@ -159,6 +274,23 @@ def linear_interp_u(t, T, U):
     
 
 def wf(zs, dtss):
+    """
+    Compute the delayed inputs.
+
+    Parameters
+    ----------
+    zs : list of list
+        List of internal outputs at each time step.
+    dtss : list of int
+        List of time delays in number of time steps.
+
+    Returns
+    -------
+    ws : array_like
+        Array of delayed inputs.
+
+    """
+
     ws = []
     for i, dts in enumerate(dtss):
         if len(zs) <= dts:
