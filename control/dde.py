@@ -244,6 +244,12 @@ def Skogestad_Python_LSODA(delay_sys, dt, T, U, X0, xout, yout):
     return xout, yout
 
 
+
+def dde23_solver(delay_sys, dt, T, U, X0, xout, yout):
+    # Plans for implementing a python version matlab dde23 solver
+    raise NotImplementedError
+
+
 def linear_interp_u(t, T, U):
     """
     Linearly interpolate the input U at time t.

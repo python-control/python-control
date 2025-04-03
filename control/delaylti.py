@@ -70,6 +70,22 @@ class DelayLTI(LTI):
         Create a DelayLTI system from a TransferFunction system.
     size()
         Return the number of outputs and inputs.
+
+    Notes
+    -----
+    The preferred way to create a DelayLTI object is by multiplying a transfert
+    function object with a delay(tau) or exp(-tau*s). For example
+
+    >>> ct.tf([1], [1,1]) * delay(1.5)
+
+    Or
+
+    >>> s = ct.tf('s')
+    >>> ct.tf([1], [1,1]) * exp(-1.5*s)
+
+    It's possible to MIMO delayed systems from arrays of SISO delayed systems,
+    see function mimo_delay
+
     """
 
     def __init__(self, P: PartitionedStateSpace, tau = None, **kwargs):
@@ -154,6 +170,10 @@ class DelayLTI(LTI):
         """Return the number of outputs and inputs."""
         return (self.noutputs, self.ninputs)
     
+    # Poles and zeros functions for DelayLTI are not supported by julia ControlSystems.jl
+    # might not be accurate for delayLTI, to be discussed
+    # Here the poles and zeros computed are the ones of the system without taking the delay
+
     def poles(self):
         """Compute the poles of a delay lti system."""
 
@@ -229,9 +249,10 @@ class DelayLTI(LTI):
         """
 
         if isinstance(other, (int, float, complex)):
-            new_C = np.block([[self.P.C1 * other], [self.P.C2]])
-            new_D = np.block([[self.P.D11 * other, self.P.D12 * other], [self.P.D21, self.P.D22]])
-            new_P = PartitionedStateSpace(ss(self.P.A, self.P.B, new_C, new_D), self.P.nu1, self.P.ny1)
+            new_B = np.hstack([self.P.B1 * other, self.P.B2])
+            new_D = np.block([[self.P.D11 * other, self.P.D12], [self.P.D21 * other, self.P.D22]])
+
+            new_P = PartitionedStateSpace(ss(self.P.A, new_B, self.P.C, new_D), self.P.nu1, self.P.ny1)
             return DelayLTI(new_P, self.tau)
 
         elif isinstance(other, DelayLTI):
@@ -249,10 +270,14 @@ class DelayLTI(LTI):
         else:
             raise TypeError("Unsupported operand type(s) for *: '{}' and '{}'".format(type(self), type(other)))
         
+
     def __rmul__(self, other):
-        
         if isinstance(other, (int, float, complex)):
-            return self * other
+            new_C = np.hstack([self.P.C1 * other, self.P.C2])
+            new_D = np.block([[self.P.D11 * other, self.P.D12 * other], [self.P.D21, self.P.D22]])
+
+            new_P = PartitionedStateSpace(ss(self.P.A, self.P.B, new_C, new_D), self.P.nu1, self.P.ny1)
+            return DelayLTI(new_P, self.tau)
         
         elif isinstance(other, TransferFunction):
             dlti = tf2dlti(other)
@@ -467,6 +492,14 @@ class DelayLTI(LTI):
     def __repr__(self):
          return (f"{type(self).__name__}("
                  f"P={self.P.__repr__()}, tau={self.tau.__repr__()})")
+    
+    # Some functions from LTI that are not currently supported with delayLTI
+    def to_ss(self, *args, **kwargs):
+        return NotImplementedError
+    
+    def to_tf(self, *args, **kwargs):
+        raise NotImplementedError
+
 
 
 def delay(tau):
