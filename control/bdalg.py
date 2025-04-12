@@ -1,57 +1,14 @@
-"""bdalg.py
+# bdalg.py - block diagram algebra
+#
+# Initial author: Richard M. Murray
+# Creation date: 24 May 09
+# Pre-2014 revisions: Kevin K. Chen, Dec 2010
+# Use `git shortlog -n -s bdalg.py` for full list of contributors
 
-This file contains some standard block diagram algebra.
+"""Block diagram algebra.
 
-Routines in this module:
-
-append
-series
-parallel
-negate
-feedback
-connect
-combine_tf
-split_tf
-
-"""
-
-"""Copyright (c) 2010 by California Institute of Technology
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-1. Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
-
-3. Neither the name of the California Institute of Technology nor
-   the names of its contributors may be used to endorse or promote
-   products derived from this software without specific prior
-   written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
-OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-SUCH DAMAGE.
-
-Author: Richard M. Murray
-Date: 24 May 09
-Revised: Kevin K. Chen, Dec 10
-
-$Id$
+This module contains some standard block diagram algebra, including
+series, parallel, and feedback functions.
 
 """
 
@@ -69,40 +26,42 @@ __all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect',
            'combine_tf', 'split_tf']
 
 
-def series(sys1, *sysn, **kwargs):
-    r"""series(sys1, sys2, [..., sysn])
+def series(*sys, **kwargs):
+    """series(sys1, sys2[, ..., sysn])
 
-    Return the series connection (`sysn` \* ...\  \*) `sys2` \* `sys1`.
+    Series connection of I/O systems.
+
+    Generates a new system ``[sysn * ... *] sys2 * sys1``.
 
     Parameters
     ----------
-    sys1, sys2, ..., sysn : scalar, array, or :class:`InputOutputSystem`
+    sys1, sys2, ..., sysn : scalar, array, or `InputOutputSystem`
         I/O systems to combine.
 
     Returns
     -------
-    out : scalar, array, or :class:`InputOutputSystem`
+    out : `InputOutputSystem`
         Series interconnection of the systems.
 
     Other Parameters
     ----------------
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals.  If not given,
-        signal names will be of the form `s[i]` (where `s` is one of `u`,
-        or `y`). See :class:`InputOutputSystem` for more information.
+        signal names will be of the form 's[i]' (where 's' is one of 'u,
+        or 'y'). See `InputOutputSystem` for more information.
     states : str, or list of str, optional
         List of names for system states.  If not given, state names will be
-        of of the form `x[i]` for interconnections of linear systems or
+        of the form 'x[i]' for interconnections of linear systems or
         '<subsys_name>.<state_name>' for interconnected nonlinear systems.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
+        name 'sys[id]' is generated with a unique integer id.
 
     Raises
     ------
     ValueError
-        if `sys2.ninputs` does not equal `sys1.noutputs`
-        if `sys1.dt` is not compatible with `sys2.dt`
+        If `sys2.ninputs` does not equal `sys1.noutputs` or if `sys1.dt` is
+        not compatible with `sys2.dt`.
 
     See Also
     --------
@@ -111,13 +70,12 @@ def series(sys1, *sysn, **kwargs):
     Notes
     -----
     This function is a wrapper for the __mul__ function in the appropriate
-    :class:`NonlinearIOSystem`, :class:`StateSpace`,
-    :class:`TransferFunction`, or other I/O system class.  The output type
-    is the type of `sys1` unless a more general type is required based on
-    type type of `sys2`.
+    `NonlinearIOSystem`, `StateSpace`, `TransferFunction`, or other I/O
+    system class.  The output type is the type of `sys1` unless a more
+    general type is required based on type type of `sys2`.
 
-    If both systems have a defined timebase (dt = 0 for continuous time,
-    dt > 0 for discrete time), then the timebase for both systems must
+    If both systems have a defined timebase (`dt` = 0 for continuous time,
+    `dt` > 0 for discrete time), then the timebase for both systems must
     match.  If only one of the system has a timebase, the return
     timebase will be set to match it.
 
@@ -136,44 +94,47 @@ def series(sys1, *sysn, **kwargs):
     (2, 1, 5)
 
     """
-    sys = reduce(lambda x, y: y * x, sysn, sys1)
+    sys = reduce(lambda x, y: y * x, sys[1:], sys[0])
     sys.update_names(**kwargs)
     return sys
 
 
-def parallel(sys1, *sysn, **kwargs):
-    r"""parallel(sys1, sys2, [..., sysn])
+def parallel(*sys, **kwargs):
+    r"""parallel(sys1, sys2[, ..., sysn])
 
-    Return the parallel connection `sys1` + `sys2` (+ ...\  + `sysn`).
+    Parallel connection of I/O systems.
+
+    Generates a parallel connection ``sys1 + sys2 [+ ...  + sysn]``.
 
     Parameters
     ----------
-    sys1, sys2, ..., sysn : scalar, array, or :class:`InputOutputSystem`
+    sys1, sys2, ..., sysn : scalar, array, or `InputOutputSystem`
         I/O systems to combine.
 
     Returns
     -------
-    out : scalar, array, or :class:`InputOutputSystem`
+    out : `InputOutputSystem`
         Parallel interconnection of the systems.
 
     Other Parameters
     ----------------
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals.  If not given,
-        signal names will be of the form `s[i]` (where `s` is one of `u`,
-        or `y`). See :class:`InputOutputSystem` for more information.
+        signal names will be of the form 's[i'` (where 's' is one of 'u',
+        or 'y'). See `InputOutputSystem` for more information.
     states : str, or list of str, optional
         List of names for system states.  If not given, state names will be
-        of the form `x[i]` for interconnections of linear systems or
+        of the form 'x[i]' for interconnections of linear systems or
         '<subsys_name>.<state_name>' for interconnected nonlinear systems.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
+        name 'sys[id]' is generated with a unique integer id.
 
     Raises
     ------
     ValueError
-        if `sys1` and `sys2` do not have the same numbers of inputs and outputs
+        If `sys1` and `sys2` do not have the same numbers of inputs and
+        outputs.
 
     See Also
     --------
@@ -182,12 +143,12 @@ def parallel(sys1, *sysn, **kwargs):
     Notes
     -----
     This function is a wrapper for the __add__ function in the
-    StateSpace and TransferFunction classes.  The output type is usually
+    `StateSpace` and `TransferFunction` classes.  The output type is usually
     the type of `sys1`.  If `sys1` is a scalar, then the output type is
     the type of `sys2`.
 
-    If both systems have a defined timebase (dt = 0 for continuous time,
-    dt > 0 for discrete time), then the timebase for both systems must
+    If both systems have a defined timebase (`dt` = 0 for continuous time,
+    `dt` > 0 for discrete time), then the timebase for both systems must
     match.  If only one of the system has a timebase, the return
     timebase will be set to match it.
 
@@ -206,37 +167,36 @@ def parallel(sys1, *sysn, **kwargs):
     (3, 4, 7)
 
     """
-    sys = reduce(lambda x, y: x + y, sysn, sys1)
+    sys = reduce(lambda x, y: x + y, sys[1:], sys[0])
     sys.update_names(**kwargs)
     return sys
 
 def negate(sys, **kwargs):
-    """
-    Return the negative of a system.
+    """Return the negative of a system.
 
     Parameters
     ----------
-    sys : scalar, array, or :class:`InputOutputSystem`
+    sys : scalar, array, or `InputOutputSystem`
         I/O systems to negate.
 
     Returns
     -------
-    out : scalar, array, or :class:`InputOutputSystem`
+    out : `InputOutputSystem`
         Negated system.
 
     Other Parameters
     ----------------
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals.  If not given,
-        signal names will be of the form `s[i]` (where `s` is one of `u`,
-        or `y`). See :class:`InputOutputSystem` for more information.
+        signal names will be of the form 's[i]' (where 's' is one of 'u',
+        or 'y'). See `InputOutputSystem` for more information.
     states : str, or list of str, optional
         List of names for system states.  If not given, state names will be
-        of of the form `x[i]` for interconnections of linear systems or
+        of of the form 'x[i]' for interconnections of linear systems or
         '<subsys_name>.<state_name>' for interconnected nonlinear systems.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
+        name 'sys[id]' is generated with a unique integer id.
 
     See Also
     --------
@@ -244,8 +204,9 @@ def negate(sys, **kwargs):
 
     Notes
     -----
-    This function is a wrapper for the __neg__ function in the StateSpace and
-    TransferFunction classes.  The output type is the same as the input type.
+    This function is a wrapper for the __neg__ function in the `StateSpace`
+    and `TransferFunction` classes.  The output type is the same as the
+    input type.
 
     Examples
     --------
@@ -268,40 +229,39 @@ def feedback(sys1, sys2=1, sign=-1, **kwargs):
 
     Parameters
     ----------
-    sys1, sys2 : scalar, array, or :class:`InputOutputSystem`
+    sys1, sys2 : scalar, array, or `InputOutputSystem`
         I/O systems to combine.
-    sign : scalar
-        The sign of feedback.  `sign` = -1 indicates negative feedback, and
-        `sign` = 1 indicates positive feedback.  `sign` is an optional
-        argument; it assumes a value of -1 if not specified.
+    sign : scalar, optional
+        The sign of feedback.  `sign=-1` indicates negative feedback
+        (default), and `sign=1` indicates positive feedback.
 
     Returns
     -------
-    out : scalar, array, or :class:`InputOutputSystem`
+    out : `InputOutputSystem`
         Feedback interconnection of the systems.
 
     Other Parameters
     ----------------
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals.  If not given,
-        signal names will be of the form `s[i]` (where `s` is one of `u`,
-        or `y`). See :class:`InputOutputSystem` for more information.
+        signal names will be of the form 's[i]' (where 's' is one of 'u',
+        or 'y'). See `InputOutputSystem` for more information.
     states : str, or list of str, optional
         List of names for system states.  If not given, state names will be
-        of of the form `x[i]` for interconnections of linear systems or
+        of of the form 'x[i]' for interconnections of linear systems or
         '<subsys_name>.<state_name>' for interconnected nonlinear systems.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
+        name 'sys[id]' is generated with a unique integer id.
 
     Raises
     ------
     ValueError
-        if `sys1` does not have as many inputs as `sys2` has outputs, or if
-        `sys2` does not have as many inputs as `sys1` has outputs
+        If `sys1` does not have as many inputs as `sys2` has outputs, or if
+        `sys2` does not have as many inputs as `sys1` has outputs.
     NotImplementedError
-        if an attempt is made to perform a feedback on a MIMO TransferFunction
-        object
+        If an attempt is made to perform a feedback on a MIMO `TransferFunction`
+        object.
 
     See Also
     --------
@@ -354,37 +314,38 @@ def feedback(sys1, sys2=1, sign=-1, **kwargs):
     return sys
 
 def append(*sys, **kwargs):
-    """append(sys1, sys2, [..., sysn])
+    """append(sys1, sys2[, ..., sysn])
 
-    Group LTI state space models by appending their inputs and outputs.
+    Group LTI models by appending their inputs and outputs.
 
     Forms an augmented system model, and appends the inputs and
     outputs together.
 
     Parameters
     ----------
-    sys1, sys2, ..., sysn: scalar, array, or :class:`StateSpace`
+    sys1, sys2, ..., sysn : scalar, array, or `LTI`
         I/O systems to combine.
+
+    Returns
+    -------
+    out : `LTI`
+        Combined system, with input/output vectors consisting of all
+        input/output vectors appended. Specific type returned is the type of
+        the first argument.
 
     Other Parameters
     ----------------
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals.  If not given,
-        signal names will be of the form `s[i]` (where `s` is one of `u`,
-        or `y`). See :class:`InputOutputSystem` for more information.
+        signal names will be of the form 's[i]' (where 's' is one of 'u',
+        or 'y'). See `InputOutputSystem` for more information.
     states : str, or list of str, optional
         List of names for system states.  If not given, state names will be
-        of of the form `x[i]` for interconnections of linear systems or
+        of of the form 'x[i]' for interconnections of linear systems or
         '<subsys_name>.<state_name>' for interconnected nonlinear systems.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
-
-    Returns
-    -------
-    out: :class:`StateSpace`
-        Combined system, with input/output vectors consisting of all
-        input/output vectors appended.
+        name 'sys[id]' is generated with a unique integer id.
 
     See Also
     --------
@@ -405,7 +366,7 @@ def append(*sys, **kwargs):
     (3, 8, 7)
 
     """
-    s1 = ss._convert_to_statespace(sys[0])
+    s1 = sys[0]
     for s in sys[1:]:
         s1 = s1.append(s)
     s1.update_names(**kwargs)
@@ -416,7 +377,7 @@ def connect(sys, Q, inputv, outputv):
 
     .. deprecated:: 0.10.0
         `connect` will be removed in a future version of python-control.
-        Use :func:`interconnect` instead, which works with named signals.
+        Use `interconnect` instead, which works with named signals.
 
     The system `sys` is a system typically constructed with `append`, with
     multiple inputs and outputs.  The inputs and outputs are connected
@@ -429,7 +390,7 @@ def connect(sys, Q, inputv, outputv):
 
     Parameters
     ----------
-    sys : :class:`InputOutputSystem`
+    sys : `InputOutputSystem`
         System to be connected.
     Q : 2D array
         Interconnection matrix. First column gives the input to be connected.
@@ -439,13 +400,13 @@ def connect(sys, Q, inputv, outputv):
         values mean the feedback is negative. A zero value is ignored. Inputs
         and outputs are indexed starting at 1 to communicate sign information.
     inputv : 1D array
-        list of final external inputs, indexed starting at 1
+        List of final external inputs, indexed starting at 1.
     outputv : 1D array
-        list of final external outputs, indexed starting at 1
+        List of final external outputs, indexed starting at 1.
 
     Returns
     -------
-    out : :class:`InputOutputSystem`
+    out : `InputOutputSystem`
         Connected and trimmed I/O system.
 
     See Also
@@ -454,8 +415,7 @@ def connect(sys, Q, inputv, outputv):
 
     Notes
     -----
-    The :func:`~control.interconnect` function in the :ref:`input/output
-    systems <iosys-module>` module allows the use of named signals and
+    The `interconnect` function allows the use of named signals and
     provides an alternative method for interconnecting multiple systems.
 
     Examples
@@ -512,44 +472,44 @@ def connect(sys, Q, inputv, outputv):
     return Ytrim * sys * Utrim
 
 def combine_tf(tf_array, **kwargs):
-    """Combine array-like of transfer functions into MIMO transfer function.
+    """Combine array of transfer functions into MIMO transfer function.
 
     Parameters
     ----------
-    tf_array : list of list of TransferFunction or array_like
-        Transfer matrix represented as a two-dimensional array or list-of-lists
-        containing TransferFunction objects. The TransferFunction objects can
-        have multiple outputs and inputs, as long as the dimensions are
-        compatible.
+    tf_array : list of list of `TransferFunction` or array_like
+        Transfer matrix represented as a two-dimensional array or
+        list-of-lists containing `TransferFunction` objects. The
+        `TransferFunction` objects can have multiple outputs and inputs, as
+        long as the dimensions are compatible.
 
     Returns
     -------
-    TransferFunction
-        Transfer matrix represented as a single MIMO TransferFunction object.
+    `TransferFunction`
+        Transfer matrix represented as a single MIMO `TransferFunction` object.
 
     Other Parameters
     ----------------
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals.  If not given,
-        signal names will be of the form `s[i]` (where `s` is one of `u`,
-        or `y`). See :class:`InputOutputSystem` for more information.
+        signal names will be of the form 's[i]' (where 's' is one of 'u',
+        or 'y'). See `InputOutputSystem` for more information.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
+        name 'sys[id]' is generated with a unique integer id.
 
     Raises
     ------
     ValueError
-        If timesteps of transfer functions do not match.
+        If timebase of transfer functions do not match.
     ValueError
-        If ``tf_array`` has incorrect dimensions.
+        If `tf_array` has incorrect dimensions.
     ValueError
         If the transfer functions in a row have mismatched output or input
         dimensions.
 
     Examples
     --------
-    Combine two transfer functions
+    Combine two transfer functions:
 
     >>> s = ct.tf('s')
     >>> ct.combine_tf(
@@ -564,7 +524,7 @@ def combine_tf(tf_array, **kwargs):
      [array([1, 2])]],
     name='G', outputs=2, inputs=1)
 
-    Combine NumPy arrays with transfer functions
+    Combine NumPy arrays with transfer functions:
 
     >>> ct.combine_tf(
     ...     [[np.eye(2), np.zeros((2, 1))],
@@ -579,6 +539,7 @@ def combine_tf(tf_array, **kwargs):
      [array([1.]), array([1.]), array([1.])],
      [array([1.]), array([1.]), array([1, 0])]],
     name='G', outputs=3, inputs=3)
+
     """
     # Find common timebase or raise error
     dt_list = []
@@ -591,7 +552,7 @@ def combine_tf(tf_array, **kwargs):
     dt_set = set(dt_list)
     dt_set.discard(None)
     if len(dt_set) > 1:
-        raise ValueError("Timesteps of transfer functions are "
+        raise ValueError("Time steps of transfer functions are "
                          f"mismatched: {dt_set}")
     elif len(dt_set) == 0:
         dt = None
@@ -637,25 +598,26 @@ def combine_tf(tf_array, **kwargs):
     return tf.TransferFunction(num, den, dt=dt, **kwargs)
 
 
+
 def split_tf(transfer_function):
-    """Split MIMO transfer function into NumPy array of SISO transfer functions.
+    """Split MIMO transfer function into SISO transfer functions.
 
     System and signal names for the array of SISO transfer functions are
     copied from the MIMO system.
 
     Parameters
     ----------
-    transfer_function : TransferFunction
+    transfer_function : `TransferFunction`
         MIMO transfer function to split.
 
     Returns
     -------
-    np.ndarray
+    ndarray
         NumPy array of SISO transfer functions.
 
     Examples
     --------
-    Split a MIMO transfer function
+    Split a MIMO transfer function:
 
     >>> G = ct.tf(
     ...     [ [[87.8], [-86.4]],
@@ -680,6 +642,7 @@ def split_tf(transfer_function):
                                             array([1, 1]),
                                             name='G', outputs=1, inputs=1)]],
           dtype=object)
+
     """
     tf_split_lst = []
     for i_out in range(transfer_function.noutputs):
@@ -699,22 +662,22 @@ def split_tf(transfer_function):
     return np.array(tf_split_lst, dtype=object)
 
 def _ensure_tf(arraylike_or_tf, dt=None):
-    """Convert an array-like to a transfer function.
+    """Convert an array_like to a transfer function.
 
     Parameters
     ----------
-    arraylike_or_tf : TransferFunction or array_like
+    arraylike_or_tf : `TransferFunction` or array_like
         Array-like or transfer function.
     dt : None, True or float, optional
-        System timebase. 0 (default) indicates continuous
-        time, True indicates discrete time with unspecified sampling
-        time, positive number is discrete time with specified
-        sampling time, None indicates unspecified timebase (either
-        continuous or discrete time). If None, timestep is not validated.
+        System timebase. 0 (default) indicates continuous time, True
+        indicates discrete time with unspecified sampling time, positive
+        number is discrete time with specified sampling time, None
+        indicates unspecified timebase (either continuous or discrete
+        time). If None, timebase is not validated.
 
     Returns
     -------
-    TransferFunction
+    `TransferFunction`
         Transfer function.
 
     Raises
@@ -722,11 +685,12 @@ def _ensure_tf(arraylike_or_tf, dt=None):
     ValueError
         If input cannot be converted to a transfer function.
     ValueError
-        If the timesteps do not match.
+        If the timebases do not match.
+
     """
     # If the input is already a transfer function, return it right away
     if isinstance(arraylike_or_tf, tf.TransferFunction):
-        # If timesteps don't match, raise an exception
+        # If timebases don't match, raise an exception
         if (dt is not None) and (arraylike_or_tf.dt != dt):
             raise ValueError(
                 f"`arraylike_or_tf.dt={arraylike_or_tf.dt}` does not match "
@@ -748,7 +712,7 @@ def _ensure_tf(arraylike_or_tf, dt=None):
         )
     except TypeError:
         raise ValueError(
-            "`arraylike_or_tf` must only contain array-likes or transfer "
+            "`arraylike_or_tf` must only contain array_likes or transfer "
             "functions."
         )
     return tfn

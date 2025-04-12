@@ -108,6 +108,9 @@ class TestConfig:
         np.testing.assert_almost_equal(mag_x[0], 0.001, decimal=6)
         np.testing.assert_almost_equal(mag_y[0], 10, decimal=3)
 
+        # Make sure x-axis label is Gain
+        assert mag_axis.get_ylabel() == "Gain"
+
         # Get the phase line
         phase_axis = plt.gcf().axes[1]
         phase_line = phase_axis.get_lines()
@@ -152,6 +155,9 @@ class TestConfig:
         # Make sure the x-axis is in rad/sec and y-axis is in dB
         np.testing.assert_almost_equal(mag_x[0], 0.001, decimal=6)
         np.testing.assert_almost_equal(mag_y[0], 20*log10(10), decimal=3)
+
+        # Make sure x-axis label is Gain
+        assert mag_axis.get_ylabel() == "Magnitude [dB]"
 
         # Get the phase line
         phase_axis = plt.gcf().axes[1]
@@ -333,11 +339,8 @@ class TestConfig:
         {'dt': 0.1}
     ])
     def test_repr_format(self, kwargs):
-        from ..statesp import StateSpace
-        from numpy import array
-
         sys = ct.ss([[1]], [[1]], [[1]], [[0]], **kwargs)
-        new = eval(repr(sys))
+        new = eval(repr(sys), None, {'StateSpace':ct.StateSpace, 'array':np.array})
         for attr in ['A', 'B', 'C', 'D']:
             assert getattr(new, attr) == getattr(sys, attr)
         for prop in ['input_labels', 'output_labels', 'state_labels']:

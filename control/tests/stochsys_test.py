@@ -6,7 +6,7 @@ import pytest
 
 import control as ct
 import control.optimal as opt
-from control import lqe, dlqe, rss, drss, tf, ss, ControlArgument, slycot_check
+from control import lqe, dlqe, rss, tf, ControlArgument, slycot_check
 from math import log, pi
 
 # Utility function to check LQE answer
@@ -88,7 +88,7 @@ def test_DLQE(method):
     check_DLQE(L, P, poles, G, QN, RN)
 
 def test_lqe_discrete():
-    """Test overloading of lqe operator for discrete time systems"""
+    """Test overloading of lqe operator for discrete-time systems"""
     csys = ct.rss(2, 1, 1)
     dsys = ct.drss(2, 1, 1)
     Q = np.eye(1)
@@ -101,7 +101,7 @@ def test_lqe_discrete():
     np.testing.assert_almost_equal(S_csys, S_expl)
     np.testing.assert_almost_equal(E_csys, E_expl)
 
-    # Calling lqe() with a discrete time system should call dlqe()
+    # Calling lqe() with a discrete-time system should call dlqe()
     K_lqe, S_lqe, E_lqe = ct.lqe(dsys, Q, R)
     K_dlqe, S_dlqe, E_dlqe = ct.dlqe(dsys, Q, R)
     np.testing.assert_almost_equal(K_lqe, K_dlqe)
@@ -116,7 +116,7 @@ def test_lqe_discrete():
     np.testing.assert_almost_equal(S_asys, S_expl)
     np.testing.assert_almost_equal(E_asys, E_expl)
 
-    # Calling dlqe() with a continuous time system should raise an error
+    # Calling dlqe() with a continuous-time system should raise an error
     with pytest.raises(ControlArgument, match="called with a continuous"):
         K, S, E = ct.dlqe(csys, Q, R)
 
@@ -225,26 +225,25 @@ def test_estimator_iosys_ctime(sys_args):
 
 def test_estimator_errors():
     sys = ct.drss(4, 2, 2, strictly_proper=True)
-    P0 = np.eye(sys.nstates)
     QN = np.eye(sys.ninputs)
     RN = np.eye(sys.noutputs)
 
     with pytest.raises(TypeError, match="unrecognized keyword"):
-        estim = ct.create_estimator_iosystem(sys, QN, RN, unknown=True)
+        ct.create_estimator_iosystem(sys, QN, RN, unknown=True)
 
     with pytest.raises(ct.ControlArgument, match=".* system must be a linear"):
         sys_tf = ct.tf([1], [1, 1], dt=True)
-        estim = ct.create_estimator_iosystem(sys_tf, QN, RN)
+        ct.create_estimator_iosystem(sys_tf, QN, RN)
 
     with pytest.raises(ValueError, match="output must be full state"):
         C = np.eye(2, 4)
-        estim = ct.create_estimator_iosystem(sys, QN, RN, C=C)
+        ct.create_estimator_iosystem(sys, QN, RN, C=C)
 
     with pytest.raises(ValueError, match="output is the wrong size"):
         sys_fs = ct.drss(4, 4, 2, strictly_proper=True)
         sys_fs.C = np.eye(4)
         C = np.eye(1, 4)
-        estim = ct.create_estimator_iosystem(sys_fs, QN, RN, C=C)
+        ct.create_estimator_iosystem(sys_fs, QN, RN, C=C)
 
 
 def test_white_noise():
@@ -404,6 +403,10 @@ def test_oep(dt):
     np.testing.assert_allclose(
         est3.states[:, -1], res3.states[:, -1], atol=meas_mag, rtol=meas_mag)
 
+    # Make sure unknown keywords generate an error
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        est3 = oep1.compute_estimate(Y3, U, unknown=True)
+
 
 @pytest.mark.slow
 def test_mhe():
@@ -426,7 +429,6 @@ def test_mhe():
     V = np.array(
         [0 if i % 2 == 1 else 1 if i % 4 == 0 else -1
          for i, t in enumerate(timepts)]).reshape(1, -1) * 0.1
-    W = np.sin(timepts / dt) * 1e-3
 
     # Create a moving horizon estimator
     traj_cost = opt.gaussian_likelihood_cost(sys, Rv, Rw)
@@ -478,7 +480,6 @@ def test_indices(ctrl_indices, dist_indices):
     sysm = ct.ss(sys.A, sys.B[:, ctrl_idx], sys.C, sys.D[:, ctrl_idx])
 
     # Set the simulation time based on the slowest system pole
-    from math import log
     T = 10
 
     # Generate a system response with no disturbances

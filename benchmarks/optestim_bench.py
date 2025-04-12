@@ -6,7 +6,6 @@
 # used for optimization-based estimation.
 
 import numpy as np
-import math
 import control as ct
 import control.optimal as opt
 
@@ -64,7 +63,6 @@ def time_oep_minimizer_methods(minimizer_name, noise_name, initial_guess):
         initial_guess = (res.states, V)
     else:
         initial_guess = None
-        
 
     # Set up optimal estimation function using Gaussian likelihoods for cost
     traj_cost = opt.gaussian_likelihood_cost(sys, Rv, Rw)

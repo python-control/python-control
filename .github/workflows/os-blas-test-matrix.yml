@@ -126,6 +126,7 @@ jobs:
           activate-environment: build-env
           environment-file: .github/conda-env/build-env.yml
           miniforge-version: latest
+          channels: conda-forge,defaults
           channel-priority: strict
           auto-update-conda: false
           auto-activate-base: false
@@ -170,7 +171,10 @@ jobs:
           name: slycot-wheels
           path: slycot-wheels
       - id: set-matrix
-        run: echo "matrix=$(python3 .github/scripts/set-pip-test-matrix.py)" >> $GITHUB_OUTPUT
+        run: |
+          TEMPFILE="$(mktemp)"
+          python3 .github/scripts/set-pip-test-matrix.py | tee $TEMPFILE
+          echo "matrix=$(cat $TEMPFILE)" >> $GITHUB_OUTPUT
 
 
   create-conda-test-matrix:
@@ -194,7 +198,10 @@ jobs:
           name: slycot-conda-pkgs
           path: slycot-conda-pkgs
       - id: set-matrix
-        run: echo "matrix=$(python3 .github/scripts/set-conda-test-matrix.py)" >> $GITHUB_OUTPUT
+        run: |
+          TEMPFILE="$(mktemp)"
+          python3 .github/scripts/set-conda-test-matrix.py | tee $TEMPFILE
+          echo "matrix=$(cat $TEMPFILE)" >> $GITHUB_OUTPUT
 
 
   test-wheel:
@@ -256,7 +263,7 @@ jobs:
       - name: Install Wheel
         run: |
           python -m pip install --upgrade pip
-          pip install matplotlib scipy pytest pytest-cov pytest-timeout coverage
+          pip install matplotlib scipy pytest pytest-cov pytest-timeout coverage numpydoc
           pip install slycot-wheels/${{ matrix.packagekey }}/slycot*.whl
           pip show slycot
       - name: Test with pytest
@@ -297,6 +304,7 @@ jobs:
           miniforge-version: latest
           activate-environment: test-env
           environment-file: .github/conda-env/test-env.yml
+          channels: conda-forge,defaults
           channel-priority: strict
           auto-activate-base: false
       - name: Download conda packages

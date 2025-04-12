@@ -1,0 +1,87 @@
+.. currentmodule:: control
+
+.. _version-0.9.0:
+
+Version 0.9.0 Release Notes
+----------------------------
+
+* Released: 21 Mar 2021
+* `GitHub release page
+  <https://github.com/python-control/python-control/releases/tag/0.9.0>`_
+
+Version 0.9.0 of the Python Control Toolbox (python-control) contains
+a number of enhanced features and changes to functions. Some of these
+changes may require modifications to existing user code and, in
+addition, some default settings have changed that may affect the
+appearance of plots or operation of certain functions.
+
+Significant new additions including improvements in the I/O systems
+modules that allow automatic interconnection of signals having the
+same name (via the `interconnect` function), generation and plotting
+of describing functions for closed loop systems with static
+nonlinearities, and a new :ref:`optimal control module
+<optimal-module>` that allows basic computation of optimal controls
+(including model predictive controllers). Some of the changes that may
+break use code include the deprecation of the NumPy `~numpy.matrix`
+type (2D NumPy arrays are used instead), changes in the return value
+for Nyquist plots (now returns number of encirclements rather than the
+frequency response), switching the default timebase of systems to be 0
+rather than None (no timebase), and changes in the processing of
+return values for time and frequency responses (to make them more
+consistent). In many cases, the earlier behavior can be restored by
+calling ``use_legacy_defaults('0.8.4')``.
+
+New features
+............
+
+* Optimal control module, including rudimentary MPC control
+* Describing functions plots
+* MIMO impulse and step response
+* I/O system improvements:
+
+  - `linearize` retains signal names plus new `interconnect` function
+  - Add summing junction + implicit signal interconnection
+
+* Implementation of initial_phase, wrap_phase keywords for bode_plot
+* Added IPython LaTeX representation method for StateSpace objects
+* New `~StateSpace.dynamics` and `~StateSpace.output` methods in `StateSpace`
+* `FRD` systems can now be created from a discrete time LTI system
+* Cost and constraints are now allowed for `flatsys.point_to_point`
+
+
+Interface changes
+.................
+
+* Switch default state space matrix type to 'array' (instead of 'matrix')
+* Use `~LTI.__call__` instead of `~LTI.evalfr` in LTI system classes
+* Default dt is now 0 instead of None
+* Change default value of `StateSpace.remove_useless_states` to False
+* Standardize time response return values, `return_x`/`squeeze`
+  keyword processing
+* Standardize `squeeze` processing in frequency response functions
+* Nyquist plot now returns number of encirclements
+* Switch `LTI` class and subclasses to use ninputs, noutputs, nstates
+* Use standard time series convention for `markov` input data
+* TransferFunction array priority plus system type conversion checking
+* Generate error for `tf2ss` of non-proper transfer function
+* Updated return values for frequency response evaluated at poles
+
+
+Improvements, bug fixes
+.......................
+
+* Nyquist plot improvements: better arrows, handle poles on imaginary axis
+* Sisotool small visual cleanup, new feature to show step response of
+  different input-output than loop
+* Add `bdschur` and fox modal form with repeated eigenvalues
+* Fix rlocus timeout due to inefficient _default_wn calculation
+* Fix `stability_margins`: finding z for ``|H(z)| = 1`` computed the wrong
+  polynomials
+* Freqplot improvements
+* Fix rlocus plotting problem in Jupyter notebooks
+* Handle empty pole vector for timevector calculation
+* Fix `lqe` docstring and input array type
+* Updated `markov` to add tranpose keyword + default warning
+* Fix impulse size for discrete-time impulse response
+* Extend `returnScipySignalLTI` to handle discrete-time systems
+* Bug fixes and extensions for `step_info`

@@ -1,21 +1,24 @@
-"""
-Wrappers for the MATLAB compatibility module
+# wrappers.py - Wrappers for the MATLAB compatibility module.
+
+"""Wrappers for the MATLAB compatibility module.
+
 """
 
-import numpy as np
-from scipy.signal import zpk2tf
 import warnings
 from warnings import warn
 
+import numpy as np
+from scipy.signal import zpk2tf
+
+from ..exception import ControlArgument
+from ..lti import LTI
 from ..statesp import ss
 from ..xferfcn import tf
-from ..lti import LTI
-from ..exception import ControlArgument
 
 __all__ = ['bode', 'nyquist', 'ngrid', 'rlocus', 'pzmap', 'dcgain', 'connect']
 
 def bode(*args, **kwargs):
-    """bode(syslist[, omega, dB, Hz, deg, ...])
+    """bode(sys[, omega, dB, Hz, deg, ...])
 
     Bode plot of the frequency response.
 
@@ -26,25 +29,24 @@ def bode(*args, **kwargs):
     sys : LTI, or list of LTI
         System for which the Bode response is plotted and give. Optionally
         a list of systems can be entered, or several systems can be
-        specified (i.e. several parameters). The sys arguments may also be
+        specified (i.e. several parameters). The `sys` arguments may also be
         interspersed with format strings. A frequency argument (array_like)
-        may also be added, some examples::
-
-        >>> bode(sys, w)                    # one system, freq vector              # doctest: +SKIP
-        >>> bode(sys1, sys2, ..., sysN)     # several systems                      # doctest: +SKIP
-        >>> bode(sys1, sys2, ..., sysN, w)                                         # doctest: +SKIP
-        >>> bode(sys1, 'plotstyle1', ..., sysN, 'plotstyleN') # + plot formats     # doctest: +SKIP
-
-    omega: freq_range
-        Range of frequencies in rad/s
+        may also be added (see Examples).
+    omega : array
+        Range of frequencies in rad/s.
     dB : boolean
-        If True, plot result in dB
+        If True, plot result in dB.
     Hz : boolean
-        If True, plot frequency in Hz (omega must be provided in rad/sec)
+        If True, plot frequency in Hz (omega must be provided in rad/sec).
     deg : boolean
-        If True, return phase in degrees (else radians)
+        If True, return phase in degrees (else radians).
     plot : boolean
-        If True, plot magnitude and phase
+        If True, plot magnitude and phase.
+
+    Returns
+    -------
+    mag, phase, omega : array
+        Magnitude, phase, and frequencies represented in the Bode plot.
 
     Examples
     --------
@@ -52,15 +54,11 @@ def bode(*args, **kwargs):
 
     >>> sys = ss([[1, -2], [3, -4]], [[5], [7]], [[6, 8]], 9)
     >>> mag, phase, omega = bode(sys)
+    >>> bode(sys, w)                  # one system, freq vector # doctest: +SKIP
+    >>> bode(sys1, sys2, ..., sysN)   # several systems         # doctest: +SKIP
+    >>> bode(sys1, sys2, ..., sysN, w)                          # doctest: +SKIP
+    >>> bode(sys1, 'plotstyle1', ..., sysN, 'plotstyleN')       # doctest: +SKIP
 
-    .. todo::
-
-        Document these use cases
-
-        * >>> bode(sys, w)                                      # doctest: +SKIP
-        * >>> bode(sys1, sys2, ..., sysN)                       # doctest: +SKIP
-        * >>> bode(sys1, sys2, ..., sysN, w)                    # doctest: +SKIP
-        * >>> bode(sys1, 'plotstyle1', ..., sysN, 'plotstyleN') # doctest: +SKIP
     """
     from ..freqplot import bode_plot
 
@@ -99,22 +97,28 @@ def nyquist(*args, plot=True, **kwargs):
 
     Parameters
     ----------
-    sys1, ..., sysn : list of LTI
+    syslist : list of LTI
         List of linear input/output systems (single system is OK).
     omega : array_like
         Set of frequencies to be evaluated, in rad/sec.
+    omega_limits : array_like of two values
+        Set limits for plotted frequency range. If Hz=True the limits are
+        in Hz otherwise in rad/s.  Specifying `omega` as a list of two
+        elements is equivalent to providing `omega_limits`.
+    plot : bool
+        If False, do not generate a plot.
 
     Returns
     -------
     real : ndarray (or list of ndarray if len(syslist) > 1))
-        real part of the frequency response array
+        Real part of the frequency response array.
     imag : ndarray (or list of ndarray if len(syslist) > 1))
-        imaginary part of the frequency response array
+        Imaginary part of the frequency response array.
     omega : ndarray (or list of ndarray if len(syslist) > 1))
-        frequencies in rad/s
+        Frequencies in rad/s.
 
     """
-    from ..freqplot import nyquist_response, nyquist_plot
+    from ..freqplot import nyquist_plot, nyquist_response
 
     # If first argument is a list, assume python-control calling format
     if hasattr(args[0], '__iter__'):
@@ -189,7 +193,7 @@ def _parse_freqplot_args(*args):
     if len(syslist) == 0:
         raise ControlArgument("no systems specified")
     elif len(syslist) == 1:
-    # If only one system given, retun just that system (not a list)
+    # If only one system given, return just that system (not a list)
         syslist = syslist[0]
 
     return syslist, omega, plotstyle, other
@@ -212,11 +216,11 @@ def rlocus(*args, **kwargs):
     gains : array_like, optional
         Gains to use in computing plot of closed-loop poles.
     xlim : tuple or list, optional
-        Set limits of x axis, normally with tuple
-        (see :doc:`matplotlib:api/axes_api`).
+        Set limits of x axis (see `matplotlib.axes.Axes.set_xlim`).
     ylim : tuple or list, optional
-        Set limits of y axis, normally with tuple
-        (see :doc:`matplotlib:api/axes_api`).
+        Set limits of y axis (see `matplotlib.axes.Axes.set_ylim`).
+    plot : bool
+        If False, do not generate a plot.
 
     Returns
     -------
@@ -228,7 +232,7 @@ def rlocus(*args, **kwargs):
 
     Notes
     -----
-    This function is a wrapper for :func:`~control.root_locus_plot`,
+    This function is a wrapper for `root_locus_plot`,
     with legacy return arguments.
 
     """
@@ -257,24 +261,24 @@ def pzmap(*args, **kwargs):
 
     Parameters
     ----------
-    sys: LTI (StateSpace or TransferFunction)
+    sys : `StateSpace` or `TransferFunction`
         Linear system for which poles and zeros are computed.
-    plot: bool, optional
-        If ``True`` a graph is generated with Matplotlib,
+    plot : bool, optional
+        If True a graph is generated with matplotlib,
         otherwise the poles and zeros are only computed and returned.
-    grid: boolean (default = False)
-        If True plot omega-damping grid.
+    grid : boolean (default = False)
+        If True, plot omega-damping grid.
 
     Returns
     -------
-    poles: array
+    poles : array
         The system's poles.
-    zeros: array
+    zeros : array
         The system's zeros.
 
     Notes
     -----
-    This function is a wrapper for :func:`~control.pole_zero_plot`,
+    This function is a wrapper for `pole_zero_plot`,
     with legacy return arguments.
 
     """
@@ -296,43 +300,55 @@ def pzmap(*args, **kwargs):
 
 
 from ..nichols import nichols_grid
+
+
 def ngrid():
     return nichols_grid()
 ngrid.__doc__ = nichols_grid.__doc__
 
 
 def dcgain(*args):
-    '''Compute the gain of the system in steady state.
+    """dcgain(sys) \
+      dcgain(num, den) \
+      dcgain(Z, P, k) \
+      dcgain(A, B, C, D)
+
+    Compute the gain of the system in steady state.
 
     The function takes either 1, 2, 3, or 4 parameters:
 
+      * dcgain(sys)
+      * dcgain(num, den)
+      * dcgain(Z, P, k)
+      * dcgain(A, B, C, D)
+
     Parameters
     ----------
-    A, B, C, D: array-like
+    A, B, C, D : array_like
         A linear system in state space form.
-    Z, P, k: array-like, array-like, number
+    Z, P, k : array_like, array_like, number
         A linear system in zero, pole, gain form.
-    num, den: array-like
+    num, den : array_like
         A linear system in transfer function form.
-    sys: LTI (StateSpace or TransferFunction)
+    sys : `StateSpace` or `TransferFunction`
         A linear system object.
 
     Returns
     -------
-    gain: ndarray
+    gain : ndarray
         The gain of each output versus each input:
-        :math:`y = gain \\cdot u`
+        :math:`y = gain \\cdot u`.
 
     Notes
     -----
     This function is only useful for systems with invertible system
-    matrix ``A``.
+    matrix `A`.
 
     All systems are first converted to state space form. The function then
     computes:
 
     .. math:: gain = - C \\cdot A^{-1} \\cdot B + D
-    '''
+    """
     #Convert the parameters to state space form
     if len(args) == 4:
         A, B, C, D = args
@@ -348,48 +364,51 @@ def dcgain(*args):
         sys, = args
         return sys.dcgain()
     else:
-        raise ValueError("Function ``dcgain`` needs either 1, 2, 3 or 4 "
+        raise ValueError("Function `dcgain` needs either 1, 2, 3 or 4 "
                          "arguments.")
 
 
 from ..bdalg import connect as ct_connect
-def connect(*args):
 
-    """Index-based interconnection of an LTI system.
+
+def connect(*args):
+    """connect(sys, Q, inputv, outputv)
+
+    Index-based interconnection of an LTI system.
 
     The system `sys` is a system typically constructed with `append`, with
     multiple inputs and outputs.  The inputs and outputs are connected
-    according to the interconnection matrix `Q`, and then the final inputs and
-    outputs are trimmed according to the inputs and outputs listed in `inputv`
-    and `outputv`.
+    according to the interconnection matrix `Q`, and then the final inputs
+    and outputs are trimmed according to the inputs and outputs listed in
+    `inputv` and `outputv`.
 
     NOTE: Inputs and outputs are indexed starting at 1 and negative values
     correspond to a negative feedback interconnection.
 
     Parameters
     ----------
-    sys : :class:`InputOutputSystem`
+    sys : `InputOutputSystem`
         System to be connected.
     Q : 2D array
         Interconnection matrix. First column gives the input to be connected.
         The second column gives the index of an output that is to be fed into
         that input. Each additional column gives the index of an additional
-        input that may be optionally added to that input. Negative
-        values mean the feedback is negative. A zero value is ignored. Inputs
+        input that may be optionally added to that input. Negative values
+        mean the feedback is negative. A zero value is ignored. Inputs
         and outputs are indexed starting at 1 to communicate sign information.
     inputv : 1D array
-        list of final external inputs, indexed starting at 1
+        List of final external inputs, indexed starting at 1.
     outputv : 1D array
-        list of final external outputs, indexed starting at 1
+        List of final external outputs, indexed starting at 1.
 
     Returns
     -------
-    out : :class:`InputOutputSystem`
+    out : `InputOutputSystem`
         Connected and trimmed I/O system.
 
     See Also
     --------
-    append, feedback, interconnect, negate, parallel, series
+    append, feedback, connect, negate, parallel, series
 
     Examples
     --------

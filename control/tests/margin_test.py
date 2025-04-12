@@ -12,12 +12,9 @@ import pytest
 from numpy import inf, nan
 from numpy.testing import assert_allclose
 
-from control.frdata import FrequencyResponseData
-from control.margins import (margin, phase_crossover_frequencies,
-                             stability_margins)
-from control.statesp import StateSpace
-from control.xferfcn import TransferFunction
-from control.exception import ControlMIMONotImplemented
+from control import ControlMIMONotImplemented, FrequencyResponseData, \
+    StateSpace, TransferFunction, margin, phase_crossover_frequencies, \
+    stability_margins
 
 s = TransferFunction.s
 
@@ -111,7 +108,6 @@ def test_margin_3input(tsys):
     out = margin((mag, phase*180/np.pi, omega_))
     assert_allclose(out, np.array(refout)[[0, 1, 3, 4]], atol=1.5e-3)
 
-
 @pytest.mark.parametrize(
     'tfargs, omega_ref, gain_ref',
     [(([1], [1, 2, 3, 4]), [1.7325, 0.], [-0.5, 0.25]),
@@ -119,7 +115,10 @@ def test_margin_3input(tsys):
      (([2], [1, 3, 3, 1]), [1.732, 0.], [-0.25, 2.]),
      ((np.array([3, 11, 3]) * 1e-4, [1., -2.7145, 2.4562, -0.7408], .1),
       [1.6235, 0.], [-0.28598, 1.88889]),
+     (([200.0], [1.0, 21.0, 20.0, 0.0]),
+      [4.47213595, 0], [-0.47619048, inf]),
      ])
+@pytest.mark.filterwarnings("error")
 def test_phase_crossover_frequencies(tfargs, omega_ref, gain_ref):
     """Test phase_crossover_frequencies() function"""
     sys = TransferFunction(*tfargs)

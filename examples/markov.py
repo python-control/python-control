@@ -12,17 +12,17 @@ import control as ct
 
 def create_impulse_response(H, time, transpose, dt):
     """Helper function to use TimeResponseData type for plotting"""
-    
+
     H = np.array(H, ndmin=3)
 
     if transpose:
         H = np.transpose(H)
-    
+
     q, p, m = H.shape
     inputs = np.zeros((p,p,m))
 
     issiso = True if (q == 1 and p == 1) else False
-    
+
     input_labels = []
     trace_labels, trace_types = [], []
     for i in range(p):

@@ -3,7 +3,6 @@
 RMM, 30 Mar 2011 (based on TestModelSimp from v0.4a)
 """
 
-import math
 import warnings
 
 import numpy as np
@@ -124,6 +123,7 @@ class TestModelsimp:
         inp = np.array([1, 2])
         outp = np.array([2, 4])
         mrk = markov(outp, inp, 1, transpose=False)
+        np.testing.assert_almost_equal(mrk, 2.)
 
         # Test mimo example
         # Mechanical Vibrations: Theory and Application, SI Edition, 1st ed.
@@ -201,14 +201,14 @@ class TestModelsimp:
         # 0 for k > m-2 (see modelsimp.py).
         #
 
-        # Generate stable continuous time system
+        # Generate stable continuous-time system
         Hc = rss(k, 1, 1)
 
         # Choose sampling time based on fastest time constant / 10
         w, _ = np.linalg.eig(Hc.A)
         Ts = np.min(-np.real(w)) / 10.
 
-        # Convert to a discrete time system via sampling
+        # Convert to a discrete-time system via sampling
         Hd = c2d(Hc, Ts, 'zoh')
 
         # Compute the Markov parameters from state space

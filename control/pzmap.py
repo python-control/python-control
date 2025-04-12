@@ -1,40 +1,41 @@
 # pzmap.py - computations involving poles and zeros
 #
-# Original author: Richard M. Murray
-# Date: 7 Sep 2009
-#
-# This file contains functions that compute poles, zeros and related
-# quantities for a linear system, as well as the main functions for
-# storing and plotting pole/zero and root locus diagrams.  (The actual
-# computation of root locus diagrams is in rlocus.py.)
-#
+# Initial author: Richard M. Murray
+# Creation date: 7 Sep 2009
+
+"""Computations involving poles and zeros.
+
+This module contains functions that compute poles, zeros and related
+quantities for a linear system, as well as the main functions for
+storing and plotting pole/zero and root locus diagrams.  (The actual
+computation of root locus diagrams is in rlocus.py.)
+
+"""
 
 import itertools
 import warnings
-from math import pi
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy import cos, exp, imag, linspace, real, sin, sqrt
+from numpy import imag, real
 
 from . import config
 from .config import _process_legacy_keyword
 from .ctrlplot import ControlPlot, _get_color, _get_color_offset, \
     _get_line_labels, _process_ax_keyword, _process_legend_keywords, \
     _process_line_labels, _update_plot_title
-from .freqplot import _freqplot_defaults
 from .grid import nogrid, sgrid, zgrid
 from .iosys import isctime, isdtime
-from .lti import LTI
 from .statesp import StateSpace
 from .xferfcn import TransferFunction
 
-__all__ = ['pole_zero_map', 'pole_zero_plot', 'pzmap', 'PoleZeroData']
+__all__ = ['pole_zero_map', 'pole_zero_plot', 'pzmap', 'PoleZeroData',
+           'PoleZeroList']
 
 
 # Define default parameter values for this module
 _pzmap_defaults = {
-    'pzmap.grid': None,                 # Plot omega-damping grid
+    'pzmap.grid': False,                 # Plot omega-damping grid
     'pzmap.marker_size': 6,             # Size of the markers
     'pzmap.marker_width': 1.5,          # Width of the markers
     'pzmap.expansion_factor': 1.8,      # Amount to scale plots beyond features
@@ -65,7 +66,7 @@ class PoleZeroData:
     system poles and zeros, as well as the gains and loci for root locus
     diagrams.
 
-    Attributes
+    Parameters
     ----------
     poles : ndarray
         1D array of system poles.
@@ -73,12 +74,14 @@ class PoleZeroData:
         1D array of system zeros.
     gains : ndarray, optional
         1D array of gains for root locus plots.
-    loci : ndarray, optiona
+    loci : ndarray, optional
         2D array of poles, with each row corresponding to a gain.
     sysname : str, optional
         System name.
-    sys : StateSpace or TransferFunction
+    sys : `StateSpace` or `TransferFunction`, optional
         System corresponding to the data.
+    dt : None, True or float, optional
+        System timebase (used for showing stability boundary).
     sort_loci : bool, optional
         Set to False to turn off sorting of loci into unique branches.
 
@@ -86,24 +89,6 @@ class PoleZeroData:
     def __init__(
             self, poles, zeros, gains=None, loci=None, dt=None, sysname=None,
             sys=None, sort_loci=True):
-        """Create a pole/zero map object.
-
-        Parameters
-        ----------
-        poles : ndarray
-            1D array of system poles.
-        zeros : ndarray
-            1D array of system zeros.
-        gains : ndarray, optional
-            1D array of gains for root locus plots.
-        loci : ndarray, optiona
-            2D array of poles, with each row corresponding to a gain.
-        sysname : str, optional
-            System name.
-        sys : StateSpace or TransferFunction
-            System corresponding to the data.
-
-        """
         from .rlocus import _RLSortRoots
         self.poles = poles
         self.zeros = zeros
@@ -123,20 +108,18 @@ class PoleZeroData:
     def plot(self, *args, **kwargs):
         """Plot the pole/zero data.
 
-        See :func:`~control.pole_zero_plot` for description of arguments
-        and keywords.
+        See `pole_zero_plot` for description of arguments and keywords.
 
         """
         return pole_zero_plot(self, *args, **kwargs)
 
 
 class PoleZeroList(list):
-    """List of PoleZeroData objects."""
+    """List of PoleZeroData objects with plotting capability."""
     def plot(self, *args, **kwargs):
         """Plot pole/zero data.
 
-        See :func:`~control.pole_zero_plot` for description of arguments
-        and keywords.
+        See `pole_zero_plot` for description of arguments and keywords.
 
         """
         return pole_zero_plot(self, *args, **kwargs)
@@ -148,14 +131,14 @@ def pole_zero_map(sysdata):
 
     Parameters
     ----------
-    sysdata : LTI system (StateSpace or TransferFunction)
+    sysdata : `StateSpace` or `TransferFunction`
         Linear system for which poles and zeros are computed.
 
     Returns
     -------
-    pzmap_data : PoleZeroMap
+    pzmap_data : `PoleZeroMap`
         Pole/zero map containing the poles and zeros of the system.  Use
-        `pzmap_data.plot()` or `pole_zero_plot(pzmap_data)` to plot the
+        ``pzmap_data.plot()`` or ``pole_zero_plot(pzmap_data)`` to plot the
         pole/zero map.
 
     """
@@ -175,8 +158,8 @@ def pole_zero_map(sysdata):
 
 
 # TODO: Implement more elegant cross-style axes. See:
-#    https://matplotlib.org/2.0.2/examples/axes_grid/demo_axisline_style.html
-#    https://matplotlib.org/2.0.2/examples/axes_grid/demo_curvelinear_grid.html
+#   https://matplotlib.org/2.0.2/examples/axes_grid/demo_axisline_style.html
+#   https://matplotlib.org/2.0.2/examples/axes_grid/demo_curvelinear_grid.html
 def pole_zero_plot(
         data, plot=None, grid=None, title=None, color=None, marker_size=None,
         marker_width=None, xlim=None, ylim=None, interactive=None, ax=None,
@@ -191,50 +174,48 @@ def pole_zero_plot(
 
     Parameters
     ----------
-    data : List of PoleZeroData objects or LTI systems
+    data : List of `PoleZeroData` objects or `LTI` systems
         List of pole/zero response data objects generated by pzmap_response()
         or root_locus_map() that are to be plotted.  If a list of systems
         is given, the poles and zeros of those systems will be plotted.
     grid : bool or str, optional
-        If `True` plot omega-damping grid, if `False` show imaginary axis
-        for continuous time systems, unit circle for discrete time systems.
-        If `empty`, do not draw any additonal lines.  Default value is set
-        by config.default['pzmap.grid'] or config.default['rlocus.grid'].
+        If True plot omega-damping grid, if False show imaginary
+        axis for continuous-time systems, unit circle for discrete-time
+        systems.  If 'empty', do not draw any additional lines.  Default
+        value is set by `config.defaults['pzmap.grid']` or
+        `config.defaults['rlocus.grid']`.
     plot : bool, optional
-        (legacy) If ``True`` a graph is generated with Matplotlib,
+        (legacy) If True a graph is generated with matplotlib,
         otherwise the poles and zeros are only computed and returned.
         If this argument is present, the legacy value of poles and
         zeros is returned.
 
     Returns
     -------
-    cplt : :class:`ControlPlot` object
-        Object containing the data that were plotted:
+    cplt : `ControlPlot` object
+        Object containing the data that were plotted.  See `ControlPlot`
+        for more detailed information.
+    cplt.lines : array of list of `matplotlib.lines.Line2D`
+        The shape of the array is given by (nsys, 2) where nsys is the number
+        of systems or responses passed to the function.  The second index
+        specifies the pzmap object type:
 
-          * cplt.lines: Array of :class:`matplotlib.lines.Line2D` objects
-            for each set of markers in the plot. The shape of the array is
-            given by (`nsys`, 2) where `nsys` is the number of systems or
-            responses passed to the function.  The second index specifies
-            the pzmap object type:
+            - lines[idx, 0]: poles
+            - lines[idx, 1]: zeros
 
-              - lines[idx, 0]: poles
-              - lines[idx, 1]: zeros
-
-          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
-
-          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
-
-          * cplt.legend: legend object(s) contained in the plot
-
-        See :class:`ControlPlot` for more detailed information.
-
-    poles, zeros: list of arrays
+    cplt.axes : 2D array of `matplotlib.axes.Axes`
+        Axes for each subplot.
+    cplt.figure : `matplotlib.figure.Figure`
+        Figure containing the plot.
+    cplt.legend : 2D array of `matplotlib.legend.Legend`
+        Legend object(s) contained in the plot.
+    poles, zeros : list of arrays
         (legacy) If the `plot` keyword is given, the system poles and zeros
         are returned.
 
     Other Parameters
     ----------------
-    ax : matplotlib.axes.Axes, optional
+    ax : `matplotlib.axes.Axes`, optional
         The matplotlib axes to draw the figure on.  If not specified and
         the current figure has a single axes, that axes is used.
         Otherwise, a new figure is created.
@@ -259,14 +240,14 @@ def pole_zero_plot(
         Set the line width of the markers used for poles and zeros.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['ctrlplot.rcParams'].
+        Default is set by `config.defaults['ctrlplot.rcParams']`.
     scaling : str or list, optional
         Set the type of axis scaling.  Can be 'equal' (default), 'auto', or
         a list of the form [xmin, xmax, ymin, ymax].
     show_legend : bool, optional
-        Force legend to be shown if ``True`` or hidden if ``False``.  If
-        ``None``, then show legend when there is more than one line on the
-        plot or ``legend_loc`` has been specified.
+        Force legend to be shown if True or hidden if False.  If
+        None, then show legend when there is more than one line on the
+        plot or `legend_loc` has been specified.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
     xlim : list, optional
@@ -276,16 +257,27 @@ def pole_zero_plot(
 
     Notes
     -----
-    1. By default, the pzmap function calls matplotlib.pyplot.axis('equal'),
-       which means that trying to reset the axis limits may not behave as
-       expected.  To change the axis limits, use the `scaling` keyword of
-       use matplotlib.pyplot.gca().axis('auto') and then set the axis
-       limits to the desired values.
+    By default, the pzmap function calls matplotlib.pyplot.axis('equal'),
+    which means that trying to reset the axis limits may not behave as
+    expected.  To change the axis limits, use the `scaling` keyword of use
+    matplotlib.pyplot.gca().axis('auto') and then set the axis limits to
+    the desired values.
 
-    2. Pole/zero plots that use the continuous time omega-damping grid do
-       not work with the ``ax`` keyword argument, due to the way that axes
-       grids are implemented.  The ``grid`` argument must be set to
-       ``False`` or ``'empty'`` when using the ``ax`` keyword argument.
+    Pole/zero plots that use the continuous-time omega-damping grid do not
+    work with the `ax` keyword argument, due to the way that axes grids
+    are implemented.  The `grid` argument must be set to False or
+    'empty' when using the `ax` keyword argument.
+
+    The limits of the pole/zero plot are set based on the location features
+    in the plot, including the location of poles, zeros, and local maxima
+    of root locus curves.  The locations of local maxima are expanded by a
+    buffer factor set by `config.defaults['phaseplot.buffer_factor']` that is
+    applied to the locations of the local maxima.  The final axis limits
+    are set to by the largest features in the plot multiplied by an
+    expansion factor set by `config.defaults['phaseplot.expansion_factor']`.
+    The default value for the buffer factor is 1.05 (5% buffer around local
+    maxima) and the default value for the expansion factor is 1.8 (80%
+    increase in limits around the most distant features).
 
     """
     # Get parameter values
@@ -484,7 +476,7 @@ def pole_zero_plot(
             title, fig, rcParams=rcParams, frame='figure',
             use_existing=False)
 
-    # Add dispather to handle choosing a point on the diagram
+    # Add dispatcher to handle choosing a point on the diagram
     if interactive:
         if len(pzmap_responses) > 1:
             raise NotImplementedError(
@@ -568,7 +560,7 @@ def _mark_root_locus_gain(ax, sys, K):
             line.remove()
             del line
 
-    # Visualise clicked point, displaying all roots
+    # Visualize clicked point, displaying all roots
     # TODO: allow marker parameters to be set
     nump, denp = _systopoly1d(sys)
     root_array = _RLFindRoots(nump, denp, K.real)

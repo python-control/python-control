@@ -50,7 +50,7 @@ def vehicle_update(t, x, u, params={}):
     """
     from math import copysign, sin
     sign = lambda x: copysign(1, x)         # define the sign() function
-    
+
     # Set up the system parameters
     m = params.get('m', 1600.)
     g = params.get('g', 9.8)
@@ -80,13 +80,13 @@ def vehicle_update(t, x, u, params={}):
 
     # Letting the slope of the road be \theta (theta), gravity gives the
     # force Fg = m g sin \theta.
-    
+
     Fg = m * g * sin(theta)
 
     # A simple model of rolling friction is Fr = m g Cr sgn(v), where Cr is
     # the coefficient of rolling friction and sgn(v) is the sign of v (+/- 1) or
     # zero if v = 0.
-    
+
     Fr = m * g * Cr * sign(v)
 
     # The aerodynamic drag is proportional to the square of the speed: Fa =
@@ -95,11 +95,11 @@ def vehicle_update(t, x, u, params={}):
     # of the car.
 
     Fa = 1/2 * rho * Cd * A * abs(v) * v
-    
+
     # Final acceleration on the car
     Fd = Fg + Fr + Fa
     dv = (F - Fd) / m
-    
+
     return dv
 
 # Engine model: motor_torque
@@ -108,7 +108,7 @@ def vehicle_update(t, x, u, params={}):
 # the rate of fuel injection, which is itself proportional to a control
 # signal 0 <= u <= 1 that controls the throttle position. The torque also
 # depends on engine speed omega.
-    
+
 def motor_torque(omega, params={}):
     # Set up the system parameters
     Tm = params.get('Tm', 190.)             # engine torque constant
@@ -166,7 +166,7 @@ theta_hill = np.array([
 for m in (1200, 1600, 2000):
     # Compute the equilibrium state for the system
     X0, U0 = ct.find_operating_point(
-        cruise_tf, [0, vref[0]], [vref[0], gear[0], theta0[0]], 
+        cruise_tf, [0, vref[0]], [vref[0], gear[0], theta0[0]],
         iu=[1, 2], y0=[vref[0], 0], iy=[0], params={'m': m})
 
     t, y = ct.input_output_response(
@@ -247,7 +247,6 @@ def pi_update(t, x, u, params={}):
     # Assign variables for inputs and states (for readability)
     v = u[0]                    # current velocity
     vref = u[1]                 # reference velocity
-    z = x[0]                    # integrated error
 
     # Compute the nominal controller output (needed for anti-windup)
     u_a = pi_output(t, x, u, params)
@@ -394,7 +393,7 @@ def sf_output(t, z, u, params={}):
     ud = params.get('ud', 0)
 
     # Get the system state and reference input
-    x, y, r = u[0], u[1], u[2]
+    x, r = u[0], u[2]
 
     return ud - K * (x - xd) - ki * z + kf * (r - yd)
 
@@ -440,13 +439,13 @@ theta_hill = [
     4./180. * pi for t in T]
 t, y = ct.input_output_response(
     cruise_sf, T, [vref, gear, theta_hill], [X0[0], 0],
-    params={'K': K, 'kf': kf, 'ki': 0.0, 'kf': kf, 'xd': xd, 'ud': ud, 'yd': yd})
+    params={'K': K, 'kf': kf, 'ki': 0.0, 'xd': xd, 'ud': ud, 'yd': yd})
 subplots = cruise_plot(cruise_sf, t, y, label='Proportional', linetype='b--')
 
 # Response of the system with state feedback + integral action
 t, y = ct.input_output_response(
     cruise_sf, T, [vref, gear, theta_hill], [X0[0], 0],
-    params={'K': K, 'kf': kf, 'ki': 0.1, 'kf': kf, 'xd': xd, 'ud': ud, 'yd': yd})
+    params={'K': K, 'kf': kf, 'ki': 0.1, 'xd': xd, 'ud': ud, 'yd': yd})
 cruise_plot(cruise_sf, t, y, label='PI control', t_hill=8, linetype='b-',
             subplots=subplots, legend=True)
 

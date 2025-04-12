@@ -1,52 +1,26 @@
-# mateqn.py - Matrix equation solvers (Lyapunov, Riccati)
+# mateqn.py - matrix equation solvers (Lyapunov, Riccati)
 #
-# Implementation of the functions lyap, dlyap, care and dare
-# for solution of Lyapunov and Riccati equations.
-#
-# Original author: Bjorn Olofsson
+# Initial author: Bjorn Olofsson
+# Creation date: 2011
 
-# Copyright (c) 2011, All rights reserved.
+"""Matrix equation solvers (Lyapunov, Riccati).
 
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
+This module contains implementation of the functions lyap, dlyap, care
+and dare for solution of Lyapunov and Riccati equations.
 
-# 1. Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-
-# 2. Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-
-# 3. Neither the name of the project author nor the names of its
-#    contributors may be used to endorse or promote products derived
-#    from this software without specific prior written permission.
-
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
-# OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
+"""
 
 import warnings
-import numpy as np
-from numpy import copy, eye, dot, finfo, inexact, atleast_2d
 
+import numpy as np
 import scipy as sp
+from numpy import eye, finfo, inexact
 from scipy.linalg import eigvals, solve
 
-from .exception import ControlSlycot, ControlArgument, ControlDimension, \
+from .exception import ControlArgument, ControlDimension, ControlSlycot, \
     slycot_check
-from .statesp import _ssmatrix
 
-# Make sure we have access to the right slycot routines
+# Make sure we have access to the right Slycot routines
 try:
     from slycot.exceptions import SlycotResultWarning
 except ImportError:
@@ -114,11 +88,11 @@ def lyap(A, Q, C=None, E=None, method=None):
     Parameters
     ----------
     A, Q : 2D array_like
-        Input matrices for the Lyapunov or Sylvestor equation
+        Input matrices for the Lyapunov or Sylvestor equation.
     C : 2D array_like, optional
-        If present, solve the Sylvester equation
+        If present, solve the Sylvester equation.
     E : 2D array_like, optional
-        If present, solve the generalized Lyapunov equation
+        If present, solve the generalized Lyapunov equation.
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -127,7 +101,7 @@ def lyap(A, Q, C=None, E=None, method=None):
     Returns
     -------
     X : 2D array
-        Solution to the Lyapunov or Sylvester equation
+        Solution to the Lyapunov or Sylvester equation.
 
     """
     # Decide what method to use
@@ -151,12 +125,12 @@ def lyap(A, Q, C=None, E=None, method=None):
     m = Q.shape[0]
 
     # Check to make sure input matrices are the right shape and type
-    _check_shape("A", A, n, n, square=True)
+    _check_shape(A, n, n, square=True, name="A")
 
     # Solve standard Lyapunov equation
     if C is None and E is None:
         # Check to make sure input matrices are the right shape and type
-        _check_shape("Q", Q, n, n, square=True, symmetric=True)
+        _check_shape(Q, n, n, square=True, symmetric=True, name="Q")
 
         if method == 'scipy':
             # Solve the Lyapunov equation using SciPy
@@ -171,8 +145,8 @@ def lyap(A, Q, C=None, E=None, method=None):
     # Solve the Sylvester equation
     elif C is not None and E is None:
         # Check to make sure input matrices are the right shape and type
-        _check_shape("Q", Q, m, m, square=True)
-        _check_shape("C", C, n, m)
+        _check_shape(Q, m, m, square=True, name="Q")
+        _check_shape(C, n, m, name="C")
 
         if method == 'scipy':
             # Solve the Sylvester equation using SciPy
@@ -184,14 +158,14 @@ def lyap(A, Q, C=None, E=None, method=None):
     # Solve the generalized Lyapunov equation
     elif C is None and E is not None:
         # Check to make sure input matrices are the right shape and type
-        _check_shape("Q", Q, n, n, square=True, symmetric=True)
-        _check_shape("E", E, n, n, square=True)
+        _check_shape(Q, n, n, square=True, symmetric=True, name="Q")
+        _check_shape(E, n, n, square=True, name="E")
 
         if method == 'scipy':
             raise ControlArgument(
                 "method='scipy' not valid for generalized Lyapunov equation")
 
-        # Make sure we have access to the write slicot routine
+        # Make sure we have access to the write Slycot routine
         try:
             from slycot import sg03ad
 
@@ -210,7 +184,7 @@ def lyap(A, Q, C=None, E=None, method=None):
     else:
         raise ControlArgument("Invalid set of input parameters")
 
-    return _ssmatrix(X)
+    return X
 
 
 def dlyap(A, Q, C=None, E=None, method=None):
@@ -240,11 +214,11 @@ def dlyap(A, Q, C=None, E=None, method=None):
     Parameters
     ----------
     A, Q : 2D array_like
-        Input matrices for the Lyapunov or Sylvestor equation
+        Input matrices for the Lyapunov or Sylvestor equation.
     C : 2D array_like, optional
-        If present, solve the Sylvester equation
+        If present, solve the Sylvester equation.
     E : 2D array_like, optional
-        If present, solve the generalized Lyapunov equation
+        If present, solve the generalized Lyapunov equation.
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -253,7 +227,7 @@ def dlyap(A, Q, C=None, E=None, method=None):
     Returns
     -------
     X : 2D array (or matrix)
-        Solution to the Lyapunov or Sylvester equation
+        Solution to the Lyapunov or Sylvester equation.
 
     """
     # Decide what method to use
@@ -281,12 +255,12 @@ def dlyap(A, Q, C=None, E=None, method=None):
     m = Q.shape[0]
 
     # Check to make sure input matrices are the right shape and type
-    _check_shape("A", A, n, n, square=True)
+    _check_shape(A, n, n, square=True, name="A")
 
     # Solve standard Lyapunov equation
     if C is None and E is None:
         # Check to make sure input matrices are the right shape and type
-        _check_shape("Q", Q, n, n, square=True, symmetric=True)
+        _check_shape(Q, n, n, square=True, symmetric=True, name="Q")
 
         if method == 'scipy':
             # Solve the Lyapunov equation using SciPy
@@ -301,8 +275,8 @@ def dlyap(A, Q, C=None, E=None, method=None):
     # Solve the Sylvester equation
     elif C is not None and E is None:
         # Check to make sure input matrices are the right shape and type
-        _check_shape("Q", Q, m, m, square=True)
-        _check_shape("C", C, n, m)
+        _check_shape(Q, m, m, square=True, name="Q")
+        _check_shape(C, n, m, name="C")
 
         if method == 'scipy':
             raise ControlArgument(
@@ -314,8 +288,8 @@ def dlyap(A, Q, C=None, E=None, method=None):
     # Solve the generalized Lyapunov equation
     elif C is None and E is not None:
         # Check to make sure input matrices are the right shape and type
-        _check_shape("Q", Q, n, n, square=True, symmetric=True)
-        _check_shape("E", E, n, n, square=True)
+        _check_shape(Q, n, n, square=True, symmetric=True, name="Q")
+        _check_shape(E, n, n, square=True, name="E")
 
         if method == 'scipy':
             raise ControlArgument(
@@ -333,7 +307,7 @@ def dlyap(A, Q, C=None, E=None, method=None):
     else:
         raise ControlArgument("Invalid set of input parameters")
 
-    return _ssmatrix(X)
+    return X
 
 
 #
@@ -368,9 +342,9 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
     Parameters
     ----------
     A, B, Q : 2D array_like
-        Input matrices for the Riccati equation
+        Input matrices for the Riccati equation.
     R, S, E : 2D array_like, optional
-        Input matrices for generalized Riccati equation
+        Input matrices for generalized Riccati equation.
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -382,11 +356,11 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
     Returns
     -------
     X : 2D array (or matrix)
-        Solution to the Ricatti equation
+        Solution to the Riccati equation.
     L : 1D array
-        Closed loop eigenvalues
+        Closed loop eigenvalues.
     G : 2D array (or matrix)
-        Gain matrix
+        Gain matrix.
 
     """
     # Decide what method to use
@@ -407,10 +381,10 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
     m = B.shape[1]
 
     # Check to make sure input matrices are the right shape and type
-    _check_shape(_As, A, n, n, square=True)
-    _check_shape(_Bs, B, n, m)
-    _check_shape(_Qs, Q, n, n, square=True, symmetric=True)
-    _check_shape(_Rs, R, m, m, square=True, symmetric=True)
+    _check_shape(A, n, n, square=True, name=_As)
+    _check_shape(B, n, m, name=_Bs)
+    _check_shape(Q, n, n, square=True, symmetric=True, name=_Qs)
+    _check_shape(R, m, m, square=True, symmetric=True, name=_Rs)
 
     # Solve the standard algebraic Riccati equation
     if S is None and E is None:
@@ -423,9 +397,9 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
             X = sp.linalg.solve_continuous_are(A, B, Q, R)
             K = np.linalg.solve(R, B.T @ X)
             E, _ = np.linalg.eig(A - B @ K)
-            return _ssmatrix(X), E, _ssmatrix(K)
+            return X, E, K
 
-        # Make sure we can import required slycot routines
+        # Make sure we can import required Slycot routines
         try:
             from slycot import sb02md
         except ImportError:
@@ -448,7 +422,7 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
-        return _ssmatrix(X), w[:n], _ssmatrix(G)
+        return X, w[:n], G
 
     # Solve the generalized algebraic Riccati equation
     else:
@@ -457,8 +431,8 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
         E = np.eye(A.shape[0]) if E is None else np.array(E, ndmin=2)
 
         # Check to make sure input matrices are the right shape and type
-        _check_shape(_Es, E, n, n, square=True)
-        _check_shape(_Ss, S, n, m)
+        _check_shape(E, n, n, square=True, name=_Es)
+        _check_shape(S, n, m, name=_Ss)
 
         # See if we should solve this using SciPy
         if method == 'scipy':
@@ -469,13 +443,13 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
             X = sp.linalg.solve_continuous_are(A, B, Q, R, s=S, e=E)
             K = np.linalg.solve(R, B.T @ X @ E + S.T)
             eigs, _ = sp.linalg.eig(A - B @ K, E)
-            return _ssmatrix(X), eigs, _ssmatrix(K)
+            return X, eigs, K
 
-        # Make sure we can find the required slycot routine
+        # Make sure we can find the required Slycot routine
         try:
             from slycot import sg02ad
         except ImportError:
-            raise ControlSlycot("Can't find slycot module 'sg02ad'")
+            raise ControlSlycot("Can't find slycot module sg02ad")
 
         # Solve the generalized algebraic Riccati equation by calling the
         # Slycot function sg02ad
@@ -494,12 +468,11 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
-        return _ssmatrix(X), L, _ssmatrix(G)
+        return X, L, G
 
 def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
          _As="A", _Bs="B", _Qs="Q", _Rs="R", _Ss="S", _Es="E"):
-    """Solves the discrete-time algebraic Riccati
-    equation.
+    """Solves the discrete-time algebraic Riccati equation.
 
     X, L, G = dare(A, B, Q, R) solves
 
@@ -525,9 +498,9 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
     Parameters
     ----------
     A, B, Q : 2D arrays
-        Input matrices for the Riccati equation
+        Input matrices for the Riccati equation.
     R, S, E : 2D arrays, optional
-        Input matrices for generalized Riccati equation
+        Input matrices for generalized Riccati equation.
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -539,11 +512,11 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
     Returns
     -------
     X : 2D array (or matrix)
-        Solution to the Ricatti equation
+        Solution to the Riccati equation.
     L : 1D array
-        Closed loop eigenvalues
+        Closed loop eigenvalues.
     G : 2D array (or matrix)
-        Gain matrix
+        Gain matrix.
 
     """
     # Decide what method to use
@@ -564,14 +537,14 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
     m = B.shape[1]
 
     # Check to make sure input matrices are the right shape and type
-    _check_shape(_As, A, n, n, square=True)
-    _check_shape(_Bs, B, n, m)
-    _check_shape(_Qs, Q, n, n, square=True, symmetric=True)
-    _check_shape(_Rs, R, m, m, square=True, symmetric=True)
+    _check_shape(A, n, n, square=True, name=_As)
+    _check_shape(B, n, m, name=_Bs)
+    _check_shape(Q, n, n, square=True, symmetric=True, name=_Qs)
+    _check_shape(R, m, m, square=True, symmetric=True, name=_Rs)
     if E is not None:
-        _check_shape(_Es, E, n, n, square=True)
+        _check_shape(E, n, n, square=True, name=_Es)
     if S is not None:
-        _check_shape(_Ss, S, n, m)
+        _check_shape(S, n, m, name=_Ss)
 
     # Figure out how to solve the problem
     if method == 'scipy':
@@ -589,13 +562,13 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
         else:
             L, _ = sp.linalg.eig(A - B @ G, E)
 
-        return _ssmatrix(X), L, _ssmatrix(G)
+        return X, L, G
 
-    # Make sure we can import required slycot routine
+    # Make sure we can import required Slycot routine
     try:
         from slycot import sg02ad
     except ImportError:
-        raise ControlSlycot("Can't find slycot module 'sg02ad'")
+        raise ControlSlycot("Can't find slycot module sg02ad")
 
     # Initialize optional matrices
     S = np.zeros((n, m)) if S is None else np.array(S, ndmin=2)
@@ -618,7 +591,7 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
 
     # Return the solution X, the closed-loop eigenvalues L and
     # the gain matrix G
-    return _ssmatrix(X), L, _ssmatrix(G)
+    return X, L, G
 
 
 # Utility function to decide on method to use
@@ -632,15 +605,48 @@ def _slycot_or_scipy(method):
 
 
 # Utility function to check matrix dimensions
-def _check_shape(name, M, n, m, square=False, symmetric=False):
-    if square and M.shape[0] != M.shape[1]:
+def _check_shape(M, n, m, square=False, symmetric=False, name="??"):
+    """Check the shape and properties of a 2D array.
+
+    This function can be used to check to make sure a 2D array_like has the
+    right shape, along with other properties.  If not, an appropriate error
+    message is generated.
+
+    Parameters
+    ----------
+    M : array_like
+        Array to be checked.
+    n : int
+        Expected number of rows.
+    m : int
+        Expected number of columns.
+    square : bool, optional
+        If True, check to make sure the matrix is square.
+    symmetric : bool, optional
+        If True, check to make sure the matrix is symmetric.
+    name : str
+        Name of the matrix (for use in error messages).
+
+    Returns
+    -------
+    M : 2D array
+        Input array, converted to 2D if needed.
+
+    """
+    M = np.atleast_2d(M)
+
+    if (square or symmetric) and M.shape[0] != M.shape[1]:
         raise ControlDimension("%s must be a square matrix" % name)
 
     if symmetric and not _is_symmetric(M):
         raise ControlArgument("%s must be a symmetric matrix" % name)
 
     if M.shape[0] != n or M.shape[1] != m:
-        raise ControlDimension("Incompatible dimensions of %s matrix" % name)
+        raise ControlDimension(
+            f"Incompatible dimensions of {name} matrix; "
+            f"expected ({n}, {m}) but found {M.shape}")
+
+    return M
 
 
 # Utility function to check if a matrix is symmetric

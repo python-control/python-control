@@ -1,21 +1,22 @@
 # canonical.py - functions for converting systems to canonical forms
 # RMM, 10 Nov 2012
 
-from .exception import ControlNotImplemented, ControlSlycot
-from .iosys import issiso
-from .statesp import StateSpace, _convert_to_statespace
-from .statefbk import ctrb, obsv
+"""Functions for converting systems to canonical forms.
+
+"""
 
 import numpy as np
-
-from numpy import zeros, zeros_like, shape, poly, iscomplex, vstack, hstack, \
-    transpose, empty, finfo, float64
-from numpy.linalg import solve, matrix_rank, eig
-
+from numpy import poly, transpose, zeros_like
+from numpy.linalg import matrix_rank, solve
 from scipy.linalg import schur
 
-__all__ = ['canonical_form', 'reachable_form', 'observable_form', 'modal_form',
-           'similarity_transform', 'bdschur']
+from .exception import ControlNotImplemented, ControlSlycot
+from .iosys import issiso
+from .statefbk import ctrb, obsv
+from .statesp import StateSpace, _convert_to_statespace
+
+__all__ = ['canonical_form', 'reachable_form', 'observable_form',
+           'modal_form', 'similarity_transform', 'bdschur']
 
 
 def canonical_form(xsys, form='reachable'):
@@ -23,8 +24,8 @@ def canonical_form(xsys, form='reachable'):
 
     Parameters
     ----------
-    xsys : StateSpace object
-        System to be transformed, with state 'x'
+    xsys : `StateSpace` object
+        System to be transformed, with state 'x'.
     form : str
         Canonical form for transformation.  Chosen from:
           * 'reachable' - reachable canonical form
@@ -33,10 +34,10 @@ def canonical_form(xsys, form='reachable'):
 
     Returns
     -------
-    zsys : StateSpace object
-        System in desired canonical form, with state 'z'
+    zsys : `StateSpace` object
+        System in desired canonical form, with state 'z'.
     T : (M, M) real ndarray
-        Coordinate transformation matrix, z = T * x
+        Coordinate transformation matrix, z = T * x.
 
     Examples
     --------
@@ -57,7 +58,7 @@ def canonical_form(xsys, form='reachable'):
 
     """
 
-    # Call the appropriate tranformation function
+    # Call the appropriate transformation function
     if form == 'reachable':
         return reachable_form(xsys)
     elif form == 'observable':
@@ -75,15 +76,15 @@ def reachable_form(xsys):
 
     Parameters
     ----------
-    xsys : StateSpace object
-        System to be transformed, with state `x`
+    xsys : `StateSpace` object
+        System to be transformed, with state `x`.
 
     Returns
     -------
-    zsys : StateSpace object
-        System in reachable canonical form, with state `z`
+    zsys : `StateSpace` object
+        System in reachable canonical form, with state `z`.
     T : (M, M) real ndarray
-        Coordinate transformation: z = T * x
+        Coordinate transformation: z = T * x.
 
     Examples
     --------
@@ -125,10 +126,12 @@ def reachable_form(xsys):
     # Check to make sure inversion was OK.  Note that since we are inverting
     # Wrx and we already checked its rank, this exception should never occur
     if matrix_rank(Tzx) != xsys.nstates:         # pragma: no cover
-        raise ValueError("Transformation matrix singular to working precision.")
+        raise ValueError(
+            "Transformation matrix singular to working precision.")
 
     # Finally, compute the output matrix
-    zsys.C = solve(Tzx.T, xsys.C.T).T  # matrix right division, zsys.C = xsys.C * inv(Tzx)
+    # matrix right division, zsys.C = xsys.C * inv(Tzx)
+    zsys.C = solve(Tzx.T, xsys.C.T).T
 
     return zsys, Tzx
 
@@ -138,15 +141,15 @@ def observable_form(xsys):
 
     Parameters
     ----------
-    xsys : StateSpace object
-        System to be transformed, with state `x`
+    xsys : `StateSpace` object
+        System to be transformed, with state `x`.
 
     Returns
     -------
-    zsys : StateSpace object
-        System in observable canonical form, with state `z`
+    zsys : `StateSpace` object
+        System in observable canonical form, with state `z`.
     T : (M, M) real ndarray
-        Coordinate transformation: z = T * x
+        Coordinate transformation: z = T * x.
 
     Examples
     --------
@@ -182,7 +185,8 @@ def observable_form(xsys):
     Tzx = solve(Wrz, Wrx)  # matrix left division, Tzx = inv(Wrz) * Wrx
 
     if matrix_rank(Tzx) != xsys.nstates:
-        raise ValueError("Transformation matrix singular to working precision.")
+        raise ValueError(
+            "Transformation matrix singular to working precision.")
 
     # Finally, compute the output matrix
     zsys.B = Tzx @ xsys.B
@@ -191,28 +195,31 @@ def observable_form(xsys):
 
 
 def similarity_transform(xsys, T, timescale=1, inverse=False):
-    """Perform a similarity transformation, with option time rescaling.
+    """Similarity transformation, with optional time rescaling.
 
     Transform a linear state space system to a new state space representation
     z = T x, or x = T z, where T is an invertible matrix.
 
     Parameters
     ----------
-    xsys : StateSpace object
-           System to transform
+    xsys : `StateSpace` object
+        System to transform.
     T : (M, M) array_like
         The matrix `T` defines the new set of coordinates z = T x.
     timescale : float, optional
-        If present, also rescale the time unit to tau = timescale * t
+        If present, also rescale the time unit to tau = timescale * t.
     inverse : bool, optional
         If False (default), transform so z = T x.  If True, transform
         so x = T z.
 
     Returns
     -------
-    zsys : StateSpace object
-        System in transformed coordinates, with state 'z'
+    zsys : `StateSpace` object
+        System in transformed coordinates, with state 'z'.
 
+    See Also
+    --------
+    canonical_form
 
     Examples
     --------
@@ -268,7 +275,10 @@ def _bdschur_defective(blksizes, eigvals):
     -------
     True iff Schur blocks are defective.
 
-    blksizes, eigvals are the 3rd and 4th results returned by mb03rd.
+    Notes
+    -----
+    `blksizes`, `eigvals` are the 3rd and 4th results returned by mb03rd.
+
     """
     if any(blksizes > 2):
         return True
@@ -320,9 +330,10 @@ def _bdschur_condmax_search(aschur, tschur, condmax):
 
     Notes
     -----
-    Outputs as for slycot.mb03rd
+    Outputs as for slycot.mb03rd.
 
-    aschur, tschur are as returned by scipy.linalg.schur.
+    `aschur`, `tschur` are as returned by scipy.linalg.schur.
+
     """
     try:
         from slycot import mb03rd
@@ -389,7 +400,9 @@ def _bdschur_condmax_search(aschur, tschur, condmax):
             # hit search limit
             return reslower
     else:
-        raise ValueError('bisection failed to converge; pmaxlower={}, pmaxupper={}'.format(pmaxlower, pmaxupper))
+        raise ValueError(
+            "bisection failed to converge; "
+            "pmaxlower={}, pmaxupper={}".format(pmaxlower, pmaxupper))
 
 
 def bdschur(a, condmax=None, sort=None):
@@ -398,20 +411,20 @@ def bdschur(a, condmax=None, sort=None):
     Parameters
     ----------
     a : (M, M) array_like
-        Real matrix to decompose
+        Real matrix to decompose.
     condmax : None or float, optional
-        If None (default), use 1/sqrt(eps), which is approximately 1e8
+        If None (default), use 1/sqrt(eps), which is approximately 1e8.
     sort : {None, 'continuous', 'discrete'}
         Block sorting; see below.
 
     Returns
     -------
     amodal : (M, M) real ndarray
-        Block-diagonal Schur decomposition of `a`
+        Block-diagonal Schur decomposition of `a`.
     tmodal : (M, M) real ndarray
-        Similarity transform relating `a` and `amodal`
+        Similarity transform relating `a` and `amodal`.
     blksizes : (N,) int ndarray
-        Array of Schur block sizes
+        Array of Schur block sizes.
 
     Notes
     -----
@@ -419,12 +432,11 @@ def bdschur(a, condmax=None, sort=None):
 
     If `sort` is 'continuous', the blocks are sorted according to
     associated eigenvalues.  The ordering is first by real part of
-    eigenvalue, in descending order, then by absolute value of
-    imaginary part of eigenvalue, also in decreasing order.
+    eigenvalue, in descending order, then by absolute value of imaginary
+    part of eigenvalue, also in decreasing order.
 
-    If `sort` is 'discrete', the blocks are sorted as for
-    'continuous', but applied to log of eigenvalues
-    (i.e., continuous-equivalent eigenvalues).
+    If `sort` is 'discrete', the blocks are sorted as for 'continuous', but
+    applied to log of eigenvalues (i.e., continuous-equivalent eigenvalues).
 
     Examples
     --------
@@ -439,7 +451,8 @@ def bdschur(a, condmax=None, sort=None):
         condmax = np.finfo(np.float64).eps ** -0.5
 
     if not (np.isscalar(condmax) and condmax >= 1.0):
-        raise ValueError('condmax="{}" must be a scalar >= 1.0'.format(condmax))
+        raise ValueError(
+            'condmax="{}" must be a scalar >= 1.0'.format(condmax))
 
     a = np.atleast_2d(a)
     if a.shape[0] == 0 or a.shape[1] == 0:
@@ -486,8 +499,8 @@ def modal_form(xsys, condmax=None, sort=False):
 
     Parameters
     ----------
-    xsys : StateSpace object
-        System to be transformed, with state `x`
+    xsys : `StateSpace` object
+        System to be transformed, with state x.
     condmax : None or float, optional
         An upper bound on individual transformations.  If None, use
         `bdschur` default.
@@ -497,10 +510,10 @@ def modal_form(xsys, condmax=None, sort=False):
 
     Returns
     -------
-    zsys : StateSpace object
-        System in modal canonical form, with state `z`
+    zsys : `StateSpace` object
+        System in modal canonical form, with state z.
     T : (M, M) ndarray
-        Coordinate transformation: z = T * x
+        Coordinate transformation: z = T * x.
 
     Examples
     --------

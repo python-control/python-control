@@ -5,7 +5,6 @@ from math import isclose
 
 import numpy as np
 import pytest
-import scipy as sp
 
 import control as ct
 from control import StateSpace, TransferFunction, c2d, isctime, ss2tf, tf2ss
@@ -68,7 +67,7 @@ class TestTimeresp:
         siso_tf2 = copy(siso_ss1)
         siso_tf2.sys = ss2tf(siso_ss1.sys)
 
-        """MIMO system, contains ``siso_ss1`` twice"""
+        """MIMO system, contains `siso_ss1` twice"""
         mimo_ss1 = copy(siso_ss1)
         A = np.zeros((4, 4))
         A[:2, :2] = siso_ss1.sys.A
@@ -84,7 +83,7 @@ class TestTimeresp:
         D[1:, 1:] = siso_ss1.sys.D
         mimo_ss1.sys = StateSpace(A, B, C, D)
 
-        """MIMO system, contains ``siso_ss2`` twice"""
+        """MIMO system, contains `siso_ss2` twice"""
         mimo_ss2 = copy(siso_ss2)
         A = np.zeros((4, 4))
         A[:2, :2] = siso_ss2.sys.A
@@ -336,14 +335,19 @@ class TestTimeresp:
 
     @pytest.mark.parametrize("tsystem", ["mimo_ss1"], indirect=True)
     def test_step_response_mimo(self, tsystem):
-        """Test MIMO system, which contains ``siso_ss1`` twice."""
+        """Test MIMO system, which contains `siso_ss1` twice."""
         sys = tsystem.sys
         t = tsystem.t
         yref = tsystem.ystep
         _t, y_00 = step_response(sys, T=t, input=0, output=0)
-        _t, y_11 = step_response(sys, T=t, input=1, output=1)
         np.testing.assert_array_almost_equal(y_00, yref, decimal=4)
+
+        _t, y_11 = step_response(sys, T=t, input=1, output=1)
         np.testing.assert_array_almost_equal(y_11, yref, decimal=4)
+
+        _t, y_01 = step_response(
+            sys, T=t, input_indices=[0], output_indices=[1])
+        np.testing.assert_array_almost_equal(y_01, 0 * yref, decimal=4)
 
         # Make sure we get the same result using MIMO step response
         response = step_response(sys, T=t)
@@ -354,11 +358,16 @@ class TestTimeresp:
         np.testing.assert_allclose(response.u[0, 1, :], 0)
         np.testing.assert_allclose(response.u[1, 1, :], 1)
 
+        # Index lists not yet implemented
+        with pytest.raises(NotImplementedError, match="list of .* indices"):
+            step_response(
+                sys, timepts=t, input_indices=[0, 1], output_indices=[1])
+
     @pytest.mark.parametrize("tsystem", ["mimo_ss1"], indirect=True)
     def test_step_response_return(self, tsystem):
         """Verify continuous and discrete time use same return conventions."""
         sysc = tsystem.sys
-        sysd = c2d(sysc, 1)            # discrete time system
+        sysd = c2d(sysc, 1)            # discrete-time system
         Tvec = np.linspace(0, 10, 11)  # make sure to use integer times 0..10
         Tc, youtc = step_response(sysc, Tvec, input=0)
         Td, youtd = step_response(sysd, Tvec, input=0)
@@ -520,17 +529,27 @@ class TestTimeresp:
         yref = tsystem.yimpulse
         _t, y_00 = impulse_response(sys, T=t, input=0, output=0)
         np.testing.assert_array_almost_equal(y_00, yref, decimal=4)
+
         _t, y_11 = impulse_response(sys, T=t, input=1, output=1)
         np.testing.assert_array_almost_equal(y_11, yref, decimal=4)
+
+        _t, y_01 = impulse_response(
+            sys, T=t, input_indices=[0], output_indices=[1])
+        np.testing.assert_array_almost_equal(y_01, 0 * yref, decimal=4)
 
         yref_notrim = np.zeros((2, len(t)))
         yref_notrim[:1, :] = yref
         _t, yy = impulse_response(sys, T=t, input=0)
         np.testing.assert_array_almost_equal(yy[:,0,:], yref_notrim, decimal=4)
 
+        # Index lists not yet implemented
+        with pytest.raises(NotImplementedError, match="list of .* indices"):
+            impulse_response(
+                sys, timepts=t, input_indices=[0, 1], output_indices=[1])
+
     @pytest.mark.parametrize("tsystem", ["siso_tf1"], indirect=True)
     def test_discrete_time_impulse(self, tsystem):
-        # discrete time impulse sampled version should match cont time
+        # discrete-time impulse sampled version should match cont time
         dt = 0.1
         t = np.arange(0, 3, dt)
         sys = tsystem.sys
@@ -539,7 +558,7 @@ class TestTimeresp:
                                              impulse_response(sysdt, t)[1])
 
     def test_discrete_time_impulse_input(self):
-        # discrete time impulse input, Only one active input for each trace
+        # discrete-time impulse input, Only one active input for each trace
         A = [[.5, 0.25],[.0, .5]]
         B = [[1., 0,],[0., 1.]]
         C = [[1., 0.],[0., 1.]]
@@ -734,10 +753,10 @@ class TestTimeresp:
         """Test invalid parameters dtime with sys.dt > 0."""
         with pytest.raises(ValueError, match="can't both be zero"):
             forced_response(tsystem.sys)
-        with pytest.raises(ValueError, match="Parameter ``U``: Wrong shape"):
+        with pytest.raises(ValueError, match="Parameter `U`: Wrong shape"):
             forced_response(tsystem.sys,
                             T=tsystem.t, U=np.random.randn(1, 12))
-        with pytest.raises(ValueError, match="Parameter ``U``: Wrong shape"):
+        with pytest.raises(ValueError, match="Parameter `U`: Wrong shape"):
             forced_response(tsystem.sys,
                             T=tsystem.t, U=np.random.randn(12))
         with pytest.raises(ValueError, match="must match sampling time"):
@@ -1178,7 +1197,6 @@ class TestTimeresp:
         # Generate system, time, and input vectors
         sys = ct.rss(nstate, nout, ninp, strictly_proper=True)
         tvec = np.linspace(0, 1, 8)
-        uvec =np.ones((sys.ninputs, 1)) @ np.reshape(np.sin(tvec), (1, 8))
 
         _, yvec = ct.initial_response(sys, tvec, 1, squeeze=squeeze)
         assert yvec.shape == shape
@@ -1303,7 +1321,7 @@ def test_no_pandas():
 
     # Convert to pandas
     with pytest.raises(ImportError, match="pandas"):
-        df = resp.to_pandas()
+        resp.to_pandas()
 
 
 # https://github.com/python-control/python-control/issues/1014
@@ -1396,3 +1414,53 @@ def test_signal_labels():
 
     with pytest.raises(ValueError, match=r"unknown signal name 'x\[2\]'"):
         response.states['x[1]', 'x[2]']         # second index = input name
+
+
+def test_timeresp_aliases():
+    sys = ct.rss(2, 1, 1)
+    timepts = np.linspace(0, 10, 10)
+    resp_long = ct.input_output_response(sys, timepts, 1, initial_state=[1, 1])
+
+    # Positional usage
+    resp_posn = ct.input_output_response(sys, timepts, 1, [1, 1])
+    np.testing.assert_allclose(resp_long.states, resp_posn.states)
+
+    # Aliases
+    resp_short = ct.input_output_response(sys, timepts, 1, X0=[1, 1])
+    np.testing.assert_allclose(resp_long.states, resp_short.states)
+
+    # Legacy
+    with pytest.warns(PendingDeprecationWarning, match="legacy"):
+        resp_legacy = ct.input_output_response(sys, timepts, 1, x0=[1, 1])
+    np.testing.assert_allclose(resp_long.states, resp_legacy.states)
+
+    # Check for multiple values: full keyword and alias
+    with pytest.raises(TypeError, match="multiple"):
+        ct.input_output_response(
+            sys, timepts, 1, initial_state=[1, 2], X0=[1, 1])
+
+    # Check for multiple values: positional and keyword
+    with pytest.raises(TypeError, match="multiple"):
+        ct.input_output_response(
+            sys, timepts, 1, [1, 2], initial_state=[1, 1])
+
+    # Check for multiple values: positional and alias
+    with pytest.raises(TypeError, match="multiple"):
+        ct.input_output_response(
+            sys, timepts, 1, [1, 2], X0=[1, 1])
+
+    # Make sure that LTI functions check for keywords
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        ct.forced_response(sys, timepts, 1, unknown=True)
+
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        ct.impulse_response(sys, timepts, unknown=True)
+
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        ct.initial_response(sys, timepts, [1, 2], unknown=True)
+
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        ct.step_response(sys, timepts, unknown=True)
+
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        ct.step_info(sys, timepts, unknown=True)

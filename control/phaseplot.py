@@ -1,29 +1,22 @@
 # phaseplot.py - generate 2D phase portraits
 #
-# Author: Richard M. Murray
-# Date:   23 Mar 2024 (legacy version information below)
-#
-# TODO
-# * Allow multiple timepoints (and change timespec name to T?)
-# * Update linestyles (color -> linestyle?)
-# * Check for keyword compatibility with other plot routines
-# * Set up configuration parameters (nyquist --> phaseplot)
+# Initial author: Richard M. Murray
+# Creation date: 24 July 2011, converted from MATLAB version (2002);
+# based on an original version by Kristi Morgansen
 
-"""Module for generating 2D phase plane plots.
+"""Generate 2D phase portraits.
 
-The :mod:`control.phaseplot` module contains functions for generating 2D
-phase plots. The base function for creating phase plane portraits is
-:func:`~control.phase_plane_plot`, which generates a phase plane portrait
-for a 2 state I/O system (with no inputs).  In addition, several other
-functions are available to create customized phase plane plots:
+This module contains functions for generating 2D phase plots. The base
+function for creating phase plane portraits is `~control.phase_plane_plot`,
+which generates a phase plane portrait for a 2 state I/O system (with no
+inputs). Utility functions are available to customize the individual
+elements of a phase plane portrait.
 
-* boxgrid: Generate a list of points along the edge of a box
-* circlegrid: Generate list of points around a circle
-* equilpoints: Plot equilibrium points in the phase plane
-* meshgrid: Generate a list of points forming a mesh
-* separatrices: Plot separatrices in the phase plane
-* streamlines: Plot stream lines in the phase plane
-* vectorfield: Plot a vector field in the phase plane
+The docstring examples assume the following import commands::
+
+  >>> import numpy as np
+  >>> import control as ct
+  >>> import control.phaseplot as pp
 
 """
 
@@ -38,7 +31,7 @@ from scipy.integrate import odeint
 from . import config
 from .ctrlplot import ControlPlot, _add_arrows_to_line2D, _get_color, \
     _process_ax_keyword, _update_plot_title
-from .exception import ControlNotImplemented
+from .exception import ControlArgument
 from .nlsys import NonlinearIOSystem, find_operating_point, \
     input_output_response
 
@@ -48,23 +41,27 @@ __all__ = ['phase_plane_plot', 'phase_plot', 'box_grid']
 _phaseplot_defaults = {
     'phaseplot.arrows': 2,                  # number of arrows around curve
     'phaseplot.arrow_size': 8,              # pixel size for arrows
+    'phaseplot.arrow_style': None,          # set arrow style
     'phaseplot.separatrices_radius': 0.1    # initial radius for separatrices
 }
 
+
 def phase_plane_plot(
         sys, pointdata=None, timedata=None, gridtype=None, gridspec=None,
-        plot_streamlines=True, plot_vectorfield=False, plot_equilpoints=True,
-        plot_separatrices=True, ax=None, suppress_warnings=False, title=None,
-        **kwargs
+        plot_streamlines=None, plot_vectorfield=None, plot_streamplot=None,
+        plot_equilpoints=True, plot_separatrices=True, ax=None,
+        suppress_warnings=False, title=None, **kwargs
 ):
     """Plot phase plane diagram.
 
     This function plots phase plane data, including vector fields, stream
     lines, equilibrium points, and contour curves.
+    If none of plot_streamlines, plot_vectorfield, or plot_streamplot are
+    set, then plot_streamplot is used by default.
 
     Parameters
     ----------
-    sys : NonlinearIOSystem or callable(t, x, ...)
+    sys : `NonlinearIOSystem` or callable(t, x, ...)
         I/O system or function used to generate phase plane data. If a
         function is given, the remaining arguments are drawn from the
         `params` keyword.
@@ -92,64 +89,109 @@ def phase_plane_plot(
         a dict of parameters and values. For a callable, `params` should be
         dict with key 'args' and value given by a tuple (passed to callable).
     color : matplotlib color spec, optional
-        Plot all elements in the given color (use `plot_<fcn>={'color': c}`
-        to set the color in one element of the phase plot.
-    ax : matplotlib.axes.Axes, optional
+        Plot all elements in the given color (use ``plot_<element>`` =
+        {'color': c} to set the color in one element of the phase
+        plot (equilpoints, separatrices, streamlines, etc).
+    ax : `matplotlib.axes.Axes`, optional
         The matplotlib axes to draw the figure on.  If not specified and
         the current figure has a single axes, that axes is used.
         Otherwise, a new figure is created.
 
     Returns
     -------
-    cplt : :class:`ControlPlot` object
-        Object containing the data that were plotted:
+    cplt : `ControlPlot` object
+        Object containing the data that were plotted.  See `ControlPlot`
+        for more detailed information.
+    cplt.lines : array of list of `matplotlib.lines.Line2D`
+        Array of list of `matplotlib.artist.Artist` objects:
 
-          * cplt.lines: array of list of :class:`matplotlib.artist.Artist`
-            objects:
+            - lines[0] = list of Line2D objects (streamlines, separatrices).
+            - lines[1] = Quiver object (vector field arrows).
+            - lines[2] = list of Line2D objects (equilibrium points).
+            - lines[3] = StreamplotSet object (lines with arrows).
 
-              - lines[0] = list of Line2D objects (streamlines, separatrices).
-              - lines[1] = Quiver object (vector field arrows).
-              - lines[2] = list of Line2D objects (equilibrium points).
+    cplt.axes : 2D array of `matplotlib.axes.Axes`
+        Axes for each subplot.
+    cplt.figure : `matplotlib.figure.Figure`
+        Figure containing the plot.
 
-          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
-
-          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
-
-        See :class:`ControlPlot` for more detailed information.
-
-
-    Other parameters
+    Other Parameters
     ----------------
+    arrows : int
+        Set the number of arrows to plot along the streamlines. The default
+        value can be set in `config.defaults['phaseplot.arrows']`.
+    arrow_size : float
+        Set the size of arrows to plot along the streamlines.  The default
+        value can be set in `config.defaults['phaseplot.arrow_size']`.
+    arrow_style : matplotlib patch
+        Set the style of arrows to plot along the streamlines.  The default
+        value can be set in `config.defaults['phaseplot.arrow_style']`.
     dir : str, optional
         Direction to draw streamlines: 'forward' to flow forward in time
         from the reference points, 'reverse' to flow backward in time, or
         'both' to flow both forward and backward.  The amount of time to
-        simulate in each direction is given by the ``timedata`` argument.
+        simulate in each direction is given by the `timedata` argument.
     plot_streamlines : bool or dict, optional
-        If `True` (default) then plot streamlines based on the pointdata
-        and gridtype.  If set to a dict, pass on the key-value pairs in
-        the dict as keywords to :func:`~control.phaseplot.streamlines`.
+        If True then plot streamlines based on the pointdata and gridtype.
+        If set to a dict, pass on the key-value pairs in the dict as
+        keywords to `streamlines`.
     plot_vectorfield : bool or dict, optional
-        If `True` (default) then plot the vector field based on the pointdata
-        and gridtype.  If set to a dict, pass on the key-value pairs in
-        the dict as keywords to :func:`~control.phaseplot.vectorfield`.
+        If True then plot the vector field based on the pointdata and
+        gridtype.  If set to a dict, pass on the key-value pairs in the
+        dict as keywords to `phaseplot.vectorfield`.
+    plot_streamplot : bool or dict, optional
+        If True then use `matplotlib.axes.Axes.streamplot` function
+        to plot the streamlines.  If set to a dict, pass on the key-value
+        pairs in the dict as keywords to `phaseplot.streamplot`.
     plot_equilpoints : bool or dict, optional
-        If `True` (default) then plot equilibrium points based in the phase
+        If True (default) then plot equilibrium points based in the phase
         plot boundary. If set to a dict, pass on the key-value pairs in the
-        dict as keywords to :func:`~control.phaseplot.equilpoints`.
+        dict as keywords to `phaseplot.equilpoints`.
     plot_separatrices : bool or dict, optional
-        If `True` (default) then plot separatrices starting from each
+        If True (default) then plot separatrices starting from each
         equilibrium point.  If set to a dict, pass on the key-value pairs
-        in the dict as keywords to :func:`~control.phaseplot.separatrices`.
+        in the dict as keywords to `phaseplot.separatrices`.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['ctrlplot.rcParams'].
+        Default is set by `config.defaults['ctrlplot.rcParams']`.
     suppress_warnings : bool, optional
-        If set to `True`, suppress warning messages in generating trajectories.
+        If set to True, suppress warning messages in generating trajectories.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
 
+    Notes
+    -----
+    The default method for producing streamlines is determined based on which
+    keywords are specified, with `plot_streamplot` serving as the generic
+    default.  If any of the `arrows`, `arrow_size`, `arrow_style`, or `dir`
+    keywords are used and neither `plot_streamlines` nor `plot_streamplot` is
+    set, then `plot_streamlines` will be set to True.  If neither
+    `plot_streamlines` nor `plot_vectorfield` set set to True, then
+    `plot_streamplot` will be set to True.
+
     """
+    # Check for legacy usage of plot_streamlines
+    streamline_keywords = [
+        'arrows', 'arrow_size', 'arrow_style', 'dir']
+    if plot_streamlines is None:
+        if any([kw in kwargs for kw in streamline_keywords]):
+            warnings.warn(
+                "detected streamline keywords; use plot_streamlines to set",
+                FutureWarning)
+            plot_streamlines = True
+        if gridtype not in [None, 'meshgrid']:
+            warnings.warn(
+                "streamplots only support gridtype='meshgrid'; "
+                "falling back to streamlines")
+            plot_streamlines = True
+
+    if plot_streamlines is None and plot_vectorfield is None \
+       and plot_streamplot is None:
+        plot_streamplot = True
+
+    if plot_streamplot and not plot_streamlines and not plot_vectorfield:
+        gridspec = gridspec or [25, 25]
+
     # Process arguments
     params = kwargs.get('params', None)
     sys = _create_system(sys, params)
@@ -162,7 +204,6 @@ def phase_plane_plot(
 
     # Create copy of kwargs for later checking to find unused arguments
     initial_kwargs = dict(kwargs)
-    passed_kwargs = False
 
     # Utility function to create keyword arguments
     def _create_kwargs(global_kwargs, local_kwargs, **other_kwargs):
@@ -173,7 +214,10 @@ def phase_plane_plot(
         return new_kwargs
 
     # Create list for storing outputs
-    out = np.array([[], None, None], dtype=object)
+    out = np.array([[], None, None, None], dtype=object)
+
+    # the maximum zorder of stramlines, vectorfield or streamplot
+    flow_zorder = None
 
     # Plot out the main elements
     if plot_streamlines:
@@ -184,6 +228,10 @@ def phase_plane_plot(
             sys, pointdata, timedata, _check_kwargs=False,
             suppress_warnings=suppress_warnings, **kwargs_local)
 
+        new_zorder = max(elem.get_zorder() for elem in out[0])
+        flow_zorder = max(flow_zorder, new_zorder) if flow_zorder \
+            else new_zorder
+
         # Get rid of keyword arguments handled by streamlines
         for kw in ['arrows', 'arrow_size', 'arrow_style', 'color',
                    'dir', 'params']:
@@ -193,29 +241,60 @@ def phase_plane_plot(
     if gridtype not in [None, 'boxgrid', 'meshgrid']:
         gridspec = None
 
-    if plot_separatrices:
-        kwargs_local = _create_kwargs(
-            kwargs, plot_separatrices, gridspec=gridspec, ax=ax)
-        out[0] += separatrices(
-            sys, pointdata, _check_kwargs=False, **kwargs_local)
-
-        # Get rid of keyword arguments handled by separatrices
-        for kw in ['arrows', 'arrow_size', 'arrow_style', 'params']:
-            initial_kwargs.pop(kw, None)
-
     if plot_vectorfield:
         kwargs_local = _create_kwargs(
             kwargs, plot_vectorfield, gridspec=gridspec, ax=ax)
         out[1] = vectorfield(
             sys, pointdata, _check_kwargs=False, **kwargs_local)
 
+        new_zorder = out[1].get_zorder()
+        flow_zorder = max(flow_zorder, new_zorder) if flow_zorder \
+            else new_zorder
+
         # Get rid of keyword arguments handled by vectorfield
         for kw in ['color', 'params']:
             initial_kwargs.pop(kw, None)
 
+    if plot_streamplot:
+        if gridtype not in [None, 'meshgrid']:
+            raise ValueError(
+                "gridtype must be 'meshgrid' when using streamplot")
+
+        kwargs_local = _create_kwargs(
+            kwargs, plot_streamplot, gridspec=gridspec, ax=ax)
+        out[3] = streamplot(
+            sys, pointdata, _check_kwargs=False, **kwargs_local)
+
+        new_zorder = max(out[3].lines.get_zorder(), out[3].arrows.get_zorder())
+        flow_zorder = max(flow_zorder, new_zorder) if flow_zorder \
+            else new_zorder
+
+        # Get rid of keyword arguments handled by streamplot
+        for kw in ['color', 'params']:
+            initial_kwargs.pop(kw, None)
+
+    sep_zorder = flow_zorder + 1 if flow_zorder else None
+
+    if plot_separatrices:
+        kwargs_local = _create_kwargs(
+            kwargs, plot_separatrices, gridspec=gridspec, ax=ax)
+        kwargs_local['zorder'] = kwargs_local.get('zorder', sep_zorder)
+        out[0] += separatrices(
+            sys, pointdata, _check_kwargs=False,  **kwargs_local)
+
+        sep_zorder = max(elem.get_zorder() for elem in out[0]) if out[0] \
+            else None
+
+        # Get rid of keyword arguments handled by separatrices
+        for kw in ['arrows', 'arrow_size', 'arrow_style', 'params']:
+            initial_kwargs.pop(kw, None)
+
+    equil_zorder = sep_zorder + 1 if sep_zorder else None
+
     if plot_equilpoints:
         kwargs_local = _create_kwargs(
             kwargs, plot_equilpoints, gridspec=gridspec, ax=ax)
+        kwargs_local['zorder'] = kwargs_local.get('zorder', equil_zorder)
         out[2] = equilpoints(
             sys, pointdata, _check_kwargs=False, **kwargs_local)
 
@@ -239,8 +318,8 @@ def phase_plane_plot(
 
 
 def vectorfield(
-        sys, pointdata, gridspec=None, ax=None, suppress_warnings=False,
-        _check_kwargs=True, **kwargs):
+        sys, pointdata, gridspec=None, zorder=None, ax=None,
+        suppress_warnings=False, _check_kwargs=True, **kwargs):
     """Plot a vector field in the phase plane.
 
     This function plots a vector field for a two-dimensional state
@@ -248,7 +327,7 @@ def vectorfield(
 
     Parameters
     ----------
-    sys : NonlinearIOSystem or callable(t, x, ...)
+    sys : `NonlinearIOSystem` or callable(t, x, ...)
         I/O system or function used to generate phase plane data.  If a
         function is given, the remaining arguments are drawn from the
         `params` keyword.
@@ -274,20 +353,23 @@ def vectorfield(
         dict with key 'args' and value given by a tuple (passed to callable).
     color : matplotlib color spec, optional
         Plot the vector field in the given color.
-    ax : matplotlib.axes.Axes
+    ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
     Returns
     -------
     out : Quiver
 
-    Other parameters
+    Other Parameters
     ----------------
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['ctrlplot.rcParams'].
+        Default is set by `config.defaults['ctrlplot.rcParams']`.
     suppress_warnings : bool, optional
-        If set to `True`, suppress warning messages in generating trajectories.
+        If set to True, suppress warning messages in generating trajectories.
+    zorder : float, optional
+        Set the zorder for the vectorfield.  In not specified, it will be
+        automatically chosen by `matplotlib.axes.Axes.quiver`.
 
     """
     # Process keywords
@@ -326,14 +408,127 @@ def vectorfield(
     with plt.rc_context(rcParams):
         out = ax.quiver(
             vfdata[:, 0], vfdata[:, 1], vfdata[:, 2], vfdata[:, 3],
-            angles='xy', color=color)
+            angles='xy', color=color, zorder=zorder)
+
+    return out
+
+
+def streamplot(
+        sys, pointdata, gridspec=None, zorder=None, ax=None, vary_color=False,
+        vary_linewidth=False, cmap=None, norm=None, suppress_warnings=False,
+        _check_kwargs=True, **kwargs):
+    """Plot streamlines in the phase plane.
+
+    This function plots the streamlines for a two-dimensional state
+    space system using the `matplotlib.axes.Axes.streamplot` function.
+
+    Parameters
+    ----------
+    sys : `NonlinearIOSystem` or callable(t, x, ...)
+        I/O system or function used to generate phase plane data.  If a
+        function is given, the remaining arguments are drawn from the
+        `params` keyword.
+    pointdata : list or 2D array
+        List of the form [xmin, xmax, ymin, ymax] describing the
+        boundaries of the phase plot.
+    gridspec : list, optional
+        Specifies the size of the grid in the x and y axes on which to
+        generate points.
+    params : dict or list, optional
+        Parameters to pass to system. For an I/O system, `params` should be
+        a dict of parameters and values. For a callable, `params` should be
+        dict with key 'args' and value given by a tuple (passed to callable).
+    color : matplotlib color spec, optional
+        Plot the vector field in the given color.
+    ax : `matplotlib.axes.Axes`, optional
+        Use the given axes for the plot, otherwise use the current axes.
+
+    Returns
+    -------
+    out : StreamplotSet
+        Containter object with lines and arrows contained in the
+        streamplot. See `matplotlib.axes.Axes.streamplot` for details.
+
+    Other Parameters
+    ----------------
+    cmap : str or Colormap, optional
+        Colormap to use for varying the color of the streamlines.
+    norm : `matplotlib.colors.Normalize`, optional
+        Normalization map to use for scaling the colormap and linewidths.
+    rcParams : dict
+        Override the default parameters used for generating plots.
+        Default is set by `config.default['ctrlplot.rcParams']`.
+    suppress_warnings : bool, optional
+        If set to True, suppress warning messages in generating trajectories.
+    vary_color : bool, optional
+        If set to True, vary the color of the streamlines based on the
+        magnitude of the vector field.
+    vary_linewidth : bool, optional.
+        If set to True, vary the linewidth of the streamlines based on the
+        magnitude of the vector field.
+    zorder : float, optional
+        Set the zorder for the streamlines.  In not specified, it will be
+        automatically chosen by `matplotlib.axes.Axes.streamplot`.
+
+    """
+    # Process keywords
+    rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
+
+    # Get system parameters
+    params = kwargs.pop('params', None)
+
+    # Create system from callable, if needed
+    sys = _create_system(sys, params)
+
+    # Determine the points on which to generate the streamplot field
+    points, gridspec = _make_points(pointdata, gridspec, 'meshgrid')
+    grid_arr_shape = gridspec[::-1]
+    xs = points[:, 0].reshape(grid_arr_shape)
+    ys = points[:, 1].reshape(grid_arr_shape)
+
+    # Create axis if needed
+    if ax is None:
+        ax = plt.gca()
+
+    # Set the plotting limits
+    xlim, ylim, maxlim = _set_axis_limits(ax, pointdata)
+
+    # Figure out the color to use
+    color = _get_color(kwargs, ax=ax)
+
+    # Make sure all keyword arguments were processed
+    if _check_kwargs and kwargs:
+        raise TypeError("unrecognized keywords: ", str(kwargs))
+
+    # Generate phase plane (quiver) data
+    sys._update_params(params)
+    us_flat, vs_flat = np.transpose(
+        [sys._rhs(0, x, np.zeros(sys.ninputs)) for x in points])
+    us, vs = us_flat.reshape(grid_arr_shape), vs_flat.reshape(grid_arr_shape)
+
+    magnitudes = np.linalg.norm([us, vs], axis=0)
+    norm = norm or mpl.colors.Normalize()
+    normalized = norm(magnitudes)
+    cmap = plt.get_cmap(cmap)
+
+    with plt.rc_context(rcParams):
+        default_lw = plt.rcParams['lines.linewidth']
+        min_lw, max_lw = 0.25*default_lw, 2*default_lw
+        linewidths = normalized * (max_lw - min_lw) + min_lw \
+            if vary_linewidth else None
+        color = magnitudes if vary_color else color
+
+        out = ax.streamplot(
+            xs, ys, us, vs, color=color, linewidth=linewidths, cmap=cmap,
+            norm=norm, zorder=zorder)
 
     return out
 
 
 def streamlines(
         sys, pointdata, timedata=1, gridspec=None, gridtype=None, dir=None,
-        ax=None, _check_kwargs=True, suppress_warnings=False, **kwargs):
+        zorder=None, ax=None, _check_kwargs=True, suppress_warnings=False,
+        **kwargs):
     """Plot stream lines in the phase plane.
 
     This function plots stream lines for a two-dimensional state space
@@ -341,7 +536,7 @@ def streamlines(
 
     Parameters
     ----------
-    sys : NonlinearIOSystem or callable(t, x, ...)
+    sys : `NonlinearIOSystem` or callable(t, x, ...)
         I/O system or function used to generate phase plane data.  If a
         function is given, the remaining arguments are drawn from the
         `params` keyword.
@@ -368,27 +563,39 @@ def streamlines(
         Direction to draw streamlines: 'forward' to flow forward in time
         from the reference points, 'reverse' to flow backward in time, or
         'both' to flow both forward and backward.  The amount of time to
-        simulate in each direction is given by the ``timedata`` argument.
+        simulate in each direction is given by the `timedata` argument.
     params : dict or list, optional
         Parameters to pass to system. For an I/O system, `params` should be
         a dict of parameters and values. For a callable, `params` should be
         dict with key 'args' and value given by a tuple (passed to callable).
     color : str
         Plot the streamlines in the given color.
-    ax : matplotlib.axes.Axes
+    ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
     Returns
     -------
     out : list of Line2D objects
 
-    Other parameters
+    Other Parameters
     ----------------
+    arrows : int
+        Set the number of arrows to plot along the streamlines. The default
+        value can be set in `config.defaults['phaseplot.arrows']`.
+    arrow_size : float
+        Set the size of arrows to plot along the streamlines.  The default
+        value can be set in `config.defaults['phaseplot.arrow_size']`.
+    arrow_style : matplotlib patch
+        Set the style of arrows to plot along the streamlines.  The default
+        value can be set in `config.defaults['phaseplot.arrow_style']`.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['ctrlplot.rcParams'].
+        Default is set by `config.defaults['ctrlplot.rcParams']`.
     suppress_warnings : bool, optional
-        If set to `True`, suppress warning messages in generating trajectories.
+        If set to True, suppress warning messages in generating trajectories.
+    zorder : float, optional
+        Set the zorder for the streamlines.  In not specified, it will be
+        automatically chosen by `matplotlib.axes.Axes.plot`.
 
     """
     # Process keywords
@@ -444,7 +651,7 @@ def streamlines(
         # Plot the trajectory (if there is one)
         if traj.shape[1] > 1:
             with plt.rc_context(rcParams):
-                out += ax.plot(traj[0], traj[1], color=color)
+                out += ax.plot(traj[0], traj[1], color=color, zorder=zorder)
 
                 # Add arrows to the lines at specified intervals
                 _add_arrows_to_line2D(
@@ -453,15 +660,15 @@ def streamlines(
 
 
 def equilpoints(
-        sys, pointdata, gridspec=None, color='k', ax=None, _check_kwargs=True,
-        **kwargs):
+        sys, pointdata, gridspec=None, color='k', zorder=None, ax=None,
+        _check_kwargs=True, **kwargs):
     """Plot equilibrium points in the phase plane.
 
     This function plots the equilibrium points for a planar dynamical system.
 
     Parameters
     ----------
-    sys : NonlinearIOSystem or callable(t, x, ...)
+    sys : `NonlinearIOSystem` or callable(t, x, ...)
         I/O system or function used to generate phase plane data. If a
         function is given, the remaining arguments are drawn from the
         `params` keyword.
@@ -487,18 +694,21 @@ def equilpoints(
         dict with key 'args' and value given by a tuple (passed to callable).
     color : str
         Plot the equilibrium points in the given color.
-    ax : matplotlib.axes.Axes
+    ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
     Returns
     -------
     out : list of Line2D objects
 
-    Other parameters
+    Other Parameters
     ----------------
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['ctrlplot.rcParams'].
+        Default is set by `config.defaults['ctrlplot.rcParams']`.
+    zorder : float, optional
+        Set the zorder for the equilibrium points.  In not specified, it will
+        be automatically chosen by `matplotlib.axes.Axes.plot`.
 
     """
     # Process keywords
@@ -532,12 +742,13 @@ def equilpoints(
     out = []
     for xeq in equilpts:
         with plt.rc_context(rcParams):
-            out += ax.plot(xeq[0], xeq[1], marker='o', color=color)
+            out += ax.plot(
+                xeq[0], xeq[1], marker='o', color=color, zorder=zorder)
     return out
 
 
 def separatrices(
-        sys, pointdata, timedata=None, gridspec=None, ax=None,
+        sys, pointdata, timedata=None, gridspec=None, zorder=None, ax=None,
         _check_kwargs=True, suppress_warnings=False, **kwargs):
     """Plot separatrices in the phase plane.
 
@@ -546,7 +757,7 @@ def separatrices(
 
     Parameters
     ----------
-    sys : NonlinearIOSystem or callable(t, x, ...)
+    sys : `NonlinearIOSystem` or callable(t, x, ...)
         I/O system or function used to generate phase plane data. If a
         function is given, the remaining arguments are drawn from the
         `params` keyword.
@@ -574,25 +785,35 @@ def separatrices(
         a dict of parameters and values. For a callable, `params` should be
         dict with key 'args' and value given by a tuple (passed to callable).
     color : matplotlib color spec, optional
-        Plot the separatrics in the given color.  If a single color
+        Plot the separatrices in the given color.  If a single color
         specification is given, this is used for both stable and unstable
         separatrices.  If a tuple is given, the first element is used as
         the color specification for stable separatrices and the second
-        elmeent for unstable separatrices.
-    ax : matplotlib.axes.Axes
+        element for unstable separatrices.
+    ax : `matplotlib.axes.Axes`, optional
         Use the given axes for the plot, otherwise use the current axes.
 
     Returns
     -------
     out : list of Line2D objects
 
-    Other parameters
+    Other Parameters
     ----------------
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set by config.default['ctrlplot.rcParams'].
+        Default is set by `config.defaults['ctrlplot.rcParams']`.
     suppress_warnings : bool, optional
-        If set to `True`, suppress warning messages in generating trajectories.
+        If set to True, suppress warning messages in generating trajectories.
+    zorder : float, optional
+        Set the zorder for the separatrices.  In not specified, it will be
+        automatically chosen by `matplotlib.axes.Axes.plot`.
+
+    Notes
+    -----
+    The value of `config.defaults['separatrices_radius']` is used to set the
+    offset from the equilibrium point to the starting point of the separatix
+    traces, in the direction of the eigenvectors evaluated at that
+    equilibrium point.
 
     """
     # Process keywords
@@ -631,7 +852,7 @@ def separatrices(
         case (stable_color, unstable_color) | [stable_color, unstable_color]:
             pass
         case single_color:
-            stable_color = unstable_color = color
+            stable_color = unstable_color = single_color
 
     # Make sure all keyword arguments were processed
     if _check_kwargs and kwargs:
@@ -646,10 +867,6 @@ def separatrices(
     # Plot separatrices by flowing backwards in time along eigenspaces
     out = []
     for i, xeq in enumerate(equilpts):
-        # Plot the equilibrium points
-        with plt.rc_context(rcParams):
-            out += ax.plot(xeq[0], xeq[1], marker='o', color='k')
-
         # Figure out the linearization and eigenvectors
         evals, evecs = np.linalg.eig(sys.linearize(xeq, 0, params=params).A)
 
@@ -690,7 +907,8 @@ def separatrices(
                 if traj.shape[1] > 1:
                     with plt.rc_context(rcParams):
                         out += ax.plot(
-                            traj[0], traj[1], color=color, linestyle=linestyle)
+                            traj[0], traj[1], color=color,
+                            linestyle=linestyle, zorder=zorder)
 
                     # Add arrows to the lines at specified intervals
                     with plt.rc_context(rcParams):
@@ -713,7 +931,7 @@ def boxgrid(xvals, yvals):
 
     Parameters
     ----------
-    xvals, yvals : 1D array-like
+    xvals, yvals : 1D array_like
         Array of points defining the points on the lower and left edges of
         the box.
 
@@ -742,14 +960,14 @@ def meshgrid(xvals, yvals):
 
     Parameters
     ----------
-    xvals, yvals : 1D array-like
+    xvals, yvals : 1D array_like
         Array of points defining the points on the lower and left edges of
         the box.
 
     Returns
     -------
-    grid: 2D array
-        Array of points with shape (n * m, 2) defining the mesh
+    grid : 2D array
+        Array of points with shape (n * m, 2) defining the mesh.
 
     """
     xvals, yvals = np.meshgrid(xvals, yvals)
@@ -769,7 +987,7 @@ def circlegrid(centers, radius, num):
 
     Parameters
     ----------
-    centers : 2D array-like
+    centers : 2D array_like
         Array of points with shape (p, 2) defining centers of the circles.
     radius : float
         Radius of the points to be generated around each center.
@@ -778,7 +996,7 @@ def circlegrid(centers, radius, num):
 
     Returns
     -------
-    grid: 2D array
+    grid : 2D array
         Array of points with shape (p * num, 2) defining the circles.
 
     """
@@ -789,6 +1007,7 @@ def circlegrid(centers, radius, num):
             [radius * math.cos(theta), radius * math.sin(theta)] for
             theta in np.linspace(0, 2 * math.pi, num, endpoint=False)])
     return grid
+
 
 #
 # Internal utility functions
@@ -809,6 +1028,7 @@ def _create_system(sys, params):
     _output = lambda t, x, u, params: np.array([])
     return NonlinearIOSystem(
         _update, _output, states=2, inputs=0, outputs=0, name="_callable")
+
 
 # Set axis limits for the plot
 def _set_axis_limits(ax, pointdata):
@@ -957,19 +1177,20 @@ def _parse_arrow_keywords(kwargs):
 def _create_trajectory(
         sys, revsys, timepts, X0, params, dir, suppress_warnings=False,
         gridtype=None, gridspec=None, xlim=None, ylim=None):
-    # Comput ethe forward trajectory
+    # Compute the forward trajectory
     if dir == 'forward' or dir == 'both':
         fwdresp = input_output_response(
-            sys, timepts, X0=X0, params=params, ignore_errors=True)
+            sys, timepts, initial_state=X0, params=params, ignore_errors=True)
         if not fwdresp.success and not suppress_warnings:
-            warnings.warn(f"{X0=}, {fwdresp.message}")
+            warnings.warn(f"initial_state={X0}, {fwdresp.message}")
 
     # Compute the reverse trajectory
     if dir == 'reverse' or dir == 'both':
         revresp = input_output_response(
-            revsys, timepts, X0=X0, params=params, ignore_errors=True)
+            revsys, timepts, initial_state=X0, params=params,
+            ignore_errors=True)
         if not revresp.success and not suppress_warnings:
-            warnings.warn(f"{X0=}, {revresp.message}")
+            warnings.warn(f"initial_state={X0}, {revresp.message}")
 
     # Create the trace to plot
     if dir == 'forward':
@@ -1013,11 +1234,11 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     """(legacy) Phase plot for 2D dynamical systems.
 
     .. deprecated:: 0.10.1
-        This function is deprecated; use :func:`phase_plane_plot` instead.
+        This function is deprecated; use `phase_plane_plot` instead.
 
     Produces a vector field or stream line plot for a planar system.  This
-    function has been replaced by the :func:`~control.phase_plane_map` and
-    :func:`~control.phase_plane_plot` functions.
+    function has been replaced by the `phase_plane_map` and
+    `phase_plane_plot` functions.
 
     Call signatures:
       phase_plot(func, X, Y, ...) - display vector field on meshgrid
@@ -1031,8 +1252,8 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     ----------
     func : callable(x, t, ...)
         Computes the time derivative of y (compatible with odeint).  The
-        function should be the same for as used for :mod:`scipy.integrate`.
-        Namely, it should be a function of the form dxdt = F(t, x) that
+        function should be the same for as used for `scipy.integrate`.
+        Namely, it should be a function of the form dx/dt = F(t, x) that
         accepts a state x of dimension 2 and returns a derivative dx/dt of
         dimension 2.
     X, Y: 3-element sequences, optional, as [start, stop, npts]
@@ -1045,31 +1266,31 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     X0: ndarray of initial conditions, optional
         List of initial conditions from which streamlines are plotted.
         Each initial condition should be a pair of numbers.
-    T: array-like or number, optional
+    T: array_like or number, optional
         Length of time to run simulations that generate streamlines.
         If a single number, the same simulation time is used for all
         initial conditions.  Otherwise, should be a list of length
         len(X0) that gives the simulation time for each initial
         condition.  Default value = 50.
     lingrid : integer or 2-tuple of integers, optional
-        Argument is either N or (N, M).  If X0 is given and X, Y are missing,
-        a grid of arrows is produced using the limits of the initial
-        conditions, with N grid points in each dimension or N grid points in x
-        and M grid points in y.
+        Argument is either N or (N, M).  If X0 is given and X, Y are
+        missing, a grid of arrows is produced using the limits of the
+        initial conditions, with N grid points in each dimension or N grid
+        points in x and M grid points in y.
     lintime : integer or tuple (integer, float), optional
-        If a single integer N is given, draw N arrows using equally space time
-        points.  If a tuple (N, lambda) is given, draw N arrows using
+        If a single integer N is given, draw N arrows using equally space
+        time points.  If a tuple (N, lambda) is given, draw N arrows using
         exponential time constant lambda
-    timepts : array-like, optional
+    timepts : array_like, optional
         Draw arrows at the given list times [t1, t2, ...]
     tfirst : bool, optional
-        If True, call `func` with signature `func(t, x, ...)`.
+        If True, call `func` with signature ``func(t, x, ...)``.
     params: tuple, optional
-        List of parameters to pass to vector field: `func(x, t, *params)`
+        List of parameters to pass to vector field: ``func(x, t, *params)``.
 
-    See also
+    See Also
     --------
-    box_grid : construct box-shaped grid of initial conditions
+    box_grid
 
     """
     # Generate a deprecation warning
@@ -1091,9 +1312,9 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     # Get parameters to pass to function
     if parms:
         warnings.warn(
-            f"keyword 'parms' is deprecated; use 'params'", FutureWarning)
+            "keyword 'parms' is deprecated; use 'params'", FutureWarning)
         if params:
-            raise ControlArgument(f"duplicate keywords 'parms' and 'params'")
+            raise ControlArgument("duplicate keywords 'parms' and 'params'")
         else:
             params = parms
 
@@ -1144,10 +1365,11 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         if scale is None:
             plt.quiver(x1, x2, dx[:,:,1], dx[:,:,2], angles='xy')
         elif (scale != 0):
+            plt.quiver(x1, x2, dx[:,:,0]*np.abs(scale),
+                       dx[:,:,1]*np.abs(scale), angles='xy')
             #! TODO: optimize parameters for arrows
             #! TODO: figure out arguments to make arrows show up correctly
-            xy = plt.quiver(x1, x2, dx[:,:,0]*np.abs(scale),
-                            dx[:,:,1]*np.abs(scale), angles='xy')
+            # xy = plt.quiver(...)
             # set(xy, 'LineWidth', PP_arrow_linewidth, 'Color', 'b')
 
         #! TODO: Tweak the shape of the plot
@@ -1257,24 +1479,26 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         #! TODO: figure out arguments to make arrows show up correctly
         plt.quiver(x1, x2, dx[:,:,0], dx[:,:,1], angles='xy')
     elif scale != 0 and Narrows > 0:
+        plt.quiver(x1, x2, dx[:,:,0]*abs(scale), dx[:,:,1]*abs(scale),
+                   angles='xy')
         #! TODO: figure out arguments to make arrows show up correctly
-        xy = plt.quiver(x1, x2, dx[:,:,0]*abs(scale), dx[:,:,1]*abs(scale),
-                        angles='xy')
+        # xy = plt.quiver(...)
         # set(xy, 'LineWidth', PP_arrow_linewidth)
         # set(xy, 'AutoScale', 'off')
         # set(xy, 'AutoScaleFactor', 0)
 
     if scale < 0:
-        bp = plt.plot(x1, x2, 'b.');        # add dots at base
+        plt.plot(x1, x2, 'b.');        # add dots at base
+        # bp = plt.plot(...)
         # set(bp, 'MarkerSize', PP_arrow_markersize)
 
 
 # Utility function for generating initial conditions around a box
 def box_grid(xlimp, ylimp):
-    """box_grid   generate list of points on edge of box
+    """Generate list of points on edge of box.
 
     .. deprecated:: 0.10.0
-        Use :func:`phaseplot.boxgrid` instead.
+        Use `phaseplot.boxgrid` instead.
 
     list = box_grid([xmin xmax xnum], [ymin ymax ynum]) generates a
     list of points that correspond to a uniform grid at the end of the
@@ -1295,6 +1519,8 @@ def box_grid(xlimp, ylimp):
 # TODO: rename to something more useful (or remove??)
 def _find(condition):
     """Returns indices where ravel(a) is true.
-    Private implementation of deprecated matplotlib.mlab.find
+
+    Private implementation of deprecated `matplotlib.mlab.find`.
+
     """
     return np.nonzero(np.ravel(condition))[0]

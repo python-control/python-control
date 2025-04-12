@@ -57,7 +57,7 @@ def test_composition(dt1, dt2, dt3, op, type):
         sys1 = Karray
     elif dt1 == 'float':
         sys1 = kfloat
-        
+
     if isinstance(dt2, (int, float)) or dt2 is None:
         sys2 = ct.StateSpace(A, B, C, D, dt2)
         sys2 = type(sys2)

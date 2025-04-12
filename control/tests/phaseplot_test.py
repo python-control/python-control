@@ -12,6 +12,7 @@ the figures so that you can check them visually.
 import warnings
 from math import pi
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
@@ -19,7 +20,6 @@ import pytest
 import control as ct
 import control.phaseplot as pp
 from control import phase_plot
-from control.tests.conftest import mplcleanup
 
 
 # Legacy tests
@@ -123,11 +123,11 @@ def test_helper_functions(func, args, kwargs):
     sys = ct.nlsys(
         lambda t, x, u, params: [x[0] - 3*x[1], -3*x[0] + x[1]],
         states=2, inputs=0)
-    out = func(sys, [-1, 1, -1, 1], *args, **kwargs)
+    _out = func(sys, [-1, 1, -1, 1], *args, **kwargs)
 
     # Test with function
     rhsfcn = lambda t, x: sys.dynamics(t, x, 0, {})
-    out = func(rhsfcn, [-1, 1, -1, 1], *args, **kwargs)
+    _out = func(rhsfcn, [-1, 1, -1, 1], *args, **kwargs)
 
 
 @pytest.mark.usefixtures('mplcleanup')
@@ -138,46 +138,130 @@ def test_system_types():
 
     # Use callable form, with parameters (if not correct, will get /0 error)
     ct.phase_plane_plot(
-        invpend_ode, [-5, 5, -2, 2], params={'args': (1, 1, 0.2, 1)})
+        invpend_ode, [-5, 5, -2, 2], params={'args': (1, 1, 0.2, 1)},
+        plot_streamlines=True)
 
     # Linear I/O system
     ct.phase_plane_plot(
-        ct.ss([[0, 1], [-1, -1]], [[0], [1]], [[1, 0]], 0))
+        ct.ss([[0, 1], [-1, -1]], [[0], [1]], [[1, 0]], 0),
+        plot_streamlines=True)
 
 
 @pytest.mark.usefixtures('mplcleanup')
 def test_phaseplane_errors():
     with pytest.raises(ValueError, match="invalid grid specification"):
-        ct.phase_plane_plot(ct.rss(2, 1, 1), gridspec='bad')
-        
+        ct.phase_plane_plot(ct.rss(2, 1, 1), gridspec='bad',
+                            plot_streamlines=True)
+
     with pytest.raises(ValueError, match="unknown grid type"):
-        ct.phase_plane_plot(ct.rss(2, 1, 1), gridtype='bad')
-        
+        ct.phase_plane_plot(ct.rss(2, 1, 1), gridtype='bad',
+                            plot_streamlines=True)
+
     with pytest.raises(ValueError, match="system must be planar"):
-        ct.phase_plane_plot(ct.rss(3, 1, 1))
+        ct.phase_plane_plot(ct.rss(3, 1, 1),
+                            plot_streamlines=True)
 
     with pytest.raises(ValueError, match="params must be dict with key"):
         def invpend_ode(t, x, m=0, l=0, b=0, g=0):
             return (x[1], -b/m*x[1] + (g*l/m) * np.sin(x[0]))
         ct.phase_plane_plot(
-            invpend_ode, [-5, 5, 2, 2], params={'stuff': (1, 1, 0.2, 1)})
+            invpend_ode, [-5, 5, 2, 2], params={'stuff': (1, 1, 0.2, 1)},
+                            plot_streamlines=True)
+        
+    with pytest.raises(ValueError, match="gridtype must be 'meshgrid' when using streamplot"):
+        ct.phase_plane_plot(ct.rss(2, 1, 1), plot_streamlines=False,
+                            plot_streamplot=True, gridtype='boxgrid')
 
     # Warning messages for invalid solutions: nonlinear spring mass system
     sys = ct.nlsys(
         lambda t, x, u, params: np.array(
             [x[1], -0.25 * (x[0] - 0.01 * x[0]**3) - 0.1 * x[1]]),
         states=2, inputs=0)
-    with pytest.warns(UserWarning, match=r"X0=array\(.*\), solve_ivp failed"):
+    with pytest.warns(
+            UserWarning, match=r"initial_state=\[.*\], solve_ivp failed"):
         ct.phase_plane_plot(
             sys, [-12, 12, -10, 10], 15, gridspec=[2, 9],
-            plot_separatrices=False)
+            plot_separatrices=False, plot_streamlines=True)
 
     # Turn warnings off
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         ct.phase_plane_plot(
             sys, [-12, 12, -10, 10], 15, gridspec=[2, 9],
-            plot_separatrices=False, suppress_warnings=True)
+            plot_streamlines=True, plot_separatrices=False,
+            suppress_warnings=True)
+        
+@pytest.mark.usefixtures('mplcleanup')
+def test_phase_plot_zorder():
+    # some of these tests are a bit akward since the streamlines and separatrices
+    # are stored in the same list, so we separate them by color
+    key_color = "tab:blue" # must not be 'k', 'r', 'b' since they are used by separatrices
+
+    def get_zorders(cplt):
+        max_zorder = lambda items: max([line.get_zorder() for line in items])
+        assert isinstance(cplt.lines[0], list)
+        streamline_lines = [line for line in cplt.lines[0] if line.get_color() == key_color]
+        separatrice_lines = [line for line in cplt.lines[0] if line.get_color() != key_color]
+        streamlines = max_zorder(streamline_lines) if streamline_lines else None
+        separatrices = max_zorder(separatrice_lines) if separatrice_lines else None
+        assert cplt.lines[1] == None or isinstance(cplt.lines[1], mpl.quiver.Quiver)
+        quiver = cplt.lines[1].get_zorder() if cplt.lines[1] else None
+        assert cplt.lines[2] == None or isinstance(cplt.lines[2], list)
+        equilpoints = max_zorder(cplt.lines[2]) if cplt.lines[2] else None
+        assert cplt.lines[3] == None or isinstance(cplt.lines[3], mpl.streamplot.StreamplotSet)
+        streamplot = max(cplt.lines[3].lines.get_zorder(), cplt.lines[3].arrows.get_zorder()) if cplt.lines[3] else None
+        return streamlines, quiver, streamplot, separatrices, equilpoints
+    
+    def assert_orders(streamlines, quiver, streamplot, separatrices, equilpoints):
+        print(streamlines, quiver, streamplot, separatrices, equilpoints)
+        if streamlines is not None:
+            assert streamlines < separatrices < equilpoints
+        if quiver is not None:
+            assert quiver < separatrices < equilpoints
+        if streamplot is not None:
+            assert streamplot < separatrices < equilpoints
+
+    def sys(t, x):
+        return np.array([4*x[1], -np.sin(4*x[0])])
+
+    # ensure correct zordering for all three flow types
+    res_streamlines = ct.phase_plane_plot(sys, plot_streamlines=dict(color=key_color))
+    assert_orders(*get_zorders(res_streamlines))
+    res_vectorfield = ct.phase_plane_plot(sys, plot_vectorfield=True)
+    assert_orders(*get_zorders(res_vectorfield))
+    res_streamplot = ct.phase_plane_plot(sys, plot_streamplot=True)
+    assert_orders(*get_zorders(res_streamplot))
+
+    # ensure that zorder can still be overwritten
+    res_reversed = ct.phase_plane_plot(sys, plot_streamlines=dict(color=key_color, zorder=50), plot_vectorfield=dict(zorder=40),
+                                       plot_streamplot=dict(zorder=30), plot_separatrices=dict(zorder=20), plot_equilpoints=dict(zorder=10))
+    streamlines, quiver, streamplot, separatrices, equilpoints = get_zorders(res_reversed)
+    assert streamlines > quiver > streamplot > separatrices > equilpoints
+
+
+@pytest.mark.usefixtures('mplcleanup')
+def test_stream_plot_magnitude():
+    def sys(t, x):
+        return np.array([4*x[1], -np.sin(4*x[0])])
+
+    # plt context with linewidth
+    with plt.rc_context({'lines.linewidth': 4}):
+        res = ct.phase_plane_plot(sys, plot_streamplot=dict(vary_linewidth=True))
+    linewidths = res.lines[3].lines.get_linewidths()
+    # linewidths are scaled to be between 0.25 and 2 times default linewidth
+    # but the extremes may not exist if there is no line at that point
+    assert min(linewidths) < 2 and max(linewidths) > 7
+
+    # make sure changing the colormap works
+    res = ct.phase_plane_plot(sys, plot_streamplot=dict(vary_color=True, cmap='viridis'))
+    assert res.lines[3].lines.get_cmap().name == 'viridis'
+    res = ct.phase_plane_plot(sys, plot_streamplot=dict(vary_color=True, cmap='turbo'))
+    assert res.lines[3].lines.get_cmap().name == 'turbo'
+
+    # make sure changing the norm at least doesn't throw an error
+    ct.phase_plane_plot(sys, plot_streamplot=dict(vary_color=True, norm=mpl.colors.LogNorm()))
+
+    
 
 
 @pytest.mark.usefixtures('mplcleanup')
@@ -189,7 +273,7 @@ def test_basic_phase_plots(savefigs=False):
     plt.figure()
     axis_limits = [-1, 1, -1, 1]
     T = 8
-    ct.phase_plane_plot(sys, axis_limits, T)
+    ct.phase_plane_plot(sys, axis_limits, T, plot_streamlines=True)
     if savefigs:
         plt.savefig('phaseplot-dampedosc-default.png')
 
@@ -202,7 +286,7 @@ def test_basic_phase_plots(savefigs=False):
     ct.phase_plane_plot(
         invpend, [-2*pi, 2*pi, -2, 2], 5,
         gridtype='meshgrid', gridspec=[5, 8], arrows=3,
-        plot_separatrices={'gridspec': [12, 9]},
+        plot_separatrices={'gridspec': [12, 9]}, plot_streamlines=True,
         params={'m': 1, 'l': 1, 'b': 0.2, 'g': 1})
     plt.xlabel(r"$\theta$ [rad]")
     plt.ylabel(r"$\dot\theta$ [rad/sec]")
@@ -217,7 +301,8 @@ def test_basic_phase_plots(savefigs=False):
         oscillator_update, states=2, inputs=0, name='nonlinear oscillator')
 
     plt.figure()
-    ct.phase_plane_plot(oscillator, [-1.5, 1.5, -1.5, 1.5], 0.9)
+    ct.phase_plane_plot(oscillator, [-1.5, 1.5, -1.5, 1.5], 0.9,
+                        plot_streamlines=True)
     pp.streamlines(
     oscillator, np.array([[0, 0]]), 1.5,
     gridtype='circlegrid', gridspec=[0.5, 6], dir='both')
@@ -226,6 +311,18 @@ def test_basic_phase_plots(savefigs=False):
 
     if savefigs:
         plt.savefig('phaseplot-oscillator-helpers.png')
+
+    plt.figure()
+    ct.phase_plane_plot(
+        invpend, [-2*pi, 2*pi, -2, 2],
+        plot_streamplot=dict(vary_color=True, vary_density=True),
+        gridspec=[60, 20], params={'m': 1, 'l': 1, 'b': 0.2, 'g': 1}
+    )
+    plt.xlabel(r"$\theta$ [rad]")
+    plt.ylabel(r"$\dot\theta$ [rad/sec]")
+
+    if savefigs:
+        plt.savefig('phaseplot-invpend-streamplot.png')
 
 
 if __name__ == "__main__":

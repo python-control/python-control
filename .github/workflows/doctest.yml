@@ -19,7 +19,7 @@ jobs:
         activate-environment: doctest-env
         environment-file: .github/conda-env/doctest-env.yml
         miniforge-version: latest
-        channels: conda-forge
+        channels: conda-forge,defaults
         channel-priority: strict
         auto-update-conda: false
         auto-activate-base: false
@@ -35,6 +35,13 @@ jobs:
       run: |
         make html
         make doctest
+
+    - name: Run pytest
+      shell: bash -l {0}
+      working-directory: doc
+      run: |
+        make html
+        PYTHONPATH=../ pytest
 
     - name: Archive results
       uses: actions/upload-artifact@v4

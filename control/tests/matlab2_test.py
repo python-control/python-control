@@ -16,7 +16,6 @@ import scipy.signal
 
 from control.matlab import ss, step, impulse, initial, lsim, dcgain, ss2tf
 from control.timeresp import _check_convert_array
-from control.tests.conftest import slycotonly
 
 
 class TestControlMatlab:
@@ -49,7 +48,6 @@ class TestControlMatlab:
         D = zeros((2, 2))
         return A, B, C, D
 
-    @slycotonly
     def test_dcgain_mimo(self, MIMO_mats):
         """Test function dcgain with MIMO systems"""
         #Test MIMO systems
@@ -88,7 +86,7 @@ class TestControlMatlab:
         Z, P, k = scipy.signal.tf2zpk(num[0][-1], den)
         sys_ss = ss(A, B, C, D)
 
-        #Compute the gain with ``dcgain``
+        #Compute the gain with `dcgain`
         gain_abcd = dcgain(A, B, C, D)
         gain_zpk = dcgain(Z, P, k)
         gain_numden = dcgain(np.squeeze(num), den)
@@ -110,7 +108,7 @@ class TestControlMatlab:
                                   decimal=6)
 
     def test_step(self, SISO_mats, MIMO_mats, mplcleanup):
-        """Test function ``step``."""
+        """Test function `step`."""
         figure(); plot_shape = (1, 3)
 
         #Test SISO system
@@ -154,7 +152,8 @@ class TestControlMatlab:
         t, y = impulse(sys, T)
         plot(t, y, label='t=0..2')
 
-        #Test system with direct feed-though, the function should print a warning.
+        # Test system with direct feedthough, the function should
+        # print a warning.
         D = [[0.5]]
         sys_ft = ss(A, B, C, D)
         with pytest.warns(UserWarning, match="has direct feedthrough"):
@@ -231,7 +230,7 @@ class TestControlMatlab:
         assert isinstance(arr, np.ndarray)
         assert not isinstance(arr, matrix)
 
-        #Convert array-like objects to arrays
+        #Convert array_like objects to arrays
         #Input is matrix, shape (1,3), must convert to array
         arr = _check_convert_array(matrix("1. 2 3"), [(3,), (1,3)], 'Test: ')
         assert isinstance(arr, np.ndarray)
@@ -321,12 +320,12 @@ class TestControlMatlab:
         #T is None; - special handling: Value error
         self.assertRaises(ValueError, lsim(sys, U=0, T=None, x0=0))
         #T="hello" : Wrong type
-        #TODO: better wording of error messages of ``lsim`` and
-        #      ``_check_convert_array``, when wrong type is given.
+        #TODO: better wording of error messages of `lsim` and
+        #      `_check_convert_array`, when wrong type is given.
         #      Current error message is too cryptic.
         self.assertRaises(TypeError, lsim(sys, U=0, T="hello", x0=0))
         #T=0; - T can not be zero dimensional, it determines the size of the
-        #       input vector ``U``
+        #       input vector `U`
         self.assertRaises(ValueError, lsim(sys, U=0, T=0, x0=0))
         #T is not monotonically increasing
         self.assertRaises(ValueError, lsim(sys, U=0, T=[0., 1., 2., 2., 3.], x0=0))
@@ -334,7 +333,7 @@ class TestControlMatlab:
 
     def assert_systems_behave_equal(self, sys1, sys2):
         '''
-        Test if the behavior of two LTI systems is equal. Raises ``AssertionError``
+        Test if the behavior of two LTI systems is equal. Raises `AssertionError`
         if the systems are not equal.
 
         Works only for SISO systems.
@@ -344,7 +343,7 @@ class TestControlMatlab:
         #gain of both systems must be the same
         assert_array_almost_equal(dcgain(sys1), dcgain(sys2))
 
-        #Results of ``step`` simulation must be the same too
+        #Results of `step` simulation must be the same too
         y1, t1 = step(sys1)
         y2, t2 = step(sys2, t1)
         assert_array_almost_equal(y1, y2)

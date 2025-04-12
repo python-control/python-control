@@ -1,34 +1,32 @@
 # nlsys.py - input/output system module
 # RMM, 28 April 2019
 #
-# Additional features to add
+# Additional features to add:
 #   * Allow constant inputs for MIMO input_output_response (w/out ones)
-#   * Add support for constants/matrices as part of operators (1 + P)
 #   * Add unit tests (and example?) for time-varying systems
-#   * Allow time vector for discrete time simulations to be multiples of dt
-#   * Check the way initial outputs for discrete time systems are handled
-#
+#   * Allow time vector for discrete-time simulations to be multiples of dt
+#   * Check the way initial outputs for discrete-time systems are handled
 
-"""The :mod:`~control.nlsys` module contains the
-:class:`~control.NonlinearIOSystem` class that represents (possibly nonlinear)
-input/output systems.  The :class:`~control.NonlinearIOSystem` class is a
-general class that defines any continuous or discrete time dynamical system.
-Input/output systems can be simulated and also used to compute operating
-points and linearizations.
+"""This module contains the `NonlinearIOSystem` class that
+represents (possibly nonlinear) input/output systems.  The
+`NonlinearIOSystem` class is a general class that defines any
+continuous- or discrete-time dynamical system.  Input/output systems
+can be simulated and also used to compute operating points and
+linearizations.
 
 """
 
-import copy
 from warnings import warn
 
 import numpy as np
 import scipy as sp
 
 from . import config
+from .config import _process_param, _process_kwargs
 from .iosys import InputOutputSystem, _parse_spec, _process_iosys_keywords, \
-    _process_signal_list, common_timebase, iosys_repr, isctime, isdtime
-from .timeresp import _check_convert_array, _process_time_response, \
-    TimeResponseData, TimeResponseList
+    common_timebase, iosys_repr, isctime, isdtime
+from .timeresp import TimeResponseData, TimeResponseList, \
+    _check_convert_array, _process_time_response, _timeresp_aliases
 
 __all__ = ['NonlinearIOSystem', 'InterconnectedSystem', 'nlsys',
            'input_output_response', 'find_eqpt', 'linearize',
@@ -37,12 +35,12 @@ __all__ = ['NonlinearIOSystem', 'InterconnectedSystem', 'nlsys',
 
 
 class NonlinearIOSystem(InputOutputSystem):
-    """Nonlinear I/O system.
+    """Nonlinear input/output system model.
 
-    Creates an :class:`~control.InputOutputSystem` for a nonlinear system
+    Creates an `InputOutputSystem` for a nonlinear system
     by specifying a state update function and an output function.  The new
-    system can be a continuous or discrete time system. Nonlinear I/O
-    systems are usually created with the :func:`~control.nlsys` factory
+    system can be a continuous or discrete-time system. Nonlinear I/O
+    systems are usually created with the `nlsys` factory
     function.
 
     Parameters
@@ -50,23 +48,23 @@ class NonlinearIOSystem(InputOutputSystem):
     updfcn : callable
         Function returning the state update function
 
-            `updfcn(t, x, u, params) -> array`
+            ``updfcn(t, x, u, params) -> array``
 
-        where `x` is a 1-D array with shape (nstates,), `u` is a 1-D array
-        with shape (ninputs,), `t` is a float representing the currrent
-        time, and `params` is a dict containing the values of parameters
-        used by the function.
+        where `t` is a float representing the current time, `x` is a 1-D
+        array with shape (nstates,), `u` is a 1-D array with shape
+        (ninputs,), and `params` is a dict containing the values of
+        parameters used by the function.
 
     outfcn : callable
         Function returning the output at the given state
 
             `outfcn(t, x, u, params) -> array`
 
-        where the arguments are the same as for `upfcn`.
+        where the arguments are the same as for `updfcn`.
 
     inputs, outputs, states : int, list of str or None, optional
         Description of the system inputs, outputs, and states.  See
-        :func:`control.nlsys` for more details.
+        `control.nlsys` for more details.
 
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions
@@ -77,10 +75,10 @@ class NonlinearIOSystem(InputOutputSystem):
         operating in continuous or discrete time.  It can have the
         following values:
 
-        * dt = 0: continuous time system (default)
-        * dt > 0: discrete time system with sampling period 'dt'
-        * dt = True: discrete time with unspecified sampling period
-        * dt = None: no timebase specified
+        * `dt` = 0: continuous-time system (default)
+        * `dt` > 0: discrete-time system with sampling period `dt`
+        * `dt` = True: discrete time with unspecified sampling period
+        * `dt` = None: no timebase specified
 
     Attributes
     ----------
@@ -95,12 +93,12 @@ class NonlinearIOSystem(InputOutputSystem):
 
     See Also
     --------
-    InputOutputSystem : Input/output system class.
+    nlsys, InputOutputSystem
 
     Notes
     -----
-    The :class:`~control.InputOuputSystem` class (and its subclasses) makes
-    use of two special methods for implementing much of the work of the class:
+    The `InputOutputSystem` class (and its subclasses) makes use of two
+    special methods for implementing much of the work of the class:
 
     * _rhs(t, x, u): compute the right hand side of the differential or
       difference equation for the system.  If not specified, the system
@@ -164,11 +162,11 @@ class NonlinearIOSystem(InputOutputSystem):
 
     # Return the value of a static nonlinear system
     def __call__(sys, u, params=None, squeeze=None):
-        """Evaluate a (static) nonlinearity at a given input value
+        """Evaluate a (static) nonlinearity at a given input value.
 
-        If a nonlinear I/O system has no internal state, then evaluating the
-        system at an input `u` gives the output `y = F(u)`, determined by the
-        output function.
+        If a nonlinear I/O system has no internal state, then evaluating
+        the system at an input `u` gives the output ``y = F(u)``,
+        determined by the output function.
 
         Parameters
         ----------
@@ -176,14 +174,15 @@ class NonlinearIOSystem(InputOutputSystem):
             Parameter values for the system. Passed to the evaluation function
             for the system as default values, overriding internal defaults.
         squeeze : bool, optional
-            If True and if the system has a single output, return the system
-            output as a 1D array rather than a 2D array.  If False, return the
-            system output as a 2D array even if the system is SISO.  Default
-            value set by config.defaults['control.squeeze_time_response'].
+            If True and if the system has a single output, return the
+            system output as a 1D array rather than a 2D array.  If
+            False, return the system output as a 2D array even if the
+            system is SISO.  Default value set by
+            `config.defaults['control.squeeze_time_response']`.
 
         """
         # Make sure the call makes sense
-        if not sys._isstatic():
+        if sys.nstates != 0:
             raise TypeError(
                 "function evaluation is only supported for static "
                 "input/output systems")
@@ -201,7 +200,7 @@ class NonlinearIOSystem(InputOutputSystem):
     def __mul__(self, other):
         """Multiply two input/output systems (series interconnection)"""
         # Convert 'other' to an I/O system if needed
-        other = _convert_static_iosystem(other)
+        other = _convert_to_iosystem(other)
         if not isinstance(other, InputOutputSystem):
             return NotImplemented
 
@@ -211,7 +210,7 @@ class NonlinearIOSystem(InputOutputSystem):
                 "can't multiply systems with incompatible inputs and outputs")
 
         # Make sure timebase are compatible
-        dt = common_timebase(other.dt, self.dt)
+        common_timebase(other.dt, self.dt)
 
         # Create a new system to handle the composition
         inplist = [(0, i) for i in range(other.ninputs)]
@@ -233,7 +232,7 @@ class NonlinearIOSystem(InputOutputSystem):
     def __rmul__(self, other):
         """Pre-multiply an input/output systems by a scalar/matrix"""
         # Convert other to an I/O system if needed
-        other = _convert_static_iosystem(other)
+        other = _convert_to_iosystem(other)
         if not isinstance(other, InputOutputSystem):
             return NotImplemented
 
@@ -243,7 +242,7 @@ class NonlinearIOSystem(InputOutputSystem):
                              "inputs and outputs")
 
         # Make sure timebase are compatible
-        dt = common_timebase(self.dt, other.dt)
+        common_timebase(self.dt, other.dt)
 
         # Create a new system to handle the composition
         inplist = [(0, i) for i in range(self.ninputs)]
@@ -265,7 +264,7 @@ class NonlinearIOSystem(InputOutputSystem):
     def __add__(self, other):
         """Add two input/output systems (parallel interconnection)"""
         # Convert other to an I/O system if needed
-        other = _convert_static_iosystem(other)
+        other = _convert_to_iosystem(other)
         if not isinstance(other, InputOutputSystem):
             return NotImplemented
 
@@ -286,7 +285,7 @@ class NonlinearIOSystem(InputOutputSystem):
     def __radd__(self, other):
         """Parallel addition of input/output system to a compatible object."""
         # Convert other to an I/O system if needed
-        other = _convert_static_iosystem(other)
+        other = _convert_to_iosystem(other)
         if not isinstance(other, InputOutputSystem):
             return NotImplemented
 
@@ -307,14 +306,14 @@ class NonlinearIOSystem(InputOutputSystem):
     def __sub__(self, other):
         """Subtract two input/output systems (parallel interconnection)"""
         # Convert other to an I/O system if needed
-        other = _convert_static_iosystem(other)
+        other = _convert_to_iosystem(other)
         if not isinstance(other, InputOutputSystem):
             return NotImplemented
 
         # Make sure number of input and outputs match
         if self.ninputs != other.ninputs or self.noutputs != other.noutputs:
             raise ValueError(
-                "can't substract systems with incompatible numbers of "
+                "can't subtract systems with incompatible numbers of "
                 "inputs or outputs")
         ninputs = self.ninputs
         noutputs = self.noutputs
@@ -331,7 +330,7 @@ class NonlinearIOSystem(InputOutputSystem):
     def __rsub__(self, other):
         """Parallel subtraction of I/O system to a compatible object."""
         # Convert other to an I/O system if needed
-        other = _convert_static_iosystem(other)
+        other = _convert_to_iosystem(other)
         if not isinstance(other, InputOutputSystem):
             return NotImplemented
         return other - self
@@ -341,7 +340,7 @@ class NonlinearIOSystem(InputOutputSystem):
         if self.ninputs is None or self.noutputs is None:
             raise ValueError("Can't determine number of inputs or outputs")
 
-        # Create a new selftem to hold the negation
+        # Create a new system to hold the negation
         inplist = [(0, i) for i in range(self.ninputs)]
         outlist = [(0, i, -1) for i in range(self.noutputs)]
         newsys = InterconnectedSystem(
@@ -357,7 +356,11 @@ class NonlinearIOSystem(InputOutputSystem):
         else:
             return NotImplemented
 
-    def _update_params(self, params, warning=False):
+    # Determine if a system is static (memoryless)
+    def _isstatic(self):
+        return self.nstates == 0
+
+    def _update_params(self, params):
         # Update the current parameter values
         self._current_params = self.params.copy()
         if params:
@@ -368,25 +371,25 @@ class NonlinearIOSystem(InputOutputSystem):
 
         Private function used to compute the right hand side of an
         input/output system model. Intended for fast evaluation; for a more
-        user-friendly interface you may want to use :meth:`dynamics`.
+        user-friendly interface you may want to use `dynamics`.
 
         """
         return np.asarray(
             self.updfcn(t, x, u, self._current_params)).reshape(-1)
 
     def dynamics(self, t, x, u, params=None):
-        """Compute the dynamics of a differential or difference equation.
+        """Dynamics of a differential or difference equation.
 
         Given time `t`, input `u` and state `x`, returns the value of the
-        right hand side of the dynamical system. If the system is continuous,
-        returns the time derivative
+        right hand side of the dynamical system. If the system is a
+        continuous-time system, returns the time derivative::
 
-            dx/dt = f(t, x, u[, params])
+            dx/dt = updfcn(t, x, u[, params])
 
-        where `f` is the system's (possibly nonlinear) dynamics function.
-        If the system is discrete-time, returns the next value of `x`:
+        where `updfcn` is the system's (possibly nonlinear) update function.
+        If the system is discrete time, returns the next value of `x`::
 
-            x[t+dt] = f(t, x[t], u[t][, params])
+            x[t+dt] = updfcn(t, x[t], u[t][, params])
 
         where `t` is a scalar.
 
@@ -396,17 +399,18 @@ class NonlinearIOSystem(InputOutputSystem):
         Parameters
         ----------
         t : float
-            the time at which to evaluate
+            Time at which to evaluate.
         x : array_like
-            current state
+            Current state.
         u : array_like
-            input
+            Current input.
         params : dict, optional
-            system parameter values
+            System parameter values.
 
         Returns
         -------
         dx/dt or x[t+dt] : ndarray
+
         """
         self._update_params(params)
         return self._rhs(
@@ -418,7 +422,7 @@ class NonlinearIOSystem(InputOutputSystem):
         Private function used to compute the output of of an input/output
         system model given the state, input, parameters. Intended for fast
         evaluation; for a more user-friendly interface you may want to use
-        :meth:`output`.
+        `output`.
 
         """
         #
@@ -434,61 +438,58 @@ class NonlinearIOSystem(InputOutputSystem):
                 self.outfcn(t, x, u, self._current_params)).reshape(-1)
 
     def output(self, t, x, u, params=None):
-        """Compute the output of the system
+        """Compute the output of the system.
 
         Given time `t`, input `u` and state `x`, returns the output of the
-        system:
+        system::
 
-            y = g(t, x, u[, params])
+            y = outfcn(t, x, u[, params])
 
         The inputs `x` and `u` must be of the correct length.
 
         Parameters
         ----------
         t : float
-            the time at which to evaluate
+            The time at which to evaluate.
         x : array_like
-            current state
+            Current state.
         u : array_like
-            input
+            Current input.
         params : dict, optional
-            system parameter values
+            System parameter values.
 
         Returns
         -------
         y : ndarray
+
         """
         self._update_params(params)
         return self._out(
             t, np.asarray(x).reshape(-1), np.asarray(u).reshape(-1))
 
     def feedback(self, other=1, sign=-1, params=None):
-        """Feedback interconnection between two input/output systems
+        """Feedback interconnection between two I/O systems.
 
         Parameters
         ----------
-        sys1: InputOutputSystem
-            The primary process.
-        sys2: InputOutputSystem
-            The feedback process (often a feedback controller).
-        sign: scalar, optional
-            The sign of feedback.  `sign` = -1 indicates negative feedback,
-            and `sign` = 1 indicates positive feedback.  `sign` is an optional
-            argument; it assumes a value of -1 if not specified.
+        other : `InputOutputSystem`
+            System in the feedback path.
+
+        sign : float, optional
+            Gain to use in feedback path.  Defaults to -1.
+
+        params : dict, optional
+            Parameter values for the overall system.  Passed to the
+            evaluation functions for the system as default values,
+            overriding defaults for the individual systems.
 
         Returns
         -------
-        out: InputOutputSystem
-
-        Raises
-        ------
-        ValueError
-            if the inputs, outputs, or timebases of the systems are
-            incompatible.
+        `NonlinearIOSystem`
 
         """
         # Convert sys2 to an I/O system if needed
-        other = _convert_static_iosystem(other)
+        other = _convert_to_iosystem(other)
 
         # Make sure systems can be interconnected
         if self.noutputs != other.ninputs or other.noutputs != self.ninputs:
@@ -506,7 +507,7 @@ class NonlinearIOSystem(InputOutputSystem):
             (self, other), inplist=inplist, outlist=outlist,
             params=params, dt=dt)
 
-        #  Set up the connecton map manually
+        #  Set up the connection map manually
         newsys.set_connect_map(np.block(
             [[np.zeros((self.ninputs, self.noutputs)),
               sign * np.eye(self.ninputs, other.noutputs)],
@@ -522,8 +523,8 @@ class NonlinearIOSystem(InputOutputSystem):
         """Linearize an input/output system at a given state and input.
 
         Return the linearization of an input/output system at a given
-        operating point (or state and input value) as a StateSpace system.
-        See :func:`~control.linearize` for complete documentation.
+        operating point (or state and input value) as a `StateSpace` system.
+        See `linearize` for complete documentation.
 
         """
         #
@@ -589,13 +590,59 @@ class InterconnectedSystem(NonlinearIOSystem):
     """Interconnection of a set of input/output systems.
 
     This class is used to implement a system that is an interconnection of
-    input/output systems.  The sys consists of a collection of subsystems
+    input/output systems.  The system consists of a collection of subsystems
     whose inputs and outputs are connected via a connection map.  The overall
     system inputs and outputs are subsets of the subsystem inputs and outputs.
 
-    The function :func:`~control.interconnect` should be used to create an
+    The `interconnect` factory function should be used to create an
     interconnected I/O system since it performs additional argument
     processing and checking.
+
+    Parameters
+    ----------
+    syslist : list of `NonlinearIOSystem`
+        List of state space systems to interconnect.
+    connections : list of connections
+        Description of the internal connections between the subsystem.  See
+        `interconnect` for details.
+    inplist, outlist : list of input and output connections
+        Description of the inputs and outputs for the overall system.  See
+        `interconnect` for details.
+    inputs, outputs, states : int, list of str or None, optional
+        Description of the system inputs, outputs, and states.  See
+        `control.nlsys` for more details.
+    params : dict, optional
+        Parameter values for the systems.  Passed to the evaluation functions
+        for the system as default values, overriding internal defaults.
+    connection_type : str
+        Type of connection: 'explicit' (or None) for explicitly listed
+        set of connections, 'implicit' for connections made via signal names.
+
+    Attributes
+    ----------
+    ninputs, noutputs, nstates : int
+        Number of input, output and state variables.
+    shape : tuple
+        2-tuple of I/O system dimension, (noutputs, ninputs).
+    name : string, optional
+        System name.
+    connect_map : 2D array
+        Mapping of subsystem outputs to subsystem inputs.
+    input_map : 2D array
+        Mapping of system inputs to subsystem inputs.
+    output_map : 2D array
+        Mapping of (stacked) subsystem outputs and inputs to system outputs.
+    input_labels, output_labels, state_labels : list of str
+        Names for the input, output, and state variables.
+    input_offset, output_offset, state_offset : list of int
+        Offset to the subsystem inputs, outputs, and states in the overall
+        system input, output, and state arrays.
+    syslist_index : dict
+        Index of the subsystem with key given by the name of the subsystem.
+
+    See Also
+    --------
+    interconnect, NonlinearIOSystem, LinearICSystem
 
     """
     def __init__(self, syslist, connections=None, inplist=None, outlist=None,
@@ -811,7 +858,7 @@ class InterconnectedSystem(NonlinearIOSystem):
                 return (" - " if not first else "-") + \
                     f"{abs(gain)} * {signal}"
 
-        out += f"\nConnections:\n"
+        out += "\nConnections:\n"
         for i in range(len(input_list)):
             first = True
             cxn = f"{input_list[i]} <- "
@@ -831,7 +878,7 @@ class InterconnectedSystem(NonlinearIOSystem):
                 cxn, width=78, initial_indent=" * ",
                 subsequent_indent="     ")) + "\n"
 
-        out += f"\nOutputs:\n"
+        out += "\nOutputs:"
         for i in range(len(self.output_labels)):
             first = True
             cxn = f"{self.output_labels[i]} <- "
@@ -841,19 +888,19 @@ class InterconnectedSystem(NonlinearIOSystem):
                         cxn += cxn_string(
                             output_list[j], self.output_map[i, j], first)
                         first = False
-                out += "\n".join(textwrap.wrap(
+                out += "\n" + "\n".join(textwrap.wrap(
                     cxn, width=78, initial_indent=" * ",
-                    subsequent_indent="     ")) + "\n"
+                    subsequent_indent="     "))
 
         return out
 
-    def _update_params(self, params, warning=False):
+    def _update_params(self, params):
         for sys in self.syslist:
             local = sys.params.copy()   # start with system parameters
             local.update(self.params)   # update with global params
             if params:
                 local.update(params)    # update with locally passed parameters
-            sys._update_params(local, warning=warning)
+            sys._update_params(local)
 
     def _rhs(self, t, x, u):
         # Make sure state and input are vectors
@@ -890,6 +937,7 @@ class InterconnectedSystem(NonlinearIOSystem):
         # Make the full set of subsystem outputs to system output
         return self.output_map @ ylist
 
+    # Find steady state (static) inputs and outputs
     def _compute_static_io(self, t, x, u):
         # Figure out the total number of inputs and outputs
         (ninputs, noutputs) = self.connect_map.shape
@@ -1046,11 +1094,10 @@ class InterconnectedSystem(NonlinearIOSystem):
         self.noutputs = output_map.shape[0]
 
     def unused_signals(self):
-        """Find unused subsystem inputs and outputs
+        """Find unused subsystem inputs and outputs.
 
         Returns
         -------
-
         unused_inputs : dict
           A mapping from tuple of indices (isys, isig) to string
           '{sys}.{sig}', for all unused subsystem inputs.
@@ -1085,18 +1132,18 @@ class InterconnectedSystem(NonlinearIOSystem):
                 {outputs[i][:2]: outputs[i][2] for i in unused_sysout})
 
     def connection_table(self, show_names=False, column_width=32):
-        """Print table of connections inside an interconnected system model.
+        """Table of connections inside an interconnected system.
 
-        Intended primarily for :class:`InterconnectedSystem`'s that have been
+        Intended primarily for `InterconnectedSystem`'s that have been
         connected implicitly using signal names.
 
         Parameters
         ----------
         show_names : bool, optional
-            Instead of printing out the system number, print out the name of
-            each system. Default is False because system name is not usually
-            specified when performing implicit interconnection using
-            :func:`interconnect`.
+            Instead of printing out the system number, print out the name
+            of each system. Default is False because system name is not
+            usually specified when performing implicit interconnection
+            using `interconnect`.
         column_width : int, optional
             Character width of printed columns.
 
@@ -1111,6 +1158,7 @@ class InterconnectedSystem(NonlinearIOSystem):
         e         | input                         | C
         u         | C                             | P
         y         | P                             | output
+
         """
 
         print('signal'.ljust(10) + '| source'.ljust(column_width) + \
@@ -1184,13 +1232,14 @@ class InterconnectedSystem(NonlinearIOSystem):
                 for sig, isig in sys.output_index.items()
                 if sig == (basename)}
 
+    # TODO: change to internal function?  (not sure users need to see this)
     def check_unused_signals(
-            self, ignore_inputs=None, ignore_outputs=None, warning=True):
-        """Check for unused subsystem inputs and outputs
+            self, ignore_inputs=None, ignore_outputs=None, print_warning=True):
+        """Check for unused subsystem inputs and outputs.
 
         Check to see if there are any unused signals and return a list of
-        unused input and output signal descriptions.  If `warning` is True
-        and any unused inputs or outputs are found, emit a warning.
+        unused input and output signal descriptions.  If `warning` is
+        True and any unused inputs or outputs are found, emit a warning.
 
         Parameters
         ----------
@@ -1208,13 +1257,16 @@ class InterconnectedSystem(NonlinearIOSystem):
           If the 'sig' form is used, all subsystem outputs with that
           name are considered ignored.
 
+        print_warning : bool, optional
+            If True, print a warning listing any unused signals.
+
         Returns
         -------
-        dropped_inputs: list of tuples
+        dropped_inputs : list of tuples
             A list of the dropped input signals, with each element of the
             list in the form of (isys, isig).
 
-        dropped_outputs: list of tuples
+        dropped_outputs : list of tuples
             A list of the dropped output signals, with each element of the
             list in the form of (osys, osig).
 
@@ -1264,25 +1316,25 @@ class InterconnectedSystem(NonlinearIOSystem):
         used_ignored_inputs = set(ignore_input_map) - set(unused_inputs)
         used_ignored_outputs = set(ignore_output_map) - set(unused_outputs)
 
-        if warning and dropped_inputs:
+        if print_warning and dropped_inputs:
             msg = ('Unused input(s) in InterconnectedSystem: '
                    + '; '.join(f'{inp}={unused_inputs[inp]}'
                                for inp in dropped_inputs))
             warn(msg)
 
-        if warning and dropped_outputs:
+        if print_warning and dropped_outputs:
             msg = ('Unused output(s) in InterconnectedSystem: '
                    + '; '.join(f'{out} : {unused_outputs[out]}'
                                for out in dropped_outputs))
             warn(msg)
 
-        if warning and used_ignored_inputs:
+        if print_warning and used_ignored_inputs:
             msg = ('Input(s) specified as ignored is (are) used: '
                    + '; '.join(f'{inp} : {ignore_input_map[inp]}'
                                for inp in used_ignored_inputs))
             warn(msg)
 
-        if warning and used_ignored_outputs:
+        if print_warning and used_ignored_outputs:
             msg = ('Output(s) specified as ignored is (are) used: '
                    + '; '.join(f'{out}={ignore_output_map[out]}'
                                for out in used_ignored_outputs))
@@ -1294,39 +1346,39 @@ class InterconnectedSystem(NonlinearIOSystem):
 def nlsys(updfcn, outfcn=None, **kwargs):
     """Create a nonlinear input/output system.
 
-    Creates an :class:`~control.InputOutputSystem` for a nonlinear system by
-    specifying a state update function and an output function.  The new system
-    can be a continuous or discrete time system.
+    Creates an `InputOutputSystem` for a nonlinear system by specifying a
+    state update function and an output function.  The new system can be a
+    continuous or discrete-time system.
 
     Parameters
     ----------
-    updfcn : callable (or StateSpace)
+    updfcn : callable (or `StateSpace`)
         Function returning the state update function
 
-            `updfcn(t, x, u, params) -> array`
+            ``updfcn(t, x, u, params) -> array``
 
         where `x` is a 1-D array with shape (nstates,), `u` is a 1-D array
-        with shape (ninputs,), `t` is a float representing the currrent
+        with shape (ninputs,), `t` is a float representing the current
         time, and `params` is a dict containing the values of parameters
         used by the function.
 
-        If a :class:`StateSpace` system is passed as the update function,
+        If a `StateSpace` system is passed as the update function,
         then a nonlinear I/O system is created that implements the linear
         dynamics of the state space system.
 
     outfcn : callable
         Function returning the output at the given state
 
-            `outfcn(t, x, u, params) -> array`
+            ``outfcn(t, x, u, params) -> array``
 
-        where the arguments are the same as for `upfcn`.
+        where the arguments are the same as for `updfcn`.
 
     inputs : int, list of str or None, optional
         Description of the system inputs.  This can be given as an integer
         count or as a list of strings that name the individual signals.
         If an integer count is specified, the names of the signal will be
         of the form 's[i]' (where 's' is one of 'u', 'y', or 'x').  If
-        this parameter is not given or given as `None`, the relevant
+        this parameter is not given or given as None, the relevant
         quantity will be determined when possible based on other
         information provided to functions using the system.
 
@@ -1341,14 +1393,14 @@ def nlsys(updfcn, outfcn=None, **kwargs):
         operating in continuous or discrete time.  It can have the
         following values:
 
-        * dt = 0: continuous time system (default)
-        * dt > 0: discrete time system with sampling period 'dt'
-        * dt = True: discrete time with unspecified sampling period
-        * dt = None: no timebase specified
+        * `dt` = 0: continuous-time system (default)
+        * `dt` > 0: discrete-time system with sampling period `dt`
+        * `dt` = True: discrete time with unspecified sampling period
+        * `dt` = None: no timebase specified
 
     name : string, optional
         System name (used for specifying signals). If unspecified, a
-        generic name <sys[id]> is generated with a unique integer id.
+        generic name 'sys[id]' is generated with a unique integer id.
 
     params : dict, optional
         Parameter values for the system.  Passed to the evaluation functions
@@ -1356,7 +1408,7 @@ def nlsys(updfcn, outfcn=None, **kwargs):
 
     Returns
     -------
-    sys : :class:`NonlinearIOSystem`
+    sys : `NonlinearIOSystem`
         Nonlinear input/output system.
 
     Other Parameters
@@ -1391,8 +1443,8 @@ def nlsys(updfcn, outfcn=None, **kwargs):
     ...     kincar, timepts, [10, 0.05 * np.sin(timepts)])
 
     """
-    from .statesp import StateSpace
     from .iosys import _extended_system_name
+    from .statesp import StateSpace
 
     if isinstance(updfcn, StateSpace):
         sys_ss = updfcn
@@ -1420,9 +1472,9 @@ def nlsys(updfcn, outfcn=None, **kwargs):
 
 
 def input_output_response(
-        sys, T, U=0., X0=0, params=None, ignore_errors=False,
-        transpose=False, return_x=False, squeeze=None,
-        solve_ivp_kwargs=None, t_eval='T', **kwargs):
+        sys, timepts=None, inputs=0., initial_state=0., params=None,
+        ignore_errors=False, transpose=False, return_states=False,
+        squeeze=None, solve_ivp_kwargs=None, evaluation_times='T', **kwargs):
     """Compute the output response of a system to a given input.
 
     Simulate a dynamical system with a given input and return its output
@@ -1430,108 +1482,119 @@ def input_output_response(
 
     Parameters
     ----------
-    sys : NonlinearIOSystem or list of NonlinearIOSystem
+    sys : `NonlinearIOSystem` or list of `NonlinearIOSystem`
         I/O system(s) for which input/output response is simulated.
-    T : array-like
+    timepts (or T) : array_like
         Time steps at which the input is defined; values must be evenly spaced.
-    U : array-like, list, or number, optional
-        Input array giving input at each time `T` (default = 0).  If a list
-        is specified, each element in the list will be treated as a portion
-        of the input and broadcast (if necessary) to match the time vector.
-    X0 : array-like, list, or number, optional
+    inputs (or U) : array_like, list, or number, optional
+        Input array giving input at each time in `timepts` (default =
+        0). If a list is specified, each element in the list will be
+        treated as a portion of the input and broadcast (if necessary) to
+        match the time vector.
+    initial_state (or X0) : array_like, list, or number, optional
         Initial condition (default = 0).  If a list is given, each element
         in the list will be flattened and stacked into the initial
         condition.  If a smaller number of elements are given that the
         number of states in the system, the initial condition will be padded
         with zeros.
-    t_eval : array-list, optional
+    evaluation_times (or t_eval) : array-list, optional
         List of times at which the time response should be computed.
-        Defaults to ``T``.
-    return_x : bool, optional
-        If True, return the state vector when assigning to a tuple (default =
-        False).  See :func:`forced_response` for more details.
-        If True, return the values of the state at each time (default = False).
+        Defaults to `timepts`.
+    return_states (or return_x) : bool, optional
+        If True, return the state vector when assigning to a tuple.  See
+        `forced_response` for more details.  If True, return the values of
+        the state at each time Default is False.
     params : dict, optional
         Parameter values for the system.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
     squeeze : bool, optional
         If True and if the system has a single output, return the system
         output as a 1D array rather than a 2D array.  If False, return the
-        system output as a 2D array even if the system is SISO.  Default value
-        set by config.defaults['control.squeeze_time_response'].
+        system output as a 2D array even if the system is SISO.  Default
+        value set by `config.defaults['control.squeeze_time_response']`.
 
     Returns
     -------
-    results : TimeResponseData
-        Time response represented as a :class:`TimeResponseData` object
-        containing the following properties:
+    response : `TimeResponseData`
+        Time response data object representing the input/output response.
+        When accessed as a tuple, returns ``(time, outputs)`` or ``(time,
+        outputs, states`` if `return_x` is True.  If the input/output system
+        signals are named, these names will be used as labels for the time
+        response.  If `sys` is a list of systems, returns a `TimeResponseList`
+        object.  Results can be plotted using the `~TimeResponseData.plot`
+        method.  See `TimeResponseData` for more detailed information.
+    response.time : array
+        Time values of the output.
+    response.outputs : array
+        Response of the system.  If the system is SISO and `squeeze` is not
+        True, the array is 1D (indexed by time).  If the system is not SISO
+        or `squeeze` is False, the array is 2D (indexed by output and time).
+    response.states : array
+        Time evolution of the state vector, represented as a 2D array
+        indexed by state and time.
+    response.inputs : array
+        Input(s) to the system, indexed by input and time.
+    response.params : dict
+        Parameters values used for the simulation.
 
-        * time (array): Time values of the output.
-
-        * outputs (array): Response of the system.  If the system is SISO and
-          `squeeze` is not True, the array is 1D (indexed by time).  If the
-          system is not SISO or `squeeze` is False, the array is 2D (indexed
-          by output and time).
-
-        * states (array): Time evolution of the state vector, represented as
-          a 2D array indexed by state and time.
-
-        * inputs (array): Input(s) to the system, indexed by input and time.
-
-        * params (dict): Parameters values used for the simulation.
-
-        The return value of the system can also be accessed by assigning the
-        function to a tuple of length 2 (time, output) or of length 3 (time,
-        output, state) if ``return_x`` is ``True``.  If the input/output
-        system signals are named, these names will be used as labels for the
-        time response.
-
-    Other parameters
+    Other Parameters
     ----------------
     ignore_errors : bool, optional
-        If ``False`` (default), errors during computation of the trajectory
-        will raise a ``RuntimeError`` exception.  If ``True``, do not raise
-        an exception and instead set ``results.success`` to ``False`` and
-        place an error message in ``results.message``.
+        If False (default), errors during computation of the trajectory
+        will raise a `RuntimeError` exception.  If True, do not raise
+        an exception and instead set `response.success` to False and
+        place an error message in `response.message`.
     solve_ivp_method : str, optional
-        Set the method used by :func:`scipy.integrate.solve_ivp`.  Defaults
+        Set the method used by `scipy.integrate.solve_ivp`.  Defaults
         to 'RK45'.
     solve_ivp_kwargs : dict, optional
-        Pass additional keywords to :func:`scipy.integrate.solve_ivp`.
+        Pass additional keywords to `scipy.integrate.solve_ivp`.
     transpose : bool, default=False
         If True, transpose all input and output arrays (for backward
-        compatibility with MATLAB and :func:`scipy.signal.lsim`).
+        compatibility with MATLAB and `scipy.signal.lsim`).
 
     Raises
     ------
     TypeError
         If the system is not an input/output system.
     ValueError
-        If time step does not match sampling time (for discrete time systems).
+        If time step does not match sampling time (for discrete-time systems).
 
     Notes
     -----
-    1. If a smaller number of initial conditions are given than the number of
-       states in the system, the initial conditions will be padded with
-       zeros.  This is often useful for interconnected control systems where
-       the process dynamics are the first system and all other components
-       start with zero initial condition since this can be specified as
-       [xsys_0, 0].  A warning is issued if the initial conditions are padded
-       and and the final listed initial state is not zero.
+    If a smaller number of initial conditions are given than the number of
+    states in the system, the initial conditions will be padded with zeros.
+    This is often useful for interconnected control systems where the
+    process dynamics are the first system and all other components start
+    with zero initial condition since this can be specified as [xsys_0, 0].
+    A warning is issued if the initial conditions are padded and and the
+    final listed initial state is not zero.
 
-    2. If discontinuous inputs are given, the underlying SciPy numerical
-       integration algorithms can sometimes produce erroneous results due
-       to the default tolerances that are used.  The `ivp_method` and
-       `ivp_keywords` parameters can be used to tune the ODE solver and
-       produce better results.  In particular, using 'LSODA' as the
-       `ivp_method` or setting the `rtol` parameter to a smaller value
-       (e.g. using `ivp_kwargs={'rtol': 1e-4}`) can provide more accurate
-       results.
+    If discontinuous inputs are given, the underlying SciPy numerical
+    integration algorithms can sometimes produce erroneous results due to
+    the default tolerances that are used.  The `ivp_method` and
+    `ivp_keywords` parameters can be used to tune the ODE solver and
+    produce better results.  In particular, using 'LSODA' as the
+    `ivp_method` or setting the `rtol` parameter to a smaller value
+    (e.g. using ``ivp_kwargs={'rtol': 1e-4}``) can provide more accurate
+    results.
 
     """
     #
     # Process keyword arguments
     #
+    _process_kwargs(kwargs, _timeresp_aliases)
+    T = _process_param('timepts', timepts, kwargs, _timeresp_aliases)
+    U = _process_param('inputs', inputs, kwargs, _timeresp_aliases, sigval=0.)
+    X0 = _process_param(
+        'initial_state', initial_state, kwargs, _timeresp_aliases, sigval=0.)
+    return_x = _process_param(
+        'return_states', return_states, kwargs, _timeresp_aliases,
+        sigval=False)
+    # TODO: replace default value of evaluation_times with None?
+    t_eval = _process_param(
+        'evaluation_times', evaluation_times, kwargs, _timeresp_aliases,
+        sigval='T')
 
     # Figure out the method to be used
     solve_ivp_kwargs = solve_ivp_kwargs.copy() if solve_ivp_kwargs else {}
@@ -1556,9 +1619,10 @@ def input_output_response(
         sysdata, responses = sys, []
         for sys in sysdata:
             responses.append(input_output_response(
-                sys, T, U=U, X0=X0, params=params, transpose=transpose,
-                return_x=return_x, squeeze=squeeze, t_eval=t_eval,
-                solve_ivp_kwargs=solve_ivp_kwargs, **kwargs))
+                sys, timepts=T, inputs=U, initial_state=X0, params=params,
+                transpose=transpose, return_states=return_x, squeeze=squeeze,
+                evaluation_times=t_eval, solve_ivp_kwargs=solve_ivp_kwargs,
+                **kwargs))
         return TimeResponseList(responses)
 
     # Sanity checking on the input
@@ -1593,7 +1657,7 @@ def input_output_response(
     if isinstance(U, (tuple, list)) and len(U) != ntimepts:
         U_elements = []
         for i, u in enumerate(U):
-            u = np.array(u)     # convert everyting to an array
+            u = np.array(u)     # convert everything to an array
             # Process this input
             if u.ndim == 0 or (u.ndim == 1 and u.shape[0] != T.shape[0]):
                 # Broadcast array to the length of the time input
@@ -1629,7 +1693,7 @@ def input_output_response(
         legal_shapes = [(ninputs, ntimepts)]
 
     U = _check_convert_array(
-        U, legal_shapes, 'Parameter ``U``: ', squeeze=False)
+        U, legal_shapes, 'Parameter `U`: ', squeeze=False)
 
     # Always store the input as a 2D array
     U = U.reshape(-1, ntimepts)
@@ -1667,8 +1731,8 @@ def input_output_response(
         dt = (t - T[idx-1]) / (T[idx] - T[idx-1])
         return U[..., idx-1] * (1. - dt) + U[..., idx] * dt
 
-    # Check to make sure this is not a static function
-    if nstates == 0:            # No states => map input to output
+    # Check to make sure see if this is a static function
+    if sys.nstates == 0:
         # Make sure the user gave a time vector for evaluation (or 'T')
         if t_eval is None:
             # User overrode t_eval with None, but didn't give us the times...
@@ -1724,7 +1788,7 @@ def input_output_response(
         # Make sure the time vector is uniformly spaced
         dt = t_eval[1] - t_eval[0]
         if not np.allclose(t_eval[1:] - t_eval[:-1], dt):
-            raise ValueError("parameter ``t_eval``: time values must be "
+            raise ValueError("parameter `t_eval`: time values must be "
                              "equally spaced")
 
         # Make sure the sample time matches the given time
@@ -1735,11 +1799,11 @@ def input_output_response(
             # TODO: this test is brittle if dt =  sys.dt
             # First make sure that time increment is bigger than sampling time
             # if dt < sys.dt:
-            #     raise ValueError("Time steps ``T`` must match sampling time")
+            #     raise ValueError("Time steps `T` must match sampling time")
 
             # Check to make sure sampling time matches time increments
             if not np.isclose(dt, sys.dt):
-                raise ValueError("Time steps ``T`` must be equal to "
+                raise ValueError("Time steps `T` must be equal to "
                                  "sampling time")
 
         # Compute the solution
@@ -1778,15 +1842,15 @@ def input_output_response(
 
 
 class OperatingPoint():
-    """A class for representing the operating point of a nonlinear I/O system.
+    """Operating point of nonlinear I/O system.
 
-    The ``OperatingPoint`` class stores the operating point of a nonlinear
+    The OperatingPoint class stores the operating point of a nonlinear
     system, consisting of the state and input vectors for the system.  The
     main use for this class is as the return object for the
-    :func:`find_operating_point` function and as an input to the
-    :func:`linearize` function.
+    `find_operating_point` function and as an input to the
+    `linearize` function.
 
-    Attributes
+    Parameters
     ----------
     states : array
         State vector at the operating point.
@@ -1794,8 +1858,18 @@ class OperatingPoint():
         Input vector at the operating point.
     outputs : array, optional
         Output vector at the operating point.
-    result : :class:`scipy.optimize.OptimizeResult`, optional
-        Result from the :func:`scipy.optimize.root` function, if available.
+    result : `scipy.optimize.OptimizeResult`, optional
+        Result from the `scipy.optimize.root` function, if available.
+    return_outputs, return_result : bool, optional
+        If set to True, then when accessed a tuple the output values
+        and/or result of the root finding function will be returned.
+
+    Notes
+    -----
+    In addition to accessing the elements of the operating point as
+    attributes, if accessed as a list then the object will return ``(x0,
+    u0[, y0, res])``, where `y0` and `res` are returned depending on the
+    `return_outputs` and `return_result` parameters.
 
     """
     def __init__(
@@ -1835,8 +1909,9 @@ class OperatingPoint():
 
 
 def find_operating_point(
-        sys, x0, u0=None, y0=None, t=0, params=None, iu=None, iy=None,
-        ix=None, idx=None, dx0=None, root_method=None, root_kwargs=None,
+        sys, initial_state=0., inputs=None, outputs=None, t=0, params=None,
+        input_indices=None, output_indices=None, state_indices=None,
+        deriv_indices=None, derivs=None, root_method=None, root_kwargs=None,
         return_outputs=None, return_result=None, **kwargs):
     """Find an operating point for an input/output system.
 
@@ -1859,7 +1934,7 @@ def find_operating_point(
     and uses x0 and u0 as an initial guess to find the equilibrium point.
     If no equilibrium point can be found, the function returns the
     operating point that minimizes the state update (state derivative for
-    continuous time systems, state difference for discrete time systems).
+    continuous-time systems, state difference for discrete-time systems).
 
     More complex operating points can be found by specifying which states,
     inputs, or outputs should be used in computing the operating point, as
@@ -1868,15 +1943,15 @@ def find_operating_point(
 
     Parameters
     ----------
-    sys : NonlinearIOSystem
+    sys : `NonlinearIOSystem`
         I/O system for which the operating point is sought.
-    x0 : list of initial state values
+    initial_state (or x0) : list of initial state values
         Initial guess for the value of the state near the operating point.
-    u0 : list of input values, optional
+    inputs (or u0) : list of input values, optional
         If `y0` is not specified, sets the value of the input.  If `y0` is
         given, provides an initial guess for the value of the input.  Can
         be omitted if the system does not have any inputs.
-    y0 : list of output values, optional
+    outputs (or y0) : list of output values, optional
         If specified, sets the desired values of the outputs at the
         operating point.
     t : float, optional
@@ -1884,22 +1959,22 @@ def find_operating_point(
     params : dict, optional
         Parameter values for the system.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
-    iu : list of input indices, optional
+    input_indices (or iu) : list of input indices, optional
         If specified, only the inputs with the given indices will be fixed at
         the specified values in solving for an operating point.  All other
         inputs will be varied.  Input indices can be listed in any order.
-    iy : list of output indices, optional
-        If specified, only the outputs with the given indices will be fixed at
-        the specified values in solving for an operating point.  All other
+    output_indices (or iy) : list of output indices, optional
+        If specified, only the outputs with the given indices will be fixed
+        at the specified values in solving for an operating point.  All other
         outputs will be varied.  Output indices can be listed in any order.
-    ix : list of state indices, optional
+    state_indices (or ix) : list of state indices, optional
         If specified, states with the given indices will be fixed at the
         specified values in solving for an operating point.  All other
         states will be varied.  State indices can be listed in any order.
-    dx0 : list of update values, optional
+    derivs (or dx0) : list of update values, optional
         If specified, the value of update map must match the listed value
         instead of the default value for an equilibrium point.
-    idx : list of state indices, optional
+    deriv_indices (or idx) : list of state indices, optional
         If specified, state updates with the given indices will have their
         update maps fixed at the values given in `dx0`.  All other update
         values will be ignored in solving for an operating point.  State
@@ -1907,43 +1982,47 @@ def find_operating_point(
         fixed at `dx0` in searching for an operating point.
     root_method : str, optional
         Method to find the operating point.  If specified, this parameter
-        is passed to the :func:`scipy.optimize.root` function.
+        is passed to the `scipy.optimize.root` function.
     root_kwargs : dict, optional
-        Additional keyword arguments to pass :func:`scipy.optimize.root`.
+        Additional keyword arguments to pass `scipy.optimize.root`.
     return_outputs : bool, optional
         If True, return the value of outputs at the operating point.
     return_result : bool, optional
         If True, return the `result` option from the
-        :func:`scipy.optimize.root` function used to compute the
+        `scipy.optimize.root` function used to compute the
         operating point.
 
     Returns
     -------
-    op_point : OperatingPoint
+    op_point : `OperatingPoint`
         The solution represented as an `OperatingPoint` object.  The main
-        attributes are `states` and `inputs`, which represent the state
-        and input arrays at the operating point.  See
-        :class:`OperatingPoint` for a description of other attributes.
-
-        If accessed as a tuple, returns `states`, `inputs`, and optionally
-        `outputs` and `result` based on the `return_outputs` and
-        `return_result` parameters.
+        attributes are `states` and `inputs`, which represent the state and
+        input arrays at the operating point.  If accessed as a tuple, returns
+        `states`, `inputs`, and optionally `outputs` and `result` based on the
+        `return_outputs` and `return_result` parameters.  See `OperatingPoint`
+        for a description of other attributes.
+    op_point.states : array
+        State vector at the operating point.
+    op_point.inputs : array
+        Input vector at the operating point.
+    op_point.outputs : array, optional
+        Output vector at the operating point.
 
     Notes
     -----
-    For continuous time systems, equilibrium points are defined as points
+    For continuous-time systems, equilibrium points are defined as points
     for which the right hand side of the differential equation is zero:
-    :math:`f(t, x_e, u_e) = 0`. For discrete time systems, equilibrium
+    :math:`f(t, x_e, u_e) = 0`. For discrete-time systems, equilibrium
     points are defined as points for which the right hand side of the
     difference equation returns the current state: :math:`f(t, x_e, u_e) =
     x_e`.
 
-    Operating points are found using the :func:`scipy.optimize.root`
+    Operating points are found using the `scipy.optimize.root`
     function, which will attempt to find states and inputs that satisfy the
     specified constraints.  If no solution is found and `return_result` is
-    `False`, the returned state and input for the operating point will be
-    `None`.  If `return_result` is `True`, then the return values from
-    :func:`scipy.optimize.root` will be returned (but may not be valid).
+    False, the returned state and input for the operating point will be
+    None.  If `return_result` is True, then the return values from
+    `scipy.optimize.root` will be returned (but may not be valid).
     If `root_method` is set to 'lm', then the least squares solution (in
     the free variables) will be returned.
 
@@ -1951,8 +2030,29 @@ def find_operating_point(
     from scipy.optimize import root
 
     # Process keyword arguments
-    return_outputs = config._process_legacy_keyword(
-        kwargs, 'return_y', 'return_outputs', return_outputs)
+    aliases = {
+        'initial_state': (['x0', 'X0'], []),
+        'inputs': (['u0'], []),
+        'outputs': (['y0'], []),
+        'derivs': (['dx0'], []),
+        'input_indices': (['iu'], []),
+        'output_indices': (['iy'], []),
+        'state_indices': (['ix'], []),
+        'deriv_indices': (['idx'], []),
+        'return_outputs': ([], ['return_y']),
+    }
+    _process_kwargs(kwargs, aliases)
+    x0 = _process_param(
+        'initial_state', initial_state, kwargs, aliases, sigval=0.)
+    u0 = _process_param('inputs', inputs, kwargs, aliases)
+    y0 = _process_param('outputs', outputs, kwargs, aliases)
+    dx0 = _process_param('derivs', derivs, kwargs, aliases)
+    iu = _process_param('input_indices', input_indices, kwargs, aliases)
+    iy = _process_param('output_indices', output_indices, kwargs, aliases)
+    ix = _process_param('state_indices', state_indices, kwargs, aliases)
+    idx = _process_param('deriv_indices', deriv_indices, kwargs, aliases)
+    return_outputs = _process_param(
+        'return_outputs', return_outputs, kwargs, aliases)
     if kwargs:
         raise TypeError("unrecognized keyword(s): " + str(kwargs))
 
@@ -1962,9 +2062,9 @@ def find_operating_point(
         root_kwargs['method'] = root_method
 
     # Figure out the number of states, inputs, and outputs
-    x0, nstates = _process_vector_argument(x0, "x0", sys.nstates)
-    u0, ninputs = _process_vector_argument(u0, "u0", sys.ninputs)
-    y0, noutputs = _process_vector_argument(y0, "y0", sys.noutputs)
+    x0, nstates = _process_vector_argument(x0, "initial_states", sys.nstates)
+    u0, ninputs = _process_vector_argument(u0, "inputs", sys.ninputs)
+    y0, noutputs = _process_vector_argument(y0, "outputs", sys.noutputs)
 
     # Make sure the input arguments match the sizes of the system
     if len(x0) != nstates or \
@@ -2046,10 +2146,10 @@ def find_operating_point(
 
         # Construct the index lists for mapping variables and constraints
         #
-        # The mechanism by which we implement the root finding function is to
-        # map the subset of variables we are searching over into the inputs
-        # and states, and then return a function that represents the equations
-        # we are trying to solve.
+        # The mechanism by which we implement the root finding function is
+        # to map the subset of variables we are searching over into the
+        # inputs and states, and then return a function that represents the
+        # equations we are trying to solve.
         #
         # To do this, we need to carry out the following operations:
         #
@@ -2156,20 +2256,20 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
     """Linearize an input/output system at a given state and input.
 
     Compute the linearization of an I/O system at an operating point (state
-    and input) and returns a :class:`~control.StateSpace` object.  The
+    and input) and returns a `StateSpace` object.  The
     operating point need not be an equilibrium point.
 
     Parameters
     ----------
-    sys : InputOutputSystem
+    sys : `InputOutputSystem`
         The system to be linearized.
-    xeq : array or :class:`~control.OperatingPoint`
+    xeq : array or `OperatingPoint`
         The state or operating point at which the linearization will be
         evaluated (does not need to be an equilibrium state).
     ueq : array, optional
         The input at which the linearization will be evaluated (does not need
-        to correspond to an equlibrium state).  Can be omitted if `xeq` is
-        an :class:`~control.OperatingPoint`.  Defaults to 0.
+        to correspond to an equilibrium state).  Can be omitted if `xeq` is
+        an `OperatingPoint`.  Defaults to 0.
     t : float, optional
         The time at which the linearization will be computed (for time-varying
         systems).
@@ -2178,11 +2278,11 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
         for the system as default values, overriding internal defaults.
     name : string, optional
         Set the name of the linearized system.  If not specified and
-        if `copy_names` is `False`, a generic name <sys[id]> is generated
-        with a unique integer id.  If `copy_names` is `True`, the new system
+        if `copy_names` is False, a generic name 'sys[id]' is generated
+        with a unique integer id.  If `copy_names` is True, the new system
         name is determined by adding the prefix and suffix strings in
-        config.defaults['iosys.linearized_system_name_prefix'] and
-        config.defaults['iosys.linearized_system_name_suffix'], with the
+        `config.defaults['iosys.linearized_system_name_prefix']` and
+        `config.defaults['iosys.linearized_system_name_suffix']`, with the
         default being to add the suffix '$linearized'.
     copy_names : bool, Optional
         If True, Copy the names of the input signals, output signals, and
@@ -2190,15 +2290,15 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
 
     Returns
     -------
-    ss_sys : StateSpace
-        The linearization of the system, as a :class:`~control.StateSpace`
+    ss_sys : `StateSpace`
+        The linearization of the system, as a `StateSpace`
         object.
 
     Other Parameters
     ----------------
     inputs : int, list of str or None, optional
         Description of the system inputs.  If not specified, the original
-        system inputs are used.  See :class:`InputOutputSystem` for more
+        system inputs are used.  See `InputOutputSystem` for more
         information.
     outputs : int, list of str or None, optional
         Description of the system outputs.  Same format as `inputs`.
@@ -2240,29 +2340,29 @@ def interconnect(
 
     This function creates a new system that is an interconnection of a set of
     input/output systems.  If all of the input systems are linear I/O systems
-    (type :class:`~control.StateSpace`) then the resulting system will be
-    a linear interconnected I/O system (type :class:`~control.LinearICSystem`)
+    (type `StateSpace`) then the resulting system will be
+    a linear interconnected I/O system (type `LinearICSystem`)
     with the appropriate inputs, outputs, and states.  Otherwise, an
-    interconnected I/O system (type :class:`~control.InterconnectedSystem`)
+    interconnected I/O system (type `InterconnectedSystem`)
     will be created.
 
     Parameters
     ----------
-    syslist : list of InputOutputSystems
-        The list of input/output systems to be connected
+    syslist : list of `NonlinearIOSystem`
+        The list of (state-based) input/output systems to be connected.
 
     connections : list of connections, optional
-        Description of the internal connections between the subsystems:
+        Description of the internal connections between the subsystems::
 
             [connection1, connection2, ...]
 
-        Each connection is itself a list that describes an input to one of the
-        subsystems.  The entries are of the form:
+        Each connection is itself a list that describes an input to one of
+        the subsystems.  The entries are of the form::
 
             [input-spec, output-spec1, output-spec2, ...]
 
         The input-spec can be in a number of different forms.  The lowest
-        level representation is a tuple of the form `(subsys_i, inp_j)`
+        level representation is a tuple of the form ``(subsys_i, inp_j)``
         where `subsys_i` is the index into `syslist` and `inp_j` is the
         index into the input vector for the subsystem.  If the signal index
         is omitted, then all subsystem inputs are used.  If systems and
@@ -2270,38 +2370,38 @@ def interconnect(
         are also recognized.  Finally, for multivariable systems the signal
         index can be given as a list, for example '(subsys_i, [inp_j1, ...,
         inp_jn])'; or as a slice, for example, 'sys.sig[i:j]'; or as a base
-        name `sys.sig` (which matches `sys.sig[i]`).
+        name 'sys.sig' (which matches 'sys.sig[i]').
 
         Similarly, each output-spec should describe an output signal from
         one of the subsystems.  The lowest level representation is a tuple
-        of the form `(subsys_i, out_j, gain)`.  The input will be
+        of the form ``(subsys_i, out_j, gain)``.  The input will be
         constructed by summing the listed outputs after multiplying by the
         gain term.  If the gain term is omitted, it is assumed to be 1.  If
-        the subsystem index `subsys_i` is omitted, then all outputs of the
+        the subsystem index 'subsys_i' is omitted, then all outputs of the
         subsystem are used.  If systems and signals are given names, then
         the form 'sys.sig', ('sys', 'sig') or ('sys', 'sig', gain) are also
         recognized, and the special form '-sys.sig' can be used to specify
-        a signal with gain -1.  Lists, slices, and base namess can also be
+        a signal with gain -1.  Lists, slices, and base names can also be
         used, as long as the number of elements for each output spec
-        mataches the input spec.
+        matches the input spec.
 
         If omitted, the `interconnect` function will attempt to create the
-        interconnection map by connecting all signals with the same base names
-        (ignoring the system name).  Specifically, for each input signal name
-        in the list of systems, if that signal name corresponds to the output
-        signal in any of the systems, it will be connected to that input (with
-        a summation across all signals if the output name occurs in more than
-        one system).
+        interconnection map by connecting all signals with the same base
+        names (ignoring the system name).  Specifically, for each input
+        signal name in the list of systems, if that signal name corresponds
+        to the output signal in any of the systems, it will be connected to
+        that input (with a summation across all signals if the output name
+        occurs in more than one system).
 
-        The `connections` keyword can also be set to `False`, which will leave
+        The `connections` keyword can also be set to False, which will leave
         the connection map empty and it can be specified instead using the
-        low-level :func:`~control.InterconnectedSystem.set_connect_map`
+        low-level `InterconnectedSystem.set_connect_map`
         method.
 
     inplist : list of input connections, optional
         List of connections for how the inputs for the overall system are
         mapped to the subsystem inputs.  The entries for a connection are
-        of the form:
+        of the form::
 
             [input-spec1, input-spec2, ...]
 
@@ -2315,7 +2415,7 @@ def interconnect(
     outlist : list of output connections, optional
         List of connections for how the outputs from the subsystems are
         mapped to overall system outputs.  The entries for a connection are
-        of the form:
+        of the form::
 
             [output-spec1, output-spec2, ...]
 
@@ -2324,15 +2424,15 @@ def interconnect(
         term) to form the system output.
 
         If omitted, the output map can be specified using the
-        :func:`~control.InterconnectedSystem.set_output_map` method.
+        `InterconnectedSystem.set_output_map` method.
 
     inputs : int, list of str or None, optional
         Description of the system inputs.  This can be given as an integer
-        count or as a list of strings that name the individual signals.  If an
-        integer count is specified, the names of the signal will be of the
-        form 's[i]' (where 's' is one of 'u', 'y', or 'x').  If this parameter
-        is not given or given as `None`, the relevant quantity will be
-        determined when possible based on other information provided to
+        count or as a list of strings that name the individual signals.  If
+        an integer count is specified, the names of the signal will be of
+        the form 's[i]' (where 's' is one of 'u', 'y', or 'x').  If this
+        parameter is not given or given as None, the relevant quantity will
+        be determined when possible based on other information provided to
         functions using the system.
 
     outputs : int, list of str or None, optional
@@ -2340,9 +2440,10 @@ def interconnect(
 
     states : int, list of str, or None, optional
         Description of the system states.  Same format as `inputs`. The
-        default is `None`, in which case the states will be given names of the
-        form '<subsys_name>.<state_name>', for each subsys in syslist and each
-        state_name of each subsys.
+        default is None, in which case the states will be given names of
+        the form '<subsys_name><delim><state_name>', for each subsys in
+        syslist and each state_name of each subsys, where <delim> is the
+        value of `config.defaults['iosys.state_name_delim']`.
 
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions
@@ -2351,17 +2452,28 @@ def interconnect(
 
     dt : timebase, optional
         The timebase for the system, used to specify whether the system is
-        operating in continuous or discrete time.  It can have the following
+        operating in continuous or discrete-time.  It can have the following
         values:
 
-        * dt = 0: continuous time system (default)
-        * dt > 0: discrete time system with sampling period 'dt'
-        * dt = True: discrete time with unspecified sampling period
-        * dt = None: no timebase specified
+        * `dt` = 0: continuous-time system (default)
+        * `dt` > 0`: discrete-time system with sampling period `dt`
+        * `dt` = True: discrete time with unspecified sampling period
+        * `dt` = None: no timebase specified
 
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
-        name <sys[id]> is generated with a unique integer id.
+        name 'sys[id]' is generated with a unique integer id.
+
+    Returns
+    -------
+    sys : `InterconnectedSystem`
+        `NonlinearIOSystem` consisting of the interconnected subsystems.
+
+    Other Parameters
+    ----------------
+    input_prefix, output_prefix, state_prefix : string, optional
+        Set the prefix for input, output, and state signals.  Defaults =
+        'u', 'y', 'x'.
 
     check_unused : bool, optional
         If True, check for unused sub-system signals.  This check is
@@ -2394,14 +2506,13 @@ def interconnect(
 
     warn_duplicate : None, True, or False, optional
         Control how warnings are generated if duplicate objects or names are
-        detected.  In `None` (default), then warnings are generated for
-        systems that have non-generic names.  If `False`, warnings are not
-        generated and if `True` then warnings are always generated.
+        detected.  In None (default), then warnings are generated for
+        systems that have non-generic names.  If False, warnings are not
+        generated and if True then warnings are always generated.
 
     debug : bool, default=False
         Print out information about how signals are being processed that
         may be useful in understanding why something is not working.
-
 
     Examples
     --------
@@ -2431,7 +2542,7 @@ def interconnect(
     ...     inplist=['C'], outlist=['P'])
 
     A feedback system can also be constructed using the
-    :func:`~control.summing_junction` function and the ability to
+    `summing_junction` function and the ability to
     automatically interconnect signals with the same names:
 
     >>> P = ct.tf(1, [1, 0], inputs='u', outputs='y')
@@ -2444,38 +2555,37 @@ def interconnect(
     If a system is duplicated in the list of systems to be connected,
     a warning is generated and a copy of the system is created with the
     name of the new system determined by adding the prefix and suffix
-    strings in config.defaults['iosys.duplicate_system_name_prefix']
-    and config.defaults['iosys.duplicate_system_name_suffix'], with the
+    strings in `config.defaults['iosys.duplicate_system_name_prefix']`
+    and `config.defaults['iosys.duplicate_system_name_suffix']`, with the
     default being to add the suffix '$copy' to the system name.
 
     In addition to explicit lists of system signals, it is possible to
     lists vectors of signals, using one of the following forms::
 
-      (subsys, [i1, ..., iN], gain)     signals with indices i1, ..., in
-      'sysname.signal[i:j]'             range of signal names, i through j-1
-      'sysname.signal[:]'               all signals with given prefix
+      (subsys, [i1, ..., iN], gain)   # signals with indices i1, ..., in
+      'sysname.signal[i:j]'           # range of signal names, i through j-1
+      'sysname.signal[:]'             # all signals with given prefix
 
     While in many Python functions tuples can be used in place of lists,
     for the interconnect() function the only use of tuples should be in the
     specification of an input- or output-signal via the tuple notation
-    `(subsys_i, signal_j, gain)` (where `gain` is optional).  If you get an
+    ``(subsys_i, signal_j, gain)`` (where `gain` is optional).  If you get an
     unexpected error message about a specification being of the wrong type
     or not being found, check to make sure you are not using a tuple where
     you should be using a list.
 
     In addition to its use for general nonlinear I/O systems, the
-    :func:`~control.interconnect` function allows linear systems to be
+    `interconnect` function allows linear systems to be
     interconnected using named signals (compared with the
-    :func:`~control.connect` function, which uses signal indices) and to be
-    treated as both a :class:`~control.StateSpace` system as well as an
-    :class:`~control.InputOutputSystem`.
+    legacy `connect` function, which uses signal indices) and to be
+    treated as both a `StateSpace` system as well as an
+    `InputOutputSystem`.
 
     The `input` and `output` keywords can be used instead of `inputs` and
     `outputs`, for more natural naming of SISO systems.
 
     """
-    from .statesp import LinearICSystem, StateSpace, _convert_to_statespace
-    from .xferfcn import TransferFunction
+    from .statesp import LinearICSystem, StateSpace
 
     dt = kwargs.pop('dt', None)         # bypass normal 'dt' processing
     name, inputs, outputs, states, _ = _process_iosys_keywords(kwargs)
@@ -2537,7 +2647,7 @@ def interconnect(
     # This includes signal lists such as ('sysname', ['sig1', 'sig2', ...])
     # as well as slice-based specifications such as 'sysname.signal[i:j]'.
     #
-    dprint(f"Pre-processing connections:")
+    dprint("Pre-processing connections:")
     new_connections = []
     for connection in connections:
         dprint(f"  parsing {connection=}")
@@ -2576,7 +2686,7 @@ def interconnect(
     #
     dprint(f"Pre-processing input connections: {inplist}")
     if not isinstance(inplist, list):
-        dprint(f"  converting inplist to list")
+        dprint("  converting inplist to list")
         inplist = [inplist]
     new_inplist, new_inputs = [], [] if inplist_none else inputs
 
@@ -2612,7 +2722,7 @@ def interconnect(
                         new_connection.append((isys, isig, gain))
 
                     if len(new_connections) == 0:
-                        # First time we have seen this signal => initalize
+                        # First time we have seen this signal => initialize
                         for cnx in new_connection:
                             new_connections.append([cnx])
                         if inplist_none:
@@ -2639,7 +2749,7 @@ def interconnect(
         else:
             if isinstance(connection, list):
                 # Passed a list => create input map
-                dprint(f"  detected input list")
+                dprint("  detected input list")
                 signal_list = []
                 for spec in connection:
                     isys, indices, gain = _parse_spec(syslist, spec, 'input')
@@ -2665,7 +2775,7 @@ def interconnect(
     #
     dprint(f"Pre-processing output connections: {outlist}")
     if not isinstance(outlist, list):
-        dprint(f"  converting outlist to list")
+        dprint("  converting outlist to list")
         outlist = [outlist]
     new_outlist, new_outputs = [], [] if outlist_none else outputs
     for iout, connection in enumerate(outlist):
@@ -2742,7 +2852,7 @@ def interconnect(
 
             if isinstance(connection, list):
                 # Passed a list => create input map
-                dprint(f"  detected output list")
+                dprint("  detected output list")
                 signal_list = []
                 for spec in connection:
                     signal_list += _find_output_or_input_signal(spec)
@@ -2773,7 +2883,7 @@ def interconnect(
     if add_unused:
         # Get all unused signals
         dropped_inputs, dropped_outputs = newsys.check_unused_signals(
-            ignore_inputs, ignore_outputs, warning=False)
+            ignore_inputs, ignore_outputs, print_warning=False)
 
         # Add on any unused signals that we aren't ignoring
         for isys, isig in dropped_inputs:
@@ -2856,8 +2966,8 @@ def _process_vector_argument(arg, name, size):
     return val, nelem
 
 
-# Utility function to create an I/O system from a static gain
-def _convert_static_iosystem(sys):
+# Utility function to create an I/O system (from number or array)
+def _convert_to_iosystem(sys):
     # If we were given an I/O system, do nothing
     if isinstance(sys, InputOutputSystem):
         return sys
@@ -2875,23 +2985,22 @@ def _convert_static_iosystem(sys):
             outputs=sys.shape[0], inputs=sys.shape[1], dt=None)
 
 def connection_table(sys, show_names=False, column_width=32):
-    """Print table of connections inside an interconnected system model.
+    """Print table of connections inside interconnected system.
 
-    Intended primarily for :class:`InterconnectedSystems` that have been
+    Intended primarily for `InterconnectedSystem`'s that have been
     connected implicitly using signal names.
 
     Parameters
     ----------
-    sys : :class:`InterconnectedSystem`
-        Interconnected system object
+    sys : `InterconnectedSystem`
+        Interconnected system object.
     show_names : bool, optional
         Instead of printing out the system number, print out the name of
         each system. Default is False because system name is not usually
         specified when performing implicit interconnection using
-        :func:`interconnect`.
+        `interconnect`.
     column_width : int, optional
         Character width of printed columns.
-
 
     Examples
     --------
@@ -2904,6 +3013,7 @@ def connection_table(sys, show_names=False, column_width=32):
     e         | input                   | C
     u         | C                       | P
     y         | P                       | output
+
     """
     assert isinstance(sys, InterconnectedSystem), "system must be"\
         "an InterconnectedSystem."

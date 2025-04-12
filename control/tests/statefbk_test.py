@@ -7,15 +7,15 @@ import numpy as np
 import pytest
 import itertools
 import warnings
-from math import pi, atan
+from math import pi
 
 import control as ct
-from control import lqe, dlqe, poles, rss, ss, tf
+from control import poles, rss, ss, tf
 from control.exception import ControlDimension, ControlSlycot, \
     ControlArgument, slycot_check
 from control.mateqn import care, dare
 from control.statefbk import (ctrb, obsv, place, place_varga, lqr, dlqr,
-                              gram, acker)
+                              gram, place_acker)
 from control.tests.conftest import slycotonly
 
 
@@ -57,6 +57,26 @@ class TestStatefbk:
         Wc = ctrb(A, B, t=t)
         np.testing.assert_array_almost_equal(Wc, Wctrue)
 
+    def testCtrbNdim1(self):
+        # gh-1097: treat 1-dim B as nx1
+        A = np.array([[1., 2.], [3., 4.]])
+        B = np.array([5., 7.])
+        Wctrue = np.array([[5., 19.], [7., 43.]])
+        Wc = ctrb(A, B)
+        np.testing.assert_array_almost_equal(Wc, Wctrue)
+
+    def testCtrbRejectMismatch(self):
+        # gh-1097: check A, B for compatible shapes
+        with pytest.raises(
+                ControlDimension, match='.* A must be a square matrix'):
+            ctrb([[1,2]],[1])
+        with pytest.raises(
+                ControlDimension, match='B has the wrong number of rows'):
+            ctrb([[1,2],[2,3]], 1)
+        with pytest.raises(
+                ControlDimension, match='B has the wrong number of rows'):
+            ctrb([[1,2],[2,3]], [[1,2]])
+
     def testObsvSISO(self):
         A = np.array([[1., 2.], [3., 4.]])
         C = np.array([[5., 7.]])
@@ -78,6 +98,26 @@ class TestStatefbk:
         Wotrue = np.array([[5., 6.], [7., 8.]])
         Wo = obsv(A, C, t=t)
         np.testing.assert_array_almost_equal(Wo, Wotrue)
+
+    def testObsvNdim1(self):
+        # gh-1097: treat 1-dim C as 1xn
+        A = np.array([[1., 2.], [3., 4.]])
+        C = np.array([5., 7.])
+        Wotrue = np.array([[5., 7.], [26., 38.]])
+        Wo = obsv(A, C)
+        np.testing.assert_array_almost_equal(Wo, Wotrue)
+
+    def testObsvRejectMismatch(self):
+        # gh-1097: check A, C for compatible shapes
+        with pytest.raises(
+                ControlDimension, match='.* A must be a square matrix'):
+            obsv([[1,2]],[1])
+        with pytest.raises(
+                ControlDimension, match='C has the wrong number of columns'):
+            obsv([[1,2],[2,3]], 1)
+        with pytest.raises(
+                ControlDimension, match='C has the wrong number of columns'):
+            obsv([[1,2],[2,3]], [[1],[2]])
 
     def testCtrbObsvDuality(self):
         A = np.array([[1.2, -2.3], [3.4, -4.5]])
@@ -229,7 +269,7 @@ class TestStatefbk:
                 desired = poles(des)
 
                 # Now place the poles using acker
-                K = acker(sys.A, sys.B, desired)
+                K = place_acker(sys.A, sys.B, desired)
                 new = ss(sys.A - sys.B * K, sys.B, sys.C, sys.D)
                 placed = poles(new)
 
@@ -534,7 +574,7 @@ class TestStatefbk:
         assert np.all(sgn * (np.abs(L) - 1) > 0)
 
     def test_lqr_discrete(self):
-        """Test overloading of lqr operator for discrete time systems"""
+        """Test overloading of lqr operator for discrete-time systems"""
         csys = ct.rss(2, 1, 1)
         dsys = ct.drss(2, 1, 1)
         Q = np.eye(2)
@@ -547,7 +587,7 @@ class TestStatefbk:
         np.testing.assert_almost_equal(S_csys, S_expl)
         np.testing.assert_almost_equal(E_csys, E_expl)
 
-        # Calling lqr() with a discrete time system should call dlqr()
+        # Calling lqr() with a discrete-time system should call dlqr()
         K_lqr, S_lqr, E_lqr = ct.lqr(dsys, Q, R)
         K_dlqr, S_dlqr, E_dlqr = ct.dlqr(dsys, Q, R)
         np.testing.assert_almost_equal(K_lqr, K_dlqr)
@@ -562,7 +602,7 @@ class TestStatefbk:
         np.testing.assert_almost_equal(S_asys, S_expl)
         np.testing.assert_almost_equal(E_asys, E_expl)
 
-        # Calling dlqr() with a continuous time system should raise an error
+        # Calling dlqr() with a continuous-time system should raise an error
         with pytest.raises(ControlArgument, match="dsys must be discrete"):
             K, S, E = ct.dlqr(csys, Q, R)
 
@@ -743,7 +783,7 @@ class TestStatefbk:
 
 
     def test_lqr_integral_continuous(self):
-        # Generate a continuous time system for testing
+        # Generate a continuous-time system for testing
         sys = ct.rss(4, 4, 2, strictly_proper=True)
         sys.C = np.eye(4)       # reset output to be full state
         C_int = np.eye(2, 4)    # integrate outputs for first two states
@@ -810,7 +850,7 @@ class TestStatefbk:
             assert abs(ctrl_tf(1e-9)[1][1]) > 1e6
 
     def test_lqr_integral_discrete(self):
-        # Generate a discrete time system for testing
+        # Generate a discrete-time system for testing
         sys = ct.drss(4, 4, 2, strictly_proper=True)
         sys.C = np.eye(4)       # reset output to be full state
         C_int = np.eye(2, 4)    # integrate outputs for first two states
@@ -820,7 +860,7 @@ class TestStatefbk:
         K, _, _ = ct.lqr(
             sys, np.eye(sys.nstates + nintegrators), np.eye(sys.ninputs),
             integral_action=C_int)
-        Kp, Ki = K[:, :sys.nstates], K[:, sys.nstates:]
+        Kp, _Ki = K[:, :sys.nstates], K[:, sys.nstates:]
 
         # Create an I/O system for the controller
         ctrl, clsys = ct.create_statefbk_iosystem(
@@ -845,7 +885,7 @@ class TestStatefbk:
         "rss_fun, lqr_fun",
         [(ct.rss, lqr), (ct.drss, dlqr)])
     def test_lqr_errors(self, rss_fun, lqr_fun):
-        # Generate a discrete time system for testing
+        # Generate a discrete-time system for testing
         sys = rss_fun(4, 4, 2, strictly_proper=True)
 
         with pytest.raises(ControlArgument, match="must pass an array"):
@@ -935,7 +975,6 @@ def unicycle():
         states=['x_', 'y_', 'theta_'],
         params={'a': 1})        # only used for testing params
 
-from math import pi
 
 @pytest.mark.parametrize("method", ['nearest', 'linear', 'cubic'])
 def test_gainsched_unicycle(unicycle, method):
@@ -1198,19 +1237,9 @@ def test_create_statefbk_errors():
 
 
 def test_create_statefbk_params(unicycle):
-    # Speeds and angles at which to compute the gains
-    speeds = [1, 5, 10]
-    angles = np.linspace(0, pi/2, 4)
-    points = list(itertools.product(speeds, angles))
-
-    # Gains for each speed (using LQR controller)
     Q = np.identity(unicycle.nstates)
     R = np.identity(unicycle.ninputs)
     gain, _, _ = ct.lqr(unicycle.linearize([0, 0, 0], [5, 0]), Q, R)
-
-    #
-    # Schedule on desired speed and angle
-    #
 
     # Create a linear controller
     ctrl, clsys = ct.create_statefbk_iosystem(unicycle, gain)

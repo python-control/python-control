@@ -1,32 +1,26 @@
 # rlocus.py - code for computing a root locus plot
-# Code contributed by Ryan Krauss, 2010
+#
+# Initial author: Ryan Krauss
+# Creation date: 2010
 #
 # RMM, 17 June 2010: modified to be a standalone piece of code
-#   * Added BSD copyright info to file (per Ryan)
-#   * Added code to convert (num, den) to poly1d's if they aren't already.
-#     This allows Ryan's code to run on a standard signal.ltisys object
-#     or a control.TransferFunction object.
-#   * Added some comments to make sure I understand the code
 #
-# RMM, 2 April 2011: modified to work with new LTI structure (see ChangeLog)
-#   * Not tested: should still work on signal.ltisys objects
+# RMM, 2 April 2011: modified to work with new LTI structure
 #
-# Sawyer B. Fuller (minster@uw.edu) 21 May 2020:
-#   * added compatibility with discrete-time systems.
-#
+# Sawyer B. Fuller (minster@uw.edu) 21 May 2020: added compatibility
+# with discrete-time systems.
+
+"""Code for computing a root locus plot."""
 
 import warnings
-from functools import partial
 
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy.signal  # signal processing toolbox
-from numpy import array, imag, poly1d, real, vstack, zeros_like
+from numpy import poly1d, vstack, zeros_like
 
 from . import config
 from .ctrlplot import ControlPlot
 from .exception import ControlMIMONotImplemented
-from .iosys import isdtime
 from .lti import LTI
 from .xferfcn import _convert_to_transfer_function
 
@@ -55,7 +49,7 @@ def root_locus_map(sysdata, gains=None):
 
     Returns
     -------
-    rldata : PoleZeroData or list of PoleZeroData
+    rldata : `PoleZeroData` or list of `PoleZeroData`
         Root locus data object(s).  The loci of the root locus diagram are
         available in the array `rldata.loci`, indexed by the gain index and
         the locus index, and the gains are in the array `rldata.gains`.
@@ -63,7 +57,7 @@ def root_locus_map(sysdata, gains=None):
     Notes
     -----
     For backward compatibility, the `rldata` return object can be
-    assigned to the tuple `roots, gains`.
+    assigned to the tuple ``(roots, gains)``.
 
     """
     from .pzmap import PoleZeroData, PoleZeroList
@@ -113,19 +107,17 @@ def root_locus_plot(
         Gains to use in computing plot of closed-loop poles.  If not given,
         gains are chosen to include the main features of the root locus map.
     xlim : tuple or list, optional
-        Set limits of x axis, normally with tuple
-        (see :doc:`matplotlib:api/axes_api`).
+        Set limits of x axis (see `matplotlib.axes.Axes.set_xlim`).
     ylim : tuple or list, optional
-        Set limits of y axis, normally with tuple
-        (see :doc:`matplotlib:api/axes_api`).
+        Set limits of y axis (see `matplotlib.axes.Axes.set_ylim`).
     plot : bool, optional
         (legacy) If given, `root_locus_plot` returns the legacy return values
         of roots and gains.  If False, just return the values with no plot.
     grid : bool or str, optional
-        If `True` plot omega-damping grid, if `False` show imaginary axis
-        for continuous time systems, unit circle for discrete time systems.
-        If `empty`, do not draw any additonal lines.  Default value is set
-        by config.default['rlocus.grid'].
+        If True plot omega-damping grid, if False show imaginary axis
+        for continuous-time systems, unit circle for discrete-time systems.
+        If 'empty', do not draw any additional lines.  Default value is set
+        by `config.defaults['rlocus.grid']`.
     initial_gain : float, optional
         Mark the point on the root locus diagram corresponding to the
         given gain.
@@ -134,25 +126,24 @@ def root_locus_plot(
 
     Returns
     -------
-    cplt : :class:`ControlPlot` object
-        Object containing the data that were plotted:
-
-          * cplt.lines: Array of :class:`matplotlib.lines.Line2D` objects
-            for each set of markers in the plot. The shape of the array is
-            given by (nsys, 3) where nsys is the number of systems or
-            responses passed to the function.  The second index specifies
-            the object type:
+    cplt : `ControlPlot` object
+        Object containing the data that were plotted.  See `ControlPlot`
+        for more detailed information.
+    cplt.lines : array of list of `matplotlib.lines.Line2D`
+        The shape of the array is given by (nsys, 3) where nsys is the number
+        of systems or responses passed to the function.  The second index
+        specifies the object type:
 
               - lines[idx, 0]: poles
               - lines[idx, 1]: zeros
               - lines[idx, 2]: loci
 
-          * cplt.axes: 2D array of :class:`matplotlib.axes.Axes` for the plot.
-
-          * cplt.figure: :class:`matplotlib.figure.Figure` containing the plot.
-
-        See :class:`ControlPlot` for more detailed information.
-
+    cplt.axes : 2D array of `matplotlib.axes.Axes`
+        Axes for each subplot.
+    cplt.figure : `matplotlib.figure.Figure`
+        Figure containing the plot.
+    cplt.legend : 2D array of `matplotlib.legend.Legend`
+        Legend object(s) contained in the plot.
     roots, gains : ndarray
         (legacy) If the `plot` keyword is given, returns the closed-loop
         root locations, arranged such that each row corresponds to a gain,
@@ -160,7 +151,7 @@ def root_locus_plot(
 
     Other Parameters
     ----------------
-    ax : matplotlib.axes.Axes, optional
+    ax : `matplotlib.axes.Axes`, optional
         The matplotlib axes to draw the figure on.  If not specified and
         the current figure has a single axes, that axes is used.
         Otherwise, a new figure is created.
@@ -172,9 +163,9 @@ def root_locus_plot(
         Include a legend in the given location. Default is 'center right',
         with no legend for a single response.  Use False to suppress legend.
     show_legend : bool, optional
-        Force legend to be shown if ``True`` or hidden if ``False``.  If
-        ``None``, then show legend when there is more than one line on the
-        plot or ``legend_loc`` has been specified.
+        Force legend to be shown if True or hidden if False.  If
+        None, then show legend when there is more than one line on the
+        plot or `legend_loc` has been specified.
     title : str, optional
         Set the title of the plot.  Defaults to plot type and system name(s).
 
@@ -186,8 +177,6 @@ def root_locus_plot(
     then set the axis limits to the desired values.
 
     """
-    from .pzmap import pole_zero_plot
-
     # Legacy parameters
     for oldkey in ['kvect', 'k']:
         gains = config._process_legacy_keyword(kwargs, oldkey, 'gains', gains)
@@ -203,7 +192,7 @@ def root_locus_plot(
     # Process `plot` keyword
     #
     # See bode_plot for a description of how this keyword is handled to
-    # support legacy implementatoins of root_locus.
+    # support legacy implementations of root_locus.
     #
     if plot is not None:
         warnings.warn(
@@ -228,8 +217,8 @@ def _default_gains(num, den, xlim, ylim):
 
     References
     ----------
-    Ogata, K. (2002). Modern control engineering (4th ed.). Upper
-    Saddle River, NJ : New Delhi: Prentice Hall..
+    .. [1] Ogata, K. (2002). Modern control engineering (4th
+       ed.). Upper Saddle River, NJ : New Delhi: Prentice Hall..
 
     """
     # Compute the break points on the real axis for the root locus plot
@@ -405,7 +394,7 @@ def _k_max(num, den, real_break_points, k_break_points):
 
 
 def _systopoly1d(sys):
-    """Extract numerator and denominator polynomails for a system"""
+    """Extract numerator and denominator polynomials for a system"""
     # Allow inputs from the signal processing toolbox
     if (isinstance(sys, scipy.signal.lti)):
         nump = sys.num
@@ -457,20 +446,18 @@ def _RLSortRoots(roots):
     one branch to another."""
 
     sorted = zeros_like(roots)
-    for n, row in enumerate(roots):
-        if n == 0:
-            sorted[n, :] = row
-        else:
-            # sort the current row by finding the element with the
-            # smallest absolute distance to each root in the
-            # previous row
-            available = list(range(len(prevrow)))
-            for elem in row:
-                evect = elem - prevrow[available]
-                ind1 = abs(evect).argmin()
-                ind = available.pop(ind1)
-                sorted[n, ind] = elem
-        prevrow = sorted[n, :]
+    sorted[0] = roots[0]
+    for n, row in enumerate(roots[1:], start=1):
+        # sort the current row by finding the element with the
+        # smallest absolute distance to each root in the
+        # previous row
+        prevrow = sorted[n-1]
+        available = list(range(len(prevrow)))
+        for elem in row:
+            evect = elem - prevrow[available]
+            ind1 = abs(evect).argmin()
+            ind = available.pop(ind1)
+            sorted[n, ind] = elem
     return sorted
 
 

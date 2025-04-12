@@ -1,13 +1,13 @@
 # freqplot_test.py - test out frequency response plots
 # RMM, 23 Jun 2023
 
+import re
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
 import control as ct
-from control.tests.conftest import editsdefaults, slycotonly
 
 pytestmark = pytest.mark.usefixtures("mplcleanup")
 
@@ -166,7 +166,7 @@ def test_line_styles(plt_fcn):
     sys3 = ct.tf([0.2, 0.1], [1, 0.1, 0.3, 0.1, 0.1], name='sys3')
 
     # Create a plot for the first system, with custom styles
-    lines_default = plt_fcn(sys1)
+    plt_fcn(sys1)
 
     # Now create a plot using *fmt customization
     lines_fmt = plt_fcn(sys2, None, 'r--')
@@ -597,6 +597,12 @@ def test_suptitle():
             TypeError, match="unexpected keyword|no property"):
         cplt.set_plot_title("New title", unknown=None)
 
+    # Make sure title is still there if we display margins underneath
+    sys = ct.rss(2, 1, 1, name='sys')
+    cplt = ct.bode_plot(sys, display_margins=True)
+    assert re.match(r"^Bode plot for sys$", cplt.figure._suptitle._text)
+    assert re.match(r"^sys: Gm = .*, Pm = .*$", cplt.axes[0, 0].get_title())
+
 
 @pytest.mark.parametrize("plt_fcn", [ct.bode_plot, ct.singular_values_plot])
 def test_freqplot_errors(plt_fcn):
@@ -617,6 +623,7 @@ def test_freqplot_errors(plt_fcn):
     with pytest.raises(ValueError, match="invalid limits"):
         plt_fcn(response, omega_limits=[1e2, 1e-2])
 
+
 def test_freqresplist_unknown_kw():
     sys1 = ct.rss(2, 1, 1)
     sys2 = ct.rss(2, 1, 1)
@@ -625,6 +632,85 @@ def test_freqresplist_unknown_kw():
 
     with pytest.raises(AttributeError, match="unexpected keyword"):
         resp.plot(unknown=True)
+
+@pytest.mark.parametrize("nsys, display_margins, gridkw, match", [
+    (1, True, {}, None),
+    (1, False, {}, None),
+    (1, False, {}, None),
+    (1, True, {'grid': True}, None),
+    (1, 'overlay', {}, None),
+    (1, 'overlay', {'grid': True}, None),
+    (1, 'overlay', {'grid': False}, None),
+    (2, True, {}, None),
+    (2, 'overlay', {}, "not supported for multi-trace plots"),
+    (2, True, {'grid': 'overlay'}, None),
+    (3, True, {'grid': True}, None),
+])
+def test_display_margins(nsys, display_margins, gridkw, match):
+    sys1 = ct.tf([10], [1, 1, 1, 1], name='sys1')
+    sys2 = ct.tf([20], [2, 2, 2, 1], name='sys2')
+    sys3 = ct.tf([30], [2, 3, 3, 1], name='sys3')
+
+    sysdata = [sys1, sys2, sys3][0:nsys]
+
+    plt.figure()
+    if match is None:
+        cplt = ct.bode_plot(sysdata, display_margins=display_margins, **gridkw)
+    else:
+        with pytest.raises(NotImplementedError, match=match):
+            ct.bode_plot(sysdata, display_margins=display_margins, **gridkw)
+        return
+
+    cplt.set_plot_title(
+        cplt.figure._suptitle._text + f" [d_m={display_margins}, {gridkw=}")
+
+    # Make sure the grid is there if it should be
+    if gridkw.get('grid') or not display_margins:
+        assert all(
+            [line.get_visible() for line in cplt.axes[0, 0].get_xgridlines()])
+    else:
+        assert not any(
+            [line.get_visible() for line in cplt.axes[0, 0].get_xgridlines()])
+
+    # Make sure margins are displayed
+    if display_margins == True:
+        ax_title = cplt.axes[0, 0].get_title()
+        assert len(ax_title.split('\n')) == nsys
+    elif display_margins == 'overlay':
+        assert cplt.axes[0, 0].get_title() == ''
+
+
+def test_singular_values_plot_colors():
+    # Define some systems for testing
+    sys1 = ct.rss(4, 2, 2, strictly_proper=True)
+    sys2 = ct.rss(4, 2, 2, strictly_proper=True)
+
+    # Get the default color cycle
+    color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+    # Plot the systems individually and make sure line colors are OK
+    cplt = ct.singular_values_plot(sys1)
+    assert cplt.lines.size == 1
+    assert len(cplt.lines[0]) == 2
+    assert cplt.lines[0][0].get_color() == color_cycle[0]
+    assert cplt.lines[0][1].get_color() == color_cycle[0]
+
+    cplt = ct.singular_values_plot(sys2)
+    assert cplt.lines.size == 1
+    assert len(cplt.lines[0]) == 2
+    assert cplt.lines[0][0].get_color() == color_cycle[1]
+    assert cplt.lines[0][1].get_color() == color_cycle[1]
+    plt.close('all')
+
+    # Plot the systems as a list and make sure colors are OK
+    cplt = ct.singular_values_plot([sys1, sys2])
+    assert cplt.lines.size == 2
+    assert len(cplt.lines[0]) == 2
+    assert len(cplt.lines[1]) == 2
+    assert cplt.lines[0][0].get_color() == color_cycle[0]
+    assert cplt.lines[0][1].get_color() == color_cycle[0]
+    assert cplt.lines[1][0].get_color() == color_cycle[1]
+    assert cplt.lines[1][1].get_color() == color_cycle[1]
 
 
 if __name__ == "__main__":
@@ -680,3 +766,6 @@ if __name__ == "__main__":
     # of them for use in the documentation).
     #
     test_mixed_systypes()
+    test_display_margins(2, True, {})
+    test_display_margins(2, 'overlay', {})
+    test_display_margins(2, True, {'grid': True})

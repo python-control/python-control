@@ -42,11 +42,10 @@ print(f"Optimal value for {kx_star = }")
 
 def adaptive_controller_state(t, xc, uc, params):
     """Internal state of adaptive controller, f(t,x,u;p)"""
-    
+
     # Parameters
     gam = params["gam"]
     Am = params["Am"]
-    Bm = params["Bm"]
     signB = params["signB"]
 
     # Controller inputs
@@ -59,7 +58,7 @@ def adaptive_controller_state(t, xc, uc, params):
     # x2 = xc[1] # kr
     x3 = xc[2] #
     # x4 = xc[3] # kx
-    
+
     # Algebraic relationships
     e = xm - x
 
@@ -78,11 +77,11 @@ def adaptive_controller_output(t, xc, uc, params):
     r = uc[0]
     # xm = uc[1]
     x = uc[2]
-    
+
     # Controller state
     kr = xc[1]
     kx = xc[3]
-    
+
     # Control law
     u = kx*x + kr*r
 
@@ -118,7 +117,7 @@ io_closed = ct.interconnect(
 Tend = 100
 dt = 0.1
 
-# Define simulation time 
+# Define simulation time
 t_vec = np.arange(0, Tend, dt)
 
 # Define control reference input

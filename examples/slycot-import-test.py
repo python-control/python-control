@@ -5,7 +5,7 @@ RMM, 28 May 09
 """
 
 import numpy as np
-from control.matlab import *
+import control as ct
 from control.exception import slycot_check
 
 # Parameters defining the system
@@ -17,12 +17,12 @@ b = 60.0   # damping constant
 A = np.array([[1, -1, 1.], [1, -k/m, -b/m], [1, 1, 1]])
 B = np.array([[0], [1/m], [1]])
 C = np.array([[1., 0, 1.]])
-sys = ss(A, B, C, 0)
+sys = ct.ss(A, B, C, 0)
 
 # Python control may be used without slycot, for example for a pole placement.
 # Eigenvalue placement
 w = [-3, -2, -1]
-K = place(A, B, w)
+K = ct.place(A, B, w)
 print("[python-control (from scipy)] K = ", K)
 print("[python-control (from scipy)] eigs = ", np.linalg.eig(A - B*K)[0])
 

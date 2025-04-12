@@ -1,9 +1,8 @@
-""" set-conda-test-matrix.py
+"""Create test matrix for conda packages in OS/BLAS test matrix workflow."""
 
-Create test matrix for conda packages
-"""
-import json, re
+import json
 from pathlib import Path
+import re
 
 osmap = {'linux': 'ubuntu',
          'osx': 'macos',

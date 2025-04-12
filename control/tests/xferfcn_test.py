@@ -14,7 +14,7 @@ from control import (StateSpace, TransferFunction, defaults, evalfr, isctime,
                      isdtime, reset_defaults, rss, sample_system, set_defaults,
                      ss, ss2tf, tf, tf2ss, zpk)
 from control.statesp import _convert_to_statespace
-from control.tests.conftest import slycotonly
+from control.tests.conftest import assert_tf_close_coeff, slycotonly
 from control.xferfcn import _convert_to_transfer_function
 
 
@@ -49,6 +49,10 @@ class TestXferFcn:
                               [[4, 5], [6, 7]]],
                              [[[6, 7], [4, 5]],
                               [[2, 3]]])
+
+        with pytest.raises(TypeError, match="unsupported data type"):
+            ct.tf([1j], [1, 2, 3])
+
         # good input
         TransferFunction([[[0, 1], [2, 3]],
                           [[4, 5], [6, 7]]],
@@ -106,9 +110,28 @@ class TestXferFcn:
 
     def test_add_inconsistent_dimension(self):
         """Add two transfer function matrices of different sizes."""
-        sys1 = TransferFunction([[[1., 2.]]], [[[4., 5.]]])
-        sys2 = TransferFunction([[[4., 3.]], [[1., 2.]]],
-                                [[[1., 6.]], [[2., 4.]]])
+        sys1 = TransferFunction(
+            [
+                [[1., 2.]],
+                [[2., -2.]],
+                [[2., 1.]],
+            ],
+            [
+                [[4., 5.]],
+                [[5., 2.]],
+                [[3., 2.]],
+            ],
+        )
+        sys2 = TransferFunction(
+            [
+                [[4., 3.]],
+                [[1., 2.]],
+            ],
+            [
+                [[1., 6.]],
+                [[2., 4.]],
+            ]
+        )
         with pytest.raises(ValueError):
             sys1.__add__(sys2)
         with pytest.raises(ValueError):
@@ -167,7 +190,6 @@ class TestXferFcn:
         np.testing.assert_allclose(sys2.num, [[[-1., -3., -5.]]])
         np.testing.assert_allclose(sys2.den, [[[1., 6., 2., -1.]]])
 
-    @slycotonly
     def test_reverse_sign_mimo(self):
         """Negate a MIMO system."""
         num1 = [[[1., 2.], [0., 3.], [2., -1.]],
@@ -209,7 +231,6 @@ class TestXferFcn:
         np.testing.assert_allclose(sys3.num, [[[20., 4., -8]]])
         np.testing.assert_allclose(sys3.den, [[[1., 6., 1., -7., -2., 1.]]])
 
-    @slycotonly
     def test_add_mimo(self):
         """Add two MIMO systems."""
         num1 = [[[1., 2.], [0., 3.], [2., -1.]],
@@ -257,7 +278,6 @@ class TestXferFcn:
         np.testing.assert_allclose(sys4.num, [[[-2., -6., 12., 10., 2.]]])
         np.testing.assert_allclose(sys4.den, [[[1., 6., 1., -7., -2., 1.]]])
 
-    @slycotonly
     def test_subtract_mimo(self):
         """Subtract two MIMO systems."""
         num1 = [[[1., 2.], [0., 3.], [2., -1.]],
@@ -308,7 +328,6 @@ class TestXferFcn:
         np.testing.assert_allclose(sys3.num, sys4.num)
         np.testing.assert_allclose(sys3.den, sys4.den)
 
-    @slycotonly
     def test_multiply_mimo(self):
         """Multiply two MIMO systems."""
         num1 = [[[1., 2.], [0., 3.], [2., -1.]],
@@ -384,6 +403,239 @@ class TestXferFcn:
         sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1])
         with pytest.raises(ValueError):
             TransferFunction.__pow__(sys1, 0.5)
+
+    def test_add_sub_mimo_siso(self):
+        for op in [
+            TransferFunction.__add__,
+            TransferFunction.__radd__,
+            TransferFunction.__sub__,
+            TransferFunction.__rsub__,
+        ]:
+            tf_mimo = TransferFunction(
+                [
+                    [[1], [1]],
+                    [[1], [1]],
+                ],
+                [
+                    [[10, 1], [20, 1]],
+                    [[20, 1], [30, 1]],
+                ],
+            )
+            tf_siso = TransferFunction([1], [5, 0])
+            tf_arr = ct.split_tf(tf_mimo)
+            expected = ct.combine_tf([
+                [op(tf_arr[0, 0], tf_siso), op(tf_arr[0, 1], tf_siso)],
+                [op(tf_arr[1, 0], tf_siso), op(tf_arr[1, 1], tf_siso)],
+            ])
+            result = op(tf_mimo, tf_siso)
+            assert_tf_close_coeff(expected.minreal(), result.minreal())
+
+    @pytest.mark.parametrize(
+        "left, right, expected",
+        [
+            (
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[2], [1]],
+                        [[-1], [4]],
+                    ],
+                    [
+                        [[10, 1], [20, 1]],
+                        [[20, 1], [30, 1]],
+                    ],
+                ),
+                TransferFunction(
+                    [
+                        [[4], [2]],
+                        [[-2], [8]],
+                    ],
+                    [
+                        [[10, 1, 0], [20, 1, 0]],
+                        [[20, 1, 0], [30, 1, 0]],
+                    ],
+                ),
+            ),
+            (
+                TransferFunction(
+                    [
+                        [[2], [1]],
+                        [[-1], [4]],
+                    ],
+                    [
+                        [[10, 1], [20, 1]],
+                        [[20, 1], [30, 1]],
+                    ],
+                ),
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[4], [2]],
+                        [[-2], [8]],
+                    ],
+                    [
+                        [[10, 1, 0], [20, 1, 0]],
+                        [[20, 1, 0], [30, 1, 0]],
+                    ],
+                ),
+            ),
+            (
+                TransferFunction([2], [1, 0]),
+                np.eye(3),
+                TransferFunction(
+                    [
+                        [[2], [0], [0]],
+                        [[0], [2], [0]],
+                        [[0], [0], [2]],
+                    ],
+                    [
+                        [[1, 0], [1], [1]],
+                        [[1], [1, 0], [1]],
+                        [[1], [1], [1, 0]],
+                    ],
+                ),
+            ),
+        ]
+    )
+    def test_mul_mimo_siso(self, left, right, expected):
+        """Test multiplication of a MIMO and a SISO system."""
+        result = left.__mul__(right)
+        assert_tf_close_coeff(expected.minreal(), result.minreal())
+
+    @pytest.mark.parametrize(
+        "left, right, expected",
+        [
+            (
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[2], [1]],
+                        [[-1], [4]],
+                    ],
+                    [
+                        [[10, 1], [20, 1]],
+                        [[20, 1], [30, 1]],
+                    ],
+                ),
+                TransferFunction(
+                    [
+                        [[4], [2]],
+                        [[-2], [8]],
+                    ],
+                    [
+                        [[10, 1, 0], [20, 1, 0]],
+                        [[20, 1, 0], [30, 1, 0]],
+                    ],
+                ),
+            ),
+            (
+                TransferFunction(
+                    [
+                        [[2], [1]],
+                        [[-1], [4]],
+                    ],
+                    [
+                        [[10, 1], [20, 1]],
+                        [[20, 1], [30, 1]],
+                    ],
+                ),
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[4], [2]],
+                        [[-2], [8]],
+                    ],
+                    [
+                        [[10, 1, 0], [20, 1, 0]],
+                        [[20, 1, 0], [30, 1, 0]],
+                    ],
+                ),
+            ),
+            (
+                np.eye(3),
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[2], [0], [0]],
+                        [[0], [2], [0]],
+                        [[0], [0], [2]],
+                    ],
+                    [
+                        [[1, 0], [1], [1]],
+                        [[1], [1, 0], [1]],
+                        [[1], [1], [1, 0]],
+                    ],
+                ),
+            ),
+        ]
+    )
+    def test_rmul_mimo_siso(self, left, right, expected):
+        """Test right multiplication of a MIMO and a SISO system."""
+        result = right.__rmul__(left)
+        assert_tf_close_coeff(expected.minreal(), result.minreal())
+
+    @pytest.mark.parametrize(
+        "left, right, expected",
+        [
+            (
+                TransferFunction(
+                    [
+                        [[1], [0], [0]],
+                        [[0], [2], [0]],
+                        [[0], [0], [3]],
+                    ],
+                    [
+                        [[1], [1], [1]],
+                        [[1], [1], [1]],
+                        [[1], [1], [1]],
+                    ],
+                ),
+                TransferFunction([-2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[1, 0], [0], [0]],
+                        [[0], [2, 0], [0]],
+                        [[0], [0], [3, 0]],
+                    ],
+                    [
+                        [[-2], [1], [1]],
+                        [[1], [-2], [1]],
+                        [[1], [1], [-2]],
+                    ],
+                ),
+            ),
+        ]
+    )
+    def test_truediv_mimo_siso(self, left, right, expected):
+        """Test true division of a MIMO and a SISO system."""
+        result = left.__truediv__(right)
+        assert_tf_close_coeff(expected.minreal(), result.minreal())
+
+    @pytest.mark.parametrize(
+        "left, right, expected",
+        [
+            (
+                np.eye(3),
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[1, 0], [0], [0]],
+                        [[0], [1, 0], [0]],
+                        [[0], [0], [1, 0]],
+                    ],
+                    [
+                        [[2], [1], [1]],
+                        [[1], [2], [1]],
+                        [[1], [1], [2]],
+                    ],
+                ),
+            ),
+        ]
+    )
+    def test_rtruediv_mimo_siso(self, left, right, expected):
+        """Test right true division of a MIMO and a SISO system."""
+        result = right.__rtruediv__(left)
+        assert_tf_close_coeff(expected.minreal(), result.minreal())
 
     @pytest.mark.parametrize("named", [False, True])
     def test_slice(self, named):
@@ -462,7 +714,6 @@ class TestXferFcn:
         sys = TransferFunction([1., 3., 5], [1., 6., 2., -1], 0.1)
         np.testing.assert_array_almost_equal(sys(1j), -0.5 - 0.5j)
 
-    @slycotonly
     def test_call_mimo(self):
         """Evaluate the frequency response of a MIMO system at one frequency."""
 
@@ -503,7 +754,6 @@ class TestXferFcn:
         np.testing.assert_array_almost_equal(phase, truephase)
         np.testing.assert_array_almost_equal(omega, trueomega)
 
-    @slycotonly
     def test_freqresp_mimo(self):
         """Evaluate the MIMO magnitude and phase at multiple frequencies."""
         num = [[[1., 2.], [0., 3.], [2., -1.]],
@@ -600,7 +850,6 @@ class TestXferFcn:
         _, den2, _ = tf2._common_den(allow_nonproper=True)
         np.testing.assert_array_almost_equal(den2, common_den_ref)
 
-    @slycotonly
     def test_pole_mimo(self):
         """Test for correct MIMO poles."""
         sys = TransferFunction(
@@ -638,7 +887,52 @@ class TestXferFcn:
         np.testing.assert_allclose(sys4.num, [[[-1., 7., -16., 16., 0.]]])
         np.testing.assert_allclose(sys4.den, [[[1., 0., 2., -8., 8., 0.]]])
 
-    @slycotonly
+    def test_append(self):
+        """Test ``TransferFunction.append()``."""
+        tf1 = TransferFunction(
+            [
+                [[1], [1]]
+            ],
+            [
+                [[10, 1], [20, 1]]
+            ],
+        )
+        tf2 = TransferFunction(
+            [
+                [[2], [2]]
+            ],
+            [
+                [[10, 1], [1, 1]]
+            ],
+        )
+        tf3 = TransferFunction([100], [100, 1])
+        tf_exp_1 = TransferFunction(
+            [
+                [[1], [1], [0], [0]],
+                [[0], [0], [2], [2]],
+            ],
+            [
+                [[10, 1], [20, 1], [1], [1]],
+                [[1], [1], [10, 1], [1, 1]],
+            ],
+        )
+        tf_exp_2 = TransferFunction(
+            [
+                [[1], [1], [0], [0], [0]],
+                [[0], [0], [2], [2], [0]],
+                [[0], [0], [0], [0], [100]],
+            ],
+            [
+                [[10, 1], [20, 1], [1], [1], [1]],
+                [[1], [1], [10, 1], [1, 1], [1]],
+                [[1], [1], [1], [1], [100, 1]],
+            ],
+        )
+        tf_appended_1 = tf1.append(tf2)
+        assert_tf_close_coeff(tf_exp_1, tf_appended_1)
+        tf_appended_2 = tf1.append(tf2).append(tf3)
+        assert_tf_close_coeff(tf_exp_2, tf_appended_2)
+
     def test_convert_to_transfer_function(self):
         """Test for correct state space to transfer function conversion."""
         A = [[1., -2.], [-3., 4.]]
@@ -725,7 +1019,6 @@ class TestXferFcn:
         np.testing.assert_array_almost_equal(H.num[1][0], H2.num[1][0])
         np.testing.assert_array_almost_equal(H.den[1][0], H2.den[1][0])
 
-    @slycotonly
     def test_indexing(self):
         """Test TF scalar indexing and slice"""
         tm = ss2tf(rss(5, 3, 3))
@@ -915,9 +1208,8 @@ class TestXferFcn:
             assert len(polystr[0].split('\n')) == 4
         assert polystr[2] == outputfmt.format(var=var)
 
-    @slycotonly
     def test_printing_mimo(self):
-        """Print MIMO, continuous time"""
+        """Print MIMO, continuous-time"""
         sys = ss2tf(rss(4, 2, 3))
         assert isinstance(str(sys), str)
         assert isinstance(sys._repr_html_(), str)
@@ -1034,7 +1326,6 @@ Input 2 to output 2:
         res = str(G)
         assert res.partition('\n\n')[2] == output
 
-    @slycotonly
     def test_size_mismatch(self):
         """Test size mismacht"""
         sys1 = ss2tf(rss(2, 2, 2))

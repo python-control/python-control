@@ -1,0 +1,25 @@
+.. currentmodule:: control
+
+.. _version-0.3-7.x:
+
+Versions 0.3-0.7 Release Notes
+------------------------------
+
+* Released: 10 June 2010 - 23 Oct 2015
+* `Detailed release notes <https://github.com/python-control/python-control/wiki/Release-notes#python-control-070-23-oct-2015>`_
+  on python-control GitHub wiki.
+
+[ChatGPT summary] Between versions 0.3d and 0.7.0, the python-control
+package underwent significant enhancements and refinements. Key
+additions included support for discrete-time systems with a timebase
+variable and the introduction of the c2d function for MIMO state-space
+systems. New functionality such as rlocus, pade, and nichols was
+added, along with minimal realization tools and model reduction
+methods like hsvd, modred, and balred. Plotting capabilities were
+expanded with more flexible Bode and Nyquist plots, frequency
+labeling, and a phase_plot command for 2D nonlinear
+systems. Performance improvements included faster versions of freqresp
+and forced_response, bug fixes in tools like dare and tf2ss, and
+enhanced stability margin and root-locus calculations. Installation
+became easier via pip and conda, Python 3 compatibility improved, and
+extensive documentation updates ensured a smoother user experience.

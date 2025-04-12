@@ -134,7 +134,7 @@ class TestRootLocus:
         ax_rlocus.set_xlim((-10.813628105112421, 14.760795435937652))
         ax_rlocus.set_ylim((-35.61713798641108, 33.879716621220311))
         plt.get_current_fig_manager().toolbar.mode = 'zoom rect'
-        _RLClickDispatcher(event, system, fig, ax_rlocus, '-')
+        _RLClickDispatcher(event, system, fig, ax_rlocus, '-') # noqa: F821
 
         zoom_x = ax_rlocus.lines[-2].get_data()[0][0:5]
         zoom_y = ax_rlocus.lines[-2].get_data()[1][0:5]
@@ -161,7 +161,6 @@ class TestRootLocus:
         # that will take a long time to do the calculation (minutes).
         #
         import scipy as sp
-        import signal
 
         # Define a system that exhibits this behavior
         sys = ct.tf(*sp.signal.zpk2tf(
@@ -209,7 +208,7 @@ def test_root_locus_documentation(savefigs=False):
     plt.figure()
     cplt = ct.root_locus_map(sys).plot(initial_gain=3.506)
     ax = cplt.axes[0, 0]
-    freqplot_rcParams = ct.config._get_param('freqplot', 'rcParams')
+    freqplot_rcParams = ct.config._get_param('ctrlplot', 'rcParams')
     with plt.rc_context(freqplot_rcParams):
         ax.set_title(
             "Clicked at: -2.729+1.511j  gain = 3.506  damping = 0.8748")
@@ -228,6 +227,21 @@ def test_root_locus_documentation(savefigs=False):
     ct.root_locus_plot([sys1, sys2], grid=False)
     if savefigs:
         plt.savefig('rlocus-siso_multiple-nogrid.png')
+
+
+# https://github.com/python-control/python-control/issues/1063
+def test_rlocus_singleton():
+    # Generate a root locus map for a singleton
+    L = ct.tf([1, 1], [1, 2, 3])
+    rldata = ct.root_locus_map(L, 1)
+    np.testing.assert_equal(rldata.gains, np.array([1]))
+    assert rldata.loci.shape == (1, 2)
+
+    # Generate the root locus plot (no loci)
+    cplt = rldata.plot()
+    assert len(cplt.lines[0, 0]) == 1      # poles (one set of markers)
+    assert len(cplt.lines[0, 1]) == 1      # zeros
+    assert len(cplt.lines[0, 2]) == 2      # loci (two 0-length lines)
 
 
 if __name__ == "__main__":
@@ -287,18 +301,3 @@ if __name__ == "__main__":
 
     # Run tests that generate plots for the documentation
     test_root_locus_documentation(savefigs=True)
-
-
-# https://github.com/python-control/python-control/issues/1063
-def test_rlocus_singleton():
-    # Generate a root locus map for a singleton
-    L = ct.tf([1, 1], [1, 2, 3])
-    rldata = ct.root_locus_map(L, 1)
-    np.testing.assert_equal(rldata.gains, np.array([1]))
-    assert rldata.loci.shape == (1, 2)
-
-    # Generate the root locus plot (no loci)
-    cplt = rldata.plot()
-    assert len(cplt.lines[0, 0]) == 1      # poles (one set of markers)
-    assert len(cplt.lines[0, 1]) == 1      # zeros
-    assert len(cplt.lines[0, 2]) == 2      # loci (two 0-length lines)

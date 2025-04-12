@@ -1,66 +1,21 @@
-"""margins.py
+# margins.py - functions for computing stability margins
+#
+# Initial author: Richard M. Murray
+# Creation date: 14 July 2011
 
-Functions for computing stability margins and related functions.
-
-Routines in this module:
-
-margins.stability_margins
-margins.phase_crossover_frequencies
-margins.margin
-margins.disk_margins
-margins.disk_margin_plot
-"""
-
-"""Copyright (c) 2011 by California Institute of Technology
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-1. Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
-
-3. Neither the name of the California Institute of Technology nor
-   the names of its contributors may be used to endorse or promote
-   products derived from this software without specific prior
-   written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
-OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-SUCH DAMAGE.
-
-Author: Richard M. Murray
-Date: 14 July 2011
-
-$Id$
-"""
+"""Functions for computing stability margins and related functions."""
 
 import math
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from warnings import warn
+
 import numpy as np
 import scipy as sp
-from . import xferfcn
-from .lti import evalfr
-from .iosys import issiso
-from . import frdata
-from . import freqplot
+
+from . import frdata, freqplot, xferfcn
 from .exception import ControlMIMONotImplemented
+from .iosys import issiso
 from . import ss
 try:
     from slycot import ab13md
@@ -99,11 +54,16 @@ def _poly_iw_sqr(pol_iw):
 
 def _poly_iw_real_crossing(num_iw, den_iw, epsw):
     # Return w where imag(H(iw)) == 0
+
+    # Compute the imaginary part of H = (num.r + j num.i)/(den.r + j den.i)
     test_w = np.polysub(np.polymul(num_iw.imag, den_iw.real),
                         np.polymul(num_iw.real, den_iw.imag))
+
+    # Find the real-valued w > 0 where imag(H(iw)) = 0
     w = np.roots(test_w)
     w = np.real(w[np.isreal(w)])
     w = w[w >= epsw]
+
     return w
 
 
@@ -266,18 +226,16 @@ def _likely_numerical_inaccuracy(sys):
 #                    systems
 
 
+# TODO: consider handling sysdata similar to margin (via *sysdata?)
 def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
-    """Calculate stability margins and associated crossover frequencies.
+    """Stability margins and associated crossover frequencies.
 
     Parameters
     ----------
-    sysdata : LTI system or (mag, phase, omega) sequence
-        sys : LTI system
-            Linear SISO system representing the loop transfer function
-        mag, phase, omega : sequence of array_like
-            Arrays of magnitudes (absolute values, not dB), phases (degrees),
-            and corresponding frequencies. Crossover frequencies returned are
-            in the same units as those in `omega` (e.g., rad/sec or Hz).
+    sysdata : LTI system or 3-tuple of array_like
+        Linear SISO system representing the loop transfer function.
+        Alternatively, a three tuple of the form (mag, phase, omega)
+        providing the frequency response can be passed.
     returnall : bool, optional
         If true, return all margins found. If False (default), return only the
         minimum stability margins. For frequency data or FRD systems, only
@@ -287,22 +245,23 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
         and not returned as margin.
     method : string, optional
         Method to use (default is 'best'):
-        'poly': use polynomial method if passed a :class:`LTI` system.
-        'frd': calculate crossover frequencies using numerical interpolation
-        of a :class:`FrequencyResponseData` representation of the system if
-        passed a :class:`LTI` system.
-        'best': use the 'poly' method if possible, reverting to 'frd' if it is
-        detected that numerical inaccuracy is likey to arise in the 'poly'
-        method for for discrete-time systems.
+
+        * 'poly': use polynomial method if passed a `LTI` system.
+        * 'frd': calculate crossover frequencies using numerical
+          interpolation of a `FrequencyResponseData` representation
+          of the system if passed a `LTI` system.
+        * 'best': use the 'poly' method if possible, reverting to 'frd' if
+          it is detected that numerical inaccuracy is likely to arise in the
+          'poly' method for for discrete-time systems.
 
     Returns
     -------
     gm : float or array_like
-        Gain margin
+        Gain margin.
     pm : float or array_like
-        Phase margin
+        Phase margin.
     sm : float or array_like
-        Stability margin, the minimum distance from the Nyquist plot to -1
+        Stability margin, the minimum distance from the Nyquist plot to -1.
     wpc : float or array_like
         Phase crossover frequency (where phase crosses -180 degrees), which is
         associated with the gain margin.
@@ -310,14 +269,16 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
         Gain crossover frequency (where gain crosses 1), which is associated
         with the phase margin.
     wms : float or array_like
-        Stability margin frequency (where Nyquist plot is closest to -1)
+        Stability margin frequency (where Nyquist plot is closest to -1).
 
-    Note that the gain margin is determined by the gain of the loop
-    transfer function at the phase crossover frequency(s), the phase
-    margin is determined by the phase of the loop transfer function at
-    the gain crossover frequency(s), and the stability margin is
-    determined by the frequency of maximum sensitivity (given by the
-    magnitude of 1/(1+L)).
+    Notes
+    -----
+    The gain margin is determined by the gain of the loop transfer function
+    at the phase crossover frequency(s), the phase margin is determined by
+    the phase of the loop transfer function at the gain crossover
+    frequency(s), and the stability margin is determined by the frequency
+    of maximum sensitivity (given by the magnitude of 1/(1+L)).
+
     """
     # TODO: FRD method for cont-time systems doesn't work
     try:
@@ -442,9 +403,8 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
         # find all stab margins?
         widx, = np.where(np.diff(np.sign(np.diff(_dstab(sys.omega)))) > 0)
         wstab = np.array(
-            [sp.optimize.minimize_scalar(_dstab,
-                                         bracket=(sys.omega[i], sys.omega[i+1])
-                                         ).x
+            [sp.optimize.minimize_scalar(
+                _dstab, bracket=(sys.omega[i], sys.omega[i+1])).x
              for i in widx])
         wstab = wstab[(wstab >= sys.omega[0]) * (wstab <= sys.omega[-1])]
         ws_resp = sys(1j * wstab)
@@ -477,20 +437,20 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
 
 # Contributed by Steffen Waldherr <waldherr@ist.uni-stuttgart.de>
 def phase_crossover_frequencies(sys):
-    """Compute frequencies and gains at intersections with real axis
-    in Nyquist plot.
+    """Compute Nyquist plot real-axis crossover frequencies and gains.
 
     Parameters
     ----------
-    sys : SISO LTI system
+    sys : LTI
+        SISO LTI system.
 
     Returns
     -------
     omega : ndarray
         1d array of (non-negative) frequencies where Nyquist plot
-        intersects the real axis
-    gain : ndarray
-        1d array of corresponding gains
+        intersects the real axis.
+    gains : ndarray
+        1d array of corresponding gains.
 
     Examples
     --------
@@ -511,34 +471,38 @@ def phase_crossover_frequencies(sys):
         omega = _poly_iw_real_crossing(num_iw, den_iw, 0.)
 
         # using real() to avoid rounding errors and results like 1+0j
-        gain = np.real(evalfr(sys, 1J * omega))
+        gains = np.real(sys(omega * 1j, warn_infinite=False))
     else:
         zargs = _poly_z_invz(sys)
         z, omega = _poly_z_real_crossing(*zargs, epsw=0.)
-        gain = np.real(evalfr(sys, z))
+        gains = np.real(sys(z, warn_infinite=False))
 
-    return omega, gain
+    return omega, gains
 
 def margin(*args):
-    """margin(sysdata)
+    """
+    margin(sys) \
+    margin(mag, phase, omega)
 
-    Calculate gain and phase margins and associated crossover frequencies.
+    Gain and phase margins and associated crossover frequencies.
+
+    Can be called as ``margin(sys)`` where `sys` is a SISO LTI system or
+    ``margin(mag, phase, omega)``.
 
     Parameters
     ----------
-    sysdata : LTI system or (mag, phase, omega) sequence
-        sys : StateSpace or TransferFunction
-            Linear SISO system representing the loop transfer function
-        mag, phase, omega : sequence of array_like
-            Input magnitude, phase (in deg.), and frequencies (rad/sec) from
-            bode frequency response data
+    sys : `StateSpace` or `TransferFunction`
+        Linear SISO system representing the loop transfer function.
+    mag, phase, omega : sequence of array_like
+        Input magnitude, phase (in deg.), and frequencies (rad/sec) from
+        bode frequency response data.
 
     Returns
     -------
     gm : float
-        Gain margin
+        Gain margin.
     pm : float
-        Phase margin (in degrees)
+        Phase margin (in degrees).
     wcg : float or array_like
         Crossover frequency associated with gain margin (phase crossover
         frequency), where phase crosses below -180 degrees.

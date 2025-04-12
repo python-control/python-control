@@ -8,7 +8,6 @@ operations on input/output objects.  Separate unit tests should be
 created for that purpose.
 """
 
-import re
 from copy import copy
 import warnings
 
@@ -285,7 +284,7 @@ def test_duplicate_sysname():
         # strip out matrix warnings
         warnings.filterwarnings("ignore", "the matrix subclass",
                                 category=PendingDeprecationWarning)
-        res = sys * sys
+        sys * sys
 
     # Generate a warning if the system is named
     sys = ct.rss(4, 1, 1)
@@ -293,7 +292,7 @@ def test_duplicate_sysname():
         sys.updfcn, sys.outfcn, inputs=sys.ninputs, outputs=sys.noutputs,
         states=sys.nstates, name='sys')
     with pytest.warns(UserWarning, match="duplicate object found"):
-        res = sys * sys
+        sys * sys
 
 
 # Finding signals
@@ -332,10 +331,10 @@ def test_find_signals():
 # Invalid signal names
 def test_invalid_signal_names():
     with pytest.raises(ValueError, match="invalid signal name"):
-        sys = ct.rss(4, inputs="input.signal", outputs=1)
+        ct.rss(4, inputs="input.signal", outputs=1)
 
     with pytest.raises(ValueError, match="invalid system name"):
-        sys = ct.rss(4, inputs=1, outputs=1, name="system.subsys")
+        ct.rss(4, inputs=1, outputs=1, name="system.subsys")
 
 
 # Negative system spect
@@ -363,3 +362,20 @@ def test_negative_system_spec():
     np.testing.assert_allclose(negfbk_negsig.B, negfbk_negsys.B)
     np.testing.assert_allclose(negfbk_negsig.C, negfbk_negsys.C)
     np.testing.assert_allclose(negfbk_negsig.D, negfbk_negsys.D)
+
+
+# Named signal representations
+def test_named_signal_repr():
+    sys = ct.rss(
+        states=2, inputs=['u1', 'u2'], outputs=['y1', 'y2'],
+        state_prefix='xi')
+    resp = sys.step_response(np.linspace(0, 1, 3))
+
+    for signal in ['inputs', 'outputs', 'states']:
+        sig_orig = getattr(resp, signal)
+        sig_eval = eval(repr(sig_orig),
+                        None,
+                        {'array': np.array,
+                         'NamedSignal': ct.NamedSignal})
+        assert sig_eval.signal_labels == sig_orig.signal_labels
+        assert sig_eval.trace_labels == sig_orig.trace_labels

@@ -1,79 +1,45 @@
-# -*-coding: utf-8-*-
-#! TODO: add module docstring
 # delay.py - functions involving time delays
 #
-# Author: Sawyer Fuller
-# Date: 26 Aug 2010
-#
-# This file contains functions for implementing time delays (currently
-# only the pade() function).
-#
-# Copyright (c) 2010 by California Institute of Technology
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-# 1. Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#
-# 2. Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#
-# 3. Neither the name of the California Institute of Technology nor
-#    the names of its contributors may be used to endorse or promote
-#    products derived from this software without specific prior
-#    written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
-# OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
-#
-# $Id$
+# Initial author: Sawyer Fuller
+# Creation date: 26 Aug 2010
 
+"""Functions to implement time delays (pade)."""
 
 __all__ = ['pade']
 
 def pade(T, n=1, numdeg=None):
-    """
-    Create a linear system that approximates a delay.
+    """Create a linear system that approximates a delay.
 
-    Return the numerator and denominator coefficients of the Pade approximation.
+    Return the numerator and denominator coefficients of the Pade
+    approximation of the given order.
 
     Parameters
     ----------
     T : number
-        time delay
+        Time. delay
     n : positive integer
-        degree of denominator of approximation
+        Degree of denominator of approximation.
     numdeg : integer, or None (the default)
-        If numdeg is `None`, numerator degree equals denominator degree.
+        If numdeg is None, numerator degree equals denominator degree.
         If numdeg >= 0, specifies degree of numerator.
         If numdeg < 0, numerator degree is n+numdeg.
 
     Returns
     -------
-    num, den : array
+    num, den : ndarray
         Polynomial coefficients of the delay model, in descending powers of s.
 
     Notes
     -----
-    Based on:
-      1. Algorithm 11.3.1 in Golub and van Loan, "Matrix Computation" 3rd.
-         Ed. pp. 572-574
-      2. M. Vajta, "Some remarks on Padé-approximations",
-         3rd TEMPUS-INTCOM Symposium
+    Based on [1]_ and [2]_.
+
+    References
+    ----------
+    .. [1] Algorithm 11.3.1 in Golub and van Loan, "Matrix Computation" 3rd.
+         Ed. pp. 572-574.
+
+    .. [2] M. Vajta, "Some remarks on Padé-approximations",
+         3rd TEMPUS-INTCOM Symposium.
 
     Examples
     --------
@@ -107,7 +73,7 @@ def pade(T, n=1, numdeg=None):
         num[-1] = 1.
         cn = 1.
         for k in range(1, numdeg+1):
-            # derived from Gloub and van Loan eq. for Dpq(z) on p. 572
+            # derived from Golub and van Loan eq. for Dpq(z) on p. 572
             # this accumulative style follows Alg 11.3.1
             cn *= -T * (numdeg - k + 1)/(numdeg + n - k + 1)/k
             num[numdeg-k] = cn

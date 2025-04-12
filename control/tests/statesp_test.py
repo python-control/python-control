@@ -1,4 +1,4 @@
-"""statesp_test.py - test state space class
+"""Tests for the StateSpace class.
 
 RMM, 30 Mar 2011 based on TestStateSp from v0.4a)
 RMM, 14 Jun 2019 statesp_array_test.py coverted from statesp_test.py to test
@@ -7,23 +7,22 @@ BG,  26 Jul 2020 merge statesp_array_test.py differences into statesp_test.py
                  convert to pytest
 """
 
-import numpy as np
-from numpy.testing import assert_array_almost_equal
-import pytest
 import operator
+
+import numpy as np
+import pytest
 from numpy.linalg import solve
+from numpy.testing import assert_array_almost_equal
 from scipy.linalg import block_diag, eigvals
 
 import control as ct
 from control.config import defaults
 from control.dtime import sample_system
-from control.lti import evalfr
-from control.statesp import StateSpace, _convert_to_statespace, tf2ss, \
-    _statesp_defaults, _rss_generate, linfnorm, ss, rss, drss
+from control.lti import LTI, evalfr
+from control.statesp import StateSpace, _convert_to_statespace, \
+    _rss_generate, _statesp_defaults, drss, linfnorm, rss, ss, tf2ss
 from control.xferfcn import TransferFunction, ss2tf
-
-from .conftest import editsdefaults, slycotonly
-
+from .conftest import assert_tf_close_coeff, slycotonly
 
 class TestStateSpace:
     """Tests for the StateSpace class."""
@@ -127,24 +126,22 @@ class TestStateSpace:
          ((1, 2), TypeError, "1, 4, or 5 arguments"),
          ((np.ones((3, 2)), np.ones((3, 2)),
            np.ones((2, 2)), np.ones((2, 2))), ValueError,
-          r"A is the wrong shape; expected \(3, 3\)"),
+          r"A must be a square matrix"),
          ((np.ones((3, 3)), np.ones((2, 2)),
            np.ones((2, 3)), np.ones((2, 2))), ValueError,
-          r"B is the wrong shape; expected \(3, 2\)"),
+          r"Incompatible dimensions of B matrix; expected \(3, 2\)"),
          ((np.ones((3, 3)), np.ones((3, 2)),
            np.ones((2, 2)), np.ones((2, 2))), ValueError,
-          r"C is the wrong shape; expected \(2, 3\)"),
+          r"Incompatible dimensions of C matrix; expected \(2, 3\)"),
          ((np.ones((3, 3)), np.ones((3, 2)),
            np.ones((2, 3)), np.ones((2, 3))), ValueError,
-          r"D is the wrong shape; expected \(2, 2\)"),
-         ((np.ones((3, 3)), np.ones((3, 2)),
-           np.ones((2, 3)), np.ones((3, 2))), ValueError,
-          r"D is the wrong shape; expected \(2, 2\)"),
+          r"Incompatible dimensions of D matrix; expected \(2, 2\)"),
+         (([1j], 2, 3, 0), TypeError, "real number, not 'complex'"),
         ])
     def test_constructor_invalid(self, args, exc, errmsg):
         """Test invalid input to StateSpace() constructor"""
 
-        with pytest.raises(exc, match=errmsg) as w:
+        with pytest.raises(exc, match=errmsg):
             StateSpace(*args)
         with pytest.raises(exc, match=errmsg):
             ss(*args)
@@ -248,7 +245,6 @@ class TestStateSpace:
 
         np.testing.assert_almost_equal(true_z, z)
 
-    @slycotonly
     def test_zero_mimo_sys322_square(self, sys322):
         """Evaluate the zeros of a square MIMO system."""
 
@@ -256,7 +252,6 @@ class TestStateSpace:
         true_z = np.sort([44.41465, -0.490252, -5.924398])
         np.testing.assert_array_almost_equal(z, true_z)
 
-    @slycotonly
     def test_zero_mimo_sys222_square(self, sys222):
         """Evaluate the zeros of a square MIMO system."""
 
@@ -320,6 +315,335 @@ class TestStateSpace:
         np.testing.assert_array_almost_equal(sys.C, C)
         np.testing.assert_array_almost_equal(sys.D, D)
 
+    def test_add_sub_mimo_siso(self):
+        # Test SS with SS
+        ss_siso = StateSpace(
+            np.array([
+                [1, 2],
+                [3, 4],
+            ]),
+            np.array([
+                [1],
+                [4],
+            ]),
+            np.array([
+                [1, 1],
+            ]),
+            np.array([
+                [0],
+            ]),
+        )
+        ss_siso_1 = StateSpace(
+            np.array([
+                [1, 1],
+                [3, 1],
+            ]),
+            np.array([
+                [3],
+                [-4],
+            ]),
+            np.array([
+                [-1, 1],
+            ]),
+            np.array([
+                [0.1],
+            ]),
+        )
+        ss_siso_2 = StateSpace(
+            np.array([
+                [1, 0],
+                [0, 1],
+            ]),
+            np.array([
+                [0],
+                [2],
+            ]),
+            np.array([
+                [0, 1],
+            ]),
+            np.array([
+                [0],
+            ]),
+        )
+        ss_mimo = ss_siso_1.append(ss_siso_2)
+        expected_add = ct.combine_tf([
+            [ss2tf(ss_siso_1 + ss_siso), ss2tf(ss_siso)],
+            [ss2tf(ss_siso), ss2tf(ss_siso_2 + ss_siso)],
+        ])
+        expected_sub = ct.combine_tf([
+            [ss2tf(ss_siso_1 - ss_siso), -ss2tf(ss_siso)],
+            [-ss2tf(ss_siso), ss2tf(ss_siso_2 - ss_siso)],
+        ])
+        for op, expected in [
+            (StateSpace.__add__, expected_add),
+            (StateSpace.__radd__, expected_add),
+            (StateSpace.__sub__, expected_sub),
+            (StateSpace.__rsub__, -expected_sub),
+        ]:
+            result = op(ss_mimo, ss_siso)
+            assert_tf_close_coeff(
+                expected.minreal(),
+                ss2tf(result).minreal(),
+            )
+        # Test SS with array
+        expected_add = ct.combine_tf([
+            [ss2tf(1 + ss_siso), ss2tf(ss_siso)],
+            [ss2tf(ss_siso), ss2tf(1 + ss_siso)],
+        ])
+        expected_sub = ct.combine_tf([
+            [ss2tf(-1 + ss_siso), ss2tf(ss_siso)],
+            [ss2tf(ss_siso), ss2tf(-1 + ss_siso)],
+        ])
+        for op, expected in [
+            (StateSpace.__add__, expected_add),
+            (StateSpace.__radd__, expected_add),
+            (StateSpace.__sub__, expected_sub),
+            (StateSpace.__rsub__, -expected_sub),
+        ]:
+            result = op(ss_siso, np.eye(2))
+            assert_tf_close_coeff(
+                expected.minreal(),
+                ss2tf(result).minreal(),
+            )
+
+    @slycotonly
+    @pytest.mark.parametrize(
+        "left, right, expected",
+        [
+            (
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[2], [1]],
+                        [[-1], [4]],
+                    ],
+                    [
+                        [[10, 1], [20, 1]],
+                        [[20, 1], [30, 1]],
+                    ],
+                ),
+                TransferFunction(
+                    [
+                        [[4], [2]],
+                        [[-2], [8]],
+                    ],
+                    [
+                        [[10, 1, 0], [20, 1, 0]],
+                        [[20, 1, 0], [30, 1, 0]],
+                    ],
+                ),
+            ),
+            (
+                TransferFunction(
+                    [
+                        [[2], [1]],
+                        [[-1], [4]],
+                    ],
+                    [
+                        [[10, 1], [20, 1]],
+                        [[20, 1], [30, 1]],
+                    ],
+                ),
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[4], [2]],
+                        [[-2], [8]],
+                    ],
+                    [
+                        [[10, 1, 0], [20, 1, 0]],
+                        [[20, 1, 0], [30, 1, 0]],
+                    ],
+                ),
+            ),
+            (
+                TransferFunction([2], [1, 0]),
+                np.eye(3),
+                TransferFunction(
+                    [
+                        [[2], [0], [0]],
+                        [[0], [2], [0]],
+                        [[0], [0], [2]],
+                    ],
+                    [
+                        [[1, 0], [1], [1]],
+                        [[1], [1, 0], [1]],
+                        [[1], [1], [1, 0]],
+                    ],
+                ),
+            ),
+        ]
+    )
+    def test_mul_mimo_siso(self, left, right, expected):
+        result = tf2ss(left).__mul__(right)
+        assert_tf_close_coeff(
+            expected.minreal(),
+            ss2tf(result).minreal(),
+        )
+
+    @slycotonly
+    @pytest.mark.parametrize(
+        "left, right, expected",
+        [
+            (
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[2], [1]],
+                        [[-1], [4]],
+                    ],
+                    [
+                        [[10, 1], [20, 1]],
+                        [[20, 1], [30, 1]],
+                    ],
+                ),
+                TransferFunction(
+                    [
+                        [[4], [2]],
+                        [[-2], [8]],
+                    ],
+                    [
+                        [[10, 1, 0], [20, 1, 0]],
+                        [[20, 1, 0], [30, 1, 0]],
+                    ],
+                ),
+            ),
+            (
+                TransferFunction(
+                    [
+                        [[2], [1]],
+                        [[-1], [4]],
+                    ],
+                    [
+                        [[10, 1], [20, 1]],
+                        [[20, 1], [30, 1]],
+                    ],
+                ),
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[4], [2]],
+                        [[-2], [8]],
+                    ],
+                    [
+                        [[10, 1, 0], [20, 1, 0]],
+                        [[20, 1, 0], [30, 1, 0]],
+                    ],
+                ),
+            ),
+            (
+                np.eye(3),
+                TransferFunction([2], [1, 0]),
+                TransferFunction(
+                    [
+                        [[2], [0], [0]],
+                        [[0], [2], [0]],
+                        [[0], [0], [2]],
+                    ],
+                    [
+                        [[1, 0], [1], [1]],
+                        [[1], [1, 0], [1]],
+                        [[1], [1], [1, 0]],
+                    ],
+                ),
+            ),
+        ]
+    )
+    def test_rmul_mimo_siso(self, left, right, expected):
+        result = tf2ss(right).__rmul__(left)
+        assert_tf_close_coeff(
+            expected.minreal(),
+            ss2tf(result).minreal(),
+        )
+
+    @slycotonly
+    @pytest.mark.parametrize("power", [0, 1, 3, -3])
+    @pytest.mark.parametrize("sysname", ["sys222", "sys322"])
+    def test_pow(self, request, sysname, power):
+        """Test state space powers."""
+        sys = request.getfixturevalue(sysname)
+        result = sys**power
+        if power == 0:
+             expected = StateSpace([], [], [], np.eye(sys.ninputs), dt=0)
+        else:
+            sign = 1 if power > 0 else -1
+            expected = sys**sign
+            for i in range(1,abs(power)):
+                expected *= sys**sign
+        np.testing.assert_allclose(expected.A, result.A)
+        np.testing.assert_allclose(expected.B, result.B)
+        np.testing.assert_allclose(expected.C, result.C)
+        np.testing.assert_allclose(expected.D, result.D)
+
+    @slycotonly
+    @pytest.mark.parametrize("order", ["left", "right"])
+    @pytest.mark.parametrize("sysname", ["sys121", "sys222", "sys322"])
+    def test_pow_inv(self, request, sysname, order):
+        """Check for identity when multiplying by inverse.
+
+        This holds approximately true for a few steps but is very
+        unstable due to numerical precision. Don't assume this in
+        real life. For testing purposes only!
+        """
+        sys = request.getfixturevalue(sysname)
+        if order == "left":
+            combined = sys**-1 * sys
+        else:
+            combined = sys * sys**-1
+        combined = combined.minreal()
+        np.testing.assert_allclose(combined.dcgain(), np.eye(sys.ninputs),
+                                   atol=1e-7)
+        T = np.linspace(0., 0.3, 100)
+        U = np.random.rand(sys.ninputs, len(T))
+        R = combined.forced_response(T=T, U=U, squeeze=False)
+        # Check that the output is the same as the input
+        np.testing.assert_allclose(R.outputs, U)
+
+    @slycotonly
+    def test_truediv(self, sys222, sys322):
+        """Test state space truediv"""
+        for sys in [sys222, sys322]:
+            # Divide by self
+            result = (sys.__truediv__(sys)).minreal()
+            expected = StateSpace([], [], [], np.eye(2), dt=0)
+            assert_tf_close_coeff(
+                ss2tf(expected).minreal(),
+                ss2tf(result).minreal(),
+            )
+            # Divide by TF
+            result = sys.__truediv__(TransferFunction.s)
+            expected = ss2tf(sys) / TransferFunction.s
+            assert_tf_close_coeff(
+                expected.minreal(),
+                ss2tf(result).minreal(),
+            )
+
+    @slycotonly
+    def test_rtruediv(self, sys222, sys322):
+        """Test state space rtruediv"""
+        for sys in [sys222, sys322]:
+            result = (sys.__rtruediv__(sys)).minreal()
+            expected = StateSpace([], [], [], np.eye(2), dt=0)
+            assert_tf_close_coeff(
+                ss2tf(expected).minreal(),
+                ss2tf(result).minreal(),
+            )
+            # Divide TF by SS
+            result = sys.__rtruediv__(TransferFunction.s)
+            expected = TransferFunction.s / sys
+            assert_tf_close_coeff(
+                expected.minreal(),
+                result.minreal(),
+            )
+        # Divide array by SS
+        sys = tf2ss(TransferFunction([1, 2], [2, 1]))
+        result = sys.__rtruediv__(np.eye(2))
+        expected = TransferFunction([2, 1], [1, 2]) * np.eye(2)
+        assert_tf_close_coeff(
+            expected.minreal(),
+            ss2tf(result).minreal(),
+        )
+
     @pytest.mark.parametrize("k", [2, -3.141, np.float32(2.718), np.array([[4.321], [5.678]])])
     def test_truediv_ss_scalar(self, sys322, k):
         """Divide SS by scalar."""
@@ -365,8 +689,6 @@ class TestStateSpace:
         with pytest.raises(AttributeError):
             sys.evalfr(omega)
 
-
-    @slycotonly
     def test_freq_resp(self):
         """Evaluate the frequency response at multiple frequencies."""
 
@@ -1119,6 +1441,7 @@ def test_html_repr(gmats, ref, dt, dtref, repr_type, num_format, editsdefaults):
     dt_html = dtref.format(dt=dt, fmt=defaults['statesp.latex_num_format'])
     ref_html = ref[refkey].format(dt=dt_html)
     assert g._repr_html_() == ref_html
+    assert g._repr_html_() == g._repr_markdown_()
 
 
 @pytest.mark.parametrize(
@@ -1169,8 +1492,8 @@ def test_html_repr_testsize(editsdefaults):
 class TestLinfnorm:
     # these are simple tests; we assume ab13dd is correct
     # python-control specific behaviour is:
-    #   - checking for continuous- and discrete-time
-    #   - scaling fpeak for discrete-time
+    #   - checking for continuous and discrete time
+    #   - scaling fpeak for discrete time
     #   - handling static gains
 
     # the underdamped gpeak and fpeak are found from
@@ -1192,6 +1515,7 @@ class TestLinfnorm:
         return ct.c2d(systype(*sysargs), dt), refgpeak, reffpeak
 
     @slycotonly
+    @pytest.mark.usefixtures('ignore_future_warning')
     def test_linfnorm_ct_siso(self, ct_siso):
         sys, refgpeak, reffpeak = ct_siso
         gpeak, fpeak = linfnorm(sys)
@@ -1199,6 +1523,7 @@ class TestLinfnorm:
         np.testing.assert_allclose(fpeak, reffpeak)
 
     @slycotonly
+    @pytest.mark.usefixtures('ignore_future_warning')
     def test_linfnorm_dt_siso(self, dt_siso):
         sys, refgpeak, reffpeak = dt_siso
         gpeak, fpeak = linfnorm(sys)
@@ -1207,6 +1532,7 @@ class TestLinfnorm:
         np.testing.assert_allclose(fpeak, reffpeak)
 
     @slycotonly
+    @pytest.mark.usefixtures('ignore_future_warning')
     def test_linfnorm_ct_mimo(self, ct_siso):
         siso, refgpeak, reffpeak = ct_siso
         sys = ct.append(siso, siso)
@@ -1290,30 +1616,31 @@ def test_tf2ss_mimo():
 def test_convenience_aliases():
     sys = ct.StateSpace(1, 1, 1, 1)
 
-    # test that all the aliases point to the correct function
-    # .__funct__ a bound methods underlying function
-    assert sys.to_ss.__func__ == ct.ss
-    assert sys.to_tf.__func__ == ct.tf
-    assert sys.bode_plot.__func__ == ct.bode_plot
-    assert sys.nyquist_plot.__func__ == ct.nyquist_plot
-    assert sys.nichols_plot.__func__ == ct.nichols_plot
-    assert sys.forced_response.__func__ == ct.forced_response
-    assert sys.impulse_response.__func__ == ct.impulse_response
-    assert sys.step_response.__func__ == ct.step_response
-    assert sys.initial_response.__func__ == ct.initial_response
-
-    # make sure the functions can be used as member function ie they support
-    # an instance of StateSpace as the first argument and that they at least return
-    # the correct type
+    # Make sure the functions can be used as member function: i.e. they
+    # support an instance of StateSpace as the first argument and that
+    # they at least return the correct type
     assert isinstance(sys.to_ss(), StateSpace)
     assert isinstance(sys.to_tf(), TransferFunction)
     assert isinstance(sys.bode_plot(), ct.ControlPlot)
     assert isinstance(sys.nyquist_plot(), ct.ControlPlot)
     assert isinstance(sys.nichols_plot(), ct.ControlPlot)
-    assert isinstance(sys.forced_response([0, 1], [1, 1]), (ct.TimeResponseData, ct.TimeResponseList))
-    assert isinstance(sys.impulse_response(), (ct.TimeResponseData, ct.TimeResponseList))
-    assert isinstance(sys.step_response(), (ct.TimeResponseData, ct.TimeResponseList))
-    assert isinstance(sys.initial_response(X0=1), (ct.TimeResponseData, ct.TimeResponseList))
+    assert isinstance(sys.forced_response([0, 1], [1, 1]),
+                      (ct.TimeResponseData, ct.TimeResponseList))
+    assert isinstance(sys.impulse_response(),
+                      (ct.TimeResponseData, ct.TimeResponseList))
+    assert isinstance(sys.step_response(),
+                      (ct.TimeResponseData, ct.TimeResponseList))
+    assert isinstance(sys.initial_response(X0=1),
+                      (ct.TimeResponseData, ct.TimeResponseList))
+
+    # Make sure that unrecognized keywords for response functions are caught
+    for method in [LTI.impulse_response, LTI.initial_response,
+                   LTI.step_response]:
+        with pytest.raises(TypeError, match="unrecognized keyword"):
+            method(sys, unknown=True)
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        LTI.forced_response(sys, [0, 1], [1, 1], unknown=True)
+
 
 # Test LinearICSystem __call__
 def test_linearic_call():

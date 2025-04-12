@@ -111,7 +111,7 @@ class TestMatlab:
 
     @pytest.fixture
     def mimo(self):
-        """Create MIMO system, contains ``siso_ss1`` twice"""
+        """Create MIMO system, contains `siso_ss1` twice"""
         m = tsystems()
         A = np.array([[1., -2., 0., 0.],
                       [3., -4., 0., 0.],
@@ -130,33 +130,33 @@ class TestMatlab:
 
     def testParallel(self, siso):
         """Call parallel()"""
-        sys1 = parallel(siso.ss1, siso.ss2)
-        sys1 = parallel(siso.ss1, siso.tf2)
-        sys1 = parallel(siso.tf1, siso.ss2)
-        sys1 = parallel(1, siso.ss2)
-        sys1 = parallel(1, siso.tf2)
-        sys1 = parallel(siso.ss1, 1)
-        sys1 = parallel(siso.tf1, 1)
+        _sys1 = parallel(siso.ss1, siso.ss2)
+        _sys1 = parallel(siso.ss1, siso.tf2)
+        _sys1 = parallel(siso.tf1, siso.ss2)
+        _sys1 = parallel(1, siso.ss2)
+        _sys1 = parallel(1, siso.tf2)
+        _sys1 = parallel(siso.ss1, 1)
+        _sys1 = parallel(siso.tf1, 1)
 
     def testSeries(self, siso):
         """Call series()"""
-        sys1 = series(siso.ss1, siso.ss2)
-        sys1 = series(siso.ss1, siso.tf2)
-        sys1 = series(siso.tf1, siso.ss2)
-        sys1 = series(1, siso.ss2)
-        sys1 = series(1, siso.tf2)
-        sys1 = series(siso.ss1, 1)
-        sys1 = series(siso.tf1, 1)
+        _sys1 = series(siso.ss1, siso.ss2)
+        _sys1 = series(siso.ss1, siso.tf2)
+        _sys1 = series(siso.tf1, siso.ss2)
+        _sys1 = series(1, siso.ss2)
+        _sys1 = series(1, siso.tf2)
+        _sys1 = series(siso.ss1, 1)
+        _sys1 = series(siso.tf1, 1)
 
     def testFeedback(self, siso):
         """Call feedback()"""
-        sys1 = feedback(siso.ss1, siso.ss2)
-        sys1 = feedback(siso.ss1, siso.tf2)
-        sys1 = feedback(siso.tf1, siso.ss2)
-        sys1 = feedback(1, siso.ss2)
-        sys1 = feedback(1, siso.tf2)
-        sys1 = feedback(siso.ss1, 1)
-        sys1 = feedback(siso.tf1, 1)
+        _sys1 = feedback(siso.ss1, siso.ss2)
+        _sys1 = feedback(siso.ss1, siso.tf2)
+        _sys1 = feedback(siso.tf1, siso.ss2)
+        _sys1 = feedback(1, siso.ss2)
+        _sys1 = feedback(1, siso.tf2)
+        _sys1 = feedback(siso.ss1, 1)
+        _sys1 = feedback(siso.tf1, 1)
 
     def testPoleZero(self, siso):
         """Call pole() and zero()"""
@@ -314,7 +314,7 @@ class TestMatlab:
             yout, _t, _xout = lsim(siso.tf3, u, t)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
 
-        # test with initial value and special algorithm for ``U=0``
+        # test with initial value and special algorithm for `U=0`
         u = 0
         x0 = np.array([[.5], [1.]])
         youttrue = np.array([11., 8.1494, 5.9361, 4.2258, 2.9118, 1.9092,
@@ -378,7 +378,7 @@ class TestMatlab:
         num, den = sp.signal.ss2tf(A, B, C, D)
         sys_ss = siso.ss1
 
-        # Compute the gain with ``dcgain``
+        # Compute the gain with `dcgain`
         gain_abcd = dcgain(A, B, C, D)
         gain_zpk = dcgain(Z, P, k)
         gain_numden = dcgain(np.squeeze(num), den)
@@ -582,10 +582,11 @@ class TestMatlab:
         # siso.tf1 / siso.ss2
 
     def testUnwrap(self):
-        """Call unwrap()"""
+        # control.matlab.unwrap
         phase = np.array(range(1, 100)) / 10.
         wrapped = phase % (2 * np.pi)
         unwrapped = unwrap(wrapped)
+        np.testing.assert_array_almost_equal(phase, unwrapped)
 
     def testSISOssdata(self, siso):
         """Call ssdata()
@@ -692,7 +693,7 @@ class TestMatlab:
         omega = np.logspace(-1, 2, 10)
         frd1 = frd(h, omega)
         assert isinstance(frd1, FRD)
-        frd2 = frd(frd1.fresp[0, 0, :], omega)
+        frd2 = frd(frd1.frdata[0, 0, :], omega)
         assert isinstance(frd2, FRD)
 
     @slycotonly

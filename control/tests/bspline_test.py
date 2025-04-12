@@ -11,11 +11,9 @@ should be created for that purpose.
 
 import numpy as np
 import pytest
-import scipy as sp
 
 import control as ct
 import control.flatsys as fs
-import control.optimal as opt
 
 def test_bspline_basis():
     Tf = 10
@@ -182,40 +180,40 @@ def test_kinematic_car_multivar():
 def test_bspline_errors():
     # Breakpoints must be a 1D array, in increasing order
     with pytest.raises(NotImplementedError, match="not yet supported"):
-        basis = fs.BSplineFamily([[0, 1, 3], [0, 2, 3]], [3, 3])
+        fs.BSplineFamily([[0, 1, 3], [0, 2, 3]], [3, 3])
 
     with pytest.raises(ValueError,
                        match="breakpoints must be convertable to a 1D array"):
-        basis = fs.BSplineFamily([[[0, 1], [0, 1]], [[0, 1], [0, 1]]], [3, 3])
+        fs.BSplineFamily([[[0, 1], [0, 1]], [[0, 1], [0, 1]]], [3, 3])
 
     with pytest.raises(ValueError, match="must have at least 2 values"):
-        basis = fs.BSplineFamily([10], 2)
+        fs.BSplineFamily([10], 2)
 
     with pytest.raises(ValueError, match="must be strictly increasing"):
-        basis = fs.BSplineFamily([1, 3, 2], 2)
+        fs.BSplineFamily([1, 3, 2], 2)
 
     # Smoothness can't be more than dimension of splines
-    basis = fs.BSplineFamily([0, 1], 4, 3)      # OK
+    fs.BSplineFamily([0, 1], 4, 3)      # OK
     with pytest.raises(ValueError, match="degree must be greater"):
-        basis = fs.BSplineFamily([0, 1], 4, 4)  # not OK
+        fs.BSplineFamily([0, 1], 4, 4)  # not OK
 
     # nvars must be an integer
     with pytest.raises(TypeError, match="vars must be an integer"):
-        basis = fs.BSplineFamily([0, 1], 4, 3, vars=['x1', 'x2'])
+        fs.BSplineFamily([0, 1], 4, 3, vars=['x1', 'x2'])
 
     # degree, smoothness must match nvars
     with pytest.raises(ValueError, match="length of 'degree' does not match"):
-        basis = fs.BSplineFamily([0, 1], [4, 4, 4], 3, vars=2)
+        fs.BSplineFamily([0, 1], [4, 4, 4], 3, vars=2)
 
     # degree, smoothness must be list of ints
-    basis = fs.BSplineFamily([0, 1], [4, 4], 3, vars=2) # OK
+    fs.BSplineFamily([0, 1], [4, 4], 3, vars=2) # OK
     with pytest.raises(ValueError, match="could not parse 'degree'"):
-        basis = fs.BSplineFamily([0, 1], [4, '4'], 3, vars=2)
+        fs.BSplineFamily([0, 1], [4, '4'], 3, vars=2)
 
     # degree must be strictly positive
     with pytest.raises(ValueError, match="'degree'; must be at least 1"):
-        basis = fs.BSplineFamily([0, 1], 0, 1)
+        fs.BSplineFamily([0, 1], 0, 1)
 
     # smoothness must be non-negative
     with pytest.raises(ValueError, match="'smoothness'; must be at least 0"):
-        basis = fs.BSplineFamily([0, 1], 2, -1)
+        fs.BSplineFamily([0, 1], 2, -1)

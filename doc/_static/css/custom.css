@@ -1,0 +1,20 @@
+/* Center equations with equation numbers on the right */
+.math {
+    text-align: center;
+}
+.eqno {
+    float: right;
+}
+
+/* Make code blocks show up in in dark grey, rather than RTD default (red) */
+code.literal {
+    color: #404040 !important;
+}
+/* Make py:obj objects non-bold by default */
+.py-obj .pre {
+    font-weight: normal;
+}
+/* Turn bold back on for py:obj objects that actually link to something */
+a .py-obj .pre {
+    font-weight: bold;
+}

@@ -1,58 +1,25 @@
 # robust.py - tools for robust control
 #
-# Author: Steve Brunton, Kevin Chen, Lauren Padilla
-# Date: 24 Dec 2010
-#
-# This file contains routines for obtaining reduced order models
-#
-# Copyright (c) 2010 by California Institute of Technology
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-# 1. Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#
-# 2. Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#
-# 3. Neither the name of the California Institute of Technology nor
-#    the names of its contributors may be used to endorse or promote
-#    products derived from this software without specific prior
-#    written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
-# OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
-#
-# $Id$
+# Initial authors: Steve Brunton, Kevin Chen, Lauren Padilla
+# Creation date: 24 Dec 2010
+
+"""Robust control synthesis algorithms."""
+
+import warnings
 
 # External packages and modules
 import numpy as np
-import warnings
-from .exception import *
+
+from .exception import ControlSlycot
 from .statesp import StateSpace
-from .statefbk import *
 
 
 def h2syn(P, nmeas, ncon):
-    """H_2 control synthesis for plant P.
+    """H2 control synthesis for plant P.
 
     Parameters
     ----------
-    P : StateSpace
+    P : `StateSpace`
         Partitioned LTI plant (state-space system).
     nmeas : int
         Number of measurements (input to controller).
@@ -61,13 +28,13 @@ def h2syn(P, nmeas, ncon):
 
     Returns
     -------
-    K : StateSpace
+    K : `StateSpace`
         Controller to stabilize `P`.
 
     Raises
     ------
     ImportError
-        if slycot routine sb10hd is not loaded
+        If slycot routine sb10hd is not loaded.
 
     See Also
     --------
@@ -75,7 +42,7 @@ def h2syn(P, nmeas, ncon):
 
     Examples
     --------
-    >>> # Unstable first order SISI system
+    >>> # Unstable first order SISO system
     >>> G = ct.tf([1], [1, -1], inputs=['u'], outputs=['y'])
     >>> all(G.poles() < 0)  # Is G stable?
     False
@@ -98,12 +65,6 @@ def h2syn(P, nmeas, ncon):
     # Check for ss system object, need a utility for this?
 
     # TODO: Check for continous or discrete, only continuous supported right now
-    # if isCont():
-    #    dico = 'C'
-    # elif isDisc():
-    #    dico = 'D'
-    # else:
-    dico = 'C'
 
     try:
         from slycot import sb10hd
@@ -126,11 +87,11 @@ def h2syn(P, nmeas, ncon):
 
 def hinfsyn(P, nmeas, ncon):
     # TODO: document significance of rcond
-    """H_{inf} control synthesis for plant P.
+    """H-infinity control synthesis for plant P.
 
     Parameters
     ----------
-    P : StateSpace
+    P : `StateSpace`
         Partitioned LTI plant (state-space system).
     nmeas : int
         Number of measurements (input to controller).
@@ -139,9 +100,9 @@ def hinfsyn(P, nmeas, ncon):
 
     Returns
     -------
-    K : StateSpace
+    K : `StateSpace`
         Controller to stabilize `P`.
-    CL : StateSpace
+    CL : `StateSpace`
         Closed loop system.
     gam : float
         Infinity norm of closed loop system.
@@ -155,7 +116,7 @@ def hinfsyn(P, nmeas, ncon):
     Raises
     ------
     ImportError
-        if slycot routine sb10ad is not loaded
+        If slycot routine sb10ad is not loaded.
 
     See Also
     --------
@@ -163,7 +124,7 @@ def hinfsyn(P, nmeas, ncon):
 
     Examples
     --------
-    >>> # Unstable first order SISI system
+    >>> # Unstable first order SISO system
     >>> G = ct.tf([1], [1,-1], inputs=['u'], outputs=['y'])
     >>> all(G.poles() < 0)
     False
@@ -186,12 +147,6 @@ def hinfsyn(P, nmeas, ncon):
     # Check for ss system object, need a utility for this?
 
     # TODO: Check for continous or discrete, only continuous supported right now
-    # if isCont():
-    #    dico = 'C'
-    # elif isDisc():
-    #    dico = 'D'
-    # else:
-    dico = 'C'
 
     try:
         from slycot import sb10ad
@@ -233,19 +188,20 @@ def _size_as_needed(w, wname, n):
 
     Returns
     -------
-    w_: processed weighting function, a StateSpace object:
-        - if w is None, empty StateSpace object
+    w_: processed weighting function, a `StateSpace` object:
+        - if w is None, empty `StateSpace` object
         - if w is scalar, w_ will be w * eye(n)
-        - otherwise, w as StateSpace object
+        - otherwise, w as `StateSpace` object
 
     Raises
     ------
     ValueError
-        - if w is not None or scalar, and doesn't have n inputs
+        If w is not None or scalar, and does not have n inputs.
 
     See Also
     --------
     augw
+
     """
     from . import append, ss
     if w is not None:
@@ -270,7 +226,7 @@ def augw(g, w1=None, w2=None, w3=None):
     one weighting must not be None.
 
     If a weighting w is scalar, it will be replaced by I*w, where I is
-    ny-by-ny for w1 and w3, and nu-by-nu for w2.
+    ny-by-ny for `w1` and `w3`, and nu-by-nu for `w2`.
 
     Parameters
     ----------
@@ -285,21 +241,22 @@ def augw(g, w1=None, w2=None, w3=None):
 
     Returns
     -------
-    p : StateSpace
-        Plant augmented with weightings, suitable for submission to hinfsyn or
-        h2syn.
+    p : `StateSpace`
+        Plant augmented with weightings, suitable for submission to
+        `hinfsyn` or `h2syn`.
 
     Raises
     ------
     ValueError
-        If all weightings are None
+        If all weightings are None.
 
     See Also
     --------
     h2syn, hinfsyn, mixsyn
+
     """
 
-    from . import append, ss, connect
+    from . import append, connect, ss
 
     if w1 is None and w2 is None and w3 is None:
         raise ValueError("At least one weighting must not be None")
@@ -348,12 +305,12 @@ def augw(g, w1=None, w2=None, w3=None):
                                        1 + now1 + now2 + now3 + 2 * ny + niw2)
 
     # y -> w3
-    q[niw1 + niw2:niw1 + niw2 + niw3, 1] = np.arange(1 + now1 + now2 + now3 + ny,
-                                                     1 + now1 + now2 + now3 + ny + niw3)
+    q[niw1 + niw2:niw1 + niw2 + niw3, 1] = np.arange(
+        1 + now1 + now2 + now3 + ny, 1 + now1 + now2 + now3 + ny + niw3)
 
     # -y -> Iy; note the leading -
-    q[niw1 + niw2 + niw3:niw1 + niw2 + niw3 + ny, 1] = -np.arange(1 + now1 + now2 + now3 + ny,
-                                                                  1 + now1 + now2 + now3 + 2 * ny)
+    q[niw1 + niw2 + niw3:niw1 + niw2 + niw3 + ny, 1] = -np.arange(
+        1 + now1 + now2 + now3 + ny, 1 + now1 + now2 + now3 + 2 * ny)
 
     # Iu -> G
     q[niw1 + niw2 + niw3 + ny:niw1 + niw2 + niw3 + ny + nu, 1] = np.arange(
@@ -397,9 +354,9 @@ def mixsyn(g, w1=None, w2=None, w3=None):
 
     Returns
     -------
-    k : StateSpace
+    k : `StateSpace`
         Synthesized controller.
-    cl : StateSpace
+    cl : `StateSpace`
         Closed system mapping evaluation inputs to evaluation outputs.
 
         Let p be the augmented plant, with::
@@ -407,21 +364,21 @@ def mixsyn(g, w1=None, w2=None, w3=None):
             [z] = [p11 p12] [w]
             [y]   [p21   g] [u]
 
-        then cl is the system from w->z with `u = -k*y`.
-
-    info: tuple
-        gamma: scalar
-            H-infinity norm of cl.
-        rcond: array
-            Estimates of reciprocal condition numbers computed during
-            synthesis.  See hinfsyn for details.
-
-    If a weighting w is scalar, it will be replaced by I*w, where I is
-    ny-by-ny for w1 and w3, and nu-by-nu for w2.
+        then cl is the system from w -> z with u = -k*y.
+    info : tuple
+        Two-tuple (`gamma`, `rcond`) containing additional information:
+            - `gamma` (scalar): H-infinity norm of cl.
+            - `rcond` (array): Estimates of reciprocal condition numbers
+               computed during synthesis.  See hinfsyn for details.
 
     See Also
     --------
     hinfsyn, augw
+
+    Notes
+    -----
+    If a weighting w is scalar, it will be replaced by I*w, where I is
+    ny-by-ny for `w1` and `w3`, and nu-by-nu for `w2`.
 
     """
     nmeas = g.noutputs

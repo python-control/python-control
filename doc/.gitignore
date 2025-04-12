@@ -1,2 +1,2 @@
 *.fig.bak
-_static/
+.docfigs

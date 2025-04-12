@@ -1,7 +1,13 @@
 # ctrlplot.py - utility functions for plotting
-# Richard M. Murray, 14 Jun 2024
+# RMM, 14 Jun 2024
 #
-# Collection of functions that are used by various plotting functions.
+
+"""Utility functions for plotting.
+
+This module contains a collection of functions that are used by
+various plotting functions.
+
+"""
 
 # Code pattern for control system plotting functions:
 #
@@ -115,32 +121,32 @@ _ctrlplot_defaults = {'ctrlplot.rcParams': _ctrlplot_rcParams}
 # Control figure
 #
 
-class ControlPlot(object):
-    """A class for returning control figures.
+class ControlPlot():
+    """Return class for control platting functions.
 
     This class is used as the return type for control plotting functions.
     It contains the information required to access portions of the plot
     that the user might want to adjust, as well as providing methods to
     modify some of the properties of the plot.
 
-    A control figure consists of a :class:`matplotlib.figure.Figure` with
-    an array of :class:`matplotlib.axes.Axes`.  Each axes in the figure has
+    A control figure consists of a `matplotlib.figure.Figure` with
+    an array of `matplotlib.axes.Axes`.  Each axes in the figure has
     a number of lines that represent the data for the plot.  There may also
     be a legend present in one or more of the axes.
 
-    Attributes
+    Parameters
     ----------
-    lines : array of list of :class:`matplotlib:Line2D`
+    lines : array of list of `matplotlib.lines.Line2D`
         Array of Line2D objects for each line in the plot.  Generally, the
         shape of the array matches the subplots shape and the value of the
         array is a list of Line2D objects in that subplot.  Some plotting
         functions will return variants of this structure, as described in
         the individual documentation for the functions.
-    axes : 2D array of :class:`matplotlib:Axes`
+    axes : 2D array of `matplotlib.axes.Axes`
         Array of Axes objects for each subplot in the plot.
-    figure : :class:`matplotlib:Figure`
+    figure : `matplotlib.figure.Figure`
         Figure on which the Axes are drawn.
-    legend : :class:`matplotlib:.legend.Legend` (instance or ndarray)
+    legend : `matplotlib.legend.Legend` (instance or ndarray)
         Legend object(s) for the plot.  If more than one legend is
         included, this will be an array with each entry being either None
         (for no legend) or a legend object.
@@ -170,13 +176,14 @@ class ControlPlot(object):
         self.lines[item] = val
     shape = property(lambda self: self.lines.shape, None)
     def reshape(self, *args):
+        """Reshape lines array (legacy)."""
         return self.lines.reshape(*args)
 
     def set_plot_title(self, title, frame='axes'):
         """Set the title for a control plot.
 
         This is a wrapper for the matplotlib `suptitle` function, but by
-        setting ``frame`` to 'axes' (default) then the title is centered on
+        setting `frame` to 'axes' (default) then the title is centered on
         the midpoint of the axes in the figure, rather than the center of
         the figure.  This usually looks better (particularly with
         multi-panel plots), though it takes longer to render.
@@ -188,8 +195,8 @@ class ControlPlot(object):
         fig : Figure, optional
             Matplotlib figure.  Defaults to current figure.
         frame : str, optional
-            Coordinate frame to use for centering: 'axes' (default) or 'figure'.
-        **kwargs : :func:`matplotlib.pyplot.suptitle` keywords, optional
+            Coordinate frame for centering: 'axes' (default) or 'figure'.
+        **kwargs : `matplotlib.pyplot.suptitle` keywords, optional
             Additional keywords (passed to matplotlib).
 
         """
@@ -208,7 +215,7 @@ def suptitle(
     """Add a centered title to a figure.
 
     .. deprecated:: 0.10.1
-        Use :func:`ControlPlot.set_plot_title`.
+        Use `ControlPlot.set_plot_title`.
 
     """
     warnings.warn(
@@ -223,7 +230,7 @@ def get_plot_axes(line_array):
 
     .. deprecated:: 0.10.1
         This function will be removed in a future version of python-control.
-        Use `cplt.axes` to obtain axes for an instance of :class:`ControlPlot`.
+        Use `cplt.axes` to obtain axes for an instance of `ControlPlot`.
 
     This function can be used to return the set of axes corresponding
     to the line array that is returned by `time_response_plot`.  This
@@ -232,13 +239,13 @@ def get_plot_axes(line_array):
 
     Parameters
     ----------
-    line_array : array of list of Line2D
+    line_array : array of list of `matplotlib.lines.Line2D`
         A 2D array with elements corresponding to a list of lines appearing
         in an axes, matching the return type of a time response data plot.
 
     Returns
     -------
-    axes_array : array of list of Axes
+    axes_array : array of list of `matplotlib.axes.Axes`
         A 2D array with elements corresponding to the Axes associated with
         the lines in `line_array`.
 
@@ -272,16 +279,16 @@ def pole_zero_subplots(
         Timebase for each subplot (or a list of timebases).
     scaling : 'auto', 'equal', or None
         Scaling to apply to the subplots.
-    fig : :class:`matplotlib.figure.Figure`
+    fig : `matplotlib.figure.Figure`
         Figure to use for creating subplots.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set up config.default['ctrlplot.rcParams'].
+        Default is set by `config.defaults['ctrlplot.rcParams']`.
 
     Returns
     -------
-    ax_array : array
-        2D array of axes
+    ax_array : ndarray
+        2D array of axes.
 
     """
     from .grid import nogrid, sgrid, zgrid
@@ -304,11 +311,11 @@ def pole_zero_subplots(
                 case 'empty', _:        # empty grid
                     ax_array[row, col] = fig.add_subplot(nrows, ncols, index+1)
 
-                case True, True:        # continuous time grid
+                case True, True:        # continuous-time grid
                     ax_array[row, col], _ = sgrid(
                         (nrows, ncols, index+1), scaling=scaling)
 
-                case True, False:       # discrete time grid
+                case True, False:       # discrete-time grid
                     ax_array[row, col] = fig.add_subplot(nrows, ncols, index+1)
                     zgrid(ax=ax_array[row, col], scaling=scaling)
 
@@ -343,7 +350,7 @@ def _process_ax_keyword(
     current figure and axes are returned.  Otherwise a new figure is
     created with axes of the desired shape.
 
-    If `create_axes` is False and a new/empty figure is returned, then axs
+    If `create_axes` is False and a new/empty figure is returned, then `axs`
     is an array of the proper shape but None for each element.  This allows
     the calling function to do the actual axis creation (needed for
     curvilinear grids that use the AxisArtist module).
@@ -605,8 +612,10 @@ def _add_arrows_to_line2D(
 
     Returns
     -------
-    arrows: list of arrows
+    arrows : list of arrows
 
+    Notes
+    -----
     Based on https://stackoverflow.com/questions/26911898/
 
     """
@@ -621,13 +630,13 @@ def _add_arrows_to_line2D(
     color = line.get_color()
     use_multicolor_lines = isinstance(color, np.ndarray)
     if use_multicolor_lines:
-        raise NotImplementedError("multicolor lines not supported")
+        raise NotImplementedError("multi-color lines not supported")
     else:
         arrow_kw['color'] = color
 
     linewidth = line.get_linewidth()
     if isinstance(linewidth, np.ndarray):
-        raise NotImplementedError("multiwidth lines not supported")
+        raise NotImplementedError("multi-width lines not supported")
     else:
         arrow_kw['linewidth'] = linewidth
 
@@ -676,7 +685,7 @@ def _get_color_offset(ax, color_cycle=None):
 
     Parameters
     ----------
-    ax : matplotlib.axes.Axes
+    ax : `matplotlib.axes.Axes`
         Axes containing already plotted lines.
     color_cycle : list of matplotlib color specs, optional
         Colors to use in plotting lines.  Defaults to matplotlib rcParams
@@ -708,7 +717,7 @@ def _get_color(
     """Get color to use for plotting line.
 
     This function returns the color to be used for the line to be drawn (or
-    None if the detault color cycle for the axes should be used).
+    None if the default color cycle for the axes should be used).
 
     Parameters
     ----------
@@ -718,7 +727,7 @@ def _get_color(
         Offset into the color cycle (for multi-trace plots).
     fmt : str, optional
         Format string passed to plotting command.
-    ax : matplotlib.axes.Axes, optional
+    ax : `matplotlib.axes.Axes`, optional
         Axes containing already plotted lines.
     lines : list of matplotlib.lines.Line2D, optional
         List of plotted lines.  If not given, use ax.get_lines().
