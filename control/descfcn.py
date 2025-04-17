@@ -9,7 +9,6 @@ systems with memoryless nonlinearities using describing function analysis.
 import math
 from warnings import warn
 
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 
@@ -521,16 +520,17 @@ def describing_function_plot(
 
     # Plot the Nyquist response
     cplt = dfresp.response.plot(**kwargs)
+    ax = cplt.axes[0, 0]        # Get the axes where the plot was made
     lines[0] = cplt.lines[0]    # Return Nyquist lines for first system
 
     # Add the describing function curve to the plot
-    lines[1] = plt.plot(dfresp.N_vals.real, dfresp.N_vals.imag)
+    lines[1] = ax.plot(dfresp.N_vals.real, dfresp.N_vals.imag)
 
     # Label the intersection points
     if point_label:
         for pos, (a, omega) in zip(dfresp.positions, dfresp.intersections):
             # Add labels to the intersection points
-            plt.text(pos.real, pos.imag, point_label % (a, omega))
+            ax.text(pos.real, pos.imag, point_label % (a, omega))
 
     return ControlPlot(lines, cplt.axes, cplt.figure)
 

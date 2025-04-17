@@ -355,7 +355,7 @@ def _process_ax_keyword(
     the calling function to do the actual axis creation (needed for
     curvilinear grids that use the AxisArtist module).
 
-    Legacy behavior: some of the older plotting commands use a axes label
+    Legacy behavior: some of the older plotting commands use an axes label
     to identify the proper axes for plotting.  This behavior is supported
     through the use of the label keyword, but will only work if shape ==
     (1, 1) and squeeze == True.
