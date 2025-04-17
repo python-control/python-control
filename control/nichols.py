@@ -132,15 +132,15 @@ def nichols_plot(
         out[idx] = ax_nichols.plot(x, y, *fmt, label=label_, **kwargs)
 
     # Label the plot axes
-    plt.xlabel('Phase [deg]')
-    plt.ylabel('Magnitude [dB]')
+    ax_nichols.set_xlabel('Phase [deg]')
+    ax_nichols.set_ylabel('Magnitude [dB]')
 
     # Mark the -180 point
-    plt.plot([-180], [0], 'r+')
+    ax_nichols.plot([-180], [0], 'r+')
 
     # Add grid
     if grid:
-        nichols_grid()
+        nichols_grid(ax=ax_nichols)
 
     # List of systems that are included in this plot
     lines, labels = _get_line_labels(ax_nichols)
