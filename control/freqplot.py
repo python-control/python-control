@@ -1100,13 +1100,14 @@ def bode_plot(
 _nyquist_defaults = {
     'nyquist.primary_style': ['-', '-.'],       # style for primary curve
     'nyquist.mirror_style': ['--', ':'],        # style for mirror curve
-    'nyquist.arrows': 2,                        # number of arrows around curve
+    'nyquist.arrows': 3,                        # number of arrows around curve
     'nyquist.arrow_size': 8,                    # pixel size for arrows
     'nyquist.encirclement_threshold': 0.05,     # warning threshold
     'nyquist.indent_radius': 1e-4,              # indentation radius
     'nyquist.indent_direction': 'right',        # indentation direction
-    'nyquist.indent_points': 50,                # number of points to insert
-    'nyquist.max_curve_magnitude': 20,          # clip large values
+    'nyquist.indent_points': 200,               # number of points to insert
+    'nyquist.max_curve_magnitude': 15,          # rescale large values
+    'nyquist.blend_fraction': 0.15,             # when to start scaling
     'nyquist.max_curve_offset': 0.02,           # offset of primary/mirror
     'nyquist.start_marker': 'o',                # marker at start of curve
     'nyquist.start_marker_size': 4,             # size of the marker
@@ -1638,6 +1639,10 @@ def nyquist_plot(
         The matplotlib axes to draw the figure on.  If not specified and
         the current figure has a single axes, that axes is used.
         Otherwise, a new figure is created.
+    blend_fraction : float, optional
+        For portions of the Nyquist curve that are scaled to have a maximum
+        magnitude of `max_curve_magnitude`, begin a smooth rescaling at
+        this fraction of `max_curve_magnitude`. Default value is 0.15.
     encirclement_threshold : float, optional
         Define the threshold for generating a warning if the number of net
         encirclements is a non-integer value.  Default value is 0.05 and can
@@ -1784,6 +1789,8 @@ def nyquist_plot(
     ax_user = ax
     max_curve_magnitude = config._get_param(
         'nyquist', 'max_curve_magnitude', kwargs, _nyquist_defaults, pop=True)
+    blend_fraction = config._get_param(
+        'nyquist', 'blend_fraction', kwargs, _nyquist_defaults, pop=True)
     max_curve_offset = config._get_param(
         'nyquist', 'max_curve_offset', kwargs, _nyquist_defaults, pop=True)
     rcParams = config._get_param('ctrlplot', 'rcParams', kwargs, pop=True)
@@ -1891,21 +1898,36 @@ def nyquist_plot(
             splane_contour = np.log(response.contour) / response.dt
 
         # Find the different portions of the curve (with scaled pts marked)
+        if blend_fraction < 0 or blend_fraction > 1:
+            raise ValueError("blend_fraction must be between 0 and 1")
+        blend_curve_start = (1 - blend_fraction) * max_curve_magnitude
         reg_mask = np.logical_or(
-            np.abs(resp) > max_curve_magnitude,
-            splane_contour.real != 0)
-        # reg_mask = np.logical_or(
-        #     np.abs(resp.real) > max_curve_magnitude,
-        #     np.abs(resp.imag) > max_curve_magnitude)
+            np.abs(resp) > blend_curve_start,
+            np.logical_not(np.isclose(splane_contour.real, 0)))
 
         scale_mask = ~reg_mask \
             & np.concatenate((~reg_mask[1:], ~reg_mask[-1:])) \
             & np.concatenate((~reg_mask[0:1], ~reg_mask[:-1]))
 
         # Rescale the points with large magnitude
-        rescale = np.logical_and(
-            reg_mask, abs(resp) > max_curve_magnitude)
-        resp[rescale] *= max_curve_magnitude / abs(resp[rescale])
+        rescale_idx = (np.abs(resp) > blend_curve_start)
+
+        if np.any(rescale_idx):  # Only process if rescaling is needed
+            subset = resp[rescale_idx]
+            abs_subset = np.abs(subset)
+            unit_vectors = subset / abs_subset  # Preserve phase/direction
+
+            if blend_curve_start is None or \
+               blend_curve_start == max_curve_magnitude:
+                # Clip at max_curve_magnitude
+                resp[rescale_idx] = max_curve_magnitude * unit_vectors
+            else:
+                # Logistic scaling
+                newmag = blend_curve_start + \
+                    (max_curve_magnitude - blend_curve_start) * \
+                    (abs_subset - blend_curve_start) / \
+                    (abs_subset + max_curve_magnitude - 2 * blend_curve_start)
+                resp[rescale_idx] = newmag * unit_vectors
 
         # Get the label to use for the line
         label = response.sysname if line_labels is None else line_labels[idx]
