@@ -9,7 +9,6 @@ systems with memoryless nonlinearities using describing function analysis.
 import math
 from warnings import warn
 
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 
