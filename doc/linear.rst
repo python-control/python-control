@@ -531,6 +531,8 @@ equilibrium values (thereby keeping the input/output gain unchanged at
 zero frequency ["DC"]).
 
 
+.. _displaying-lti-system-information:
+
 Displaying LTI System Information
 =================================
 
