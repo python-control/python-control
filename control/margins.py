@@ -704,24 +704,19 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
             (not gmidx != -1 and float('inf')) or DGM[gmidx][0],
             (not DPM.shape[0] and float('inf')) or DPM[pmidx][0])
 
-def disk_margin_plot(alpha_max, skew = 0.0, ax = None, ntheta = 500,
-    shade = True, shade_alpha = 0.25):
-    """Compute disk-based stability margins for SISO or MIMO LTI system.
+def disk_margin_plot(alpha_max, skew = 0.0, ax = None):
+    """Plot region of allowable gain/phase variation, given worst-case disk margin.
 
     Parameters
     ----------
-    L : SISO or MIMO LTI system representing the loop transfer function
-    omega : ndarray
-        1d array of (non-negative) frequencies (rad/s) at which to evaluate
-        the disk-based stability margins
-    skew : (optional, default = 0) skew parameter for disk margin calculation.
+    alpha_max : worst-case disk margin(s) across all (relevant) frequencies.
+        Note that skew may be a scalar or list.
+    skew : (optional, default = 0) skew parameter(s) for disk margin calculation.
         skew = 0 uses the "balanced" sensitivity function 0.5*(S - T)
         skew = 1 uses the sensitivity function S
         skew = -1 uses the complementary sensitivity function T
-    returnall : bool, optional
-        If true, return all margins found. If False (default), return only the
-        minimum stability margins. Only margins in the given frequency region
-        can be found and returned.
+        Note that skew may be a scalar or list.
+    ax : axes to plot bounding curve(s) onto
 
     Returns
     -------
@@ -746,10 +741,13 @@ def disk_margin_plot(alpha_max, skew = 0.0, ax = None, ntheta = 500,
     >>
     >> s = control.tf('s') # Laplace variable
     >> L = 6.25*(s + 3)*(s + 5)/(s*(s + 1)**2*(s**2 + 0.18*s + 100)) # loop transfer function
-    >> DM, GM, PM = control.disk_margins(L, omega, skew = 0.0,) # balanced (S - T)
     >>
+    >> DM_plot = []
+    >> DM_plot.append(control.disk_margins(L, omega, skew = -1.0)[0]) # T-based (T)
+    >> DM_plot.append(control.disk_margins(L, omega, skew = 0.0)[0]) # balanced (S - T)
+    >> DM_plot.append(control.disk_margins(L, omega, skew = 1.0)[0]) # S-based (S)
     >> plt.figure(1)
-    >> disk_margin_plot(0.75, skew = [0.0, 1.0, -1.0])
+    >> control.disk_margin_plot(DM_plot, skew = [-1.0, 0.0, 1.0])
     >> plt.show()
 
     References
@@ -775,11 +773,12 @@ def disk_margin_plot(alpha_max, skew = 0.0, ax = None, ntheta = 500,
     else:
         skew = np.asarray(skew)
 
-
-    theta = np.linspace(0, np.pi, ntheta)
+    # Add a plot for each (alpha, skew) pair present
+    theta = np.linspace(0, np.pi, 500)
     legend_list = []
     for ii in range(0, skew.shape[0]):
-        legend_str = "$\\sigma$ = %.1f, $\\alpha_{max}$ = %.2f" %(skew[ii], alpha_max[ii])
+        legend_str = "$\\sigma$ = %.1f, $\\alpha_{max}$ = %.2f" %(
+            skew[ii], alpha_max[ii])
         legend_list.append(legend_str)
 
         # Complex bounding curve of stable gain/phase variations
@@ -791,15 +790,10 @@ def disk_margin_plot(alpha_max, skew = 0.0, ax = None, ntheta = 500,
         phi_deg = np.rad2deg(np.angle(f)) # phase margin (deg)
 
         # Plot the allowable combined gain/phase variations
-        if shade:
-            out = ax.plot(gamma_dB, phi_deg,
-                alpha = shade_alpha, label = '_nolegend_')
-            ax.fill_between(
-                ax.lines[ii].get_xydata()[:,0],
-                ax.lines[ii].get_xydata()[:,1],
-                alpha = shade_alpha)
-        else:
-            out = ax.plot(gamma_dB, phi_deg)
+        out = ax.plot(gamma_dB, phi_deg, alpha = 0.25,
+            label = '_nolegend_')
+        ax.fill_between(ax.lines[ii].get_xydata()[:,0],
+            ax.lines[ii].get_xydata()[:,1], alpha = 0.25)
 
     plt.ylabel('Gain Variation (dB)')
     plt.xlabel('Phase Variation (deg)')
