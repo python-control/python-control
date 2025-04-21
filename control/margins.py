@@ -755,7 +755,6 @@ def disk_margin_plot(alpha_max, skew = 0.0, ax = None):
     [1] Seiler, Peter, Andrew Packard, and Pascal Gahinet. “An Introduction
         to Disk Margins [Lecture Notes].” IEEE Control Systems Magazine 40,
         no. 5 (October 2020): 78-95.
-
     """
 
     # Create axis if needed
