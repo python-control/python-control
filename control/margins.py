@@ -533,7 +533,7 @@ def margin(*args):
 
     return margin[0], margin[1], margin[3], margin[4]
 
-def disk_margins(L, omega, skew = 0.0):
+def disk_margins(L, omega, skew = 0.0, returnall = False):
     """Compute disk-based stability margins for SISO or MIMO LTI system.
 
     Parameters
@@ -546,17 +546,21 @@ def disk_margins(L, omega, skew = 0.0):
         skew = 0 uses the "balanced" sensitivity function 0.5*(S - T)
         skew = 1 uses the sensitivity function S
         skew = -1 uses the complementary sensitivity function T
+    returnall : bool, optional
+        If true, return all margins found. If False (default), return only the
+        minimum stability margins. Only margins in the given frequency region
+        can be found and returned.
 
     Returns
     -------
     DM : ndarray
-        1d array of frequency-dependent disk margins.  DM is the same
+        1D array of frequency-dependent disk margins.  DM is the same
         size as "omega" parameter.
     GM : ndarray
-        1d array of frequency-dependent disk-based gain margins, in dB.
+        1D array of frequency-dependent disk-based gain margins, in dB.
         GM is the same size as "omega" parameter.
     PM : ndarray
-        1d array of frequency-dependent disk-based phase margins, in deg.
+        1D array of frequency-dependent disk-based phase margins, in deg.
         PM is the same size as "omega" parameter.
 
     Examples
@@ -567,13 +571,15 @@ def disk_margins(L, omega, skew = 0.0):
     >> import matplotlib.pyplot as plt
     >>
     >> omega = np.logspace(-1, 3, 1001)
+    >>
     >> P = control.ss([[0, 10],[-10, 0]], np.eye(2), [[1, 10], [-10, 1]], [[0, 0],[0, 0]])
     >> K = control.ss([],[],[], [[1, -2], [0, 1]])
     >> L = P*K
-    >> DM, GM, PM = control.disk_margins(L, omega, 0.0) # balanced (S - T)
-    >> print(f"min(DM) = {min(DM)}")
-    >> print(f"min(GM) = {min(GM)} dB")
-    >> print(f"min(PM) = {min(PM)} deg")
+    >>
+    >> DM, GM, PM = control.disk_margins(L, omega, skew = 0.0, returnall = True) # balanced (S - T)
+    >> print(f"min(DM) = {min(DM)} (omega = {omega[np.argmin(DM)]})")
+    >> print(f"GM = {GM[np.argmin(DM)]} dB")
+    >> print(f"PM = {PM[np.argmin(DM)]} deg\n")
     >>
     >> plt.figure(1)
     >> plt.subplot(3,1,1)
@@ -587,7 +593,7 @@ def disk_margins(L, omega, skew = 0.0):
     >> plt.figure(1)
     >> plt.subplot(3,1,2)
     >> plt.semilogx(omega, GM, label='$\\gamma_{m}$')
-    >> plt.ylabel('Margin (dB)')
+    >> plt.ylabel('Gain Margin (dB)')
     >> plt.legend()
     >> plt.title('Disk-Based Gain Margin')
     >> plt.grid()
@@ -598,7 +604,7 @@ def disk_margins(L, omega, skew = 0.0):
     >> plt.figure(1)
     >> plt.subplot(3,1,3)
     >> plt.semilogx(omega, PM, label='$\\phi_{m}$')
-    >> plt.ylabel('Margin (deg)')
+    >> plt.ylabel('Phase Margin (deg)')
     >> plt.legend()
     >> plt.title('Disk-Based Phase Margin')
     >> plt.grid()
@@ -640,7 +646,7 @@ def disk_margins(L, omega, skew = 0.0):
 
     # Compute frequency response of the "balanced" (according
     # to the skew parameter "sigma") sensitivity function [1-2]
-    ST = S + (skew - 1)*I/2
+    ST = S + 0.5*(skew - 1)*I
     ST_mag, ST_phase, _ = ST.frequency_response(omega)
     ST_jw = (ST_mag*np.exp(1j*ST_phase))
     if not L.issiso():
@@ -650,62 +656,155 @@ def disk_margins(L, omega, skew = 0.0):
     # the structured singular value, a.k.a. "mu", of (S + (skew - 1)/2).
     # Uses SLICOT routine AB13MD to compute. [1,3-4].
     DM = np.zeros(omega.shape, np.float64)
-    GM = np.zeros(omega.shape, np.float64)
-    PM = np.zeros(omega.shape, np.float64)
+    DGM = np.zeros(omega.shape, np.float64)
+    DPM = np.zeros(omega.shape, np.float64)
     for ii in range(0,len(omega)):
         # Disk margin (a.k.a. "alpha") vs. frequency
         if L.issiso() and (ab13md == None):
-            #TODO: replace with unstructured singular value
-            DM[ii] = 1/ab13md(ST_jw[ii], np.array(ny*[1]), np.array(ny*[2]))[0]
+            DM[ii] = np.minimum(1e5,
+                1.0/bode(ST_jw, omega = omega[ii], plot = False)[0])
         else:
-            DM[ii] = 1/ab13md(ST_jw[ii], np.array(ny*[1]), np.array(ny*[2]))[0]
+            DM[ii] = np.minimum(1e5,
+                1.0/ab13md(ST_jw[ii], np.array(ny*[1]), np.array(ny*[2]))[0])
 
-        # Gain-only margin (dB) vs. frequency
-        gamma_min = (1 - DM[ii]*(1 - skew)/2)/(1 + DM[ii]*(1 + skew)/2)
-        gamma_max = (1 + DM[ii]*(1 - skew)/2)/(1 - DM[ii]*(1 + skew)/2)
-        GM[ii] = mag2db(np.minimum(1/gamma_min, gamma_max))
+        with np.errstate(divide = 'ignore', invalid = 'ignore'):
+            # Real-axis intercepts with the disk
+            gamma_min = (1 - 0.5*DM[ii]*(1 - skew))/(1 + 0.5*DM[ii]*(1 + skew))
+            gamma_max = (1 + 0.5*DM[ii]*(1 - skew))/(1 - 0.5*DM[ii]*(1 + skew))
 
-        # Phase-only margin (deg) vs. frequency
-        if math.isinf(gamma_max):
-            PM[ii] = 90.0
-        else:
-            PM[ii] = (1 + gamma_min*gamma_max)/(gamma_min + gamma_max)
-            if PM[ii] >= 1.0:
-                PM[ii] = 0.0
-            elif PM[ii] <= -1.0:
-                PM[ii] = float('Inf')
+            # Gain margin (dB)
+            DGM[ii] = mag2db(np.minimum(1/gamma_min, gamma_max))
+            if np.isnan(DGM[ii]):
+                DGM[ii] = float('inf')
+
+            # Phase margin (deg)
+            if np.isinf(gamma_max):
+                DPM[ii] = 90.0
             else:
-                PM[ii] = np.rad2deg(np.arccos(PM[ii]))
+                DPM[ii] = (1 + gamma_min*gamma_max)/(gamma_min + gamma_max)
+                if abs(DPM[ii]) >= 1.0:
+                    DPM[ii] = float('Inf')
+                else:
+                    DPM[ii] = np.rad2deg(np.arccos(DPM[ii]))
 
-    return (DM, GM, PM)
+    if returnall:
+        # Frequency-dependent disk margin, gain margin and phase margin
+        return (DM, DGM, DPM)
+    else:
+        # Worst-case disk margin, gain margin and phase margin
+        if DGM.shape[0] and not np.isinf(DGM).all():
+            with np.errstate(all='ignore'):
+                gmidx = np.where(np.abs(DGM) == np.min(np.abs(DGM)))
+        else:
+            gmidx = -1
+        if DPM.shape[0]:
+            pmidx = np.where(np.abs(DPM) == np.amin(np.abs(DPM)))[0]
 
-def disk_margin_plot(alpha_max, skew = 0.0, ax = None, ntheta = 500, shade = True, shade_alpha = 0.1):
-    """TODO: docstring 
+        return ((not DM.shape[0] and float('inf')) or np.amin(DM),
+            (not gmidx != -1 and float('inf')) or DGM[gmidx][0],
+            (not DPM.shape[0] and float('inf')) or DPM[pmidx][0])
+
+def disk_margin_plot(alpha_max, skew = 0.0, ax = None, ntheta = 500,
+    shade = True, shade_alpha = 0.25):
+    """Compute disk-based stability margins for SISO or MIMO LTI system.
+
+    Parameters
+    ----------
+    L : SISO or MIMO LTI system representing the loop transfer function
+    omega : ndarray
+        1d array of (non-negative) frequencies (rad/s) at which to evaluate
+        the disk-based stability margins
+    skew : (optional, default = 0) skew parameter for disk margin calculation.
+        skew = 0 uses the "balanced" sensitivity function 0.5*(S - T)
+        skew = 1 uses the sensitivity function S
+        skew = -1 uses the complementary sensitivity function T
+    returnall : bool, optional
+        If true, return all margins found. If False (default), return only the
+        minimum stability margins. Only margins in the given frequency region
+        can be found and returned.
+
+    Returns
+    -------
+    DM : ndarray
+        1D array of frequency-dependent disk margins.  DM is the same
+        size as "omega" parameter.
+    GM : ndarray
+        1D array of frequency-dependent disk-based gain margins, in dB.
+        GM is the same size as "omega" parameter.
+    PM : ndarray
+        1D array of frequency-dependent disk-based phase margins, in deg.
+        PM is the same size as "omega" parameter.
+
+    Examples
+    --------
+    >> import control
+    >> import numpy as np
+    >> import matplotlib
+    >> import matplotlib.pyplot as plt
+    >>
+    >> omega = np.logspace(-1, 2, 1001)
+    >>
+    >> s = control.tf('s') # Laplace variable
+    >> L = 6.25*(s + 3)*(s + 5)/(s*(s + 1)**2*(s**2 + 0.18*s + 100)) # loop transfer function
+    >> DM, GM, PM = control.disk_margins(L, omega, skew = 0.0,) # balanced (S - T)
+    >>
+    >> plt.figure(1)
+    >> disk_margin_plot(0.75, skew = [0.0, 1.0, -1.0])
+    >> plt.show()
+
+    References
+    ----------
+    [1] Seiler, Peter, Andrew Packard, and Pascal Gahinet. “An Introduction
+        to Disk Margins [Lecture Notes].” IEEE Control Systems Magazine 40,
+        no. 5 (October 2020): 78-95.
+
     """
-
-    # Complex bounding curve of stable gain/phase variations
-    theta = np.linspace(0, np.pi, ntheta)
-    f = (2 + alpha_max*(1 - skew)*np.exp(1j*theta))/\
-        (2 - alpha_max*(1 + skew)*np.exp(1j*theta))
 
     # Create axis if needed
     if ax is None:
         ax = plt.gca()
 
-    # Plot the allowable complex "disk" of gain/phase variations
-    gamma_dB = mag2db(np.abs(f)) # gain margin (dB)
-    phi_deg = np.rad2deg(np.angle(f)) # phase margin (deg)
-    if shade:
-        out = ax.plot(gamma_dB, phi_deg, alpha=shade_alpha, label='_nolegend_')
-        x1 = ax.lines[0].get_xydata()[:,0]
-        y1 = ax.lines[0].get_xydata()[:,1]
-        ax.fill_between(x1,y1, alpha = shade_alpha)
+    # Allow scalar or vector arguments (to overlay plots)
+    if np.isscalar(alpha_max):
+        alpha_max = np.asarray([alpha_max])
     else:
-        out = ax.plot(gamma_dB, phi_deg)
+        alpha_max = np.asarray(alpha_max)
+
+    if np.isscalar(skew):
+        skew = np.asarray([skew])
+    else:
+        skew = np.asarray(skew)
+
+
+    theta = np.linspace(0, np.pi, ntheta)
+    legend_list = []
+    for ii in range(0, skew.shape[0]):
+        legend_str = "$\\sigma$ = %.1f, $\\alpha_{max}$ = %.2f" %(skew[ii], alpha_max[ii])
+        legend_list.append(legend_str)
+
+        # Complex bounding curve of stable gain/phase variations
+        f = (2 + alpha_max[ii]*(1 - skew[ii])*np.exp(1j*theta))/\
+            (2 - alpha_max[ii]*(1 + skew[ii])*np.exp(1j*theta))
+
+        # Allowable combined gain/phase variations
+        gamma_dB = mag2db(np.abs(f)) # gain margin (dB)
+        phi_deg = np.rad2deg(np.angle(f)) # phase margin (deg)
+
+        # Plot the allowable combined gain/phase variations
+        if shade:
+            out = ax.plot(gamma_dB, phi_deg,
+                alpha = shade_alpha, label = '_nolegend_')
+            ax.fill_between(
+                ax.lines[ii].get_xydata()[:,0],
+                ax.lines[ii].get_xydata()[:,1],
+                alpha = shade_alpha)
+        else:
+            out = ax.plot(gamma_dB, phi_deg)
 
     plt.ylabel('Gain Variation (dB)')
     plt.xlabel('Phase Variation (deg)')
     plt.title('Range of Gain and Phase Variations')
+    plt.legend(legend_list)
     plt.grid()
     plt.tight_layout()
 
