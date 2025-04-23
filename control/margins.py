@@ -653,20 +653,23 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
         ST_jw = ST_jw.transpose(2,0,1)
 
     # Frequency-dependent complex disk margin, computed using upper bound of
-    # the structured singular value, a.k.a. "mu", of (S + (skew - 1)/2).
-    # Uses SLICOT routine AB13MD to compute. [1,3-4].
-    DM = np.zeros(omega.shape, np.float64)
-    DGM = np.zeros(omega.shape, np.float64)
-    DPM = np.zeros(omega.shape, np.float64)
+    # the structured singular value, a.k.a. "mu", of (S + (skew - I)/2).
+    DM = np.zeros(omega.shape, np.float64) # disk margin vs frequency
+    DGM = np.zeros(omega.shape, np.float64) # disk-based gain margin vs. frequency
+    DPM = np.zeros(omega.shape, np.float64) # disk-based phase margin vs. frequency
     for ii in range(0,len(omega)):
         # Disk margin (a.k.a. "alpha") vs. frequency
         if L.issiso() and (ab13md == None):
-            DM[ii] = np.minimum(1e5,
-                1.0/bode(ST_jw, omega = omega[ii], plot = False)[0])
+            # For the SISO case, the norm on (S + (skew - I)/2) is
+            # unstructured, and can be computed as Bode magnitude
+            DM[ii] = 1.0/bode(ST_jw, omega = omega[ii], plot = False)[0]
         else:
-            DM[ii] = np.minimum(1e5,
-                1.0/ab13md(ST_jw[ii], np.array(ny*[1]), np.array(ny*[2]))[0])
+            # For the MIMO case, the norm on (S + (skew - I)/2) assumes a
+            # single complex uncertainty block diagonal uncertainty structure.
+            # AB13MD provides an upper bound on this norm at the given frequency.
+            DM[ii] = 1.0/ab13md(ST_jw[ii], np.array(ny*[1]), np.array(ny*[2]))[0]
 
+        # Disk-based gain margin (dB) and phase margin (deg)
         with np.errstate(divide = 'ignore', invalid = 'ignore'):
             # Real-axis intercepts with the disk
             gamma_min = (1 - 0.5*DM[ii]*(1 - skew))/(1 + 0.5*DM[ii]*(1 + skew))

@@ -14,7 +14,7 @@ from numpy.testing import assert_allclose
 
 from control import ControlMIMONotImplemented, FrequencyResponseData, \
     StateSpace, TransferFunction, margin, phase_crossover_frequencies, \
-    stability_margins
+    stability_margins, disk_margins, tf, ss
 
 s = TransferFunction.s
 
@@ -372,3 +372,107 @@ def test_stability_margins_discrete(cnum, cden, dt,
     else:
         out = stability_margins(tf)
     assert_allclose(out, ref, rtol=rtol)
+
+def test_siso_disk_margin():
+    # Frequencies of interest
+    omega = np.logspace(-1, 2, 1001)
+
+    # Laplace variable
+    s = tf('s')
+
+    # Loop transfer function
+    L = tf(25, [1, 10, 10, 10])
+
+    # Balanced (S - T) disk-based stability margins
+    DM, DGM, DPM = disk_margins(L, omega, skew = 0.0)
+    assert_allclose([DM], [0.46], atol = 0.1) # disk margin of 0.46
+    assert_allclose([DGM], [4.05], atol = 0.1) # disk-based gain margin of 4.05 dB 
+    assert_allclose([DPM], [25.8], atol = 0.1) # disk-based phase margin of 25.8 deg
+
+    # For SISO systems, the S-based (S) disk margin should match the third output
+    # of existing library "stability_margins", i.e., minimum distance from the
+    # Nyquist plot to -1.
+    _, _, SM = stability_margins(L)[:3]
+    DM = disk_margins(L, omega, skew = 1.0)[0]
+    assert_allclose([DM], [SM], atol = 0.01)
+
+def test_mimo_disk_margin():
+    # Frequencies of interest
+    omega = np.logspace(-1, 3, 1001)
+
+    # Laplace variable
+    s = tf('s')
+
+    # Loop transfer gain
+    P = ss([[0, 10],[-10, 0]], np.eye(2), [[1, 10], [-10, 1]], [[0, 0],[0, 0]]) # plant
+    K = ss([],[],[], [[1, -2], [0, 1]]) # controller
+    Lo = P*K # loop transfer function, broken at plant output
+    Li = K*P # loop transfer function, broken at plant input
+
+    # Balanced (S - T) disk-based stability margins at plant output
+    DMo, DGMo, DPMo = disk_margins(Lo, omega, skew = 0.0)
+    assert_allclose([DMo], [0.3754], atol = 0.1) # disk margin of 0.3754
+    assert_allclose([DGMo], [3.3], atol = 0.1) # disk-based gain margin of 3.3 dB 
+    assert_allclose([DPMo], [21.26], atol = 0.1) # disk-based phase margin of 21.26 deg
+
+    # Balanced (S - T) disk-based stability margins at plant input
+    DMi, DGMi, DPMi = disk_margins(Li, omega, skew = 0.0)
+    assert_allclose([DMi], [0.3754], atol = 0.1) # disk margin of 0.3754
+    assert_allclose([DGMi], [3.3], atol = 0.1) # disk-based gain margin of 3.3 dB 
+    assert_allclose([DPMi], [21.26], atol = 0.1) # disk-based phase margin of 21.26 deg
+
+def test_siso_disk_margin_return_all():
+    # Frequencies of interest
+    omega = np.logspace(-1, 2, 1001)
+
+    # Laplace variable
+    s = tf('s')
+
+    # Loop transfer function
+    L = tf(25, [1, 10, 10, 10])
+
+    # Balanced (S - T) disk-based stability margins
+    DM, DGM, DPM = disk_margins(L, omega, skew = 0.0, returnall = True)
+    assert_allclose([omega[np.argmin(DM)]], [1.94],\
+        atol = 0.01) # sensitivity peak at 1.94 rad/s
+    assert_allclose([min(DM)], [0.46], atol = 0.1) # disk margin of 0.46
+    assert_allclose([DGM[np.argmin(DM)]], [4.05],\
+        atol = 0.1) # disk-based gain margin of 4.05 dB 
+    assert_allclose([DPM[np.argmin(DM)]], [25.8],\
+        atol = 0.1) # disk-based phase margin of 25.8 deg
+
+def test_mimo_disk_margin_return_all():
+    # Frequencies of interest
+    omega = np.logspace(-1, 3, 1001)
+
+    # Laplace variable
+    s = tf('s')
+
+    # Loop transfer gain
+    P = ss([[0, 10],[-10, 0]], np.eye(2),\
+        [[1, 10], [-10, 1]], [[0, 0],[0, 0]]) # plant
+    K = ss([],[],[], [[1, -2], [0, 1]]) # controller
+    Lo = P*K # loop transfer function, broken at plant output
+    Li = K*P # loop transfer function, broken at plant input
+
+    # Balanced (S - T) disk-based stability margins at plant output
+    DMo, DGMo, DPMo = disk_margins(Lo, omega, skew = 0.0, returnall = True)
+    assert_allclose([omega[np.argmin(DMo)]], [omega[0]],\
+        atol = 0.01) # sensitivity peak at 0 rad/s (or smallest provided)
+    assert_allclose([min(DMo)], [0.3754], atol = 0.1) # disk margin of 0.3754
+    assert_allclose([DGMo[np.argmin(DMo)]], [3.3],\
+        atol = 0.1) # disk-based gain margin of 3.3 dB 
+    assert_allclose([DPMo[np.argmin(DMo)]], [21.26],\
+        atol = 0.1) # disk-based phase margin of 21.26 deg
+
+    # Balanced (S - T) disk-based stability margins at plant input
+    DMi, DGMi, DPMi = disk_margins(Li, omega, skew = 0.0, returnall = True)
+    assert_allclose([omega[np.argmin(DMi)]], [omega[0]],\
+        atol = 0.01) # sensitivity peak at 0 rad/s (or smallest provided)
+    assert_allclose([min(DMi)], [0.3754],\
+        atol = 0.1) # disk margin of 0.3754
+    assert_allclose([DGMi[np.argmin(DMi)]], [3.3],\
+        atol = 0.1) # disk-based gain margin of 3.3 dB 
+    assert_allclose([DPMi[np.argmin(DMi)]], [21.26],\
+        atol = 0.1) # disk-based phase margin of 21.26 deg
+
