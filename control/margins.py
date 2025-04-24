@@ -802,8 +802,8 @@ def disk_margin_plot(alpha_max, skew = 0.0, ax = None):
         ax.fill_between(ax.lines[ii].get_xydata()[:,0],
             ax.lines[ii].get_xydata()[:,1], alpha = 0.25)
 
-    plt.ylabel('Gain Variation (dB)')
-    plt.xlabel('Phase Variation (deg)')
+    plt.ylabel('Phase Variation (deg)')
+    plt.xlabel('Gain Variation (dB)')
     plt.title('Range of Gain and Phase Variations')
     plt.legend(legend_list)
     plt.grid()
