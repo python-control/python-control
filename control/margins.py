@@ -536,11 +536,13 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
 
     Parameters
     ----------
-    L : SISO or MIMO LTI system representing the loop transfer function
+    L : SISO or MIMO LTI system
+        Loop transfer function, e.g. P*C or C*P
     omega : ndarray
         1d array of (non-negative) frequencies (rad/s) at which to evaluate
         the disk-based stability margins
-    skew : (optional, default = 0) skew parameter for disk margin calculation.
+    skew : float, optional, default = 0
+        skew parameter for disk margin calculation.
         skew = 0 uses the "balanced" sensitivity function 0.5*(S - T)
         skew = 1 uses the sensitivity function S
         skew = -1 uses the complementary sensitivity function T
@@ -711,9 +713,11 @@ def disk_margin_plot(alpha_max, skew = 0.0, ax = None):
 
     Parameters
     ----------
-    alpha_max : worst-case disk margin(s) across all (relevant) frequencies.
+    alpha_max : float
+        worst-case disk margin(s) across all (relevant) frequencies.
         Note that skew may be a scalar or list.
-    skew : (optional, default = 0) skew parameter(s) for disk margin calculation.
+    skew : float, optional, default = 0
+        skew parameter(s) for disk margin calculation.
         skew = 0 uses the "balanced" sensitivity function 0.5*(S - T)
         skew = 1 uses the sensitivity function S
         skew = -1 uses the complementary sensitivity function T
