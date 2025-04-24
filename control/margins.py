@@ -10,6 +10,8 @@ from warnings import warn
 
 import numpy as np
 import scipy as sp
+import matplotlib
+import matplotlib.pyplot as plt
 
 from . import frdata, freqplot, xferfcn
 from .exception import ControlMIMONotImplemented
