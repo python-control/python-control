@@ -697,11 +697,12 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
         # Worst-case disk margin, gain margin and phase margin
         if DGM.shape[0] and not np.isinf(DGM).all():
             with np.errstate(all='ignore'):
-                gmidx = np.where(np.abs(DGM) == np.min(np.abs(DGM)))
+                gmidx = np.where(DGM == np.min(DGM))
         else:
             gmidx = -1
+
         if DPM.shape[0]:
-            pmidx = np.where(np.abs(DPM) == np.amin(np.abs(DPM)))[0]
+            pmidx = np.where(DPM == np.min(DPM))
 
         return ((not DM.shape[0] and float('inf')) or np.amin(DM),
             (not gmidx != -1 and float('inf')) or DGM[gmidx][0],
