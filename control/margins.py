@@ -6,8 +6,6 @@
 """Functions for computing stability margins and related functions."""
 
 import math
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 from warnings import warn
 
 import numpy as np
