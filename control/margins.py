@@ -17,20 +17,11 @@ from . import frdata, freqplot, xferfcn
 from .exception import ControlMIMONotImplemented
 from .iosys import issiso
 from . import ss
+from .ctrlutil import mag2db
 try:
     from slycot import ab13md
 except ImportError:
     ab13md = None
-try:
-    from . import mag2db
-except ImportError:
-    # Likely due the following circular import issue:
-    #
-    # ImportError: cannot import name 'mag2db' from partially initialized module
-    # 'control' (most likely due to a circular import) (control/__init__.py)
-    #
-    def mag2db(mag):
-        return 20*np.log10(mag)
 
 __all__ = ['stability_margins', 'phase_crossover_frequencies', 'margin', 'disk_margins', 'disk_margin_plot']
 
@@ -567,52 +558,20 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
 
     Examples
     --------
-    >> import control
-    >> import numpy as np
-    >> import matplotlib
-    >> import matplotlib.pyplot as plt
+    >> omega = np.logspace(-1, 3, 1001) # frequencies of interest (rad/s)
+    >> P = control.ss([[0,10],[-10,0]],np.eye(2),[[1,10],[-10,1]],[[0,0],[0,0]]) # plant
+    >> K = control.ss([],[],[],[[1,-2],[0,1]]) # controller
+    >> L = P*K # output loop gain
     >>
-    >> omega = np.logspace(-1, 3, 1001)
+    >> DM, GM, PM = control.disk_margins(L, omega, skew = 0.0, returnall = False)
+    >> print(f"DM = {DM}")
+    >> print(f"GM = {GM} dB")
+    >> print(f"PM = {PM} deg\n")
     >>
-    >> P = control.ss([[0, 10],[-10, 0]], np.eye(2), [[1, 10], [-10, 1]], [[0, 0],[0, 0]])
-    >> K = control.ss([],[],[], [[1, -2], [0, 1]])
-    >> L = P*K
-    >>
-    >> DM, GM, PM = control.disk_margins(L, omega, skew = 0.0, returnall = True) # balanced (S - T)
+    >> DM, GM, PM = control.disk_margins(L, omega, skew = 0.0, returnall = True)
     >> print(f"min(DM) = {min(DM)} (omega = {omega[np.argmin(DM)]})")
     >> print(f"GM = {GM[np.argmin(DM)]} dB")
     >> print(f"PM = {PM[np.argmin(DM)]} deg\n")
-    >>
-    >> plt.figure(1)
-    >> plt.subplot(3,1,1)
-    >> plt.semilogx(omega, DM, label='$\\alpha$')
-    >> plt.legend()
-    >> plt.title('Disk Margin')
-    >> plt.grid()
-    >> plt.tight_layout()
-    >> plt.xlim([omega[0], omega[-1]])
-    >>
-    >> plt.figure(1)
-    >> plt.subplot(3,1,2)
-    >> plt.semilogx(omega, GM, label='$\\gamma_{m}$')
-    >> plt.ylabel('Gain Margin (dB)')
-    >> plt.legend()
-    >> plt.title('Disk-Based Gain Margin')
-    >> plt.grid()
-    >> plt.ylim([0, 40])
-    >> plt.tight_layout()
-    >> plt.xlim([omega[0], omega[-1]])
-    >>
-    >> plt.figure(1)
-    >> plt.subplot(3,1,3)
-    >> plt.semilogx(omega, PM, label='$\\phi_{m}$')
-    >> plt.ylabel('Phase Margin (deg)')
-    >> plt.legend()
-    >> plt.title('Disk-Based Phase Margin')
-    >> plt.grid()
-    >> plt.ylim([0, 90])
-    >> plt.tight_layout()
-    >> plt.xlim([omega[0], omega[-1]])
 
     References
     ----------
