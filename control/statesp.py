@@ -2265,6 +2265,113 @@ def summing_junction(
     return StateSpace(
         ss_sys, inputs=input_names, outputs=output_names, name=name)
 
+# Reorder states in state-space object
+def xperm(sys, P):
+    r"""Reorder states in a state-space representation.
+
+    ``xperm(sys,P)``
+        Reorder a space system. Always creates a new system.
+    
+    Parameters
+    ----------
+    sys : StateSpace or TransferFunction
+        A linear system.
+    A, B, C, D : array_like or string
+        System, control, output, and feed forward matrices.
+    P : permutation vector P.
+        It is a 0:N-1 where N-1 is the number of states in sys.
+
+    Returns
+    -------
+    out: :class:`StateSpace`
+        Linear input/output system.
+
+    Raises
+    ------
+    ValueError
+        ValueError: If matrix sizes are not self-consistent or if the order
+        is invalid.
+    
+    Example
+    -------
+    
+    Reorder a ss model:
+    >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
+    >>> ct.xperm(G,[1, 0, 2])
+
+    """
+    # TODO: transfer the original sys parameters to the new output sys to preserve labels.
+    # TODO: create docstrings for this function - WIP
+
+    # Convert `order` to numpy array if it's a list
+    P = np.array(P)
+
+    # Get order of A
+    n = sys.A.shape[0]
+    _sorted_P = np.sort(P)
+    _sorted_sys_labels = np.sort(sys.state_labels)
+
+    # Check if inputs are state labels from sys
+    if np.array_equal(_sorted_sys_labels, _sorted_P):
+       order_contains_labels = True       
+    elif np.array_equal(np.arange(n), _sorted_P):
+        order_contains_labels = False
+    else:
+        raise ValueError('Invalid P array. P must be a list of unique integers from 0 to N-1, or a list of state labels of sys.')
+    
+    # Check dimensions of matrices
+    if sys.A.shape[0] != sys.A.shape[1]:
+        raise ValueError("Matrix A must be square.")
+    if sys.B.shape[0] != n:
+        raise ValueError("Matrix B must have the same number of rows as A.")
+    if sys.C.shape[1] != n:
+        raise ValueError("Matrix C must have the same number of columns as A.")
+    if sys.D.shape[0] != sys.C.shape[0] or sys.D.shape[1] != sys.B.shape[1]:
+        raise ValueError("Matrix D dimensions must be consistent with matrices C and B.")
+    
+    # if P contains labels, find their order
+    if order_contains_labels:
+        # list1 is the reference, we want indices of list2 elements in list1
+        P = np.searchsorted(sys.state_labels, P)
+
+    # Construct the permutation matrix T    
+    T = np.zeros((n, n))
+    for i, j in enumerate(P):
+        T[i, j] = 1
+    
+    P_inv = np.linalg.inv(T)
+    
+    # Apply the transformation
+    A_perm = T @ sys.A @ P_inv
+    B_perm = T @ sys.B
+    C_perm = sys.C @ P_inv
+    D_perm = sys.D  # D remains unchanged
+    
+    return ss(A_perm, B_perm, C_perm, D_perm)
+"""
+    Example usage
+    >>> A = np.array([[-10., -24.,  0.],
+                      [  1.,   0.,  0.],
+                      [  0.,   1.,  0.]])
+  
+    >>> B = np.array([[1],[0],[0]])
+    >>> C = np.array([[0, 1, 0]])
+    >>> D = np.array([[0]])
+    >>> sys = ct.ss(A,B,C,D)
+
+    # Desired order of state variables (e.g., swap x1 and x3):
+    >>> P = [2, 1, 0] # permutations: x3->x1, x2->x2, x1->x3.
+
+    try:
+        sys_reordered = xperm(sys, P)
+        print("A' =\n", sys_reordered.A)
+        print("B' =\n", sys_reordered.B)
+        print("C' =\n", sys_reordered.C)
+        print("D' =\n", sys_reordered.D)
+    except ValueError as e:
+        print("Error:", e)
+    """
+
 #
 # Utility functions
 #
