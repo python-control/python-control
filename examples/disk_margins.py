@@ -1,5 +1,25 @@
-"""test_margins.py
+"""disk_margins.py
+
 Demonstrate disk-based stability margin calculations.
+
+References:
+[1] Blight, James D., R. Lane Dailey, and Dagfinn Gangsaas. “Practical
+    Control Law Design for Aircraft Using Multivariable Techniques.”
+    International Journal of Control 59, no. 1 (January 1994): 93-137.
+    https://doi.org/10.1080/00207179408923071.
+
+[2] Seiler, Peter, Andrew Packard, and Pascal Gahinet. “An Introduction
+    to Disk Margins [Lecture Notes].” IEEE Control Systems Magazine 40,
+    no. 5 (October 2020): 78-95.
+
+[3] P. Benner, V. Mehrmann, V. Sima, S. Van Huffel, and A. Varga, "SLICOT
+    - A Subroutine Library in Systems and Control Theory", Applied and
+    Computational Control, Signals, and Circuits (Birkhauser), Vol. 1, Ch.
+    10, pp. 505-546, 1999.
+
+[4] S. Van Huffel, V. Sima, A. Varga, S. Hammarling, and F. Delebecque,
+    "Development of High Performance Numerical Software for Control", IEEE
+    Control Systems Magazine, Vol. 24, Nr. 1, Feb., pp. 60-76, 2004.
 """
 
 import os
@@ -32,32 +52,6 @@ def plot_allowable_region(alpha_max, skew, ax = None):
     PM : ndarray
         1D array of frequency-dependent disk-based phase margins, in deg.
         PM is the same size as "omega" parameter.
-
-    Examples
-    --------
-    >> import control
-    >> import numpy as np
-    >> import matplotlib
-    >> import matplotlib.pyplot as plt
-    >>
-    >> omega = np.logspace(-1, 2, 1001)
-    >>
-    >> s = control.tf('s') # Laplace variable
-    >> L = 6.25*(s + 3)*(s + 5)/(s*(s + 1)**2*(s**2 + 0.18*s + 100)) # loop gain
-    >>
-    >> DM_plot = []
-    >> DM_plot.append(control.disk_margins(L, omega, skew = -1.0)[0]) # T-based (T)
-    >> DM_plot.append(control.disk_margins(L, omega, skew = 0.0)[0]) # balanced (S - T)
-    >> DM_plot.append(control.disk_margins(L, omega, skew = 1.0)[0]) # S-based (S)
-    >> plt.figure(1)
-    >> control.disk_margin_plot(DM_plot, skew = [-1.0, 0.0, 1.0])
-    >> plt.show()
-
-    References
-    ----------
-    [1] Seiler, Peter, Andrew Packard, and Pascal Gahinet. “An Introduction
-        to Disk Margins [Lecture Notes].” IEEE Control Systems Magazine 40,
-        no. 5 (October 2020): 78-95.
     """
 
     # Create axis if needed
