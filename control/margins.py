@@ -523,78 +523,40 @@ def margin(*args):
     return margin[0], margin[1], margin[3], margin[4]
 
 def disk_margins(L, omega, skew = 0.0, returnall = False):
-    """Compute disk-based stability margins for SISO or MIMO LTI loop transfer function.
+    """Compute disk-based stability margins for SISO or MIMO LTI
+       loop transfer function.
 
     Parameters
     ----------
-    L : SISO or MIMO LTI system
-        Loop transfer function, i.e., P*C or C*P
-    omega : ndarray
-        1d array of (non-negative) frequencies (rad/s) at which to evaluate
-        the disk-based stability margins
-    skew : float, optional, default = 0
-        skew parameter for disk margin calculation.
-        skew = 0 uses the "balanced" sensitivity function 0.5*(S - T)
-        skew = 1 uses the sensitivity function S
-        skew = -1 uses the complementary sensitivity function T
-    returnall : bool, optional
-        If true, return all margins found. If False (default), return only the
-        minimum stability margins. Only margins in the given frequency region
-        can be found and returned.
+    L : `StateSpace` or `TransferFunction`
+        Linear SISO or MIMO loop transfer function system
+    omega : sequence of array_like
+        1D array of (non-negative) frequencies (rad/s) at which
+        to evaluate the disk-based stability margins
 
     Returns
     -------
-    DM : ndarray
-        1D array of frequency-dependent disk margins.  DM is the same
-        size as "omega" parameter.
-    GM : ndarray
-        1D array of frequency-dependent disk-based gain margins, in dB.
-        GM is the same size as "omega" parameter.
-    PM : ndarray
-        1D array of frequency-dependent disk-based phase margins, in deg.
-        PM is the same size as "omega" parameter.
+    DM : float or array_like
+        Disk margin.
+    DGM : float or array_like
+        Disk-based gain margin.
+    DPM : float or array_like
+        Disk-based phase margin.
 
-    Examples
+    Example
     --------
-    >> omega = np.logspace(-1, 3, 1001) # frequencies of interest (rad/s)
-    >> P = control.ss([[0,10],[-10,0]],np.eye(2),[[1,10],[-10,1]],[[0,0],[0,0]]) # plant
-    >> K = control.ss([],[],[],[[1,-2],[0,1]]) # controller
-    >> L = P*K # output loop gain
-    >>
-    >> DM, GM, PM = control.disk_margins(L, omega, skew = 0.0, returnall = False)
-    >> print(f"DM = {DM}")
-    >> print(f"GM = {GM} dB")
-    >> print(f"PM = {PM} deg\n")
-    >>
-    >> DM, GM, PM = control.disk_margins(L, omega, skew = 0.0, returnall = True)
-    >> print(f"min(DM) = {min(DM)} (omega = {omega[np.argmin(DM)]})")
-    >> print(f"GM = {GM[np.argmin(DM)]} dB")
-    >> print(f"PM = {PM[np.argmin(DM)]} deg\n")
-
-    References
-    ----------
-    [1] Blight, James D., R. Lane Dailey, and Dagfinn Gangsaas. “Practical
-        Control Law Design for Aircraft Using Multivariable Techniques.”
-        International Journal of Control 59, no. 1 (January 1994): 93-137.
-        https://doi.org/10.1080/00207179408923071.
-
-    [2] Seiler, Peter, Andrew Packard, and Pascal Gahinet. “An Introduction
-        to Disk Margins [Lecture Notes].” IEEE Control Systems Magazine 40,
-        no. 5 (October 2020): 78-95.
-
-    [3] P. Benner, V. Mehrmann, V. Sima, S. Van Huffel, and A. Varga, "SLICOT
-        - A Subroutine Library in Systems and Control Theory", Applied and
-        Computational Control, Signals, and Circuits (Birkhauser), Vol. 1, Ch.
-        10, pp. 505-546, 1999.
-
-    [4] S. Van Huffel, V. Sima, A. Varga, S. Hammarling, and F. Delebecque,
-        "Development of High Performance Numerical Software for Control", IEEE
-        Control Systems Magazine, Vol. 24, Nr. 1, Feb., pp. 60-76, 2004.
+    >> omega = np.logspace(-1, 3, 1001)
+    >> P = control.ss([[0,10],[-10,0]],np.eye(2),[[1,10],\
+    [-10,1]],[[0,0],[0,0]])
+    >> K = control.ss([],[],[],[[1,-2],[0,1]])
+    >> L = P*K
+    >> DM, DGM, DPM = control.disk_margins(L, omega, skew = 0.0)
     """
 
     # First argument must be a system
     if not isinstance(L, (statesp.StateSpace, xferfcn.TransferFunction)):
-        raise ValueError("Loop gain must be state-space or transfer function object")
+        raise ValueError(\
+            "Loop gain must be state-space or transfer function object")
 
     # Loop transfer function must be square
     if statesp.ss(L).B.shape[1] != statesp.ss(L).C.shape[0]:
@@ -602,7 +564,8 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
 
     # Need slycot if L is MIMO, for mu calculation
     if (not L.issiso()) and (ab13md == None):
-        raise ControlMIMONotImplemented("Need slycot to compute MIMO disk_margins")
+        raise ControlMIMONotImplemented(\
+            "Need slycot to compute MIMO disk_margins")
 
     # Get dimensions of feedback system
     num_loops = statesp.ss(L).C.shape[0]
@@ -621,19 +584,21 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
 
     # Frequency-dependent complex disk margin, computed using upper bound of
     # the structured singular value, a.k.a. "mu", of (S + (skew - I)/2).
-    DM = np.zeros(omega.shape, np.float64) # disk margin vs frequency
-    DGM = np.zeros(omega.shape, np.float64) # disk-based gain margin vs. frequency
-    DPM = np.zeros(omega.shape, np.float64) # disk-based phase margin vs. frequency
+    DM = np.zeros(omega.shape, np.float64)
+    DGM = np.zeros(omega.shape, np.float64)
+    DPM = np.zeros(omega.shape, np.float64)
     for ii in range(0,len(omega)):
         # Disk margin (a.k.a. "alpha") vs. frequency
         if L.issiso() and (ab13md == None):
             # For the SISO case, the norm on (S + (skew - I)/2) is
-            # unstructured, and can be computed as Bode magnitude
+            # unstructured, and can be computed as the magnitude
+            # of the frequency response.
             DM[ii] = 1.0/ST_mag[ii]
         else:
             # For the MIMO case, the norm on (S + (skew - I)/2) assumes a
-            # single complex uncertainty block diagonal uncertainty structure.
-            # AB13MD provides an upper bound on this norm at the given frequency.
+            # single complex uncertainty block diagonal uncertainty
+            # structure. AB13MD provides an upper bound on this norm at
+            # the given frequency omega[ii].
             DM[ii] = 1.0/ab13md(ST_jw[ii], np.array(num_loops*[1]),\
                 np.array(num_loops*[2]))[0]
 
