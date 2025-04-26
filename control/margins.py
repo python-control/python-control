@@ -23,7 +23,7 @@ except ImportError:
     ab13md = None
 
 __all__ = ['stability_margins', 'phase_crossover_frequencies', 'margin',\
-           'disk_margins', 'disk_margin_plot']
+           'disk_margins']
 
 # private helper functions
 def _poly_iw(sys):
@@ -677,102 +677,3 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
         return ((not DM.shape[0] and float('inf')) or np.amin(DM),
             (not gmidx != -1 and float('inf')) or DGM[gmidx][0],
             (not DPM.shape[0] and float('inf')) or DPM[pmidx][0])
-
-def disk_margin_plot(alpha_max, skew, ax = None):
-    """Plot region of allowable gain/phase variation, given worst-case disk margin.
-
-    Parameters
-    ----------
-    alpha_max : float (scalar or list)
-        worst-case disk margin(s) across all frequencies. May be a scalar or list.
-    skew : float (scalar or list)
-        skew parameter(s) for disk margin calculation.
-        skew = 0 uses the "balanced" sensitivity function 0.5*(S - T)
-        skew = 1 uses the sensitivity function S
-        skew = -1 uses the complementary sensitivity function T
-    ax : axes to plot bounding curve(s) onto
-
-    Returns
-    -------
-    DM : ndarray
-        1D array of frequency-dependent disk margins.  DM is the same
-        size as "omega" parameter.
-    GM : ndarray
-        1D array of frequency-dependent disk-based gain margins, in dB.
-        GM is the same size as "omega" parameter.
-    PM : ndarray
-        1D array of frequency-dependent disk-based phase margins, in deg.
-        PM is the same size as "omega" parameter.
-
-    Examples
-    --------
-    >> import control
-    >> import numpy as np
-    >> import matplotlib
-    >> import matplotlib.pyplot as plt
-    >>
-    >> omega = np.logspace(-1, 2, 1001)
-    >>
-    >> s = control.tf('s') # Laplace variable
-    >> L = 6.25*(s + 3)*(s + 5)/(s*(s + 1)**2*(s**2 + 0.18*s + 100)) # loop gain
-    >>
-    >> DM_plot = []
-    >> DM_plot.append(control.disk_margins(L, omega, skew = -1.0)[0]) # T-based (T)
-    >> DM_plot.append(control.disk_margins(L, omega, skew = 0.0)[0]) # balanced (S - T)
-    >> DM_plot.append(control.disk_margins(L, omega, skew = 1.0)[0]) # S-based (S)
-    >> plt.figure(1)
-    >> control.disk_margin_plot(DM_plot, skew = [-1.0, 0.0, 1.0])
-    >> plt.show()
-
-    References
-    ----------
-    [1] Seiler, Peter, Andrew Packard, and Pascal Gahinet. “An Introduction
-        to Disk Margins [Lecture Notes].” IEEE Control Systems Magazine 40,
-        no. 5 (October 2020): 78-95.
-    """
-
-    # Create axis if needed
-    if ax is None:
-        ax = plt.gca()
-
-    # Allow scalar or vector arguments (to overlay plots)
-    if np.isscalar(alpha_max):
-        alpha_max = np.asarray([alpha_max])
-    else:
-        alpha_max = np.asarray(alpha_max)
-
-    if np.isscalar(skew):
-        skew = np.asarray([skew])
-    else:
-        skew = np.asarray(skew)
-
-    # Add a plot for each (alpha, skew) pair present
-    theta = np.linspace(0, np.pi, 500)
-    legend_list = []
-    for ii in range(0, skew.shape[0]):
-        legend_str = "$\\sigma$ = %.1f, $\\alpha_{max}$ = %.2f" %(
-            skew[ii], alpha_max[ii])
-        legend_list.append(legend_str)
-
-        # Complex bounding curve of stable gain/phase variations
-        f = (2 + alpha_max[ii]*(1 - skew[ii])*np.exp(1j*theta))/\
-            (2 - alpha_max[ii]*(1 + skew[ii])*np.exp(1j*theta))
-
-        # Allowable combined gain/phase variations
-        gamma_dB = mag2db(np.abs(f)) # gain margin (dB)
-        phi_deg = np.rad2deg(np.angle(f)) # phase margin (deg)
-
-        # Plot the allowable combined gain/phase variations
-        out = ax.plot(gamma_dB, phi_deg, alpha = 0.25,
-            label = '_nolegend_')
-        ax.fill_between(ax.lines[ii].get_xydata()[:,0],
-            ax.lines[ii].get_xydata()[:,1], alpha = 0.25)
-
-    plt.ylabel('Phase Variation (deg)')
-    plt.xlabel('Gain Variation (dB)')
-    plt.title('Range of Gain and Phase Variations')
-    plt.legend(legend_list)
-    plt.grid()
-    plt.tight_layout()
-
-    return out
