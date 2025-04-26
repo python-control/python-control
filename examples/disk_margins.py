@@ -3,9 +3,7 @@ Demonstrate disk-based stability margin calculations.
 """
 
 import os
-import math
 import control
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 

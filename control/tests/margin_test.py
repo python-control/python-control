@@ -377,9 +377,6 @@ def test_siso_disk_margin():
     # Frequencies of interest
     omega = np.logspace(-1, 2, 1001)
 
-    # Laplace variable
-    s = tf('s')
-
     # Loop transfer function
     L = tf(25, [1, 10, 10, 10])
 
@@ -399,9 +396,6 @@ def test_siso_disk_margin():
 def test_mimo_disk_margin():
     # Frequencies of interest
     omega = np.logspace(-1, 3, 1001)
-
-    # Laplace variable
-    s = tf('s')
 
     # Loop transfer gain
     P = ss([[0, 10],[-10, 0]], np.eye(2), [[1, 10], [-10, 1]], [[0, 0],[0, 0]]) # plant
