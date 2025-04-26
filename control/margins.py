@@ -13,17 +13,17 @@ import scipy as sp
 import matplotlib
 import matplotlib.pyplot as plt
 
-from . import frdata, freqplot, xferfcn
+from . import frdata, freqplot, xferfcn, statesp
 from .exception import ControlMIMONotImplemented
 from .iosys import issiso
-from . import ss
 from .ctrlutil import mag2db
 try:
     from slycot import ab13md
 except ImportError:
     ab13md = None
 
-__all__ = ['stability_margins', 'phase_crossover_frequencies', 'margin', 'disk_margins', 'disk_margin_plot']
+__all__ = ['stability_margins', 'phase_crossover_frequencies', 'margin',\
+           'disk_margins', 'disk_margin_plot']
 
 # private helper functions
 def _poly_iw(sys):
@@ -525,12 +525,12 @@ def margin(*args):
     return margin[0], margin[1], margin[3], margin[4]
 
 def disk_margins(L, omega, skew = 0.0, returnall = False):
-    """Compute disk-based stability margins for SISO or MIMO LTI system.
+    """Compute disk-based stability margins for SISO or MIMO LTI loop transfer function.
 
     Parameters
     ----------
     L : SISO or MIMO LTI system
-        Loop transfer function, e.g. P*C or C*P
+        Loop transfer function, i.e., P*C or C*P
     omega : ndarray
         1d array of (non-negative) frequencies (rad/s) at which to evaluate
         the disk-based stability margins
@@ -594,13 +594,21 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
         Control Systems Magazine, Vol. 24, Nr. 1, Feb., pp. 60-76, 2004.
     """
 
-    # Check for prerequisites
+    # First argument must be a system
+    if not isinstance(L, (statesp.StateSpace, xferfcn.TransferFunction)):
+        raise ValueError("Loop gain must be state-space or transfer function object")
+
+    # Loop transfer function must be square
+    if statesp.ss(L).B.shape[1] != statesp.ss(L).C.shape[0]:
+        raise ValueError("Loop gain must be square (n_inputs = n_outputs)")
+
+    # Need slycot if L is MIMO, for mu calculation
     if (not L.issiso()) and (ab13md == None):
         raise ControlMIMONotImplemented("Need slycot to compute MIMO disk_margins")
 
     # Get dimensions of feedback system
-    ny,_ = ss(L).C.shape
-    I = ss([], [], [], np.eye(ny))
+    num_loops = statesp.ss(L).C.shape[0]
+    I = statesp.ss([], [], [], np.eye(num_loops))
 
     # Loop sensitivity function
     S = I.feedback(L)
@@ -628,7 +636,8 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
             # For the MIMO case, the norm on (S + (skew - I)/2) assumes a
             # single complex uncertainty block diagonal uncertainty structure.
             # AB13MD provides an upper bound on this norm at the given frequency.
-            DM[ii] = 1.0/ab13md(ST_jw[ii], np.array(ny*[1]), np.array(ny*[2]))[0]
+            DM[ii] = 1.0/ab13md(ST_jw[ii], np.array(num_loops*[1]),\
+                np.array(num_loops*[2]))[0]
 
         # Disk-based gain margin (dB) and phase margin (deg)
         with np.errstate(divide = 'ignore', invalid = 'ignore'):
@@ -669,20 +678,18 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
             (not gmidx != -1 and float('inf')) or DGM[gmidx][0],
             (not DPM.shape[0] and float('inf')) or DPM[pmidx][0])
 
-def disk_margin_plot(alpha_max, skew = 0.0, ax = None):
+def disk_margin_plot(alpha_max, skew, ax = None):
     """Plot region of allowable gain/phase variation, given worst-case disk margin.
 
     Parameters
     ----------
-    alpha_max : float
-        worst-case disk margin(s) across all (relevant) frequencies.
-        Note that skew may be a scalar or list.
-    skew : float, optional, default = 0
+    alpha_max : float (scalar or list)
+        worst-case disk margin(s) across all frequencies. May be a scalar or list.
+    skew : float (scalar or list)
         skew parameter(s) for disk margin calculation.
         skew = 0 uses the "balanced" sensitivity function 0.5*(S - T)
         skew = 1 uses the sensitivity function S
         skew = -1 uses the complementary sensitivity function T
-        Note that skew may be a scalar or list.
     ax : axes to plot bounding curve(s) onto
 
     Returns
@@ -707,7 +714,7 @@ def disk_margin_plot(alpha_max, skew = 0.0, ax = None):
     >> omega = np.logspace(-1, 2, 1001)
     >>
     >> s = control.tf('s') # Laplace variable
-    >> L = 6.25*(s + 3)*(s + 5)/(s*(s + 1)**2*(s**2 + 0.18*s + 100)) # loop transfer function
+    >> L = 6.25*(s + 3)*(s + 5)/(s*(s + 1)**2*(s**2 + 0.18*s + 100)) # loop gain
     >>
     >> DM_plot = []
     >> DM_plot.append(control.disk_margins(L, omega, skew = -1.0)[0]) # T-based (T)
