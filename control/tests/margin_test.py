@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 from numpy import inf, nan
 from numpy.testing import assert_allclose
+import importlib
 
 from control import ControlMIMONotImplemented, FrequencyResponseData, \
     StateSpace, TransferFunction, margin, phase_crossover_frequencies, \
@@ -403,9 +404,7 @@ def test_mimo_disk_margin():
     Lo = P*K # loop transfer function, broken at plant output
     Li = K*P # loop transfer function, broken at plant input
 
-    try:
-        import slycot
-    except ImportError:
+    if importlib.util.find_spec('slycot') == None:
         with pytest.raises(ControlMIMONotImplemented,\
             match = "Need slycot to compute MIMO disk_margins"):
 
@@ -461,9 +460,7 @@ def test_mimo_disk_margin_return_all():
     Lo = P*K # loop transfer function, broken at plant output
     Li = K*P # loop transfer function, broken at plant input
 
-    try:
-        import slycot
-    except ImportError:
+    if importlib.util.find_spec('slycot') == None:
         with pytest.raises(ControlMIMONotImplemented,\
             match = "Need slycot to compute MIMO disk_margins"):
 
