@@ -10,8 +10,6 @@ from warnings import warn
 
 import numpy as np
 import scipy as sp
-import matplotlib
-import matplotlib.pyplot as plt
 
 from . import frdata, freqplot, xferfcn, statesp
 from .exception import ControlMIMONotImplemented
@@ -631,7 +629,7 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
         if L.issiso() and (ab13md == None):
             # For the SISO case, the norm on (S + (skew - I)/2) is
             # unstructured, and can be computed as Bode magnitude
-            DM[ii] = 1.0/bode(ST_jw, omega = omega[ii], plot = False)[0]
+            DM[ii] = 1.0/ST_mag[ii]
         else:
             # For the MIMO case, the norm on (S + (skew - I)/2) assumes a
             # single complex uncertainty block diagonal uncertainty structure.

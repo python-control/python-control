@@ -2,17 +2,12 @@
 Demonstrate disk-based stability margin calculations.
 """
 
-import os, sys, math
-import numpy as np
-import control
-
+import os
 import math
-import matplotlib as mpl
+import control
+import matplotlib
 import matplotlib.pyplot as plt
-from warnings import warn
-
 import numpy as np
-import scipy as sp
 
 def plot_allowable_region(alpha_max, skew, ax = None):
     """Plot region of allowable gain/phase variation, given worst-case disk margin.
@@ -122,19 +117,16 @@ def test_siso1():
     # Frequencies of interest
     omega = np.logspace(-1, 2, 1001)
 
-    # Laplace variable
-    s = control.tf('s')
-
     # Loop transfer gain
     L = control.tf(25, [1, 10, 10, 10])
 
-    print(f"------------- Python control built-in (S) -------------")
+    print("------------- Python control built-in (S) -------------")
     GM_, PM_, SM_ = control.stability_margins(L)[:3] # python-control default (S-based...?)
     print(f"SM_ = {SM_}")
     print(f"GM_ = {GM_} dB")
     print(f"PM_ = {PM_} deg\n")
 
-    print(f"------------- Sensitivity function (S) -------------")
+    print("------------- Sensitivity function (S) -------------")
     DM, GM, PM = control.disk_margins(L, omega, skew = 1.0, returnall = True) # S-based (S)
     print(f"min(DM) = {min(DM)} (omega = {omega[np.argmin(DM)]})")
     print(f"GM = {GM[np.argmin(DM)]} dB")
@@ -173,7 +165,7 @@ def test_siso1():
     plt.ylim([0, 90])
     plt.xlabel('Frequency (rad/s)')
 
-    print(f"------------- Complementary sensitivity function (T) -------------")
+    print("------------- Complementary sensitivity function (T) -------------")
     DM, GM, PM = control.disk_margins(L, omega, skew = -1.0, returnall = True) # T-based (T)
     print(f"min(DM) = {min(DM)} (omega = {omega[np.argmin(DM)]})")
     print(f"GM = {GM[np.argmin(DM)]} dB")
@@ -212,7 +204,7 @@ def test_siso1():
     plt.ylim([0, 90])
     plt.xlabel('Frequency (rad/s)')
 
-    print(f"------------- Balanced sensitivity function (S - T) -------------")
+    print("------------- Balanced sensitivity function (S - T) -------------")
     DM, GM, PM = control.disk_margins(L, omega, skew = 0.0, returnall = True) # balanced (S - T)
     print(f"min(DM) = {min(DM)} (omega = {omega[np.argmin(DM)]})")
     print(f"GM = {GM[np.argmin(DM)]} dB")
@@ -276,13 +268,13 @@ def test_siso2():
     # Loop transfer gain
     L = (6.25*(s + 3)*(s + 5))/(s*(s + 1)**2*(s**2 + 0.18*s + 100))
 
-    print(f"------------- Python control built-in (S) -------------")
+    print("------------- Python control built-in (S) -------------")
     GM_, PM_, SM_ = control.stability_margins(L)[:3] # python-control default (S-based...?)
     print(f"SM_ = {SM_}")
     print(f"GM_ = {GM_} dB")
     print(f"PM_ = {PM_} deg\n")
 
-    print(f"------------- Sensitivity function (S) -------------")
+    print("------------- Sensitivity function (S) -------------")
     DM, GM, PM = control.disk_margins(L, omega, skew = 1.0, returnall = True) # S-based (S)
     print(f"min(DM) = {min(DM)} (omega = {omega[np.argmin(DM)]})")
     print(f"GM = {GM[np.argmin(DM)]} dB")
@@ -321,7 +313,7 @@ def test_siso2():
     plt.ylim([0, 90])
     plt.xlabel('Frequency (rad/s)')
 
-    print(f"------------- Complementary sensitivity function (T) -------------")
+    print("------------- Complementary sensitivity function (T) -------------")
     DM, GM, PM = control.disk_margins(L, omega, skew = -1.0, returnall = True) # T-based (T)
     print(f"min(DM) = {min(DM)} (omega = {omega[np.argmin(DM)]})")
     print(f"GM = {GM[np.argmin(DM)]} dB")
@@ -360,7 +352,7 @@ def test_siso2():
     plt.ylim([0, 90])
     plt.xlabel('Frequency (rad/s)')
 
-    print(f"------------- Balanced sensitivity function (S - T) -------------")
+    print("------------- Balanced sensitivity function (S - T) -------------")
     DM, GM, PM = control.disk_margins(L, omega, skew = 0.0, returnall = True) # balanced (S - T)
     print(f"min(DM) = {min(DM)} (omega = {omega[np.argmin(DM)]})")
     print(f"GM = {GM[np.argmin(DM)]} dB")
@@ -419,15 +411,12 @@ def test_mimo():
     # Frequencies of interest
     omega = np.logspace(-1, 3, 1001)
 
-    # Laplace variable
-    s = control.tf('s')
-
     # Loop transfer gain
     P = control.ss([[0, 10],[-10, 0]], np.eye(2), [[1, 10], [-10, 1]], [[0, 0],[0, 0]]) # plant
     K = control.ss([],[],[], [[1, -2], [0, 1]]) # controller
     L = P*K # loop gain
 
-    print(f"------------- Sensitivity function (S) -------------")
+    print("------------- Sensitivity function (S) -------------")
     DM, GM, PM = control.disk_margins(L, omega, skew = 1.0, returnall = True) # S-based (S)
     print(f"min(DM) = {min(DM)} (omega = {omega[np.argmin(DM)]})")
     print(f"GM = {GM[np.argmin(DM)]} dB")
@@ -466,7 +455,7 @@ def test_mimo():
     plt.ylim([0, 90])
     plt.xlabel('Frequency (rad/s)')
 
-    print(f"------------- Complementary sensitivity function (T) -------------")
+    print("------------- Complementary sensitivity function (T) -------------")
     DM, GM, PM = control.disk_margins(L, omega, skew = -1.0, returnall = True) # T-based (T)
     print(f"min(DM) = {min(DM)} (omega = {omega[np.argmin(DM)]})")
     print(f"GM = {GM[np.argmin(DM)]} dB")
@@ -505,7 +494,7 @@ def test_mimo():
     plt.ylim([0, 90])
     plt.xlabel('Frequency (rad/s)')
 
-    print(f"------------- Balanced sensitivity function (S - T) -------------")
+    print("------------- Balanced sensitivity function (S - T) -------------")
     DM, GM, PM = control.disk_margins(L, omega, skew = 0.0, returnall = True) # balanced (S - T)
     print(f"min(DM) = {min(DM)} (omega = {omega[np.argmin(DM)]})")
     print(f"GM = {GM[np.argmin(DM)]} dB")
