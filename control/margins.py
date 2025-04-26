@@ -533,6 +533,14 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
     omega : sequence of array_like
         1D array of (non-negative) frequencies (rad/s) at which
         to evaluate the disk-based stability margins
+    skew : float or array_like, optional
+        skew parameter(s) for disk margin calculation.
+        skew = 0 uses the "balanced" sensitivity function 0.5*(S - T)
+        skew = 1 uses the sensitivity function S
+        skew = -1 uses the complementary sensitivity function T
+    returnall : bool, optional
+        If true, return frequency-dependent margins. If False (default),
+        return only the worst-case (minimum) margins.
 
     Returns
     -------
