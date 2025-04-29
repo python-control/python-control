@@ -150,6 +150,7 @@ Frequency domain analysis:
     singular_values_plot
     singular_values_response
     sisotool
+    disk_margins
 
 Pole/zero-based analysis:
 
