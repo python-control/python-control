@@ -522,7 +522,7 @@ def margin(*args):
 
     return margin[0], margin[1], margin[3], margin[4]
 
-def disk_margins(L, omega, skew = 0.0, returnall = False):
+def disk_margins(L, omega, skew=0.0, returnall=False):
     """Compute disk-based stability margins for SISO or MIMO LTI
        loop transfer function.
 
@@ -535,11 +535,11 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
         to evaluate the disk-based stability margins
     skew : float or array_like, optional
         skew parameter(s) for disk margin calculation.
-        skew = 0 uses the "balanced" sensitivity function 0.5*(S - T)
-        skew = 1 uses the sensitivity function S
-        skew = -1 uses the complementary sensitivity function T
+        skew = 0.0 (default) uses the "balanced" sensitivity function 0.5*(S - T)
+        skew = 1.0 uses the sensitivity function S
+        skew = -1.0 uses the complementary sensitivity function T
     returnall : bool, optional
-        If true, return frequency-dependent margins. If False (default),
+        If True, return frequency-dependent margins. If False (default),
         return only the worst-case (minimum) margins.
 
     Returns
@@ -554,11 +554,10 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
     Example
     --------
     >> omega = np.logspace(-1, 3, 1001)
-    >> P = control.ss([[0,10],[-10,0]],np.eye(2),[[1,10],\
-    [-10,1]],[[0,0],[0,0]])
-    >> K = control.ss([],[],[],[[1,-2],[0,1]])
-    >> L = P*K
-    >> DM, DGM, DPM = control.disk_margins(L, omega, skew = 0.0)
+    >> P = control.ss([[0, 10], [-10, 0]], np.eye(2), [[1, 10], [-10, 1]], 0)
+    >> K = control.ss([], [], [], [[1, -2], [0, 1]])
+    >> L = P * K
+    >> DM, DGM, DPM = control.disk_margins(L, omega, skew=0.0)
     """
 
     # First argument must be a system
@@ -571,7 +570,7 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
         raise ValueError("Loop gain must be square (n_inputs = n_outputs)")
 
     # Need slycot if L is MIMO, for mu calculation
-    if (not L.issiso()) and (ab13md == None):
+    if not L.issiso() and ab13md == None:
         raise ControlMIMONotImplemented(\
             "Need slycot to compute MIMO disk_margins")
 
@@ -584,40 +583,42 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
 
     # Compute frequency response of the "balanced" (according
     # to the skew parameter "sigma") sensitivity function [1-2]
-    ST = S + 0.5*(skew - 1)*I
+    ST = S + 0.5 * (skew - 1) * I
     ST_mag, ST_phase, _ = ST.frequency_response(omega)
-    ST_jw = (ST_mag*np.exp(1j*ST_phase))
+    ST_jw = (ST_mag * np.exp(1j * ST_phase))
     if not L.issiso():
-        ST_jw = ST_jw.transpose(2,0,1)
+        ST_jw = ST_jw.transpose(2, 0, 1)
 
     # Frequency-dependent complex disk margin, computed using upper bound of
     # the structured singular value, a.k.a. "mu", of (S + (skew - I)/2).
-    DM = np.zeros(omega.shape, np.float64)
-    DGM = np.zeros(omega.shape, np.float64)
-    DPM = np.zeros(omega.shape, np.float64)
-    for ii in range(0,len(omega)):
+    DM = np.zeros(omega.shape)
+    DGM = np.zeros(omega.shape)
+    DPM = np.zeros(omega.shape)
+    for ii in range(0, len(omega)):
         # Disk margin (a.k.a. "alpha") vs. frequency
-        if L.issiso() and (ab13md == None):
+        if L.issiso() and ab13md == None:
             # For the SISO case, the norm on (S + (skew - I)/2) is
             # unstructured, and can be computed as the magnitude
             # of the frequency response.
-            DM[ii] = 1.0/ST_mag[ii]
+            DM[ii] = 1.0 / ST_mag[ii]
         else:
             # For the MIMO case, the norm on (S + (skew - I)/2) assumes a
             # single complex uncertainty block diagonal uncertainty
             # structure. AB13MD provides an upper bound on this norm at
             # the given frequency omega[ii].
-            DM[ii] = 1.0/ab13md(ST_jw[ii], np.array(num_loops*[1]),\
-                np.array(num_loops*[2]))[0]
+            DM[ii] = 1.0 / ab13md(ST_jw[ii], np.array(num_loops * [1]),\
+                                  np.array(num_loops * [2]))[0]
 
         # Disk-based gain margin (dB) and phase margin (deg)
-        with np.errstate(divide = 'ignore', invalid = 'ignore'):
+        with np.errstate(divide='ignore', invalid='ignore'):
             # Real-axis intercepts with the disk
-            gamma_min = (1 - 0.5*DM[ii]*(1 - skew))/(1 + 0.5*DM[ii]*(1 + skew))
-            gamma_max = (1 + 0.5*DM[ii]*(1 - skew))/(1 - 0.5*DM[ii]*(1 + skew))
+            gamma_min = (1 - 0.5 * DM[ii] * (1 - skew)) \
+                      / (1 + 0.5 * DM[ii] * (1 + skew))
+            gamma_max = (1 + 0.5 * DM[ii] * (1 - skew)) \
+                      / (1 - 0.5 * DM[ii] * (1 + skew))
 
             # Gain margin (dB)
-            DGM[ii] = mag2db(np.minimum(1/gamma_min, gamma_max))
+            DGM[ii] = mag2db(np.minimum(1 / gamma_min, gamma_max))
             if np.isnan(DGM[ii]):
                 DGM[ii] = float('inf')
 
@@ -625,7 +626,7 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
             if np.isinf(gamma_max):
                 DPM[ii] = 90.0
             else:
-                DPM[ii] = (1 + gamma_min*gamma_max)/(gamma_min + gamma_max)
+                DPM[ii] = (1 + gamma_min * gamma_max) / (gamma_min + gamma_max)
                 if abs(DPM[ii]) >= 1.0:
                     DPM[ii] = float('Inf')
                 else:
@@ -633,7 +634,7 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
 
     if returnall:
         # Frequency-dependent disk margin, gain margin and phase margin
-        return (DM, DGM, DPM)
+        return DM, DGM, DPM
     else:
         # Worst-case disk margin, gain margin and phase margin
         if DGM.shape[0] and not np.isinf(DGM).all():
@@ -645,6 +646,7 @@ def disk_margins(L, omega, skew = 0.0, returnall = False):
         if DPM.shape[0]:
             pmidx = np.where(DPM == np.min(DPM))
 
-        return ((not DM.shape[0] and float('inf')) or np.amin(DM),
-            (not gmidx != -1 and float('inf')) or DGM[gmidx][0],
-            (not DPM.shape[0] and float('inf')) or DPM[pmidx][0])
+        return (
+            float('inf') if DM.shape[0] == 0 else np.amin(DM),
+            float('inf') if gmidx == -1 else DGM[gmidx][0],
+            float('inf') if DPM.shape[0] == 0 else DPM[pmidx][0])
