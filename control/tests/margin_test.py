@@ -11,7 +11,6 @@ import numpy as np
 import pytest
 from numpy import inf, nan
 from numpy.testing import assert_allclose
-import importlib
 
 from control import ControlMIMONotImplemented, FrequencyResponseData, \
     StateSpace, TransferFunction, margin, phase_crossover_frequencies, \
