@@ -111,7 +111,6 @@ class DelayLTI(LTI):
 
         self.nu = self.P.sys.ninputs - len(self.tau)
         self.ny = self.P.sys.noutputs - len(self.tau)
-
         super().__init__(self.nu, self.ny, self.P.sys.nstates)
 
     @classmethod
@@ -270,10 +269,13 @@ class DelayLTI(LTI):
         else:
             raise TypeError("Unsupported operand type(s) for *: '{}' and '{}'".format(type(self), type(other)))
         
-
     def __rmul__(self, other):
+        """
+        Right multiply a DelayLTI system with a scalar, TransferFunction, StateSpace.
+        Note that this function does not call __mul__ for scalar multiplication.
+        """
         if isinstance(other, (int, float, complex)):
-            new_C = np.hstack([self.P.C1 * other, self.P.C2])
+            new_C = np.vstack([self.P.C1 * other, self.P.C2])
             new_D = np.block([[self.P.D11 * other, self.P.D12 * other], [self.P.D21, self.P.D22]])
 
             new_P = PartitionedStateSpace(ss(self.P.A, self.P.B, new_C, new_D), self.P.nu1, self.P.ny1)

@@ -1,17 +1,4 @@
-"""
-This file is using ControlSystems.jl library to produce results and plots about delay systems. 
-Theses results are then exported to json format, and compared to python-control pure delays implementation, 
-as a way to benchmark it. The script and the json follows the test progression of the delay_lti_test.py file. 
-
-In order to run this notebook, the user should install julia and the ControlSystems.jl library:
--  https://julialang.org/downloads/ 
--  https://github.com/JuliaControl/ControlSystems.jl
--  https://github.com/JuliaIO/JSON.jl
--  https://github.com/JuliaPlots/Plots.jl
-"""
-
 using ControlSystems
-using Plots
 using JSON
 
 # ------------------
@@ -34,6 +21,16 @@ wood_berry = [12.8/(16.7s+1)*exp(-s) -18.9/(21s+1)*exp(-3s);  6.6/(10.9s+1)*exp(
 
 
 function dlti2dict(dlti)
+    """
+    Convert a DelayLtiSystem to a dictionary for JSON serialization.
+
+    Args:
+        dlti: The DelayLtiSystem to convert.
+
+    Returns:
+        A dictionary representation of the DelayLtiSystem.
+    """
+
     return Dict(
         "A" => Dict(
             "data" => dlti.P.A,
@@ -60,37 +57,97 @@ end
 
 
 function test_tf2dlti(tf)
+    """
+    Convert a TransferFunction to a DelayLtiSystem and then to a dictionary.
+
+    Args:
+        tf: The TransferFunction to convert.
+
+    Returns:
+        A dictionary representation of the DelayLtiSystem.
+    """
+
     dlti = DelayLtiSystem(tf)
     return dlti2dict(dlti)
 end
 
 
 function test_delay_function(tau)
+    """
+    Convert a delay to a DelayLtiSystem and then to a dictionary.
+
+    Args:
+        tau: The delay to convert.
+
+    Returns:
+        A dictionary representation of the DelayLtiSystem.
+    """
+
     dlti = delay(tau)
     return dlti2dict(dlti)
 end
 
 
 function test_exp_delay(tau)
+    """
+    Convert an exponential delay to a DelayLtiSystem and then to a dictionary.
+
+    Args:
+        tau: The delay to convert.
+
+    Returns:
+        A dictionary representation of the DelayLtiSystem.
+    """
+
     dlti = exp(-tau * s)
     return dlti2dict(dlti)
 end
 
 function complex_array_to_dict(arr)
+    """
+    Convert a complex array to a dictionary for JSON serialization.
+
+    Args:
+        arr: The complex array to convert.
+
+    Returns:
+        A dictionary representation of the complex array.
+    """
+
     return Dict(
         "real" => real(arr),
         "imag" => imag(arr)
     )
 end
 
-function test_siso_freq_resp(tf)
-    w = exp10.(LinRange(-2,2,100))
+function test_siso_freq_resp(tf, w)
+    """
+    Convert a SISO frequency response to a dictionary for JSON serialization.
+
+    Args:
+        tf: The TransferFunction to convert.
+        w: The frequency vector.
+
+    Returns:
+        A dictionary representation of the frequency response.
+    """
+
     arr = collect(Iterators.Flatten(freqresp(tf, w)))
     return complex_array_to_dict(arr)
 end
 
-function test_tito_freq_response(tf)
-    w = exp10.(LinRange(-2,2,100))
+function test_tito_freq_response(tf, w)
+    """
+    Convert a TITO frequency response to a dictionary for JSON serialization.
+
+    Args:
+        tf: The TransferFunction to convert.
+        w: The frequency vector.
+
+    Returns:
+        A dictionary representation of the frequency response.
+    """
+
     resp = freqresp(tf, w)
     resp_11 = resp[1, 1, :]
     resp_12 = resp[1, 2, :]
@@ -105,7 +162,14 @@ function test_tito_freq_response(tf)
     )
 end
 
+function test_step_response(tf, t)
+    return step(tf, t).y
+end
+
 function main()
+    """
+    Main function to compute and export test results.
+    """
 
     results_TestConstructors = Dict(
         "test_tf2dlti" => Dict(
@@ -148,15 +212,25 @@ function main()
         ),
         "test_mimo_feedback" => dlti2dict(feedback(wood_berry, wood_berry)),
 
-        "test_siso_freq_resp" => test_siso_freq_resp(delay_siso_tf),
-        "test_tito_freq_response" => test_tito_freq_response(wood_berry),
+        "test_siso_freq_resp" => test_siso_freq_resp(delay_siso_tf, exp10.(LinRange(-2,2,100))),
+        "test_tito_freq_response" => test_tito_freq_response(wood_berry, exp10.(LinRange(-2,2,100))),
 
+    )
+
+    results_TestTimeResp = Dict(
+        "test_mimo_step_response" => Dict(
+            "y11" => test_step_response(wood_berry, 0:0.01:100)[1, :, 1],
+            "y12" => test_step_response(wood_berry, 0:0.01:100)[1, :, 2],
+            "y21" => test_step_response(wood_berry, 0:0.01:100)[2, :, 1],
+            "y22" => test_step_response(wood_berry, 0:0.01:100)[2, :, 2]
+        )
     )
 
     results = Dict(
         "TestConstructors" => results_TestConstructors,
         "TestOperators" => results_TestOperators,
         "TestDelayLtiMethods" => results_TestDelayLtiMethods,
+        "TestTimeResp" => results_TestTimeResp,
     )
 
     script_dir = @__DIR__
@@ -168,4 +242,5 @@ function main()
     println("Expected results exported to julia_results.json")
 end
 
+# Run the main function
 main()

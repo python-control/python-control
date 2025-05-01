@@ -1,7 +1,7 @@
 import numpy as np
 
-from scipy.integrate import LSODA
-
+from scipy.integrate import LSODA, solve_ivp
+from scipy.interpolate import PchipInterpolator
 
 def dde_response(delay_sys, T, U=0, X0=0, params=None,
                  transpose=False, return_x=False, squeeze=None,
@@ -91,7 +91,7 @@ def dde_response(delay_sys, T, U=0, X0=0, params=None,
     U = _check_convert_array(U, legal_shapes,
                             'Parameter `U`: ', squeeze=False,
                             transpose=transpose)
-    
+    print("U shape: ", U.shape)
     xout = np.zeros((n_states, n_steps))
     xout[:, 0] = X0
     yout = np.zeros((n_outputs, n_steps))
@@ -100,8 +100,18 @@ def dde_response(delay_sys, T, U=0, X0=0, params=None,
     # Solver here depending on the method
     if method == 'LSODA':
         xout, yout = Skogestad_Python_LSODA(delay_sys, dt, T, U, X0, xout, yout)
+    elif method == 'mos':
+        B2C2 = B2 @ C2
+        B2D21 = B2 @ D21
+        D12C2 = D12 @ C2
+        D12D21 = D12 @ D21
+        system_params = A, B2C2, B1, B2D21, tau, C1, D11, D12C2, D12D21
+        u_func = pchip_interp_u(T, U)
+        xout, yout = solve_dde_mos(delay_sys, T, U, X0, dt)
     else:
         xout, yout = Skogestad_Python_solver(delay_sys, dt, T, U, X0, xout, yout)
+
+
     
     return TimeResponseData(
         tout, yout, xout, U, 
@@ -210,7 +220,7 @@ def Skogestad_Python_LSODA(delay_sys, dt, T, U, X0, xout, yout):
         Array containing the output vector at each time step.
 
     """
-
+    print("LSODA solver")
     dtss = [int(np.round(delay / dt)) for delay in delay_sys.tau]
     zs = []
     
@@ -224,7 +234,7 @@ def Skogestad_Python_LSODA(delay_sys, dt, T, U, X0, xout, yout):
     while solver.status == "running":
         t = ts[-1]
         x = xs[-1]
-        y = delay_sys.P.C1 @ np.array(x) + delay_sys.P.D11 @ linear_interp_u(t, T, U) + delay_sys.P.D12 @ wf(zs, dtss)
+        #y = delay_sys.P.C1 @ np.array(x) + delay_sys.P.D11 @ linear_interp_u(t, T, U) + delay_sys.P.D12 @ wf(zs, dtss)
         z = delay_sys.P.C2 @ np.array(x) + delay_sys.P.D21 @ linear_interp_u(t, T, U) + delay_sys.P.D22 @ wf(zs, dtss)
         zs.append(list(z))
 
@@ -244,10 +254,19 @@ def Skogestad_Python_LSODA(delay_sys, dt, T, U, X0, xout, yout):
     return xout, yout
 
 
+def pchip_interp_u(T, U):
+    def negative_wrapper(interp):
+        return lambda t: interp(t) if t >= T[0] else 0
+    
+    if np.ndim(U) == 1:
+        return np.array([negative_wrapper(PchipInterpolator(T, U))])
+    elif np.ndim(U) == 0:
+        print("U is a scalar !")
+        return U
+    else:
+        return np.array([negative_wrapper(PchipInterpolator(T, ui)) for ui in U])
+    
 
-def dde23_solver(delay_sys, dt, T, U, X0, xout, yout):
-    # Plans for implementing a python version matlab dde23 solver
-    raise NotImplementedError
 
 
 def linear_interp_u(t, T, U):
@@ -306,3 +325,175 @@ def wf(zs, dtss):
         else:
             ws.append(zs[-dts][i])
     return np.array(ws)
+
+
+
+
+
+
+
+#### Implementation of Methods of Steps, TO TEST ####
+from scipy.integrate import OdeSolution
+from typing import Callable, List
+
+class DdeHistory:
+    """
+    Stores the computed solution history for a DDE and provides a callable
+    interface to retrieve the state x(t) at any requested past time t.
+
+    Handles three regimes:
+    1. t <= t0: Uses the provided initial history function.
+    2. t0 < t <= t_last_computed: Interpolates using dense output from solve_ivp segments.
+    3. t > t_last_computed: Performs constant extrapolation using the last computed state.
+    """
+
+    def __init__(self, initial_history_func, t0):
+        self.initial_history_func = initial_history_func
+        self.t0: float = t0
+        self.segments: List[OdeSolution] = [] # Stores OdeResult objects from solve_ivp
+        self.last_valid_time: float = t0
+
+        initial_state = np.asarray(initial_history_func(t0))
+        self.last_state = initial_state
+
+    def add_segment(self, segment: OdeSolution):
+        """
+        Adds a new computed solution segment (from solve_ivp) to the history.
+        """
+
+        self.segments.append(segment)
+        self.last_valid_time = segment.t[-1]
+        self.last_state = segment.y[:, -1]
+
+    def __call__(self, t):
+        if t <= self.t0:
+            return np.asarray(self.initial_history_func(self.t0))
+        elif t > self.last_valid_time:
+            return self.last_state
+        else:
+            for segment in self.segments:
+                if segment.t[0] <= t <= segment.t[-1]:
+                    return segment.sol(t)
+            return np.zeros_like(self.last_state) # Deal with first call 
+
+
+def dde_wrapper_mos(t, x, A, B1, B2, C2, D21, tau_list, u_func, history_x):
+    """
+    Wrapper function for DDE solver using scipy's solve_ivp.
+
+    y is the current state vector.
+    history is an object of History class that contains the history of the system.
+    A is the system matrix.
+    B1 is the input matrix.
+    B2 is the delayed system matrix.
+
+    dx/dt = A @ x + B1 @ u(t) + B2 @ z(t - tau)
+    """
+    #print(t)
+    z_delayed = []
+    for i,tau in enumerate(tau_list):
+        u_delayed = np.array([u_func[i](t - tau) for i in range(len(u_func))])
+        z = C2 @ history_x(t - tau) + D21 @ u_delayed
+        z_delayed.append(z[i])
+    z_delayed = np.array(z_delayed).flatten()
+
+    u_current = np.array([u_func[i](t) for i in range(len(u_func))])
+    dxdt = A @ x + B1 @ u_current + B2 @ z_delayed
+    return dxdt.flatten()
+
+
+def solve_dde_mos(delay_sys, T, U, X0, dt):
+    """
+    Method using MOS solver.
+    
+    Parameters
+    ----------
+    delay_sys : DelayLTI
+        Delay I/O system for which forced response is computed.
+    T : array_like
+        An array representing the time points where the input is specified. 
+        The time points must be uniformly spaced.
+    U : array_like or float, optional
+        Input array giving input at each time in `T`.
+    X0 : array_like or float, default=0.
+        Initial condition.
+    xout : array_like
+        Array to store the state vector at each time step.
+    yout : array_like
+        Array to store the output vector at each time step.
+
+    Returns
+    -------
+    xout : array_like
+        Array containing the state vector at each time step.
+    yout : array_like
+        Array containing the output vector at each time step.
+
+    """
+    intial_history_func = lambda t: np.zeros(X0.shape)
+    t0, tf = T[0], T[-1]
+    u_func = pchip_interp_u(T, U)
+    
+    history_x = DdeHistory(intial_history_func, t0)   # to access x(t-tau)
+    current_t = 0
+    current_x = np.asarray(X0).flatten()
+
+    A, B1, B2, C1, C2 = delay_sys.P.A, delay_sys.P.B1, delay_sys.P.B2, delay_sys.P.C1, delay_sys.P.C2
+    D11, D12, D21, D22 = delay_sys.P.D11, delay_sys.P.D12, delay_sys.P.D21, delay_sys.P.D22
+    tau_list = delay_sys.tau
+
+    solution_ts = [current_t]
+    solution_xs = [current_x]
+    
+    # TODO: handle discontinuity propagation
+    discontinuity_times = set(tau_list)
+    print("discontinuity times:", discontinuity_times)
+    while current_t < tf:
+        t_stop = min(discontinuity_times) if discontinuity_times else tf
+        if not np.isclose(t_stop, tf):
+            discontinuity_times.remove(t_stop)
+        local_t_eval = [t for t in T if current_t < t <= t_stop]
+
+        print("Integrate bewtween ", current_t, " and ", t_stop)
+        sol_segment = solve_ivp(
+            fun = dde_wrapper_mos,
+            t_span=(current_t, t_stop),
+            t_eval=local_t_eval,
+            y0=current_x,
+            method='LSODA',
+            dense_output=True,
+            args=(A, B1, B2, C2, D21, tau_list, u_func, history_x),
+            max_step=dt,
+        )
+
+        # --- Update History and Store Results ---
+        history_x.add_segment(sol_segment)
+        print(history_x)
+        segment_ts = sol_segment.t
+        segment_xs = sol_segment.y
+
+        solution_ts.extend(segment_ts)
+        new_x = [segment_xs[:, i] for i in range(segment_xs.shape[1])]
+        solution_xs.extend(new_x)
+
+        current_t = sol_segment.t[-1]
+        current_x = segment_xs[:, -1]
+
+    solution_xs = np.array(solution_xs)
+    solution_ts = np.array(solution_ts)
+
+    z_delayed = []
+    u_current = []
+    for i, ti in enumerate(solution_ts):
+        z_delayed.append([])
+        for j,tau in enumerate(tau_list):
+            z = C2 @ history_x(ti - tau) + D21 @ np.array([u_func[i](ti - tau) for i in range(len(u_func))])
+            z_delayed[i].append(z[j])
+        u_current.append([u_func[i](ti) for i in range(len(u_func))])
+
+    z_delayed = np.array(z_delayed)
+    u_current = np.array(u_current)
+    
+
+    solution_ys = C1 @ solution_xs.T + D11 @ u_current.T + D12 @ z_delayed.T
+    return solution_xs.T, solution_ys

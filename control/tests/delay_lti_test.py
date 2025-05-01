@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-import json
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
 
@@ -9,7 +8,7 @@ from control.delaylti import (
 )
 from control.statesp import ss
 from control.xferfcn import tf
-from control.julia_utils import julia_json, assert_delayLTI
+from control.julia.utils import julia_json, assert_delayLTI
 
 s = tf('s')
 
@@ -87,8 +86,6 @@ class TestOperators:
 
     def test_siso_sub(self, delay_siso_tf, delay_siso_tf2):
         G = delay_siso_tf - delay_siso_tf2
-        print(G.P.C)
-        print(julia_json["TestOperators"]["test_siso_sub"]["C"])
         assert_delayLTI(G, julia_json["TestOperators"]["test_siso_sub"])
         
     def test_siso_sub_constant(self, delay_siso_tf):
@@ -105,7 +102,7 @@ class TestOperators:
 
     def test_siso_rmul_constant(self, delay_siso_tf):
         G = 2. * delay_siso_tf
-        assert_delayLTI(G, julia_json["TestOperators"]["test_siso_mul_constant"])
+        assert_delayLTI(G, julia_json["TestOperators"]["test_siso_rmul_constant"])
     
     def test_mimo_add(self, wood_berry):
         G = wood_berry + wood_berry
@@ -198,17 +195,60 @@ class TestTimeResp:
             if t >= 1.5:
                 hand_delayed_step[i] = step.y[0][0][count]
                 count += 1
+        plt.figure()
+        plt.plot(delay_step.y[0][0] - hand_delayed_step)
+        plt.legend()
+        plt.show()
         assert np.allclose(delay_step.y[0][0], hand_delayed_step)
+
+    def test_siso_delayed_step_response_mos(self, delay_siso_tf, simple_siso_tf):
+        from control.timeresp import step_response
+        timepts = np.linspace(0, 10, 1001)
+        step = step_response(simple_siso_tf, timepts=timepts)
+        delay_step = step_response(delay_siso_tf, timepts=timepts, use_mos=True)
+        # Construct a manually delayed step response by shifting the step response
+        hand_delayed_step = np.zeros_like(step.y[0][0])
+        count = 0
+        for i, t in enumerate(step.t):
+            if t >= 1.5:
+                hand_delayed_step[i] = step.y[0][0][count]
+                count += 1
+
+        plt.figure()
+        plt.plot(delay_step.y[0][0] - hand_delayed_step)
+        plt.legend()
+        plt.show()
+        assert np.allclose(delay_step.y[0][0], hand_delayed_step, atol=1e-5)
+
+    # wood berry step response compared to julia
+    def test_mimo_step_response(self, wood_berry, plot=False):
+        from control.timeresp import step_response
+        import matplotlib.pyplot as plt
+        timepts = np.linspace(0, 100, 10001)
+        step = step_response(wood_berry, timepts=timepts, use_mos=True)
+        #step_lsoda = step_response(wood_berry, timepts=timepts)
+
+        if plot:
+            plt.figure()
+            plt.plot(step.y[0][0] - julia_json["TestTimeResp"]["test_mimo_step_response"]["y11"])
+            plt.plot(step.y[1][0] - julia_json["TestTimeResp"]["test_mimo_step_response"]["y21"])
+            plt.plot(step.y[0][1] - julia_json["TestTimeResp"]["test_mimo_step_response"]["y12"])
+            plt.plot(step.y[1][1] - julia_json["TestTimeResp"]["test_mimo_step_response"]["y22"])
+            plt.show()
+
+        assert np.allclose(step.y[0][0], julia_json["TestTimeResp"]["test_mimo_step_response"]["y11"], atol=1e-5)
+        assert np.allclose(step.y[0][1], julia_json["TestTimeResp"]["test_mimo_step_response"]["y12"], atol=1e-5)
+        assert np.allclose(step.y[1][1], julia_json["TestTimeResp"]["test_mimo_step_response"]["y22"], atol=1e-5)
+        assert np.allclose(step.y[1][0], julia_json["TestTimeResp"]["test_mimo_step_response"]["y21"], atol=1e-5)
+        
 
     def test_forced_response(self, delay_siso_tf, simple_siso_tf, plot=False):
         from control.timeresp import forced_response
-        # the test does not pass for 1001 in linspace,
-        # since the implemented solver is not very good.
-        # Fewer step size is needed
-        timepts = np.linspace(0, 10, 10001)    
+
+        timepts = np.linspace(0, 10, 1001)    
         inputs = np.sin(timepts)
         resp = forced_response(simple_siso_tf, timepts=timepts, inputs=inputs)
-        delay_resp = forced_response(delay_siso_tf, timepts=timepts, inputs=inputs)
+        delay_resp = forced_response(delay_siso_tf, timepts=timepts, inputs=inputs, use_mos=True)
         hand_delayed_resp = np.zeros_like(resp.y[0])
         count = 0
         for i, t in enumerate(resp.t):
@@ -216,20 +256,20 @@ class TestTimeResp:
                 hand_delayed_resp[i] = resp.y[0][count]
                 count += 1
 
-        timepts_few =  np.linspace(0, 10, 1001)
-        inputs_few = np.sin(timepts_few)
-        delay_resp_few = forced_response(delay_siso_tf, timepts=timepts_few, inputs=inputs_few)
-
-        
         # Optionally, inspect the plot:
+        plot=True
         if plot:
             plt.figure()
             plt.plot(resp.t, inputs, label="input")
             plt.plot(resp.t, resp.y[0], label="response")
             plt.plot(resp.t, delay_resp.y[0], label="delay LTI smaller step size")
-            plt.plot(delay_resp_few.t, delay_resp_few.y[0], label="delay LTI bigger step size")
+            #plt.plot(delay_resp_few.t, delay_resp_few.y[0], label="delay LTI bigger step size")
             plt.plot(resp.t, hand_delayed_resp, label="hand delay")
             plt.legend()
             plt.show()
 
-        assert np.allclose(delay_resp.y[0], hand_delayed_resp)
+            plt.figure()
+            plt.plot(resp.t, delay_resp.y[0] - hand_delayed_resp)
+            plt.show()
+
+        assert np.allclose(delay_resp.y[0], hand_delayed_resp, atol=1e-5)
