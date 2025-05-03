@@ -921,7 +921,7 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
 # Forced response of a linear system
 def forced_response(
         sysdata, timepts=None, inputs=0., initial_state=0., transpose=False,
-        params=None, interpolate=False, return_states=None, squeeze=None, use_mos=False,
+        params=None, interpolate=False, return_states=None, squeeze=None,
         **kwargs):
     from .delaylti import DelayLTI
     """Compute the output of a linear system given the input.
@@ -1096,14 +1096,9 @@ def forced_response(
     if isinstance(sys, DelayLTI):
         # step size must be small enough to ensure accuracy. 
         # Stiff problems may require very small step size or specific dde solver
-        if use_mos:
-            return dde_response(
-                sysdata, T=timepts, U=inputs, X0=initial_state, params=params,
-                transpose=transpose, return_x=return_states, squeeze=squeeze, method="mos")
-        else:
-            return dde_response(
-                sysdata, T=timepts, U=inputs, X0=initial_state, params=params,
-                transpose=transpose, return_x=return_states, squeeze=squeeze, method="LSODA")
+        return dde_response(
+            sysdata, T=timepts, U=inputs, X0=initial_state, params=params,
+            transpose=transpose, return_x=return_states, squeeze=squeeze)
     else:
         sys = _convert_to_statespace(sys)
         A, B, C, D = np.asarray(sys.A), np.asarray(sys.B), np.asarray(sys.C), \
@@ -1364,7 +1359,7 @@ def _process_time_response(
 def step_response(
         sysdata, timepts=None, initial_state=0., input_indices=None,
         output_indices=None, timepts_num=None, transpose=False,
-        return_states=False, squeeze=None, params=None, use_mos=False,
+        return_states=False, squeeze=None, params=None,
         **kwargs):
     # pylint: disable=W0622
     """Compute the step response for a linear system.
@@ -1484,7 +1479,7 @@ def step_response(
                 sys, T, initial_state=X0, input_indices=input,
                 output_indices=output, timepts_num=T_num,
                 transpose=transpose, return_states=return_x, squeeze=squeeze,
-                params=params, use_mos=use_mos))
+                params=params))
         return TimeResponseList(responses)
     else:
         sys = sysdata
@@ -1539,7 +1534,7 @@ def step_response(
 
         #print(U)
 
-        response = forced_response(sys, T, U, X0, squeeze=True, params=params, use_mos=use_mos,)
+        response = forced_response(sys, T, U, X0, squeeze=True, params=params,)
         inpidx = i if input is None else 0
         yout[:, inpidx, :] = response.y if output is None \
             else response.y[output]

@@ -9,4 +9,10 @@ In order to run the ``compute_tests.jl`` file, the user should install:
 -  the ControlSystems.jl package from https://github.com/JuliaControl/ControlSystems.jl
 -  the JSON.jl package from https://github.com/JuliaIO/JSON.jl
 
+Then, the user should open a terminal:
+```bash
+cd <path_to_control_package>/control/julia
+julia compute_tests.jl 
+```
+
 The ``utils.py`` file contains helper functions to deserialize data from json to python.

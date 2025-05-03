@@ -219,10 +219,10 @@ function main()
 
     results_TestTimeResp = Dict(
         "test_mimo_step_response" => Dict(
-            "y11" => test_step_response(wood_berry, 0:0.01:100)[1, :, 1],
-            "y12" => test_step_response(wood_berry, 0:0.01:100)[1, :, 2],
-            "y21" => test_step_response(wood_berry, 0:0.01:100)[2, :, 1],
-            "y22" => test_step_response(wood_berry, 0:0.01:100)[2, :, 2]
+            "y11" => test_step_response(wood_berry, 0:0.1:100)[1, :, 1],
+            "y12" => test_step_response(wood_berry, 0:0.1:100)[1, :, 2],
+            "y21" => test_step_response(wood_berry, 0:0.1:100)[2, :, 1],
+            "y22" => test_step_response(wood_berry, 0:0.1:100)[2, :, 2]
         )
     )
 

@@ -1,11 +1,11 @@
 import numpy as np
 
-from scipy.integrate import LSODA, solve_ivp
+from scipy.integrate import solve_ivp, OdeSolution
 from scipy.interpolate import PchipInterpolator
+from typing import Callable, List
 
 def dde_response(delay_sys, T, U=0, X0=0, params=None,
-                 transpose=False, return_x=False, squeeze=None,
-                 method=None):
+                 transpose=False, return_x=False, squeeze=None):
     """Compute the output of a delay linear system given the input.
 
     Parameters
@@ -96,23 +96,8 @@ def dde_response(delay_sys, T, U=0, X0=0, params=None,
     xout[:, 0] = X0
     yout = np.zeros((n_outputs, n_steps))
     tout = T
+    xout, yout = solve_dde_mos(delay_sys, T, U, X0, dt)
 
-    # Solver here depending on the method
-    if method == 'LSODA':
-        xout, yout = Skogestad_Python_LSODA(delay_sys, dt, T, U, X0, xout, yout)
-    elif method == 'mos':
-        B2C2 = B2 @ C2
-        B2D21 = B2 @ D21
-        D12C2 = D12 @ C2
-        D12D21 = D12 @ D21
-        system_params = A, B2C2, B1, B2D21, tau, C1, D11, D12C2, D12D21
-        u_func = pchip_interp_u(T, U)
-        xout, yout = solve_dde_mos(delay_sys, T, U, X0, dt)
-    else:
-        xout, yout = Skogestad_Python_solver(delay_sys, dt, T, U, X0, xout, yout)
-
-
-    
     return TimeResponseData(
         tout, yout, xout, U, 
         params=params, 
@@ -127,133 +112,6 @@ def dde_response(delay_sys, T, U=0, X0=0, params=None,
     )
 
 
-def Skogestad_Python_solver(delay_sys, dt, T, U, X0, xout, yout):
-    """
-    Method from Skogestad-Python: https://github.com/alchemyst/Skogestad-Python/blob/master/robustcontrol/InternalDelay.py#L446
-    RK integration.
-    
-    Parameters
-    ----------
-    delay_sys : DelayLTI
-        Delay I/O system for which forced response is computed.
-    dt : float
-        Time step for the integration.
-    T : array_like
-        An array representing the time points where the input is specified. 
-        The time points must be uniformly spaced.
-    U : array_like or float, optional
-        Input array giving input at each time in `T`.
-    X0 : array_like or float, default=0.
-        Initial condition.
-    xout : array_like
-        Array to store the state vector at each time step.
-    yout : array_like
-        Array to store the output vector at each time step.
-
-    Returns
-    -------
-    xout : array_like
-        Array containing the state vector at each time step.
-    yout : array_like
-        Array containing the output vector at each time step.
-
-    """
-    dtss = [int(np.round(delay / dt)) for delay in delay_sys.tau]
-    zs = []
-    
-    def f(t, x):
-        return delay_sys.P.A @ x + delay_sys.P.B1 @ linear_interp_u(t, T, U) + delay_sys.P.B2 @ wf(zs, dtss)
-    
-    xs = [X0]
-    ys = []
-    for i,t in enumerate(T):
-        x = xs[-1]
-
-        y = delay_sys.P.C1 @ np.array(x) + delay_sys.P.D11 @ linear_interp_u(t, T, U) + delay_sys.P.D12 @ wf(zs, dtss)
-        ys.append(list(y))
-
-        z = delay_sys.P.C2 @ np.array(x) + delay_sys.P.D21 @ linear_interp_u(t, T, U) + delay_sys.P.D22 @ wf(zs, dtss)
-        zs.append(list(z))
-
-        # x integration
-        k1 = f(t, x) * dt
-        k2 = f(t + 0.5 * dt, x + 0.5 * k1) * dt
-        k3 = f(t + 0.5 * dt, x + 0.5 * k2) * dt
-        k4 = f(t + dt, x + k3) * dt
-        dx = (k1 + k2 + k2 + k3 + k3 + k4) / 6
-        x = [xi + dxi for xi, dxi in zip(x, dx)]
-        xs.append(list(x))
-
-        xout[:, i] = x
-        yout[:, i] = y
-    
-    return xout, yout
-    
-
-def Skogestad_Python_LSODA(delay_sys, dt, T, U, X0, xout, yout):
-    """
-    Method using LSODA solver.
-    
-    Parameters
-    ----------
-    delay_sys : DelayLTI
-        Delay I/O system for which forced response is computed.
-    dt : float
-        Time step for the integration.
-    T : array_like
-        An array representing the time points where the input is specified. 
-        The time points must be uniformly spaced.
-    U : array_like or float, optional
-        Input array giving input at each time in `T`.
-    X0 : array_like or float, default=0.
-        Initial condition.
-    xout : array_like
-        Array to store the state vector at each time step.
-    yout : array_like
-        Array to store the output vector at each time step.
-
-    Returns
-    -------
-    xout : array_like
-        Array containing the state vector at each time step.
-    yout : array_like
-        Array containing the output vector at each time step.
-
-    """
-    print("LSODA solver")
-    dtss = [int(np.round(delay / dt)) for delay in delay_sys.tau]
-    zs = []
-    
-    def f(t, x):
-        return delay_sys.P.A @ x + delay_sys.P.B1 @ linear_interp_u(t, T, U) + delay_sys.P.B2 @ wf(zs, dtss)
-    
-    solver = LSODA(f, T[0], X0, t_bound=T[-1], max_step=dt)
-
-    xs = [X0]
-    ts = [T[0]]
-    while solver.status == "running":
-        t = ts[-1]
-        x = xs[-1]
-        #y = delay_sys.P.C1 @ np.array(x) + delay_sys.P.D11 @ linear_interp_u(t, T, U) + delay_sys.P.D12 @ wf(zs, dtss)
-        z = delay_sys.P.C2 @ np.array(x) + delay_sys.P.D21 @ linear_interp_u(t, T, U) + delay_sys.P.D22 @ wf(zs, dtss)
-        zs.append(list(z))
-
-        solver.step()
-        t = solver.t
-        ts.append(t)
-
-        x = solver.y.copy()
-        xs.append(list(x))
-
-        for it, ti in enumerate(T):
-            if ts[-2] < ti <= ts[-1]:
-                xi = solver.dense_output()(ti)
-                xout[:, it] = xi
-                yout[:, it] = delay_sys.P.C1 @ np.array(xi) + delay_sys.P.D11 @ linear_interp_u(t, T, U) + delay_sys.P.D12 @ wf(zs, dtss)
-    
-    return xout, yout
-
-
 def pchip_interp_u(T, U):
     def negative_wrapper(interp):
         return lambda t: interp(t) if t >= T[0] else 0
@@ -266,75 +124,9 @@ def pchip_interp_u(T, U):
     else:
         return np.array([negative_wrapper(PchipInterpolator(T, ui)) for ui in U])
     
-
-
-
-def linear_interp_u(t, T, U):
-    """
-    Linearly interpolate the input U at time t.
-
-    Parameters
-    ----------
-    t : float
-        Time at which to interpolate.
-    T : array_like
-        Array of time points.
-    U : array_like
-        Array of input values.
-
-    Returns
-    -------
-    u : array_like
-        Interpolated input value at time t.
-
-    """
-
-    if np.ndim(U) == 1:
-        return np.array([np.interp(t, T, U)])
-    elif np.ndim(U) == 0:
-        print("U is a scalar !")
-        return U
-    else:
-        return np.array([np.interp(t, T, ui) for ui in U])
     
 
-def wf(zs, dtss):
-    """
-    Compute the delayed inputs.
 
-    Parameters
-    ----------
-    zs : list of list
-        List of internal outputs at each time step.
-    dtss : list of int
-        List of time delays in number of time steps.
-
-    Returns
-    -------
-    ws : array_like
-        Array of delayed inputs.
-
-    """
-
-    ws = []
-    for i, dts in enumerate(dtss):
-        if len(zs) <= dts:
-            ws.append(0)
-        elif dts == 0:
-            ws.append(zs[-1][i])
-        else:
-            ws.append(zs[-dts][i])
-    return np.array(ws)
-
-
-
-
-
-
-
-#### Implementation of Methods of Steps, TO TEST ####
-from scipy.integrate import OdeSolution
-from typing import Callable, List
 
 class DdeHistory:
     """
