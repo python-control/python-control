@@ -3,6 +3,7 @@ import json
 
 from pathlib import Path
 
+
 def _recursive_reshape(node):
     """Reshape arrays in a nested dictionary or list.
 
@@ -34,23 +35,23 @@ def _recursive_reshape(node):
             return array_data
         else:
             return np.transpose(array_data)
-    
+
     elif isinstance(node, dict):
         new_node = {}
         for key, value in node.items():
             new_node[key] = _recursive_reshape(value)
         return new_node
-        
+
     elif isinstance(node, list) and any(isinstance(item, dict) for item in node):
         new_node = []
         for i, item in enumerate(node):
             new_node[i] = _recursive_reshape(item)
         return new_node
-    
+
     else:
         return node
-    
-        
+
+
 def load_julia_results(json_path: str):
     """Load Julia results from a JSON file and reshape arrays.
 

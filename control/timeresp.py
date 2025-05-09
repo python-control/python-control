@@ -43,32 +43,37 @@ import numpy as np
 import scipy as sp
 from numpy import einsum, maximum, minimum
 from scipy.linalg import eig, eigvals, matrix_balance, norm
-from scipy.integrate import LSODA
 
 from . import config
-from . config import _process_kwargs, _process_param
+from .config import _process_kwargs, _process_param
 from .exception import pandas_check
 from .iosys import NamedSignal, isctime, isdtime
 from .timeplot import time_response_plot
 from .dde import dde_response
 
-__all__ = ['forced_response', 'step_response', 'step_info',
-           'initial_response', 'impulse_response', 'TimeResponseData',
-           'TimeResponseList']
+__all__ = [
+    "forced_response",
+    "step_response",
+    "step_info",
+    "initial_response",
+    "impulse_response",
+    "TimeResponseData",
+    "TimeResponseList",
+]
 
 # Dictionary of aliases for time response commands
 _timeresp_aliases = {
     # param:            ([alias, ...], [legacy, ...])
-    'timepts':          (['T'],        []),
-    'inputs':           (['U'],        ['u']),
-    'outputs':          (['Y'],        ['y']),
-    'initial_state':    (['X0'],       ['x0']),
-    'final_output':     (['yfinal'],   []),
-    'return_states':    (['return_x'], []),
-    'evaluation_times': (['t_eval'],   []),
-    'timepts_num':      (['T_num'],    []),
-    'input_indices':    (['input'],    []),
-    'output_indices':   (['output'],   []),
+    "timepts": (["T"], []),
+    "inputs": (["U"], ["u"]),
+    "outputs": (["Y"], ["y"]),
+    "initial_state": (["X0"], ["x0"]),
+    "final_output": (["yfinal"], []),
+    "return_states": (["return_x"], []),
+    "evaluation_times": (["t_eval"], []),
+    "timepts_num": (["T_num"], []),
+    "input_indices": (["input"], []),
+    "output_indices": (["output"], []),
 }
 
 
@@ -252,6 +257,7 @@ class TimeResponseData:
     See `TimeResponseData.__call__` for more information.
 
     """
+
     #
     # Class attributes
     #
@@ -280,12 +286,27 @@ class TimeResponseData:
     squeeze = None
 
     def __init__(
-            self, time, outputs, states=None, inputs=None, issiso=None,
-            output_labels=None, state_labels=None, input_labels=None,
-            title=None, transpose=False, return_x=False, squeeze=None,
-            multi_trace=False, trace_labels=None, trace_types=None,
-            plot_inputs=True, sysname=None, params=None, success=True,
-            message=None
+        self,
+        time,
+        outputs,
+        states=None,
+        inputs=None,
+        issiso=None,
+        output_labels=None,
+        state_labels=None,
+        input_labels=None,
+        title=None,
+        transpose=False,
+        return_x=False,
+        squeeze=None,
+        multi_trace=False,
+        trace_labels=None,
+        trace_types=None,
+        plot_inputs=True,
+        sysname=None,
+        params=None,
+        success=True,
+        message=None,
     ):
         """Create an input/output time response object.
 
@@ -338,8 +359,7 @@ class TimeResponseData:
             raise ValueError("Output vector is the wrong shape")
 
         # Check and store labels, if present
-        self.output_labels = _process_labels(
-            output_labels, "output", self.noutputs)
+        self.output_labels = _process_labels(output_labels, "output", self.noutputs)
 
         # Make sure time dimension of output is the right length
         if self.t.shape[-1] != self.y.shape[-1]:
@@ -359,9 +379,12 @@ class TimeResponseData:
             self.nstates = self.x.shape[0]
 
             # Make sure the shape is OK
-            if multi_trace and \
-               (self.x.ndim != 3 or self.x.shape[1] != self.ntraces) or \
-               not multi_trace and self.x.ndim != 2:
+            if (
+                multi_trace
+                and (self.x.ndim != 3 or self.x.shape[1] != self.ntraces)
+                or not multi_trace
+                and self.x.ndim != 2
+            ):
                 raise ValueError("State vector is the wrong shape")
 
             # Make sure time dimension of state is the right length
@@ -369,8 +392,7 @@ class TimeResponseData:
                 raise ValueError("State vector does not match time vector")
 
         # Check and store labels, if present
-        self.state_labels = _process_labels(
-            state_labels, "state", self.nstates)
+        self.state_labels = _process_labels(state_labels, "state", self.nstates)
 
         #
         # Input vector (optional)
@@ -388,16 +410,13 @@ class TimeResponseData:
             self.plot_inputs = plot_inputs
 
             # Make sure the shape is OK and figure out the number of inputs
-            if multi_trace and self.u.ndim == 3 and \
-               self.u.shape[1] == self.ntraces:
+            if multi_trace and self.u.ndim == 3 and self.u.shape[1] == self.ntraces:
                 self.ninputs = self.u.shape[0]
 
-            elif multi_trace and self.u.ndim == 2 and \
-                 self.u.shape[0] == self.ntraces:
+            elif multi_trace and self.u.ndim == 2 and self.u.shape[0] == self.ntraces:
                 self.ninputs = 1
 
-            elif not multi_trace and self.u.ndim == 2 and \
-                 self.ntraces == 0:
+            elif not multi_trace and self.u.ndim == 2 and self.ntraces == 0:
                 self.ninputs = self.u.shape[0]
 
             elif not multi_trace and self.u.ndim == 1:
@@ -414,19 +433,17 @@ class TimeResponseData:
                 raise ValueError("Input vector does not match time vector")
 
         # Check and store labels, if present
-        self.input_labels = _process_labels(
-            input_labels, "input", self.ninputs)
+        self.input_labels = _process_labels(input_labels, "input", self.ninputs)
 
         # Check and store trace labels, if present
-        self.trace_labels = _process_labels(
-            trace_labels, "trace", self.ntraces)
+        self.trace_labels = _process_labels(trace_labels, "trace", self.ntraces)
         self.trace_types = trace_types
 
         # Figure out if the system is SISO
         if issiso is None:
             # Figure out based on the data
             if self.ninputs == 1:
-                issiso = (self.noutputs == 1)
+                issiso = self.noutputs == 1
             elif self.ninputs > 1:
                 issiso = False
             else:
@@ -489,25 +506,28 @@ class TimeResponseData:
         response = copy(self)
 
         # Update any keywords that we were passed
-        response.transpose = kwargs.pop('transpose', self.transpose)
-        response.squeeze = kwargs.pop('squeeze', self.squeeze)
-        response.return_x = kwargs.pop('return_x', self.return_x)
+        response.transpose = kwargs.pop("transpose", self.transpose)
+        response.squeeze = kwargs.pop("squeeze", self.squeeze)
+        response.return_x = kwargs.pop("return_x", self.return_x)
 
         # Check for new labels
-        input_labels = kwargs.pop('input_labels', None)
+        input_labels = kwargs.pop("input_labels", None)
         if input_labels is not None:
             response.input_labels = _process_labels(
-                input_labels, "input", response.ninputs)
+                input_labels, "input", response.ninputs
+            )
 
-        output_labels = kwargs.pop('output_labels', None)
+        output_labels = kwargs.pop("output_labels", None)
         if output_labels is not None:
             response.output_labels = _process_labels(
-                output_labels, "output", response.noutputs)
+                output_labels, "output", response.noutputs
+            )
 
-        state_labels = kwargs.pop('state_labels', None)
+        state_labels = kwargs.pop("state_labels", None)
         if state_labels is not None:
             response.state_labels = _process_labels(
-                state_labels, "state", response.nstates)
+                state_labels, "state", response.nstates
+            )
 
         # Make sure there were no extraneous keywords
         if kwargs:
@@ -517,7 +537,6 @@ class TimeResponseData:
 
     @property
     def time(self):
-
         """Time vector.
 
         Time values of the input/output response(s).
@@ -544,8 +563,8 @@ class TimeResponseData:
         """
         # TODO: move to __init__ to avoid recomputing each time?
         y = _process_time_response(
-            self.y, issiso=self.issiso,
-            transpose=self.transpose, squeeze=self.squeeze)
+            self.y, issiso=self.issiso, transpose=self.transpose, squeeze=self.squeeze
+        )
         return NamedSignal(y, self.output_labels, self.input_labels)
 
     # Getter for states (implements squeeze processing)
@@ -568,12 +587,16 @@ class TimeResponseData:
         """
         # TODO: move to __init__ to avoid recomputing each time?
         x = _process_time_response(
-            self.x, transpose=self.transpose,
-            squeeze=self.squeeze, issiso=False)
+            self.x, transpose=self.transpose, squeeze=self.squeeze, issiso=False
+        )
 
         # Special processing for SISO case: always retain state index
-        if self.issiso and self.ntraces == 1 and x.ndim == 3 and \
-             self.squeeze is not False:
+        if (
+            self.issiso
+            and self.ntraces == 1
+            and x.ndim == 3
+            and self.squeeze is not False
+        ):
             # Single-input, single-output system with single trace
             x = x[:, 0, :]
 
@@ -608,8 +631,8 @@ class TimeResponseData:
             return None
 
         u = _process_time_response(
-            self.u, issiso=self.issiso,
-            transpose=self.transpose, squeeze=self.squeeze)
+            self.u, issiso=self.issiso, transpose=self.transpose, squeeze=self.squeeze
+        )
         return NamedSignal(u, self.input_labels, self.input_labels)
 
     # Getter for legacy state (implements non-standard squeeze processing)
@@ -632,8 +655,12 @@ class TimeResponseData:
         if self.x is None:
             return None
 
-        elif self.ninputs == 1 and self.noutputs == 1 and \
-             self.ntraces == 1 and self.x.ndim == 3:
+        elif (
+            self.ninputs == 1
+            and self.noutputs == 1
+            and self.ntraces == 1
+            and self.x.ndim == 3
+        ):
             # Single-input, single-output system with single trace
             x = self.x[:, 0, :]
 
@@ -688,23 +715,32 @@ class TimeResponseData:
         import pandas
 
         # Create a dict for setting up the data frame
-        data = {'time': np.tile(
-            self.time, self.ntraces if self.ntraces > 0 else 1)}
+        data = {"time": np.tile(self.time, self.ntraces if self.ntraces > 0 else 1)}
         if self.ntraces > 0:
-            data['trace'] = np.hstack([
-                np.full(self.time.size, label) for label in self.trace_labels])
+            data["trace"] = np.hstack(
+                [np.full(self.time.size, label) for label in self.trace_labels]
+            )
         if self.ninputs > 0:
             data.update(
-                {name: self.u[i].reshape(-1)
-                 for i, name in enumerate(self.input_labels)})
+                {
+                    name: self.u[i].reshape(-1)
+                    for i, name in enumerate(self.input_labels)
+                }
+            )
         if self.noutputs > 0:
             data.update(
-                {name: self.y[i].reshape(-1)
-                 for i, name in enumerate(self.output_labels)})
+                {
+                    name: self.y[i].reshape(-1)
+                    for i, name in enumerate(self.output_labels)
+                }
+            )
         if self.nstates > 0:
             data.update(
-                {name: self.x[i].reshape(-1)
-                 for i, name in enumerate(self.state_labels)})
+                {
+                    name: self.x[i].reshape(-1)
+                    for i, name in enumerate(self.state_labels)
+                }
+            )
 
         return pandas.DataFrame(data)
 
@@ -727,6 +763,7 @@ class TimeResponseData:
 # objects.
 #
 
+
 class TimeResponseList(list):
     """List of TimeResponseData objects with plotting capability.
 
@@ -735,6 +772,7 @@ class TimeResponseList(list):
     plots the individual `TimeResponseData` objects.
 
     """
+
     def plot(self, *args, **kwargs):
         """Plot a list of time responses.
 
@@ -744,10 +782,9 @@ class TimeResponseList(list):
         from .ctrlplot import ControlPlot
 
         lines = None
-        label = kwargs.pop('label', [None] * len(self))
+        label = kwargs.pop("label", [None] * len(self))
         for i, response in enumerate(self):
-            cplt = TimeResponseData.plot(
-                response, *args, label=label[i], **kwargs)
+            cplt = TimeResponseData.plot(response, *args, label=label[i], **kwargs)
             if lines is None:
                 lines = cplt.lines
             else:
@@ -810,9 +847,9 @@ def _process_labels(labels, signal, length):
 
 
 # Helper function for checking array_like parameters
-def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
-                         transpose=False):
-
+def _check_convert_array(
+    in_obj, legal_shapes, err_msg_start, squeeze=False, transpose=False
+):
     """Helper function for checking array_like parameters.
 
     * Check type and shape of `in_obj`.
@@ -862,14 +899,17 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
     """
     # convert nearly everything to an array.
     out_array = np.asarray(in_obj)
-    if (transpose):
+    if transpose:
         out_array = np.transpose(out_array)
 
     # Test element data type, elements must be numbers
     legal_kinds = set(("i", "f", "c"))  # integer, float, complex
     if out_array.dtype.kind not in legal_kinds:
-        err_msg = "Wrong element data type: '{d}'. Array elements " \
-                  "must be numbers.".format(d=str(out_array.dtype))
+        err_msg = (
+            "Wrong element data type: '{d}'. Array elements must be numbers.".format(
+                d=str(out_array.dtype)
+            )
+        )
         raise TypeError(err_msg_start + err_msg)
 
     # If array is zero dimensional (in_obj is scalar):
@@ -880,7 +920,7 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
             if "any" in s_legal:
                 continue
             the_val = out_array[()]
-            out_array = np.empty(s_legal, 'd')
+            out_array = np.empty(s_legal, "d")
             out_array.fill(the_val)
             break
 
@@ -904,8 +944,9 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
             break
     else:
         legal_shape_str = " or ".join([str(s) for s in legal_shapes])
-        err_msg = "Wrong shape (rows, columns): {a}. Expected: {e}." \
-                  .format(e=legal_shape_str, a=str(out_array.shape))
+        err_msg = "Wrong shape (rows, columns): {a}. Expected: {e}.".format(
+            e=legal_shape_str, a=str(out_array.shape)
+        )
         raise ValueError(err_msg_start + err_msg)
 
     # Convert shape
@@ -920,10 +961,19 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
 
 # Forced response of a linear system
 def forced_response(
-        sysdata, timepts=None, inputs=0., initial_state=0., transpose=False,
-        params=None, interpolate=False, return_states=None, squeeze=None,
-        **kwargs):
+    sysdata,
+    timepts=None,
+    inputs=0.0,
+    initial_state=0.0,
+    transpose=False,
+    params=None,
+    interpolate=False,
+    return_states=None,
+    squeeze=None,
+    **kwargs,
+):
     from .delaylti import DelayLTI
+
     """Compute the output of a linear system given the input.
 
     As a convenience for parameters `U`, `X0`: Numbers (scalars) are
@@ -1042,12 +1092,14 @@ def forced_response(
 
     # Process keyword arguments
     _process_kwargs(kwargs, _timeresp_aliases)
-    T = _process_param('timepts', timepts, kwargs, _timeresp_aliases)
-    U = _process_param('inputs', inputs, kwargs, _timeresp_aliases, sigval=0.)
+    T = _process_param("timepts", timepts, kwargs, _timeresp_aliases)
+    U = _process_param("inputs", inputs, kwargs, _timeresp_aliases, sigval=0.0)
     X0 = _process_param(
-        'initial_state', initial_state, kwargs, _timeresp_aliases, sigval=0.)
+        "initial_state", initial_state, kwargs, _timeresp_aliases, sigval=0.0
+    )
     return_x = _process_param(
-        'return_states', return_states, kwargs, _timeresp_aliases, sigval=None)
+        "return_states", return_states, kwargs, _timeresp_aliases, sigval=None
+    )
 
     if kwargs:
         raise TypeError("unrecognized keyword(s): ", str(kwargs))
@@ -1056,10 +1108,19 @@ def forced_response(
     if isinstance(sysdata, (list, tuple)):
         responses = []
         for sys in sysdata:
-            responses.append(forced_response(
-                sys, T, inputs=U, initial_state=X0, transpose=transpose,
-                params=params, interpolate=interpolate,
-                return_states=return_x, squeeze=squeeze))
+            responses.append(
+                forced_response(
+                    sys,
+                    T,
+                    inputs=U,
+                    initial_state=X0,
+                    transpose=transpose,
+                    params=params,
+                    interpolate=interpolate,
+                    return_states=return_x,
+                    squeeze=squeeze,
+                )
+            )
         return TimeResponseList(responses)
     else:
         sys = sysdata
@@ -1067,42 +1128,62 @@ def forced_response(
     if not isinstance(sys, (StateSpace, TransferFunction, DelayLTI)):
         if isinstance(sys, NonlinearIOSystem):
             if interpolate:
-                warnings.warn(
-                    "interpolation not supported for nonlinear I/O systems")
+                warnings.warn("interpolation not supported for nonlinear I/O systems")
             return input_output_response(
-                sys, T, U, X0, params=params, transpose=transpose,
-                return_x=return_x, squeeze=squeeze)
+                sys,
+                T,
+                U,
+                X0,
+                params=params,
+                transpose=transpose,
+                return_x=return_x,
+                squeeze=squeeze,
+            )
         else:
-            raise TypeError('Parameter `sys`: must be a `StateSpace` or'
-                            ' `TransferFunction`)')
+            raise TypeError(
+                "Parameter `sys`: must be a `StateSpace` or `TransferFunction`)"
+            )
 
     # If return_x was not specified, figure out the default
     if return_x is None:
-        return_x = config.defaults['forced_response.return_x']
+        return_x = config.defaults["forced_response.return_x"]
 
     # If return_x is used for TransferFunction, issue a warning
     if return_x and isinstance(sys, TransferFunction):
         warnings.warn(
             "return_x specified for a transfer function system. Internal "
-            "conversion to state space used; results may meaningless.")
+            "conversion to state space used; results may meaningless."
+        )
 
     # If we are passed a transfer function and X0 is non-zero, warn the user
     if isinstance(sys, TransferFunction) and np.any(X0 != 0):
         warnings.warn(
             "Non-zero initial condition given for transfer function system. "
             "Internal conversion to state space used; may not be consistent "
-            "with given X0.")
+            "with given X0."
+        )
 
     if isinstance(sys, DelayLTI):
-        # step size must be small enough to ensure accuracy. 
+        # step size must be small enough to ensure accuracy.
         # Stiff problems may require very small step size or specific dde solver
         return dde_response(
-            sysdata, T=timepts, U=inputs, X0=initial_state, params=params,
-            transpose=transpose, return_x=return_states, squeeze=squeeze)
+            sysdata,
+            T=timepts,
+            U=inputs,
+            X0=initial_state,
+            params=params,
+            transpose=transpose,
+            return_x=return_states,
+            squeeze=squeeze,
+        )
     else:
         sys = _convert_to_statespace(sys)
-        A, B, C, D = np.asarray(sys.A), np.asarray(sys.B), np.asarray(sys.C), \
-            np.asarray(sys.D)
+        A, B, C, D = (
+            np.asarray(sys.A),
+            np.asarray(sys.B),
+            np.asarray(sys.C),
+            np.asarray(sys.D),
+        )
         # d_type = A.dtype
         n_states = A.shape[0]
         n_inputs = B.shape[1]
@@ -1118,48 +1199,55 @@ def forced_response(
         # Set and/or check time vector in discrete-time case
         if isdtime(sys):
             if T is None:
-                if U is None or (U.ndim == 0 and U == 0.):
-                    raise ValueError('Parameters `T` and `U` can\'t both be '
-                                    'zero for discrete-time simulation')
+                if U is None or (U.ndim == 0 and U == 0.0):
+                    raise ValueError(
+                        "Parameters `T` and `U` can't both be "
+                        "zero for discrete-time simulation"
+                    )
                 # Set T to equally spaced samples with same length as U
                 if U.ndim == 1:
                     n_steps = U.shape[0]
                 else:
                     n_steps = U.shape[1]
-                dt = 1. if sys.dt in [True, None] else sys.dt
+                dt = 1.0 if sys.dt in [True, None] else sys.dt
                 T = np.array(range(n_steps)) * dt
             else:
                 if U.ndim == 0:
                     U = np.full((n_inputs, T.shape[0]), U)
         else:
             if T is None:
-                raise ValueError('Parameter `T` is mandatory for continuous '
-                                'time systems.')
+                raise ValueError(
+                    "Parameter `T` is mandatory for continuous time systems."
+                )
 
         # Test if T has shape (n,) or (1, n);
-        T = _check_convert_array(T, [('any',), (1, 'any')],
-                                'Parameter `T`: ', squeeze=True,
-                                transpose=transpose)
+        T = _check_convert_array(
+            T,
+            [("any",), (1, "any")],
+            "Parameter `T`: ",
+            squeeze=True,
+            transpose=transpose,
+        )
 
-        n_steps = T.shape[0]            # number of simulation steps
+        n_steps = T.shape[0]  # number of simulation steps
 
         # equally spaced also implies strictly monotonic increase,
         dt = (T[-1] - T[0]) / (n_steps - 1)
         if not np.allclose(np.diff(T), dt):
-            raise ValueError("Parameter `T`: time values must be equally "
-                            "spaced.")
-        
+            raise ValueError("Parameter `T`: time values must be equally spaced.")
+
         # create X0 if not given, test if X0 has correct shape
-        X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
-                                'Parameter `X0`: ', squeeze=True)
+        X0 = _check_convert_array(
+            X0, [(n_states,), (n_states, 1)], "Parameter `X0`: ", squeeze=True
+        )
 
         # Test if U has correct shape and type
-        legal_shapes = [(n_steps,), (1, n_steps)] if n_inputs == 1 else \
-            [(n_inputs, n_steps)]
-        U = _check_convert_array(U, legal_shapes,
-                                'Parameter `U`: ', squeeze=False,
-                                transpose=transpose)
-
+        legal_shapes = (
+            [(n_steps,), (1, n_steps)] if n_inputs == 1 else [(n_inputs, n_steps)]
+        )
+        U = _check_convert_array(
+            U, legal_shapes, "Parameter `U`: ", squeeze=False, transpose=transpose
+        )
 
         xout = np.zeros((n_states, n_steps))
         xout[:, 0] = X0
@@ -1175,7 +1263,7 @@ def forced_response(
                 # Solve using matrix exponential
                 expAdt = sp.linalg.expm(A * dt)
                 for i in range(1, n_steps):
-                    xout[:, i] = expAdt @ xout[:, i-1]
+                    xout[:, i] = expAdt @ xout[:, i - 1]
                 yout = C @ xout
 
             # General algorithm that interpolates U in between output points
@@ -1194,23 +1282,30 @@ def forced_response(
                 #   [ u(dt) ] = exp [  0     0    I ] [  u0   ]
                 #   [u1 - u0]       [  0     0    0 ] [u1 - u0]
 
-                M = np.block([[A * dt, B * dt, np.zeros((n_states, n_inputs))],
-                            [np.zeros((n_inputs, n_states + n_inputs)),
-                            np.identity(n_inputs)],
-                            [np.zeros((n_inputs, n_states + 2 * n_inputs))]])
+                M = np.block(
+                    [
+                        [A * dt, B * dt, np.zeros((n_states, n_inputs))],
+                        [
+                            np.zeros((n_inputs, n_states + n_inputs)),
+                            np.identity(n_inputs),
+                        ],
+                        [np.zeros((n_inputs, n_states + 2 * n_inputs))],
+                    ]
+                )
                 expM = sp.linalg.expm(M)
                 Ad = expM[:n_states, :n_states]
-                Bd1 = expM[:n_states, n_states+n_inputs:]
-                Bd0 = expM[:n_states, n_states:n_states + n_inputs] - Bd1
-    
+                Bd1 = expM[:n_states, n_states + n_inputs :]
+                Bd0 = expM[:n_states, n_states : n_states + n_inputs] - Bd1
+
                 for i in range(1, n_steps):
-                    xout[:, i] = (Ad @ xout[:, i-1]
-                                + Bd0 @ U[:, i-1] + Bd1 @ U[:, i])
+                    xout[:, i] = Ad @ xout[:, i - 1] + Bd0 @ U[:, i - 1] + Bd1 @ U[:, i]
                     # debug print
                     if i < 10:
-                        print("dxdt = ", (Ad @ xout[:, i-1]
-                                + Bd0 @ U[:, i-1] + Bd1 @ U[:, i]))
-                        
+                        print(
+                            "dxdt = ",
+                            (Ad @ xout[:, i - 1] + Bd0 @ U[:, i - 1] + Bd1 @ U[:, i]),
+                        )
+
                 yout = C @ xout + D @ U
             tout = T
 
@@ -1230,10 +1325,10 @@ def forced_response(
 
                 # Now check to make sure it is a multiple (with check against
                 # sys.dt because floating point mod can have small errors
-                if not (np.isclose(dt % sys.dt, 0) or
-                        np.isclose(dt % sys.dt, sys.dt)):
-                    raise ValueError("Time steps `T` must be multiples of "
-                                    "sampling time")
+                if not (np.isclose(dt % sys.dt, 0) or np.isclose(dt % sys.dt, sys.dt)):
+                    raise ValueError(
+                        "Time steps `T` must be multiples of sampling time"
+                    )
                 sys_dt = sys.dt
 
                 # sp.signal.dlsim returns not enough samples if
@@ -1246,7 +1341,7 @@ def forced_response(
                     spT[-1] = spT[-1] * (n_steps / (spT[-1] / sys_dt + 1))
 
             else:
-                sys_dt = dt         # For unspecified sampling time, use time incr
+                sys_dt = dt  # For unspecified sampling time, use time incr
 
             # Discrete time simulation using signal processing toolbox
             dsys = (A, B, C, D, sys_dt)
@@ -1259,7 +1354,7 @@ def forced_response(
             if not interpolate:
                 # If dt is different from sys.dt, resample the output
                 inc = int(round(dt / sys_dt))
-                tout = T            # Return exact list of time steps
+                tout = T  # Return exact list of time steps
                 yout = yout[::inc, :]
                 xout = xout[::inc, :]
             else:
@@ -1271,25 +1366,27 @@ def forced_response(
             yout = np.transpose(yout)
 
     return TimeResponseData(
-        tout, yout, xout, U, 
-        params=params, 
+        tout,
+        yout,
+        xout,
+        U,
+        params=params,
         issiso=sys.issiso(),
-        output_labels=sys.output_labels, 
+        output_labels=sys.output_labels,
         input_labels=sys.input_labels,
-        state_labels=sys.state_labels, 
-        sysname=sys.name, 
+        state_labels=sys.state_labels,
+        sysname=sys.name,
         plot_inputs=True,
-        title="Forced response for " + sys.name, 
-        trace_types=['forced'],
-        transpose=transpose, 
-        return_x=return_x, 
-        squeeze=squeeze
+        title="Forced response for " + sys.name,
+        trace_types=["forced"],
+        transpose=transpose,
+        return_x=return_x,
+        squeeze=squeeze,
     )
 
 
 # Process time responses in a uniform way
-def _process_time_response(
-        signal, issiso=False, transpose=None, squeeze=None):
+def _process_time_response(signal, issiso=False, transpose=None, squeeze=None):
     """Process time response signals.
 
     This function processes the outputs (or inputs) of time response
@@ -1331,19 +1428,19 @@ def _process_time_response(
     """
     # If squeeze was not specified, figure out the default (might remain None)
     if squeeze is None:
-        squeeze = config.defaults['control.squeeze_time_response']
+        squeeze = config.defaults["control.squeeze_time_response"]
 
     # Figure out whether and how to squeeze output data
-    if squeeze is True:                 # squeeze all dimensions
+    if squeeze is True:  # squeeze all dimensions
         signal = np.squeeze(signal)
-    elif squeeze is False:              # squeeze no dimensions
+    elif squeeze is False:  # squeeze no dimensions
         pass
-    elif squeeze is None:               # squeeze signals if SISO
+    elif squeeze is None:  # squeeze signals if SISO
         if issiso:
             if signal.ndim == 3:
-                signal = signal[0][0]   # remove input and output
+                signal = signal[0][0]  # remove input and output
             else:
-                signal = signal[0]      # remove input
+                signal = signal[0]  # remove input
     else:
         raise ValueError("Unknown squeeze value")
 
@@ -1357,10 +1454,18 @@ def _process_time_response(
 
 
 def step_response(
-        sysdata, timepts=None, initial_state=0., input_indices=None,
-        output_indices=None, timepts_num=None, transpose=False,
-        return_states=False, squeeze=None, params=None,
-        **kwargs):
+    sysdata,
+    timepts=None,
+    initial_state=0.0,
+    input_indices=None,
+    output_indices=None,
+    timepts_num=None,
+    transpose=False,
+    return_states=False,
+    squeeze=None,
+    params=None,
+    **kwargs,
+):
     # pylint: disable=W0622
     """Compute the step response for a linear system.
 
@@ -1448,18 +1553,16 @@ def step_response(
 
     # Process keyword arguments
     _process_kwargs(kwargs, _timeresp_aliases)
-    T = _process_param('timepts', timepts, kwargs, _timeresp_aliases)
+    T = _process_param("timepts", timepts, kwargs, _timeresp_aliases)
     X0 = _process_param(
-        'initial_state', initial_state, kwargs, _timeresp_aliases, sigval=0.)
-    input = _process_param(
-        'input_indices', input_indices, kwargs, _timeresp_aliases)
-    output = _process_param(
-        'output_indices', output_indices, kwargs, _timeresp_aliases)
+        "initial_state", initial_state, kwargs, _timeresp_aliases, sigval=0.0
+    )
+    input = _process_param("input_indices", input_indices, kwargs, _timeresp_aliases)
+    output = _process_param("output_indices", output_indices, kwargs, _timeresp_aliases)
     return_x = _process_param(
-        'return_states', return_states, kwargs, _timeresp_aliases,
-        sigval=False)
-    T_num = _process_param(
-        'timepts_num', timepts_num, kwargs, _timeresp_aliases)
+        "return_states", return_states, kwargs, _timeresp_aliases, sigval=False
+    )
+    T_num = _process_param("timepts_num", timepts_num, kwargs, _timeresp_aliases)
 
     if kwargs:
         raise TypeError("unrecognized keyword(s): ", str(kwargs))
@@ -1475,11 +1578,20 @@ def step_response(
     if isinstance(sysdata, (list, tuple)):
         responses = []
         for sys in sysdata:
-            responses.append(step_response(
-                sys, T, initial_state=X0, input_indices=input,
-                output_indices=output, timepts_num=T_num,
-                transpose=transpose, return_states=return_x, squeeze=squeeze,
-                params=params))
+            responses.append(
+                step_response(
+                    sys,
+                    T,
+                    initial_state=X0,
+                    input_indices=input,
+                    output_indices=output,
+                    timepts_num=T_num,
+                    transpose=transpose,
+                    return_states=return_x,
+                    squeeze=squeeze,
+                    params=params,
+                )
+            )
         return TimeResponseList(responses)
     else:
         sys = sysdata
@@ -1489,11 +1601,12 @@ def step_response(
         warnings.warn(
             "Non-zero initial condition given for transfer function system. "
             "Internal conversion to state space used; may not be consistent "
-            "with given X0.")
+            "with given X0."
+        )
 
     # Convert to state space so that we can simulate
     if isinstance(sys, LTI) and sys.nstates is None:
-            sys = _convert_to_statespace(sys)
+        sys = _convert_to_statespace(sys)
 
     # Only single input and output are allowed for now
     if isinstance(input, (list, tuple)):
@@ -1526,18 +1639,24 @@ def step_response(
 
         # Save a label and type for this plot
         trace_labels.append(f"From {sys.input_labels[i]}")
-        trace_types.append('step')
+        trace_types.append("step")
 
         # Create a set of single inputs system for simulation
         U = np.zeros((sys.ninputs, T.size))
         U[i, :] = np.ones_like(T)
 
-        #print(U) 
+        # print(U)
 
-        response = forced_response(sys, T, U, X0, squeeze=True, params=params,)
+        response = forced_response(
+            sys,
+            T,
+            U,
+            X0,
+            squeeze=True,
+            params=params,
+        )
         inpidx = i if input is None else 0
-        yout[:, inpidx, :] = response.y if output is None \
-            else response.y[output]
+        yout[:, inpidx, :] = response.y if output is None else response.y[output]
         xout[:, inpidx, :] = response.x
         uout[:, inpidx, :] = U if input is None else U[i]
 
@@ -1545,24 +1664,40 @@ def step_response(
     issiso = sys.issiso() or (input is not None and output is not None)
 
     # Select only the given input and output, if any
-    input_labels = sys.input_labels if input is None \
-        else sys.input_labels[input]
-    output_labels = sys.output_labels if output is None \
-        else sys.output_labels[output]
+    input_labels = sys.input_labels if input is None else sys.input_labels[input]
+    output_labels = sys.output_labels if output is None else sys.output_labels[output]
 
     return TimeResponseData(
-        response.time, yout, xout, uout, issiso=issiso,
-        output_labels=output_labels, input_labels=input_labels,
-        state_labels=sys.state_labels, title="Step response for " + sys.name,
-        transpose=transpose, return_x=return_x, squeeze=squeeze,
-        sysname=sys.name, params=params, trace_labels=trace_labels,
-        trace_types=trace_types, plot_inputs=False)
+        response.time,
+        yout,
+        xout,
+        uout,
+        issiso=issiso,
+        output_labels=output_labels,
+        input_labels=input_labels,
+        state_labels=sys.state_labels,
+        title="Step response for " + sys.name,
+        transpose=transpose,
+        return_x=return_x,
+        squeeze=squeeze,
+        sysname=sys.name,
+        params=params,
+        trace_labels=trace_labels,
+        trace_types=trace_types,
+        plot_inputs=False,
+    )
 
 
 def step_info(
-        sysdata, timepts=None, timepts_num=None, final_output=None,
-        params=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1, 0.9),
-        **kwargs):
+    sysdata,
+    timepts=None,
+    timepts_num=None,
+    final_output=None,
+    params=None,
+    SettlingTimeThreshold=0.02,
+    RiseTimeLimits=(0.1, 0.9),
+    **kwargs,
+):
     """Step response characteristics (rise time, settling time, etc).
 
     Parameters
@@ -1662,18 +1797,17 @@ def step_info(
 
     # Process keyword arguments
     _process_kwargs(kwargs, _timeresp_aliases)
-    T = _process_param('timepts', timepts, kwargs, _timeresp_aliases)
-    T_num = _process_param(
-        'timepts_num', timepts_num, kwargs, _timeresp_aliases)
-    yfinal = _process_param(
-        'final_output', final_output, kwargs, _timeresp_aliases)
+    T = _process_param("timepts", timepts, kwargs, _timeresp_aliases)
+    T_num = _process_param("timepts_num", timepts_num, kwargs, _timeresp_aliases)
+    yfinal = _process_param("final_output", final_output, kwargs, _timeresp_aliases)
 
     if kwargs:
         raise TypeError("unrecognized keyword(s): ", str(kwargs))
 
     if isinstance(sysdata, (StateSpace, TransferFunction, NonlinearIOSystem)):
         T, Yout = step_response(
-            sysdata, T, timepts_num=T_num, squeeze=False, params=params)
+            sysdata, T, timepts_num=T_num, squeeze=False, params=params
+        )
         if yfinal:
             InfValues = np.atleast_2d(yfinal)
         else:
@@ -1683,9 +1817,11 @@ def step_info(
         ninputs = sysdata.ninputs
     else:
         # Time series of response data
-        errmsg = ("`sys` must be a LTI system, or time response data"
-                  " with a shape following the python-control"
-                  " time series data convention.")
+        errmsg = (
+            "`sys` must be a LTI system, or time response data"
+            " with a shape following the python-control"
+            " time series data convention."
+        )
         try:
             Yout = np.array(sysdata, dtype=float)
         except ValueError:
@@ -1698,8 +1834,9 @@ def step_info(
         else:
             raise ValueError(errmsg)
         if T is None or Yout.shape[2] != len(np.squeeze(T)):
-            raise ValueError("For time response data, a matching time vector"
-                             " must be given")
+            raise ValueError(
+                "For time response data, a matching time vector must be given"
+            )
         T = np.squeeze(T)
         noutputs = Yout.shape[0]
         ninputs = Yout.shape[1]
@@ -1729,17 +1866,19 @@ def step_info(
                 # RiseTime
                 tr_lower_index = np.nonzero(
                     sgnInf * (yout - RiseTimeLimits[0] * InfValue) >= 0
-                    )[0][0]
+                )[0][0]
                 tr_upper_index = np.nonzero(
                     sgnInf * (yout - RiseTimeLimits[1] * InfValue) >= 0
-                    )[0][0]
+                )[0][0]
                 rise_time = T[tr_upper_index] - T[tr_lower_index]
 
                 # SettlingTime
                 outside_threshold = np.nonzero(
-                    np.abs(yout/InfValue - 1) >= SettlingTimeThreshold)[0]
-                settled = 0 if outside_threshold.size == 0 \
-                    else outside_threshold[-1] + 1
+                    np.abs(yout / InfValue - 1) >= SettlingTimeThreshold
+                )[0]
+                settled = (
+                    0 if outside_threshold.size == 0 else outside_threshold[-1] + 1
+                )
                 # MIMO systems can have unsettled channels without infinite
                 # InfValue
                 if settled < len(T):
@@ -1752,7 +1891,7 @@ def step_info(
                 y_os = (sgnInf * yout).max()
                 dy_os = np.abs(y_os) - np.abs(InfValue)
                 if dy_os > 0:
-                    overshoot = np.abs(100. * dy_os / InfValue)
+                    overshoot = np.abs(100.0 * dy_os / InfValue)
                 else:
                     overshoot = 0
 
@@ -1760,7 +1899,7 @@ def step_info(
                 y_us_index = (sgnInf * yout).argmin()
                 y_us = yout[y_us_index]
                 if (sgnInf * y_us) < 0:
-                    undershoot = (-100. * y_us / InfValue)
+                    undershoot = -100.0 * y_us / InfValue
                 else:
                     undershoot = 0
 
@@ -1773,16 +1912,16 @@ def step_info(
                 steady_state_value = InfValue
 
             retij = {
-                'RiseTime': float(rise_time),
-                'SettlingTime': float(settling_time),
-                'SettlingMin': float(settling_min),
-                'SettlingMax': float(settling_max),
-                'Overshoot': float(overshoot),
-                'Undershoot': float(undershoot),
-                'Peak': float(peak_value),
-                'PeakTime': float(peak_time),
-                'SteadyStateValue': float(steady_state_value)
-                }
+                "RiseTime": float(rise_time),
+                "SettlingTime": float(settling_time),
+                "SettlingMin": float(settling_min),
+                "SettlingMax": float(settling_max),
+                "Overshoot": float(overshoot),
+                "Undershoot": float(undershoot),
+                "Peak": float(peak_value),
+                "PeakTime": float(peak_time),
+                "SteadyStateValue": float(steady_state_value),
+            }
             retrow.append(retij)
 
         ret.append(retrow)
@@ -1791,9 +1930,17 @@ def step_info(
 
 
 def initial_response(
-        sysdata, timepts=None, initial_state=0, output_indices=None,
-        timepts_num=None, params=None, transpose=False, return_states=False,
-        squeeze=None, **kwargs):
+    sysdata,
+    timepts=None,
+    initial_state=0,
+    output_indices=None,
+    timepts_num=None,
+    params=None,
+    transpose=False,
+    return_states=False,
+    squeeze=None,
+    **kwargs,
+):
     # pylint: disable=W0622
     """Compute the initial condition response for a linear system.
 
@@ -1864,16 +2011,15 @@ def initial_response(
     """
     # Process keyword arguments
     _process_kwargs(kwargs, _timeresp_aliases)
-    T = _process_param('timepts', timepts, kwargs, _timeresp_aliases)
+    T = _process_param("timepts", timepts, kwargs, _timeresp_aliases)
     X0 = _process_param(
-        'initial_state', initial_state, kwargs, _timeresp_aliases, sigval=0.)
-    output = _process_param(
-        'output_indices', output_indices, kwargs, _timeresp_aliases)
+        "initial_state", initial_state, kwargs, _timeresp_aliases, sigval=0.0
+    )
+    output = _process_param("output_indices", output_indices, kwargs, _timeresp_aliases)
     return_x = _process_param(
-        'return_states', return_states, kwargs, _timeresp_aliases,
-        sigval=False)
-    T_num = _process_param(
-        'timepts_num', timepts_num, kwargs, _timeresp_aliases)
+        "return_states", return_states, kwargs, _timeresp_aliases, sigval=False
+    )
+    T_num = _process_param("timepts_num", timepts_num, kwargs, _timeresp_aliases)
 
     if kwargs:
         raise TypeError("unrecognized keyword(s): ", str(kwargs))
@@ -1889,10 +2035,19 @@ def initial_response(
     if isinstance(sysdata, (list, tuple)):
         responses = []
         for sys in sysdata:
-            responses.append(initial_response(
-                sys, T, initial_state=X0, output_indices=output,
-                timepts_num=T_num, transpose=transpose,
-                return_states=return_x, squeeze=squeeze, params=params))
+            responses.append(
+                initial_response(
+                    sys,
+                    T,
+                    initial_state=X0,
+                    output_indices=output,
+                    timepts_num=T_num,
+                    transpose=transpose,
+                    return_states=return_x,
+                    squeeze=squeeze,
+                    params=params,
+                )
+            )
         return TimeResponseList(responses)
     else:
         sys = sysdata
@@ -1905,22 +2060,39 @@ def initial_response(
 
     # Select only the given output, if any
     yout = response.y if output is None else response.y[output]
-    output_labels = sys.output_labels if output is None \
-        else sys.output_labels[output]
+    output_labels = sys.output_labels if output is None else sys.output_labels[output]
 
     # Store the response without an input
     return TimeResponseData(
-        response.t, yout, response.x, None, params=params, issiso=issiso,
-        output_labels=output_labels, input_labels=None,
-        state_labels=sys.state_labels, sysname=sys.name,
-        title="Initial response for " + sys.name, trace_types=['initial'],
-        transpose=transpose, return_x=return_x, squeeze=squeeze)
+        response.t,
+        yout,
+        response.x,
+        None,
+        params=params,
+        issiso=issiso,
+        output_labels=output_labels,
+        input_labels=None,
+        state_labels=sys.state_labels,
+        sysname=sys.name,
+        title="Initial response for " + sys.name,
+        trace_types=["initial"],
+        transpose=transpose,
+        return_x=return_x,
+        squeeze=squeeze,
+    )
 
 
 def impulse_response(
-        sysdata, timepts=None, input_indices=None, output_indices=None,
-        timepts_num=None, transpose=False, return_states=False, squeeze=None,
-        **kwargs):
+    sysdata,
+    timepts=None,
+    input_indices=None,
+    output_indices=None,
+    timepts_num=None,
+    transpose=False,
+    return_states=False,
+    squeeze=None,
+    **kwargs,
+):
     # pylint: disable=W0622
     """Compute the impulse response for a linear system.
 
@@ -1998,16 +2170,13 @@ def impulse_response(
 
     # Process keyword arguments
     _process_kwargs(kwargs, _timeresp_aliases)
-    T = _process_param('timepts', timepts, kwargs, _timeresp_aliases)
-    input = _process_param(
-        'input_indices', input_indices, kwargs, _timeresp_aliases)
-    output = _process_param(
-        'output_indices', output_indices, kwargs, _timeresp_aliases)
+    T = _process_param("timepts", timepts, kwargs, _timeresp_aliases)
+    input = _process_param("input_indices", input_indices, kwargs, _timeresp_aliases)
+    output = _process_param("output_indices", output_indices, kwargs, _timeresp_aliases)
     return_x = _process_param(
-        'return_states', return_states, kwargs, _timeresp_aliases,
-        sigval=False)
-    T_num = _process_param(
-        'timepts_num', timepts_num, kwargs, _timeresp_aliases)
+        "return_states", return_states, kwargs, _timeresp_aliases, sigval=False
+    )
+    T_num = _process_param("timepts_num", timepts_num, kwargs, _timeresp_aliases)
 
     if kwargs:
         raise TypeError("unrecognized keyword(s): ", str(kwargs))
@@ -2023,9 +2192,18 @@ def impulse_response(
     if isinstance(sysdata, (list, tuple)):
         responses = []
         for sys in sysdata:
-            responses.append(impulse_response(
-                sys, T, input=input, output=output, T_num=T_num,
-                transpose=transpose, return_x=return_x, squeeze=squeeze))
+            responses.append(
+                impulse_response(
+                    sys,
+                    T,
+                    input=input,
+                    output=output,
+                    T_num=T_num,
+                    transpose=transpose,
+                    return_x=return_x,
+                    squeeze=squeeze,
+                )
+            )
         return TimeResponseList(responses)
     else:
         sys = sysdata
@@ -2040,10 +2218,12 @@ def impulse_response(
 
     # Check to make sure there is not a direct term
     if np.any(sys.D != 0) and isctime(sys):
-        warnings.warn("System has direct feedthrough: `D != 0`. The "
-                      "infinite impulse at `t=0` does not appear in the "
-                      "output.\n"
-                      "Results may be meaningless!")
+        warnings.warn(
+            "System has direct feedthrough: `D != 0`. The "
+            "infinite impulse at `t=0` does not appear in the "
+            "output.\n"
+            "Results may be meaningless!"
+        )
 
     # Only single input and output are allowed for now
     if isinstance(input, (list, tuple)):
@@ -2076,7 +2256,7 @@ def impulse_response(
 
         # Save a label for this plot
         trace_labels.append(f"From {sys.input_labels[i]}")
-        trace_types.append('impulse')
+        trace_types.append("impulse")
 
         #
         # Compute new X0 that contains the impulse
@@ -2091,15 +2271,14 @@ def impulse_response(
         else:
             X0 = 0
             U = np.zeros((sys.ninputs, T.size))
-            U[i, 0] = 1./sys.dt         # unit area impulse
+            U[i, 0] = 1.0 / sys.dt  # unit area impulse
 
         # Simulate the impulse response for this input
         response = forced_response(sys, T, U, X0)
 
         # Store the output (and states)
         inpidx = i if input is None else 0
-        yout[:, inpidx, :] = response.y if output is None \
-            else response.y[output]
+        yout[:, inpidx, :] = response.y if output is None else response.y[output]
         xout[:, inpidx, :] = response.x
         uout[:, inpidx, :] = U if input is None else U[i]
 
@@ -2107,18 +2286,27 @@ def impulse_response(
     issiso = sys.issiso() or (input is not None and output is not None)
 
     # Select only the given input and output, if any
-    input_labels = sys.input_labels if input is None \
-        else sys.input_labels[input]
-    output_labels = sys.output_labels if output is None \
-        else sys.output_labels[output]
+    input_labels = sys.input_labels if input is None else sys.input_labels[input]
+    output_labels = sys.output_labels if output is None else sys.output_labels[output]
 
     return TimeResponseData(
-        response.time, yout, xout, uout, issiso=issiso,
-        output_labels=output_labels, input_labels=input_labels,
-        state_labels=sys.state_labels, trace_labels=trace_labels,
-        trace_types=trace_types, title="Impulse response for " + sys.name,
-        sysname=sys.name, plot_inputs=False, transpose=transpose,
-        return_x=return_x, squeeze=squeeze)
+        response.time,
+        yout,
+        xout,
+        uout,
+        issiso=issiso,
+        output_labels=output_labels,
+        input_labels=input_labels,
+        state_labels=sys.state_labels,
+        trace_labels=trace_labels,
+        trace_types=trace_types,
+        title="Impulse response for " + sys.name,
+        sysname=sys.name,
+        plot_inputs=False,
+        transpose=transpose,
+        return_x=return_x,
+        squeeze=squeeze,
+    )
 
 
 # utility function to find time period and time increment using pole locations
@@ -2169,14 +2357,13 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
 
     """
     from .statesp import _convert_to_statespace
-    from .delaylti import DelayLTI
 
-    sqrt_eps = np.sqrt(np.spacing(1.))
-    default_tfinal = 5                  # Default simulation horizon
+    sqrt_eps = np.sqrt(np.spacing(1.0))
+    default_tfinal = 5  # Default simulation horizon
     default_dt = 0.1
-    total_cycles = 5                    # Number cycles for oscillating modes
-    pts_per_cycle = 25                  # Number points divide period of osc
-    log_decay_percent = np.log(1000)    # Reduction factor for real pole decays
+    total_cycles = 5  # Number cycles for oscillating modes
+    pts_per_cycle = 25  # Number points divide period of osc
+    log_decay_percent = np.log(1000)  # Reduction factor for real pole decays
 
     if sys._isstatic():
         tfinal = default_tfinal
@@ -2188,13 +2375,12 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         p = eigvals(A)
         # Array Masks
         # unstable
-        m_u = (np.abs(p) >= 1 + sqrt_eps)
+        m_u = np.abs(p) >= 1 + sqrt_eps
         p_u, p = p[m_u], p[~m_u]
         if p_u.size > 0:
             m_u = (p_u.real < 0) & (np.abs(p_u.imag) < sqrt_eps)
             if np.any(~m_u):
-                t_emp = np.max(
-                    log_decay_percent / np.abs(np.log(p_u[~m_u]) / dt))
+                t_emp = np.max(log_decay_percent / np.abs(np.log(p_u[~m_u]) / dt))
                 tfinal = max(tfinal, t_emp)
 
         # zero - negligible effect on tfinal
@@ -2204,25 +2390,25 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         m_nr = (p.real < 0) & (np.abs(p.imag) < sqrt_eps)
         p_nr, p = p[m_nr], p[~m_nr]
         if p_nr.size > 0:
-            t_emp = np.max(log_decay_percent / np.abs((np.log(p_nr)/dt).real))
+            t_emp = np.max(log_decay_percent / np.abs((np.log(p_nr) / dt).real))
             tfinal = max(tfinal, t_emp)
         # discrete integrators
         m_int = (p.real - 1 < sqrt_eps) & (np.abs(p.imag) < sqrt_eps)
         p_int, p = p[m_int], p[~m_int]
         # pure oscillatory modes
-        m_w = (np.abs(np.abs(p) - 1) < sqrt_eps)
+        m_w = np.abs(np.abs(p) - 1) < sqrt_eps
         p_w, p = p[m_w], p[~m_w]
         if p_w.size > 0:
-            t_emp = total_cycles * 2 * np.pi / np.abs(np.log(p_w)/dt).min()
+            t_emp = total_cycles * 2 * np.pi / np.abs(np.log(p_w) / dt).min()
             tfinal = max(tfinal, t_emp)
 
         if p.size > 0:
-            t_emp = log_decay_percent / np.abs((np.log(p)/dt).real).min()
+            t_emp = log_decay_percent / np.abs((np.log(p) / dt).real).min()
             tfinal = max(tfinal, t_emp)
 
         if p_int.size > 0:
             tfinal = tfinal * 5
-    else:       # cont time
+    else:  # cont time
         sys_ss = _convert_to_statespace(sys)
         # Improve conditioning via balancing and zeroing tiny entries
         # See <w,v> for [[1,2,0], [9,1,0.01], [1,2,10*np.pi]]
@@ -2232,10 +2418,10 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         # Reciprocal of inner product <w,v> for each eigval, (bound the
         #   ~infs by 1e12)
         # G = Transfer([1], [1,0,1]) gives zero sensitivity (bound by 1e-12)
-        eig_sens = np.reciprocal(maximum(1e-12, einsum('ij,ij->j', l, r).real))
+        eig_sens = np.reciprocal(maximum(1e-12, einsum("ij,ij->j", l, r).real))
         eig_sens = minimum(1e12, eig_sens)
         # Tolerances
-        p[np.abs(p) < np.spacing(eig_sens * norm(b, 1))] = 0.
+        p[np.abs(p) < np.spacing(eig_sens * norm(b, 1))] = 0.0
         # Incorporate balancing to outer factors
         l[perm, :] *= np.reciprocal(sca)[:, None]
         r[perm, :] *= sca[:, None]
@@ -2244,29 +2430,29 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         origin = False
         # Computing the "size" of the response of each simple mode
         wn = np.abs(p)
-        if np.any(wn == 0.):
+        if np.any(wn == 0.0):
             origin = True
 
         dc = np.zeros_like(p, dtype=float)
         # well-conditioned nonzero poles, np.abs just in case
-        ok = np.abs(eig_sens) <= 1/sqrt_eps
+        ok = np.abs(eig_sens) <= 1 / sqrt_eps
         # the averaged t->inf response of each simple eigval on each i/o
         # channel. See, A = [[-1, k], [0, -2]], response sizes are
         # k-dependent (that is R/L eigenvector dependent)
-        dc[ok] = norm(v[ok, :], axis=1)*norm(w[:, ok], axis=0)*eig_sens[ok]
-        dc[wn != 0.] /= wn[wn != 0] if is_step else 1.
-        dc[wn == 0.] = 0.
+        dc[ok] = norm(v[ok, :], axis=1) * norm(w[:, ok], axis=0) * eig_sens[ok]
+        dc[wn != 0.0] /= wn[wn != 0] if is_step else 1.0
+        dc[wn == 0.0] = 0.0
         # double the oscillating mode magnitude for the conjugate
-        dc[p.imag != 0.] *= 2
+        dc[p.imag != 0.0] *= 2
 
         # Now get rid of noncontributing integrators and simple modes if any
-        relevance = (dc > 0.1*dc.max()) | ~ok
+        relevance = (dc > 0.1 * dc.max()) | ~ok
         psub = p[relevance]
         wnsub = wn[relevance]
 
         tfinal, dt = [], []
-        ints = wnsub == 0.
-        iw = (psub.imag != 0.) & (np.abs(psub.real) <= sqrt_eps)
+        ints = wnsub == 0.0
+        iw = (psub.imag != 0.0) & (np.abs(psub.real) <= sqrt_eps)
 
         # Pure imaginary?
         if np.any(iw):
@@ -2276,15 +2462,14 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         texp_mode = log_decay_percent / np.abs(psub[~iw & ~ints].real)
         tfinal += texp_mode.tolist()
         dt += minimum(
-            texp_mode / 50,
-            (2 * np.pi / pts_per_cycle / wnsub[~iw & ~ints])
+            texp_mode / 50, (2 * np.pi / pts_per_cycle / wnsub[~iw & ~ints])
         ).tolist()
 
         # All integrators?
         if len(tfinal) == 0:
-            return default_tfinal*5, default_dt*5
+            return default_tfinal * 5, default_dt * 5
 
-        tfinal = np.max(tfinal)*(5 if origin else 1)
+        tfinal = np.max(tfinal) * (5 if origin else 1)
         dt = np.min(dt)
 
     return tfinal, dt
@@ -2292,14 +2477,13 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
 
 def _default_time_vector(sysdata, N=None, tfinal=None, is_step=True):
     """Returns a time vector that has a reasonable number of points.
-    if system is discrete time, N is ignored """
+    if system is discrete time, N is ignored"""
     from .lti import LTI
 
     if isinstance(sysdata, (list, tuple)):
         tfinal_max = N_max = 0
         for sys in sysdata:
-            timevec = _default_time_vector(
-                sys, N=N, tfinal=tfinal, is_step=is_step)
+            timevec = _default_time_vector(sys, N=N, tfinal=tfinal, is_step=is_step)
             tfinal_max = max(tfinal_max, timevec[-1])
             N_max = max(N_max, timevec.size)
         return np.linspace(0, tfinal_max, N_max, endpoint=True)
@@ -2309,19 +2493,18 @@ def _default_time_vector(sysdata, N=None, tfinal=None, is_step=True):
     # For non-LTI system, need tfinal
     if not isinstance(sys, LTI):
         if tfinal is None:
-            raise ValueError(
-                "can't automatically compute T for non-LTI system")
+            raise ValueError("can't automatically compute T for non-LTI system")
         elif isinstance(tfinal, (int, float, np.number)):
             if N is None:
                 return np.linspace(0, tfinal)
             else:
                 return np.linspace(0, tfinal, N)
         else:
-            return tfinal       # Assume we got passed something appropriate
+            return tfinal  # Assume we got passed something appropriate
 
     N_max = 5000
-    N_min_ct = 100    # min points for cont time systems
-    N_min_dt = 20     # more common to see just a few samples in discrete time
+    N_min_ct = 100  # min points for cont time systems
+    N_min_dt = 20  # more common to see just a few samples in discrete time
 
     ideal_tfinal, ideal_dt = _ideal_tfinal_and_dt(sys, is_step=is_step)
 
@@ -2330,17 +2513,17 @@ def _default_time_vector(sysdata, N=None, tfinal=None, is_step=True):
         if tfinal is None:
             # for discrete time, change from ideal_tfinal if N too large/small
             # [N_min, N_max]
-            N = int(np.clip(np.ceil(ideal_tfinal/sys.dt)+1, N_min_dt, N_max))
-            tfinal = sys.dt * (N-1)
+            N = int(np.clip(np.ceil(ideal_tfinal / sys.dt) + 1, N_min_dt, N_max))
+            tfinal = sys.dt * (N - 1)
         else:
-            N = int(np.ceil(tfinal/sys.dt)) + 1
-            tfinal = sys.dt * (N-1)  # make tfinal integer multiple of sys.dt
+            N = int(np.ceil(tfinal / sys.dt)) + 1
+            tfinal = sys.dt * (N - 1)  # make tfinal integer multiple of sys.dt
     else:
         if tfinal is None:
             # for continuous time, simulate to ideal_tfinal but limit N
             tfinal = ideal_tfinal
         if N is None:
             # [N_min, N_max]
-            N = int(np.clip(np.ceil(tfinal/ideal_dt)+1, N_min_ct, N_max))
+            N = int(np.clip(np.ceil(tfinal / ideal_dt) + 1, N_min_ct, N_max))
 
     return np.linspace(0, tfinal, N, endpoint=True)
