@@ -45,3 +45,6 @@ venv.bak/
 
 # Files for MacOS
 .DS_Store
+
+# tests files
+control/julia/test.ipynb

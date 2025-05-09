@@ -2,13 +2,9 @@ import numpy as np
 import pytest
 import matplotlib.pyplot as plt
 
-from control.dde import *
 from control.xferfcn import tf
-
-from control.delaylti import (
-    delay, tf2dlti, exp, hcat, vcat, mimo_delay, ss2dlti
-)
-from control.julia.utils import julia_json, assert_delayLTI
+from control.delaylti import delay, exp, mimo_delay
+from control.julia.utils import julia_json
 
 s = tf('s')
 
@@ -76,6 +72,7 @@ class TestTimeResp:
         import matplotlib.pyplot as plt
         timepts = np.linspace(0, 100, 1001)
         step = step_response(wood_berry, timepts=timepts)
+        print(step.y[0].shape)
 
         plot = True
         if plot:
@@ -84,12 +81,14 @@ class TestTimeResp:
             plt.plot(step.y[1][0] - julia_json["TestTimeResp"]["test_mimo_step_response"]["y21"])
             plt.plot(step.y[0][1] - julia_json["TestTimeResp"]["test_mimo_step_response"]["y12"])
             plt.plot(step.y[1][1] - julia_json["TestTimeResp"]["test_mimo_step_response"]["y22"])
+            plt.title("Step response")
             plt.show()
 
-        assert np.allclose(step.y[0][0], julia_json["TestTimeResp"]["test_mimo_step_response"]["y11"], atol=1e-3)
-        assert np.allclose(step.y[0][1], julia_json["TestTimeResp"]["test_mimo_step_response"]["y12"], atol=1e-3)
-        assert np.allclose(step.y[1][1], julia_json["TestTimeResp"]["test_mimo_step_response"]["y22"], atol=1e-3)
-        assert np.allclose(step.y[1][0], julia_json["TestTimeResp"]["test_mimo_step_response"]["y21"], atol=1e-3)
+        # Precision is currently between 1e-5 and 1e-6 compared to julia solver for mimo
+        assert np.allclose(step.y[0][0], julia_json["TestTimeResp"]["test_mimo_step_response"]["y11"], atol=1e-5)
+        assert np.allclose(step.y[0][1], julia_json["TestTimeResp"]["test_mimo_step_response"]["y12"], atol=1e-5)
+        assert np.allclose(step.y[1][1], julia_json["TestTimeResp"]["test_mimo_step_response"]["y22"], atol=1e-5)
+        assert np.allclose(step.y[1][0], julia_json["TestTimeResp"]["test_mimo_step_response"]["y21"], atol=1e-5)
         
     def test_forced_response(self, delay_siso_tf, simple_siso_tf, plot=False):
         from control.timeresp import forced_response
@@ -106,6 +105,7 @@ class TestTimeResp:
                 count += 1
 
         # Optionally, inspect the plot:
+        #plot = True
         if plot:
             plt.figure()
             plt.plot(resp.t, inputs, label="input")
@@ -123,6 +123,42 @@ class TestTimeResp:
 
     def test_mimo_forced_response(self, wood_berry, plot=False):
         from control.timeresp import forced_response
-        timepts = np.linspace(0, 100, 1001)
-        pass
+        timepts = np.linspace(0, 100, 10001)
+        inputs = np.array([np.sin(timepts), np.cos(timepts)])
+        resp = forced_response(wood_berry, timepts=timepts, inputs=inputs)
+
+        resp_wb_11 = forced_response(12.8 / (16.7 * s + 1), timepts=timepts, inputs=inputs[0])
+        resp_wb_12 = forced_response(-18.9 / (21.0 * s + 1), timepts=timepts, inputs=inputs[1])
+        resp_wb_21 = forced_response(6.6 / (10.9 * s + 1), timepts=timepts, inputs=inputs[0])
+        resp_wb_22 = forced_response(-19.4 / (14.4 * s + 1), timepts=timepts, inputs=inputs[1])
+        
+        hand_delayed_resp_y1 = np.zeros_like(resp.y[0])
+        hand_delayed_resp_y2 = np.zeros_like(resp.y[1])
+        count11 = 0
+        count12 = 0
+        count21 = 0
+        count22 = 0
+        for i, t in enumerate(resp.t):
+            if t >= 1:
+                hand_delayed_resp_y1[i] = resp_wb_11.y[0][count11]
+                count11 += 1
+                if t >= 3:
+                    hand_delayed_resp_y1[i] += resp_wb_12.y[0][count12]
+                    count12 += 1
+                    hand_delayed_resp_y2[i] += resp_wb_22.y[0][count22]
+                    count22 += 1
+                    if t >= 7:
+                        hand_delayed_resp_y2[i] += resp_wb_21.y[0][count21]
+                        count21 += 1
+        #plot = True     
+        if plot:          
+            plt.figure()
+            plt.plot(resp.t, resp.y[0] - hand_delayed_resp_y1, label="y1 - hand y1")
+            plt.plot(resp.t, resp.y[1] - hand_delayed_resp_y2, label="y2 - hand y2")
+
+            plt.legend()
+            plt.show()
+
+        assert np.allclose(resp.y[0], hand_delayed_resp_y1, atol=1e-5)
+        assert np.allclose(resp.y[1], hand_delayed_resp_y2, atol=1e-5)
 

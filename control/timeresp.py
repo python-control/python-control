@@ -1532,7 +1532,7 @@ def step_response(
         U = np.zeros((sys.ninputs, T.size))
         U[i, :] = np.ones_like(T)
 
-        #print(U)
+        #print(U) 
 
         response = forced_response(sys, T, U, X0, squeeze=True, params=params,)
         inpidx = i if input is None else 0

@@ -166,6 +166,11 @@ function test_step_response(tf, t)
     return step(tf, t).y
 end
 
+function test_forced_response(tf, u, t, x0)
+    # TO BE IMPLEMENTED
+    #return lsim(tf, u, t, x0=x0)
+end
+
 function main()
     """
     Main function to compute and export test results.
@@ -223,6 +228,13 @@ function main()
             "y12" => test_step_response(wood_berry, 0:0.1:100)[1, :, 2],
             "y21" => test_step_response(wood_berry, 0:0.1:100)[2, :, 1],
             "y22" => test_step_response(wood_berry, 0:0.1:100)[2, :, 2]
+        ),
+        # TO BE IMPLEMENTED
+        "test_mimo_forced_response" => Dict(
+            "y11" => test_forced_response(wood_berry, ones(100), 0:0.1:100, [0, 0])[1, :, 1],
+            "y12" => test_forced_response(wood_berry, ones(100), 0:0.1:100, [0, 0])[1, :, 2],
+            "y21" => test_forced_response(wood_berry, ones(100), 0:0.1:100, [0, 0])[2, :, 1],
+            "y22" => test_forced_response(wood_berry, ones(100), 0:0.1:100, [0, 0])[2, :, 2]
         )
     )
 

@@ -96,7 +96,7 @@ def dde_response(delay_sys, T, U=0, X0=0, params=None,
     xout[:, 0] = X0
     yout = np.zeros((n_outputs, n_steps))
     tout = T
-    xout, yout = solve_dde_mos(delay_sys, T, U, X0, dt)
+    xout, yout = solve_dde(delay_sys, T, U, X0, dt)
 
     return TimeResponseData(
         tout, yout, xout, U, 
@@ -119,14 +119,10 @@ def pchip_interp_u(T, U):
     if np.ndim(U) == 1:
         return np.array([negative_wrapper(PchipInterpolator(T, U))])
     elif np.ndim(U) == 0:
-        print("U is a scalar !")
         return U
     else:
         return np.array([negative_wrapper(PchipInterpolator(T, ui)) for ui in U])
     
-    
-
-
 
 class DdeHistory:
     """
@@ -169,7 +165,7 @@ class DdeHistory:
             return np.zeros_like(self.last_state) # Deal with first call 
 
 
-def dde_wrapper_mos(t, x, A, B1, B2, C2, D21, tau_list, u_func, history_x):
+def dde_wrapper(t, x, A, B1, B2, C2, D21, tau_list, u_func, history_x):
     """
     Wrapper function for DDE solver using scipy's solve_ivp.
 
@@ -181,7 +177,6 @@ def dde_wrapper_mos(t, x, A, B1, B2, C2, D21, tau_list, u_func, history_x):
 
     dx/dt = A @ x + B1 @ u(t) + B2 @ z(t - tau)
     """
-    #print(t)
     z_delayed = []
     for i,tau in enumerate(tau_list):
         u_delayed = np.array([u_func[i](t - tau) for i in range(len(u_func))])
@@ -194,9 +189,9 @@ def dde_wrapper_mos(t, x, A, B1, B2, C2, D21, tau_list, u_func, history_x):
     return dxdt.flatten()
 
 
-def solve_dde_mos(delay_sys, T, U, X0, dt):
+def solve_dde(delay_sys, T, U, X0, dt):
     """
-    Method using MOS solver.
+    Solving delay differential equation using Method Of Steps.
     
     Parameters
     ----------
@@ -209,10 +204,8 @@ def solve_dde_mos(delay_sys, T, U, X0, dt):
         Input array giving input at each time in `T`.
     X0 : array_like or float, default=0.
         Initial condition.
-    xout : array_like
-        Array to store the state vector at each time step.
-    yout : array_like
-        Array to store the output vector at each time step.
+    dt : float
+        Time step for the integration.
 
     Returns
     -------
@@ -239,7 +232,6 @@ def solve_dde_mos(delay_sys, T, U, X0, dt):
     
     # TODO: handle discontinuity propagation
     discontinuity_times = set(tau_list)
-    print("discontinuity times:", discontinuity_times)
     while current_t < tf:
         t_stop = min(discontinuity_times) if discontinuity_times else tf
         if not np.isclose(t_stop, tf):
@@ -248,19 +240,18 @@ def solve_dde_mos(delay_sys, T, U, X0, dt):
 
         print("Integrate bewtween ", current_t, " and ", t_stop)
         sol_segment = solve_ivp(
-            fun = dde_wrapper_mos,
+            fun = dde_wrapper,
             t_span=(current_t, t_stop),
             t_eval=local_t_eval,
             y0=current_x,
             method='LSODA',
             dense_output=True,
             args=(A, B1, B2, C2, D21, tau_list, u_func, history_x),
-            max_step=dt,
+            rtol=1e-9, atol=1e-12
         )
 
         # --- Update History and Store Results ---
         history_x.add_segment(sol_segment)
-        print(history_x)
         segment_ts = sol_segment.t
         segment_xs = sol_segment.y
 
@@ -286,6 +277,5 @@ def solve_dde_mos(delay_sys, T, U, X0, dt):
     z_delayed = np.array(z_delayed)
     u_current = np.array(u_current)
     
-
     solution_ys = C1 @ solution_xs.T + D11 @ u_current.T + D12 @ z_delayed.T
     return solution_xs.T, solution_ys
