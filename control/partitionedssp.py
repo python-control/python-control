@@ -1,3 +1,14 @@
+# partitionedssp.py - PartitionedStateSpace class and functions
+# for Partitioned state-space systems
+
+"""PartitionedStateSpace class
+and functions for Partitioned state-space systems
+
+This module contains the PartitionedStateSpace class and
+functions for creating and manipulating partitioned state-space systems.
+This class is needed to handle systems with time delays (delayLTI class).
+"""
+
 import numpy as np
 from scipy.linalg import block_diag, solve
 
@@ -108,8 +119,10 @@ class PartitionedStateSpace:
         self.noutputs_total = sys.noutputs
         self.ninputs_total = sys.ninputs
 
-        self.nu2 = self.ninputs_total - self.nu1  # Dimension of external input w
-        self.ny2 = self.noutputs_total - self.ny1  # Dimension of external output z
+        # Dimension of external input w
+        self.nu2 = self.ninputs_total - self.nu1
+        # Dimension of external output z
+        self.ny2 = self.noutputs_total - self.ny1
 
     @property
     def B1(self):
@@ -117,7 +130,7 @@ class PartitionedStateSpace:
 
     @property
     def B2(self):
-        return self.B[:, self.nu1 :]
+        return self.B[:, self.nu1:]
 
     @property
     def C1(self):
@@ -125,7 +138,7 @@ class PartitionedStateSpace:
 
     @property
     def C2(self):
-        return self.C[self.ny1 :, :]
+        return self.C[self.ny1:, :]
 
     @property
     def D11(self):
@@ -133,15 +146,15 @@ class PartitionedStateSpace:
 
     @property
     def D12(self):
-        return self.D[: self.ny1, self.nu1 :]
+        return self.D[: self.ny1, self.nu1:]
 
     @property
     def D21(self):
-        return self.D[self.ny1 :, : self.nu1]
+        return self.D[self.ny1:, : self.nu1]
 
     @property
     def D22(self):
-        return self.D[self.ny1 :, self.nu1 :]
+        return self.D[self.ny1:, self.nu1:]
 
     @classmethod
     def from_matrices(cls, A, B1, B2, C1, C2, D11, D12, D21, D22):
@@ -160,13 +173,18 @@ class PartitionedStateSpace:
         C2 : array_like
             The output matrix for delayed outputs.
         D11 : array_like
-            The direct feedthrough matrix for external inputs to external outputs.
+            The direct feedthrough matrix for external inputs
+            to external outputs.
         D12 : array_like
-            The direct feedthrough matrix for delayed inputs to external outputs.
+            The direct feedthrough matrix for delayed inputs
+            to external outputs.
         D21 : array_like
-            The direct feedthrough matrix for external inputs to delayed outputs.
+            The direct feedthrough matrix for external inputs
+            to delayed outputs.
         D22 : array_like
-            The direct feedthrough matrix for delayed inputs to delayed outputs.
+            The direct feedthrough matrix for delayed inputs
+            to delayed outputs (should be zeros for
+            delay LTI).
 
         Returns
         -------
@@ -259,7 +277,9 @@ class PartitionedStateSpace:
         D = np.block([[D11, D12], [D21, D22]])
 
         P = ss(A, B, C, D)
-        return PartitionedStateSpace(P, self.nu1 + other.nu1, self.ny1 + other.ny1)
+        return PartitionedStateSpace(
+            P, self.nu1 + other.nu1, self.ny1 + other.ny1
+        )
 
     def __mul__(self, other):
         """Multiply two PartitionedStateSpace systems.
@@ -292,16 +312,32 @@ class PartitionedStateSpace:
 
         B = np.block(
             [
-                [self.B1 @ other.D11, self.B2, self.B1 @ other.D12],
-                [other.B1, np.zeros((other.B2.shape[0], self.B2.shape[1])), other.B2],
+                [
+                    self.B1 @ other.D11,
+                    self.B2, self.B1 @ other.D12
+                ],
+                [
+                    other.B1,
+                    np.zeros((other.B2.shape[0], self.B2.shape[1])),
+                    other.B2
+                ]
             ]
         )
 
         C = np.block(
             [
-                [self.C1, self.D11 @ other.C1],
-                [self.C2, self.D21 @ other.C1],
-                [np.zeros((other.C2.shape[0], self.C2.shape[1])), other.C2],
+                [
+                    self.C1,
+                    self.D11 @ other.C1,
+                ],
+                [
+                    self.C2,
+                    self.D21 @ other.C1
+                ],
+                [
+                    np.zeros((other.C2.shape[0], self.C2.shape[1])),
+                    other.C2
+                ]
             ]
         )
 
@@ -350,19 +386,20 @@ class PartitionedStateSpace:
         """
 
         if not isinstance(other, PartitionedStateSpace):
-            raise TypeError(
-                "Feedback connection only defined for PartitionedStateSpace objects."
-            )
+            raise TypeError("Feedback connection only defined\
+                            for PartitionedStateSpace objects.")
 
         # Pre-calculate repeated inverses
         I_self = np.eye(self.D11.shape[0])
         I_other = np.eye(other.D11.shape[0])
 
         X_11 = solve(
-            I_other + other.D11 @ self.D11, np.hstack((-other.D11 @ self.C1, -other.C1))
+            I_other + other.D11 @ self.D11,
+            np.hstack((-other.D11 @ self.C1, -other.C1))
         )
         X_21 = solve(
-            I_self + self.D11 @ other.D11, np.hstack((self.C1, -self.D11 @ other.C1))
+            I_self + self.D11 @ other.D11,
+            np.hstack((self.C1, -self.D11 @ other.C1))
         )
 
         X_12 = solve(
@@ -374,43 +411,38 @@ class PartitionedStateSpace:
             np.hstack((self.D11, self.D12, -self.D11 @ other.D12)),
         )
 
-        A_new = np.vstack((self.B1 @ X_11, other.B1 @ X_21)) + block_diag(
-            self.A, other.A
-        )
+        A_new = np.vstack((self.B1 @ X_11, other.B1 @ X_21)) + \
+            block_diag(self.A, other.A)
 
         B_new = np.vstack((self.B1 @ X_12, other.B1 @ X_22))
         tmp = block_diag(self.B2, other.B2)
-        B_new[:, -tmp.shape[1] :] += tmp
+        B_new[:, -tmp.shape[1]:] += tmp
 
-        C_new = np.vstack(
-            [
+        C_new = np.vstack([
                 self.D11 @ X_11,
                 self.D21 @ X_11,
                 other.D21 @ X_21,
-            ]
-        ) + np.vstack(
-            [
-                np.hstack([self.C1, np.zeros((self.C1.shape[0], other.C1.shape[1]))]),
+        ]) + np.vstack([
+                np.hstack([
+                    self.C1,
+                    np.zeros((self.C1.shape[0], other.C1.shape[1]))
+                ]),
                 block_diag(self.C2, other.C2),
-            ]
-        )
+        ])
 
-        D_new = np.vstack(
-            [
+        D_new = np.vstack([
                 self.D11 @ X_12,
                 self.D21 @ X_12,
                 other.D21 @ X_22,
-            ]
-        )
-        tmp = np.vstack(
-            [
-                np.hstack(
-                    [self.D12, np.zeros((self.D12.shape[0], other.D12.shape[1]))]
-                ),
+        ])
+        tmp = np.vstack([
+                np.hstack([
+                    self.D12,
+                    np.zeros((self.D12.shape[0], other.D12.shape[1]))
+                ]),
                 block_diag(self.D22, other.D22),
-            ]
-        )
-        D_new[:, -tmp.shape[1] :] += tmp
+        ])
+        D_new[:, -tmp.shape[1]:] += tmp
 
         P_new = StateSpace(A_new, B_new, C_new, D_new)
 
@@ -457,9 +489,8 @@ def vcat_pss(*systems: list[PartitionedStateSpace]) -> PartitionedStateSpace:
     nu1 = systems[0].nu1
 
     if not (all(space.nu1 == nu1 for space in systems)):
-        raise ValueError(
-            "All PartitionedStateSpace objects must have the same input dimension"
-        )
+        raise ValueError("All PartitionedStateSpace objects\
+                          must have the same input dimension")
 
     A = block_diag(*[space.A for space in systems])
     B1 = np.vstack([space.B1 for space in systems])
@@ -471,7 +502,9 @@ def vcat_pss(*systems: list[PartitionedStateSpace]) -> PartitionedStateSpace:
     D21 = np.vstack([space.D21 for space in systems])
     D22 = block_diag(*[space.D22 for space in systems])
 
-    return PartitionedStateSpace.from_matrices(A, B1, B2, C1, C2, D11, D12, D21, D22)
+    return PartitionedStateSpace.from_matrices(
+        A, B1, B2, C1, C2, D11, D12, D21, D22
+    )
 
 
 def hcat_pss(*systems: list[PartitionedStateSpace]) -> PartitionedStateSpace:
@@ -499,9 +532,8 @@ def hcat_pss(*systems: list[PartitionedStateSpace]) -> PartitionedStateSpace:
 
     ny1 = systems[0].ny1
     if not (all(space.ny1 == ny1 for space in systems)):
-        raise ValueError(
-            "All PartitionedStateSpace objects must have the same output dimension"
-        )
+        raise ValueError("All PartitionedStateSpace objects\
+                          must have the same output dimension")
 
     A = block_diag(*[space.A for space in systems])
     B1 = block_diag(*[space.B1 for space in systems])
@@ -513,4 +545,6 @@ def hcat_pss(*systems: list[PartitionedStateSpace]) -> PartitionedStateSpace:
     D21 = block_diag(*[space.D21 for space in systems])
     D22 = block_diag(*[space.D22 for space in systems])
 
-    return PartitionedStateSpace.from_matrices(A, B1, B2, C1, C2, D11, D12, D21, D22)
+    return PartitionedStateSpace.from_matrices(
+        A, B1, B2, C1, C2, D11, D12, D21, D22
+    )

@@ -89,7 +89,6 @@ from .sysnorm import *
 
 # Allow access to phase_plane functions as ct.phaseplot.fcn or ct.pp.fcn
 from . import phaseplot as phaseplot
-
 pp = phaseplot
 
 # Exceptions

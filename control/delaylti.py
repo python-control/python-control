@@ -1,3 +1,12 @@
+# delaylti.py - DelayLTI class and functions for delayed linear systems
+
+"""DelayLTI class and functions for delayed linear systems.
+
+This module contains the delayLTI class and related functions for
+creating and manipulating delayed linear sytems.
+
+"""
+
 import numpy as np
 from .lti import LTI
 from .partitionedssp import PartitionedStateSpace
@@ -86,7 +95,7 @@ class DelayLTI(LTI):
 
     Notes
     -----
-    The way to create a DelayLTI object is by multiplying a transfert
+    The way to create a DelayLTI object is by multiplying a transfer
     function object with a delay(tau) or exp(-tau*s). For example
 
     >>> ct.tf([1], [1,1]) * delay(1.5)
@@ -96,8 +105,8 @@ class DelayLTI(LTI):
     >>> s = ct.tf('s')
     >>> ct.tf([1], [1,1]) * exp(-1.5*s)
 
-    It's possible to MIMO delayed systems from arrays of SISO delayed systems,
-    see function mimo_delay
+    It's possible to create MIMO delayed systems from arrays
+    of SISO delayed systems, see function mimo_delay.
 
     """
 
@@ -107,7 +116,8 @@ class DelayLTI(LTI):
         Parameters
         ----------
         P : PartitionedStateSpace
-            The underlying partitioned state-space representation of the system.
+            The underlying partitioned state-space
+            representation of the system.
         tau : array_like, optional
             An array of time delays associated with the system.
         """
@@ -176,9 +186,13 @@ class DelayLTI(LTI):
         """Return the number of outputs and inputs."""
         return (self.noutputs, self.ninputs)
 
-    # Poles and zeros functions for DelayLTI are not supported by julia ControlSystems.jl
-    # might not be accurate for delayLTI, to be discussed
-    # Here the poles and zeros computed are the ones of the system without taking into accoutn the delay
+    # Poles and zeros functions for DelayLTI
+    # are not supported by julia ControlSystems.jl
+
+    # Might not be accurate for delayLTI, to be discussed
+
+    # Poles and zeros computed are the ones
+    # of the system without taking into accoutn the delay
 
     def poles(self):
         """Compute the poles of a delay lti system.
@@ -190,7 +204,8 @@ class DelayLTI(LTI):
         with delays are generally infinite in number.
         """
 
-        return eigvals(self.P.A).astype(complex) if self.nstates else np.array([])
+        return eigvals(self.P.A).astype(complex) \
+            if self.nstates else np.array([])
 
     def zeros(self):
         """Compute the zeros of the non-delayed part of the LTI system.
@@ -223,7 +238,9 @@ class DelayLTI(LTI):
                 return np.array([])
             else:
                 # Use SciPy generalized eigenvalue function
-                return eigvals(out[8][0:nu, 0:nu], out[9][0:nu, 0:nu]).astype(complex)
+                return eigvals(
+                    out[8][0:nu, 0:nu], out[9][0:nu, 0:nu]
+                ).astype(complex)
 
         except ImportError:  # Slycot unavailable. Fall back to SciPy.
             if self.P.C.shape[0] != self.P.D.shape[1]:
@@ -254,10 +271,9 @@ class DelayLTI(LTI):
                 ((0, self.P.C.shape[0]), (0, self.P.B.shape[1])),
                 "constant",
             )
-            return np.array(
-                [x for x in eigvals(L, M, overwrite_a=True) if not np.isinf(x)],
-                dtype=complex,
-            )
+            return np.array([
+                x for x in eigvals(L, M, overwrite_a=True) if not np.isinf(x)
+            ], dtype=complex)
 
     def _isstatic(self):
         """Check if the system is static."""
@@ -284,12 +300,14 @@ class DelayLTI(LTI):
 
         if isinstance(other, (int, float, complex)):
             new_B = np.hstack([self.P.B1 * other, self.P.B2])
-            new_D = np.block(
-                [[self.P.D11 * other, self.P.D12], [self.P.D21 * other, self.P.D22]]
-            )
+            new_D = np.block([
+                [self.P.D11 * other, self.P.D12 * other],
+                [self.P.D21 * other, self.P.D22 * other]
+            ])
 
             new_P = PartitionedStateSpace(
-                ss(self.P.A, new_B, self.P.C, new_D), self.P.nu1, self.P.ny1
+                ss(self.P.A, new_B, self.P.C, new_D),
+                self.P.nu1, self.P.ny1
             )
             return DelayLTI(new_P, self.tau)
 
@@ -325,18 +343,21 @@ class DelayLTI(LTI):
         -------
         DelayLTI
             The resulting DelayLTI system.
-        
-        Note that this function does not call __mul__ for scalar multiplication.
+
+        Note that this function does not call __mul__
+        for scalar multiplication.
 
         """
         if isinstance(other, (int, float, complex)):
             new_C = np.vstack([self.P.C1 * other, self.P.C2])
-            new_D = np.block(
-                [[self.P.D11 * other, self.P.D12 * other], [self.P.D21, self.P.D22]]
-            )
+            new_D = np.block([
+                [self.P.D11 * other, self.P.D12 * other],
+                [self.P.D21, self.P.D22]
+            ])
 
             new_P = PartitionedStateSpace(
-                ss(self.P.A, self.P.B, new_C, new_D), self.P.nu1, self.P.ny1
+                ss(self.P.A, self.P.B, new_C, new_D),
+                self.P.nu1, self.P.ny1
             )
             return DelayLTI(new_P, self.tau)
 
@@ -348,11 +369,8 @@ class DelayLTI(LTI):
             return DelayLTI.from_ss(other) * self
 
         else:
-            raise TypeError(
-                "Unsupported operand type(s) for *: '{}' and '{}'".format(
-                    type(other), type(self)
-                )
-            )
+            raise TypeError(f"Unsupported operand type(s) for *:\
+                            {type(other)} and {type(self)}")
 
     def __add__(self, other):
         """Add two DelayLTI systems or a DelayLTI system with a scalar.
@@ -425,7 +443,8 @@ class DelayLTI(LTI):
         vectors (`tau`) are element-wise identical.
         """
         if not isinstance(other, DelayLTI):
-            raise TypeError(f"{other} is not a DelayLTI object, is {type(other)}")
+            raise TypeError(f"{other} is not a DelayLTI object,\
+                            is {type(other)}")
         return (self.P == other.P) and (self.tau == other.tau)
 
     def feedback(self, other=1, sign=-1):
@@ -467,7 +486,8 @@ class DelayLTI(LTI):
             # Convert feedback 'other' to a static gain matrix K
             if isinstance(other, (int, float, complex, np.number)):
                 if not self.issiso():
-                    raise ValueError("Scalar feedback gain requires SISO system G.")
+                    raise ValueError("Scalar feedback gain\
+                                     requires SISO system G.")
                 K = np.array([[other]], dtype=float)
             elif isinstance(other, np.ndarray):
                 K = np.asarray(other, dtype=float)
@@ -475,18 +495,22 @@ class DelayLTI(LTI):
                     K = K.reshape(1, 1)
                 elif K.ndim == 1:
                     if self.nu != 1:
-                        raise ValueError("1D array feedback requires SISO system G.")
+                        raise ValueError("1D array feedback \
+                                         requires SISO system G.")
                     K = K.reshape(self.ninputs, 1)
                 elif K.ndim != 2:
-                    raise ValueError("Feedback gain must be scalar, 1D, or 2D array.")
+                    raise ValueError("Feedback gain must \
+                                     be scalar, 1D, or 2D array.")
             else:
-                raise TypeError(f"Unsupported type for static feedback: {type(other)}")
+                raise TypeError(
+                    f"Unsupported type for static feedback: {type(other)}"
+                )
 
             # Check dimensions of K
             if K.shape != (self.nu, self.ny):
                 raise ValueError(
-                    f"Feedback gain K has incompatible shape. Expected ({self.nu}, {self.ny}), got {K.shape}."
-                )
+                    f"Feedback gain K has incompatible shape.\
+                    Expected ({self.nu}, {self.ny}), got {K.shape}.")
 
             # Get matrices from self's underlying PartitionedStateSpace
             P_g = self.P
@@ -582,15 +606,20 @@ class DelayLTI(LTI):
 
         out = np.empty((self.ny, self.nu, len(x_arr)), dtype=complex)
 
-        sys_call = self.P.sys(x_arr, squeeze=squeeze, warn_infinite=warn_infinite)
+        sys_call = self.P.sys(
+            x_arr,
+            squeeze=squeeze,
+            warn_infinite=warn_infinite
+        )
         for i, xi in enumerate(x_arr):
             P11_fr = sys_call[: self.ny, : self.nu, i]
-            P12_fr = sys_call[: self.ny, self.nu :, i]
-            P21_fr = sys_call[self.ny :, : self.nu, i]
-            P22_fr = sys_call[self.ny :, self.nu :, i]
+            P12_fr = sys_call[: self.ny, self.nu:, i]
+            P21_fr = sys_call[self.ny:, : self.nu, i]
+            P22_fr = sys_call[self.ny:, self.nu:, i]
             delay_term_inv = np.exp(xi * self.tau)
             delay_term_fr = np.diag(delay_term_inv)
-            out[:, :, i] = P11_fr + P12_fr @ inv(delay_term_fr - P22_fr) @ P21_fr
+            out[:, :, i] = P11_fr + \
+                P12_fr @ inv(delay_term_fr - P22_fr) @ P21_fr
         return out
 
     def __str__(self):
@@ -607,7 +636,8 @@ class DelayLTI(LTI):
     def __repr__(self):
         """Return a string representation of the DelayLTI system (for eval)."""
         return (
-            f"{type(self).__name__}(P={self.P.__repr__()}, tau={self.tau.__repr__()})"
+            f"{type(self).__name__}(P={self.P.__repr__()},\
+                  tau={self.tau.__repr__()})"
         )
 
     def to_ss(self, *args, **kwargs):
@@ -617,7 +647,9 @@ class DelayLTI(LTI):
         )
 
     def to_tf(self, *args, **kwargs):
-        """Convert to `TransferFunction` object (not implemented for DelayLTI)."""
+        """Convert to `TransferFunction` object
+        (not implemented for DelayLTI).
+        """
         raise NotImplementedError(
             "Conversion of DelayLTI to TransferFunction is not supported."
         )
@@ -752,7 +784,8 @@ def _convert_to_delay_lti(sys):
         return tf2dlti(sys)
     else:
         raise TypeError(
-            "Unsupported system type for DelayLTI conversion: {}".format(type(sys))
+            "Unsupported system type for DelayLTI \
+                conversion: {}".format(type(sys))
         )
 
 

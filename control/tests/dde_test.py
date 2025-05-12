@@ -26,40 +26,53 @@ def wood_berry():
     # Construct a 2x2 MIMO system with delays
     G_wb = mimo_delay(
         [
-            [12.8 / (16.7 * s + 1) * exp(-s), -18.9 / (21.0 * s + 1) * exp(-3 * s)],
-            [6.6 / (10.9 * s + 1) * exp(-7 * s), -19.4 / (14.4 * s + 1) * exp(-3 * s)],
+            [
+                12.8 / (16.7 * s + 1) * exp(-s),
+                -18.9 / (21.0 * s + 1) * exp(-3 * s)
+            ],
+            [
+                6.6 / (10.9 * s + 1) * exp(-7 * s),
+                -19.4 / (14.4 * s + 1) * exp(-3 * s)
+            ]
         ]
     )
     return G_wb
 
 
 class TestTimeResp:
-    def test_siso_delayed_step_response(self, delay_siso_tf, simple_siso_tf):
+    def test_siso_delayed_step_response(
+            self, delay_siso_tf, simple_siso_tf, plot=False
+    ):
         from control.timeresp import step_response
 
         timepts = np.linspace(0, 10, 1001)
         step = step_response(simple_siso_tf, timepts=timepts)
         delay_step = step_response(delay_siso_tf, timepts=timepts)
-        # Construct a manually delayed step response by shifting the step response
+        # Construct a manually delayed step response
+        # by shifting the step response
         hand_delayed_step = np.zeros_like(step.y[0][0])
         count = 0
         for i, t in enumerate(step.t):
             if t >= 1.5:
                 hand_delayed_step[i] = step.y[0][0][count]
                 count += 1
-        plt.figure()
-        plt.plot(delay_step.y[0][0] - hand_delayed_step)
-        plt.legend()
-        plt.show()
+        if plot:
+            plt.figure()
+            plt.plot(delay_step.y[0][0] - hand_delayed_step, label="error")
+            plt.legend()
+            plt.show()
         assert np.allclose(delay_step.y[0][0], hand_delayed_step)
 
-    def test_siso_delayed_step_response_mos(self, delay_siso_tf, simple_siso_tf):
+    def test_siso_delayed_step_response_mos(
+            self, delay_siso_tf, simple_siso_tf, plot=False
+    ):
         from control.timeresp import step_response
 
         timepts = np.linspace(0, 10, 1001)
         step = step_response(simple_siso_tf, timepts=timepts)
         delay_step = step_response(delay_siso_tf, timepts=timepts)
-        # Construct a manually delayed step response by shifting the step response
+        # Construct a manually delayed step response
+        # by shifting the step response
         hand_delayed_step = np.zeros_like(step.y[0][0])
         count = 0
         for i, t in enumerate(step.t):
@@ -67,10 +80,11 @@ class TestTimeResp:
                 hand_delayed_step[i] = step.y[0][0][count]
                 count += 1
 
-        plt.figure()
-        plt.plot(delay_step.y[0][0] - hand_delayed_step)
-        plt.legend()
-        plt.show()
+        if plot:
+            plt.figure()
+            plt.plot(delay_step.y[0][0] - hand_delayed_step, label="error")
+            plt.legend()
+            plt.show()
         assert np.allclose(delay_step.y[0][0], hand_delayed_step, atol=1e-5)
 
     # wood berry step response compared to julia
@@ -82,7 +96,6 @@ class TestTimeResp:
         step = step_response(wood_berry, timepts=timepts)
         print(step.y[0].shape)
 
-        plot = True
         if plot:
             plt.figure()
             plt.plot(
@@ -104,7 +117,8 @@ class TestTimeResp:
             plt.title("Step response")
             plt.show()
 
-        # Precision is currently between 1e-5 and 1e-6 compared to julia solver for mimo
+        # Precision is currently between 1e-5 and 1e-6
+        # compared to julia solver for mimo
         assert np.allclose(
             step.y[0][0],
             julia_json["TestTimeResp"]["test_mimo_step_response"]["y11"],
@@ -132,7 +146,9 @@ class TestTimeResp:
         timepts = np.linspace(0, 10, 1001)
         inputs = np.sin(timepts)
         resp = forced_response(simple_siso_tf, timepts=timepts, inputs=inputs)
-        delay_resp = forced_response(delay_siso_tf, timepts=timepts, inputs=inputs)
+        delay_resp = forced_response(
+            delay_siso_tf, timepts=timepts, inputs=inputs
+        )
         hand_delayed_resp = np.zeros_like(resp.y[0])
         count = 0
         for i, t in enumerate(resp.t):
@@ -141,7 +157,6 @@ class TestTimeResp:
                 count += 1
 
         # Optionally, inspect the plot:
-        # plot = True
         if plot:
             plt.figure()
             plt.plot(resp.t, inputs, label="input")
@@ -198,8 +213,14 @@ class TestTimeResp:
         # plot = True
         if plot:
             plt.figure()
-            plt.plot(resp.t, resp.y[0] - hand_delayed_resp_y1, label="y1 - hand y1")
-            plt.plot(resp.t, resp.y[1] - hand_delayed_resp_y2, label="y2 - hand y2")
+            plt.plot(
+                resp.t,
+                resp.y[0] - hand_delayed_resp_y1, label="y1 - hand y1"
+            )
+            plt.plot(
+                resp.t,
+                resp.y[1] - hand_delayed_resp_y2, label="y2 - hand y2"
+            )
 
             plt.legend()
             plt.show()

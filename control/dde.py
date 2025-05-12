@@ -1,3 +1,15 @@
+# dde.py - Delay differential equations
+
+"""Delay differential equations.
+
+This module contains a minimal implementation of
+a delay differential equation (DDE) solver using the
+Method of Steps (MoS) approach and scipy's solve_ivp function.
+The solver is designed to handle delayed 
+linear time-invariant (delayLTI) systems.
+
+"""
+
 import numpy as np
 
 from scipy.integrate import solve_ivp, OdeSolution
@@ -6,7 +18,8 @@ from typing import List
 
 
 def dde_response(
-    delay_sys, T, U=0, X0=0, params=None, transpose=False, return_x=False, squeeze=None
+    delay_sys, T, U=0, X0=0, params=None,
+    transpose=False, return_x=False, squeeze=None
 ):
     """Compute the output of a delay linear system given the input.
 
@@ -41,8 +54,9 @@ def dde_response(
         If `squeeze` is True, remove single-dimensional entries from
         the shape of the output even if the system is not SISO. If
         `squeeze` is False, keep the output as a 2D array (indexed by
-        the output number and time) even if the system is SISO. The default
-        behavior can be overridden by `config.defaults['control.squeeze_time_response']`.
+        the output number and time) even if the system is SISO.
+        The default behavior can be overridden by
+        `config.defaults['control.squeeze_time_response']`.
 
     Returns
     -------
@@ -67,7 +81,8 @@ def dde_response(
         T = np.asarray(T)
 
     T = _check_convert_array(
-        T, [("any",), (1, "any")], "Parameter `T`: ", squeeze=True, transpose=transpose
+        T, [("any",), (1, "any")], "Parameter `T`: ",
+        squeeze=True, transpose=transpose
     )
 
     n_steps = T.shape[0]
@@ -86,12 +101,11 @@ def dde_response(
     U = _check_convert_array(
         U, legal_shapes, "Parameter `U`: ", squeeze=False, transpose=transpose
     )
-    print("U shape: ", U.shape)
     xout = np.zeros((n_states, n_steps))
     xout[:, 0] = X0
     yout = np.zeros((n_outputs, n_steps))
     tout = T
-    xout, yout = solve_dde(delay_sys, T, U, X0, dt)
+    xout, yout = _solve_dde(delay_sys, T, U, X0, dt)
 
     return TimeResponseData(
         tout,
@@ -110,8 +124,9 @@ def dde_response(
     )
 
 
-def pchip_interp_u(T, U):
-    """Create PCHIP interpolator functions for the input signal(s) U over time T.
+def _pchip_interp_u(T, U):
+    """Create PCHIP interpolator functions for the
+    input signal(s) U over time T.
 
     For time points `t < T[0]`, the interpolator returns 0.
 
@@ -144,10 +159,12 @@ def pchip_interp_u(T, U):
         return U
     else:
         # Multiple input signals, U.shape is (n_inputs, n_steps)
-        return np.array([negative_wrapper(PchipInterpolator(T, ui)) for ui in U])
+        return np.array([
+            negative_wrapper(PchipInterpolator(T, ui)) for ui in U
+        ])
 
 
-class DdeHistory:
+class _DDEHistory:
     """
     Stores the computed solution history for a DDE and provides a callable
     interface to retrieve the state x(t) at any requested past time t.
@@ -155,8 +172,10 @@ class DdeHistory:
 
     Handles three regimes:
     1. t <= t0: Uses the provided initial history function.
-    2. t0 < t <= t_last_computed: Interpolates using dense output from solve_ivp segments.
-    3. t > t_last_computed: Performs constant extrapolation using the last computed state
+    2. t0 < t <= t_last_computed:
+        Interpolates using dense output from solve_ivp segments.
+    3. t > t_last_computed: Performs constant
+       interpolation using theextrapolation using the last computed state
        (the state at `t_last_computed`).
 
     Attributes
@@ -164,7 +183,8 @@ class DdeHistory:
     initial_history_func : callable
         Function `f(t)` that returns the state vector for `t <= t0`.
     t0 : float
-        Initial time. History before or at this time is given by `initial_history_func`.
+        Initial time. History before or at this time
+        is given by `initial_history_func`.
     segments : list of OdeSolution
         List of `OdeSolution` objects from `scipy.integrate.solve_ivp`,
         each representing a computed segment of the solution.
@@ -177,7 +197,8 @@ class DdeHistory:
     def __init__(self, initial_history_func, t0):
         self.initial_history_func = initial_history_func
         self.t0: float = t0
-        self.segments: List[OdeSolution] = []  # Stores OdeResult objects from solve_ivp
+        # Stores OdeResult objects from solve_ivp
+        self.segments: List[OdeSolution] = []
         self.last_valid_time: float = t0
 
         initial_state = np.asarray(initial_history_func(t0))
@@ -198,7 +219,8 @@ class DdeHistory:
         self.last_state = segment.y[:, -1]
 
     def __call__(self, t):
-        """Return the state vector x(t) by looking up or interpolating from history.
+        """Return the state vector x(t) by looking up or
+            interpolating from history.
 
         Parameters
         ----------
@@ -218,12 +240,13 @@ class DdeHistory:
             for segment in self.segments:
                 if segment.t[0] <= t <= segment.t[-1]:
                     return segment.sol(t)
-            # Fallback: should ideally not be reached if t is within (t0, last_valid_time]
+            # Fallback: should ideally not be reached
+            # if t is within (t0, last_valid_time]
             # and segments cover this range.
             return np.zeros_like(self.last_state)  # Deal with first call
 
 
-def dde_wrapper(t, x, A, B1, B2, C2, D21, tau_list, u_func, history_x):
+def _dde_wrapper(t, x, A, B1, B2, C2, D21, tau_list, u_func, history_x):
     """
     Wrapper function for DDE solver using scipy's solve_ivp.
     Computes the derivative dx/dt for the DDE system.
@@ -231,8 +254,9 @@ def dde_wrapper(t, x, A, B1, B2, C2, D21, tau_list, u_func, history_x):
     The system is defined by:
         dx/dt = A @ x(t) + B1 @ u(t) + B2 @ z_delayed_vector(t)
     where:
-        z_delayed_vector(t) is a vector where the k-th component is z_k(t - tau_list[k]),
-        and z_k(t') = (C2 @ x(t') + D21 @ u(t'))_k.
+        z_delayed_vector(t) is a vector where the k-th component is
+        z_k(t - tau_list[k]) and
+        z_k(t') = (C2 @ x(t') + D21 @ u(t'))_k.
         (Assuming D22 is zero for the internal feedback path).
 
     Parameters
@@ -268,7 +292,7 @@ def dde_wrapper(t, x, A, B1, B2, C2, D21, tau_list, u_func, history_x):
     return dxdt.flatten()
 
 
-def solve_dde(delay_sys, T, U, X0, dt):
+def _solve_dde(delay_sys, T, U, X0, dt):
     """
     Solving delay differential equation using Method Of Steps.
 
@@ -297,9 +321,9 @@ def solve_dde(delay_sys, T, U, X0, dt):
     """
     intial_history_func = lambda t: np.zeros(X0.shape)
     t0, tf = T[0], T[-1]
-    u_func = pchip_interp_u(T, U)
+    u_func = _pchip_interp_u(T, U)
 
-    history_x = DdeHistory(intial_history_func, t0)  # to access x(t-tau)
+    history_x = _DDEHistory(intial_history_func, t0)  # to access x(t-tau)
     current_t = 0
     current_x = np.asarray(X0).flatten()
 
@@ -328,9 +352,8 @@ def solve_dde(delay_sys, T, U, X0, dt):
             discontinuity_times.remove(t_stop)
         local_t_eval = [t for t in T if current_t < t <= t_stop]
 
-        print("Integrate bewtween ", current_t, " and ", t_stop)
         sol_segment = solve_ivp(
-            fun=dde_wrapper,
+            fun=_dde_wrapper,
             t_span=(current_t, t_stop),
             t_eval=local_t_eval,
             y0=current_x,

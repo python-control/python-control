@@ -1,7 +1,10 @@
 import numpy as np
 import pytest
 
-from control.delaylti import delay, tf2dlti, exp, hcat, vcat, mimo_delay, ss2dlti
+from control.delaylti import (
+    delay, tf2dlti, exp, hcat,
+    vcat, mimo_delay, ss2dlti
+)
 from control.statesp import ss
 from control.xferfcn import tf
 from control.julia.utils import julia_json, assert_delayLTI
@@ -38,8 +41,14 @@ def wood_berry():
     # Construct a 2x2 MIMO system with delays
     G_wb = mimo_delay(
         [
-            [12.8 / (16.7 * s + 1) * exp(-s), -18.9 / (21.0 * s + 1) * exp(-3 * s)],
-            [6.6 / (10.9 * s + 1) * exp(-7 * s), -19.4 / (14.4 * s + 1) * exp(-3 * s)],
+            [
+                12.8 / (16.7 * s + 1) * exp(-s),
+                -18.9 / (21.0 * s + 1) * exp(-3 * s)
+            ],
+            [
+                6.6 / (10.9 * s + 1) * exp(-7 * s),
+                -19.4 / (14.4 * s + 1) * exp(-3 * s)
+            ]
         ]
     )
     return G_wb
@@ -84,48 +93,70 @@ class TestConstructors:
 
 class TestOperators:
     def test_siso_add(self, delay_siso_tf, delay_siso_tf2):
-        G = delay_siso_tf + delay_siso_tf2
-        assert_delayLTI(G, julia_json["TestOperators"]["test_siso_add"])
+        assert_delayLTI(
+            delay_siso_tf + delay_siso_tf2,
+            julia_json["TestOperators"]["test_siso_add"]
+        )
 
     def test_siso_add_constant(self, delay_siso_tf):
-        G = delay_siso_tf + 2.5
-        assert_delayLTI(G, julia_json["TestOperators"]["test_siso_add_constant"])
+        assert_delayLTI(
+            delay_siso_tf + 2.5,
+            julia_json["TestOperators"]["test_siso_add_constant"]
+        )
 
     def test_siso_sub(self, delay_siso_tf, delay_siso_tf2):
-        G = delay_siso_tf - delay_siso_tf2
-        assert_delayLTI(G, julia_json["TestOperators"]["test_siso_sub"])
+        assert_delayLTI(
+            delay_siso_tf - delay_siso_tf2,
+            julia_json["TestOperators"]["test_siso_sub"]
+        )
 
     def test_siso_sub_constant(self, delay_siso_tf):
-        G = delay_siso_tf - 2.5
-        assert_delayLTI(G, julia_json["TestOperators"]["test_siso_sub_constant"])
+        assert_delayLTI(
+            delay_siso_tf - 2.5,
+            julia_json["TestOperators"]["test_siso_sub_constant"]
+        )
 
     def test_siso_mul(self, delay_siso_tf, delay_siso_tf2):
-        G = delay_siso_tf * delay_siso_tf2
-        assert_delayLTI(G, julia_json["TestOperators"]["test_siso_mul"])
+        assert_delayLTI(
+            delay_siso_tf * delay_siso_tf2,
+            julia_json["TestOperators"]["test_siso_mul"]
+        )
 
     def test_siso_mul_constant(self, delay_siso_tf):
-        G = delay_siso_tf * 2.0
-        assert_delayLTI(G, julia_json["TestOperators"]["test_siso_mul_constant"])
+        assert_delayLTI(
+            delay_siso_tf * 2.0,
+            julia_json["TestOperators"]["test_siso_mul_constant"]
+        )
 
     def test_siso_rmul_constant(self, delay_siso_tf):
-        G = 2.0 * delay_siso_tf
-        assert_delayLTI(G, julia_json["TestOperators"]["test_siso_rmul_constant"])
+        assert_delayLTI(
+            2.0 * delay_siso_tf,
+            julia_json["TestOperators"]["test_siso_rmul_constant"]
+        )
 
     def test_mimo_add(self, wood_berry):
-        G = wood_berry + wood_berry
-        assert_delayLTI(G, julia_json["TestOperators"]["test_mimo_add"])
+        assert_delayLTI(
+            wood_berry + wood_berry,
+            julia_json["TestOperators"]["test_mimo_add"]
+        )
 
     def test_mimo_add_constant(self, wood_berry):
-        G = wood_berry + 2.7
-        assert_delayLTI(G, julia_json["TestOperators"]["test_mimo_add_constant"])
+        assert_delayLTI(
+            wood_berry + 2.7,
+            julia_json["TestOperators"]["test_mimo_add_constant"]
+        )
 
     def test_mimo_mul(self, wood_berry):
-        G = wood_berry * wood_berry
-        assert_delayLTI(G, julia_json["TestOperators"]["test_mimo_mul"])
+        assert_delayLTI(
+            wood_berry * wood_berry,
+            julia_json["TestOperators"]["test_mimo_mul"]
+        )
 
     def test_mimo_mul_constant(self, wood_berry):
-        G = wood_berry * 2.7
-        assert_delayLTI(G, julia_json["TestOperators"]["test_mimo_mul_constant"])
+        assert_delayLTI(
+            wood_berry * 2.7,
+            julia_json["TestOperators"]["test_mimo_mul_constant"]
+        )
 
 
 class TestDelayLtiMethods:
@@ -141,8 +172,10 @@ class TestDelayLtiMethods:
         assert_delayLTI(H, julia_results[key])
 
     def test_mimo_feedback(self, wood_berry):
-        H = wood_berry.feedback(wood_berry)
-        assert_delayLTI(H, julia_json["TestDelayLtiMethods"]["test_mimo_feedback"])
+        G = wood_berry.feedback(wood_berry)
+        assert_delayLTI(
+            G, julia_json["TestDelayLtiMethods"]["test_mimo_feedback"]
+        )
 
     def test_siso_freq_resp(self, delay_siso_tf):
         from control.lti import frequency_response
@@ -165,38 +198,46 @@ class TestDelayLtiMethods:
         resp = frequency_response(wood_berry, w).complex
         assert np.allclose(
             np.real(resp[0][0]),
-            julia_json["TestDelayLtiMethods"]["test_tito_freq_response"]["r11"]["real"],
+            julia_json["TestDelayLtiMethods"]
+            ["test_tito_freq_response"]["r11"]["real"],
         )
         assert np.allclose(
             np.imag(resp[0][0]),
-            julia_json["TestDelayLtiMethods"]["test_tito_freq_response"]["r11"]["imag"],
+            julia_json["TestDelayLtiMethods"]
+            ["test_tito_freq_response"]["r11"]["imag"],
         )
 
         assert np.allclose(
             np.real(resp[0][1]),
-            julia_json["TestDelayLtiMethods"]["test_tito_freq_response"]["r12"]["real"],
+            julia_json["TestDelayLtiMethods"]
+            ["test_tito_freq_response"]["r12"]["real"],
         )
         assert np.allclose(
             np.imag(resp[0][1]),
-            julia_json["TestDelayLtiMethods"]["test_tito_freq_response"]["r12"]["imag"],
+            julia_json["TestDelayLtiMethods"]
+            ["test_tito_freq_response"]["r12"]["imag"],
         )
 
         assert np.allclose(
             np.real(resp[1][0]),
-            julia_json["TestDelayLtiMethods"]["test_tito_freq_response"]["r21"]["real"],
+            julia_json["TestDelayLtiMethods"]
+            ["test_tito_freq_response"]["r21"]["real"],
         )
         assert np.allclose(
             np.imag(resp[1][0]),
-            julia_json["TestDelayLtiMethods"]["test_tito_freq_response"]["r21"]["imag"],
+            julia_json["TestDelayLtiMethods"]
+            ["test_tito_freq_response"]["r21"]["imag"],
         )
 
         assert np.allclose(
             np.real(resp[1][1]),
-            julia_json["TestDelayLtiMethods"]["test_tito_freq_response"]["r22"]["real"],
+            julia_json["TestDelayLtiMethods"]
+            ["test_tito_freq_response"]["r22"]["real"],
         )
         assert np.allclose(
             np.imag(resp[1][1]),
-            julia_json["TestDelayLtiMethods"]["test_tito_freq_response"]["r22"]["imag"],
+            julia_json["TestDelayLtiMethods"]
+            ["test_tito_freq_response"]["r22"]["imag"],
         )
 
     def test_call(self):
