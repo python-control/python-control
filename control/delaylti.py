@@ -570,11 +570,6 @@ class DelayLTI(LTI):
             clsys_part = PartitionedStateSpace(clsys_ss, nu1=n_r, ny1=self.ny)
             return DelayLTI(clsys_part, taus)
 
-    def issiso(self):
-        """Check if the system is single-input, single-output."""
-        # Based on EXTERNAL dimensions
-        return self.nu == 1 and self.ny == 1
-
     def __call__(self, x, squeeze=False, warn_infinite=True):
         """Evaluate the frequency response of the system.
 

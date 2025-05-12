@@ -5,7 +5,7 @@
 This module contains a minimal implementation of
 a delay differential equation (DDE) solver using the
 Method of Steps (MoS) approach and scipy's solve_ivp function.
-The solver is designed to handle delayed 
+The solver is designed to handle delayed
 linear time-invariant (delayLTI) systems.
 
 """
@@ -19,7 +19,8 @@ from typing import List
 
 def dde_response(
     delay_sys, T, U=0, X0=0, params=None,
-    transpose=False, return_x=False, squeeze=None
+    transpose=False, return_x=False, squeeze=None,
+    t_eval=None
 ):
     """Compute the output of a delay linear system given the input.
 
@@ -105,7 +106,10 @@ def dde_response(
     xout[:, 0] = X0
     yout = np.zeros((n_outputs, n_steps))
     tout = T
-    xout, yout = _solve_dde(delay_sys, T, U, X0, dt)
+
+    if t_eval is None:
+        t_eval = T
+    xout, yout = _solve_dde(delay_sys, T, U, X0, t_eval)
 
     return TimeResponseData(
         tout,
@@ -292,7 +296,7 @@ def _dde_wrapper(t, x, A, B1, B2, C2, D21, tau_list, u_func, history_x):
     return dxdt.flatten()
 
 
-def _solve_dde(delay_sys, T, U, X0, dt):
+def _solve_dde(delay_sys, T, U, X0, t_eval):
     """
     Solving delay differential equation using Method Of Steps.
 
@@ -307,9 +311,8 @@ def _solve_dde(delay_sys, T, U, X0, dt):
         Input array giving input at each time in `T`.
     X0 : array_like or float, default=0.
         Initial condition.
-    dt : float # Unused beyond T check
-        Time step of the `T` array. Used to verify `T` is uniformly spaced.
-        Not directly used as integration step by `solve_ivp`.
+    t_eval : array-list, optional
+        List of times at which the time response should be computed.
 
     Returns
     -------
@@ -319,11 +322,15 @@ def _solve_dde(delay_sys, T, U, X0, dt):
         Array containing the output vector at each time step.
 
     """
-    intial_history_func = lambda t: np.zeros(X0.shape)
+
+    def initial_history_func(t):
+        """Initial history function for the DDE solver."""
+        return np.zeros(X0.shape)
+
     t0, tf = T[0], T[-1]
     u_func = _pchip_interp_u(T, U)
 
-    history_x = _DDEHistory(intial_history_func, t0)  # to access x(t-tau)
+    history_x = _DDEHistory(initial_history_func, t0)  # to access x(t-tau)
     current_t = 0
     current_x = np.asarray(X0).flatten()
 
@@ -350,7 +357,7 @@ def _solve_dde(delay_sys, T, U, X0, dt):
         t_stop = min(discontinuity_times) if discontinuity_times else tf
         if not np.isclose(t_stop, tf):
             discontinuity_times.remove(t_stop)
-        local_t_eval = [t for t in T if current_t < t <= t_stop]
+        local_t_eval = [t for t in t_eval if current_t < t <= t_stop]
 
         sol_segment = solve_ivp(
             fun=_dde_wrapper,

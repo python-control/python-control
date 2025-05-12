@@ -259,3 +259,7 @@ class TestDelayLtiMethods:
         dlti_cat = cat_func(dlti1, dlti2)
         assert np.allclose(dlti_cat.P.A, np.array(expected_A))
         assert np.allclose(dlti_cat.tau, np.array(expected_tau))
+
+    def test_issiso(self, delay_siso_tf, wood_berry):
+        assert delay_siso_tf.issiso()
+        assert not wood_berry.issiso()

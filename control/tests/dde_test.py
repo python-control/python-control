@@ -227,3 +227,29 @@ class TestTimeResp:
 
         assert np.allclose(resp.y[0], hand_delayed_resp_y1, atol=1e-5)
         assert np.allclose(resp.y[1], hand_delayed_resp_y2, atol=1e-5)
+
+
+    def test_input_output_response(self, delay_siso_tf, wood_berry):
+        from control.nlsys import input_output_response
+        from control.timeresp import forced_response
+
+        timepts = np.linspace(0, 10, 1001)
+        
+        inputs_siso = np.sin(timepts)
+        io_resp_siso = input_output_response(
+            delay_siso_tf, timepts=timepts, inputs=inputs_siso
+        )
+        forced_resp_siso = forced_response(
+            delay_siso_tf, timepts=timepts, inputs=inputs_siso
+        )
+        assert np.allclose(io_resp_siso.y[0], forced_resp_siso.y[0])
+
+        inputs_mimo = np.array([np.sin(timepts), np.cos(timepts)])
+        io_resp_mimo = input_output_response(
+            wood_berry, timepts=timepts, inputs=inputs_mimo
+        )
+        forced_resp_mimo = forced_response(
+            wood_berry, timepts=timepts, inputs=inputs_mimo
+        )
+        assert np.allclose(io_resp_mimo.y[0], forced_resp_mimo.y[0])
+        assert np.allclose(io_resp_mimo.y[1], forced_resp_mimo.y[1])

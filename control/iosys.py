@@ -758,7 +758,12 @@ class InputOutputSystem():
 
     def issiso(self):
         """Check to see if a system is single input, single output."""
-        return self.ninputs == 1 and self.noutputs == 1
+        from .delaylti import DelayLTI
+        if isinstance(self, DelayLTI):
+            # DelayLTI special case: external and internal inputs/outputs
+            return self.nu == 1 and self.ny == 1
+        else:
+            return self.ninputs == 1 and self.noutputs == 1
 
 
 # Test to see if a system is SISO
