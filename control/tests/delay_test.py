@@ -9,9 +9,6 @@ import pytest
 
 from control.delay import pade
 
-from control.delaylti import delay
-from control.xferfcn import tf
-
 
 class TestPade:
     """Test Pade approx

@@ -1299,12 +1299,6 @@ def forced_response(
 
                 for i in range(1, n_steps):
                     xout[:, i] = Ad @ xout[:, i - 1] + Bd0 @ U[:, i - 1] + Bd1 @ U[:, i]
-                    # debug print
-                    if i < 10:
-                        print(
-                            "dxdt = ",
-                            (Ad @ xout[:, i - 1] + Bd0 @ U[:, i - 1] + Bd1 @ U[:, i]),
-                        )
 
                 yout = C @ xout + D @ U
             tout = T
@@ -1644,8 +1638,6 @@ def step_response(
         # Create a set of single inputs system for simulation
         U = np.zeros((sys.ninputs, T.size))
         U[i, :] = np.ones_like(T)
-
-        # print(U)
 
         response = forced_response(
             sys,
