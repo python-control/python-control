@@ -33,6 +33,7 @@ from .lti import LTI, _process_frequency_response, frequency_response
 from .margins import stability_margins
 from .statesp import StateSpace
 from .xferfcn import TransferFunction
+from .delaylti import DelayLTI
 
 __all__ = ['bode_plot', 'NyquistResponseData', 'nyquist_response',
            'nyquist_plot', 'singular_values_response',
@@ -350,7 +351,7 @@ def bode_plot(
 
     # If we were passed a list of systems, convert to data
     if any([isinstance(
-            sys, (StateSpace, TransferFunction)) for sys in data]):
+            sys, (StateSpace, TransferFunction, DelayLTI)) for sys in data]):
         data = frequency_response(
             data, omega=omega, omega_limits=omega_limits,
             omega_num=omega_num, Hz=Hz)
