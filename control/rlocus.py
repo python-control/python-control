@@ -33,7 +33,7 @@ _rlocus_defaults = {
 
 
 # Root locus map
-def root_locus_map(sysdata, gains=None):
+def root_locus_map(sysdata, gains=None, xlim=None, ylim=None):
     """Compute the root locus map for an LTI system.
 
     Calculate the root locus by finding the roots of 1 + k * G(s) where G
@@ -46,6 +46,10 @@ def root_locus_map(sysdata, gains=None):
     gains : array_like, optional
         Gains to use in computing plot of closed-loop poles.  If not given,
         gains are chosen to include the main features of the root locus map.
+    xlim : tuple or list, optional
+        Set limits of x axis (see `matplotlib.axes.Axes.set_xlim`).
+    ylim : tuple or list, optional
+        Set limits of y axis (see `matplotlib.axes.Axes.set_ylim`).
 
     Returns
     -------
@@ -75,7 +79,7 @@ def root_locus_map(sysdata, gains=None):
         nump, denp = _systopoly1d(sys[0, 0])
 
         if gains is None:
-            kvect, root_array, _, _ = _default_gains(nump, denp, None, None)
+            kvect, root_array, _, _ = _default_gains(nump, denp, xlim, ylim)
         else:
             kvect = np.atleast_1d(gains)
             root_array = _RLFindRoots(nump, denp, kvect)
@@ -205,11 +209,50 @@ def root_locus_plot(
     # Plot the root loci
     cplt = responses.plot(grid=grid, **kwargs)
 
+    # Add a reaction to axis scale changes, if given LTI systems, and
+    # there is no set of pre-defined gains
+    if gains is None:
+        add_loci_recalculate(sysdata, cplt, cplt.axes[0,0])
+
     # Legacy processing: return locations of poles and zeros as a tuple
     if plot is True:
         return responses.loci, responses.gains
 
     return ControlPlot(cplt.lines, cplt.axes, cplt.figure)
+
+
+def add_loci_recalculate(sysdata, cplt, axis):
+    """Add a callback to re-calculate the loci data fitting a zoom action.
+
+    Parameters
+    ----------
+    sysdata: LTI object or list
+        Linear input/output systems (SISO only, for now).
+    cplt: ControlPlot
+        Collection of plot handles.
+    axis: matplotlib.axes.Axis
+        Axis on which callbacks are installed.
+    """
+
+    # if LTI, treat everything as a list of lti
+    if isinstance(sysdata, LTI):
+        sysdata = [sysdata]
+
+    # check that we can actually recalculate the loci
+    if isinstance(sysdata, list) and all(
+       [isinstance(sys, LTI) for sys in sysdata]):
+
+        # callback function for axis change (zoom, pan) events
+        # captures the sysdata object and cplt
+        def _zoom_adapter(_ax):
+            newresp = root_locus_map(sysdata, None,
+                                     _ax.get_xlim(),
+                                     _ax.get_ylim())
+            newresp.replot(cplt)
+
+        # connect the callback to axis changes
+        axis.callbacks.connect('xlim_changed', _zoom_adapter)
+        axis.callbacks.connect('ylim_changed', _zoom_adapter)
 
 
 def _default_gains(num, den, xlim, ylim):
@@ -288,7 +331,7 @@ def _default_gains(num, den, xlim, ylim):
         # Root locus is on imaginary axis (rare), use just y distance
         tolerance = y_tolerance
     elif y_tolerance == 0:
-        # Root locus is on imaginary axis (common), use just x distance
+        # Root locus is on real axis (common), use just x distance
         tolerance = x_tolerance
     else:
         tolerance = np.min([x_tolerance, y_tolerance])

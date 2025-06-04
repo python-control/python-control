@@ -22,6 +22,7 @@ from .nlsys import interconnect
 from .statesp import ss, summing_junction
 from .timeresp import step_response
 from .xferfcn import tf
+from .rlocus import add_loci_recalculate
 
 _sisotool_defaults = {
     'sisotool.initial_gain': 1
@@ -105,7 +106,7 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
     fig = plt.gcf()
     if fig.canvas.manager.get_window_title() != 'Sisotool':
         plt.close(fig)
-        fig,axes = plt.subplots(2, 2)
+        fig, axes = plt.subplots(2, 2)
         fig.canvas.manager.set_window_title('Sisotool')
     else:
         axes = np.array(fig.get_axes()).reshape(2, 2)
@@ -137,14 +138,17 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
     #     sys[0, 0], initial_gain=initial_gain, xlim=xlim_rlocus,
     #     ylim=ylim_rlocus, plotstr=plotstr_rlocus, grid=rlocus_grid,
     #     ax=fig.axes[1])
-    ax_rlocus = fig.axes[1]
-    root_locus_map(sys[0, 0]).plot(
+    ax_rlocus = axes[0,1]  # fig.axes[1]
+    cplt = root_locus_map(sys[0, 0]).plot(
         xlim=xlim_rlocus, ylim=ylim_rlocus,
         initial_gain=initial_gain, ax=ax_rlocus)
     if rlocus_grid is False:
         # Need to generate grid manually, since root_locus_plot() won't
         from .grid import nogrid
         nogrid(sys.dt, ax=ax_rlocus)
+
+    # install a zoom callback on the root-locus axis
+    add_loci_recalculate(sys, cplt, ax_rlocus)
 
     # Reset the button release callback so that we can update all plots
     fig.canvas.mpl_connect(
@@ -155,9 +159,8 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
 
 def _click_dispatcher(event, sys, ax, bode_plot_params, tvect):
     # Zoom handled by specialized callback in rlocus, only handle gain plot
-    if event.inaxes == ax.axes and \
-       plt.get_current_fig_manager().toolbar.mode not in \
-       {'zoom rect', 'pan/zoom'}:
+    if event.inaxes == ax.axes:
+
         fig = ax.figure
 
         # if a point is clicked on the rootlocus plot visually emphasize it
