@@ -551,8 +551,7 @@ def test_nyquist_rescale():
 
     # Bad value
     with pytest.raises(ValueError, match="blend_fraction must be between"):
-        cplt = ct.nyquist_plot(
-            sys, indent_direction='left', blend_fraction=1.2)
+        ct.nyquist_plot(sys, indent_direction='left', blend_fraction=1.2)
 
 
 if __name__ == "__main__":
