@@ -547,7 +547,7 @@ the computation of the Nyquist curve and the way the data are plotted:
   sys = ct.tf([1, 0.2], [1, 0, 1]) * ct.tf([1], [1, 0])
   nyqresp = ct.nyquist_response(sys)
   nyqresp.plot(
-      max_curve_magnitude=6, max_curve_offset=1,
+      max_curve_magnitude=6, max_curve_offset=1, blend_fraction=0.05,
       arrows=[0, 0.15, 0.3, 0.6, 0.7, 0.925],
       title='Custom Nyquist plot')
   print("Encirclements =", nyqresp.count)
