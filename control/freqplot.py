@@ -1886,9 +1886,10 @@ def nyquist_plot(
         kwargs, None, 'upper right')
 
     # Create a list of lines for the output
-    out = np.empty(len(nyquist_responses), dtype=object)
-    for i in range(out.shape[0]):
-        out[i] = []             # unique list in each element
+    out = np.empty((len(nyquist_responses), 4), dtype=object)
+    for i in range(len(nyquist_responses)):
+        for j in range(4):
+            out[i, j] = []      # unique list in each element
 
     for idx, response in enumerate(nyquist_responses):
         resp = response.response
@@ -1938,7 +1939,7 @@ def nyquist_plot(
         p = ax.plot(
             x_reg, y_reg, primary_style[0], color=color, label=label, **kwargs)
         c = p[0].get_color()
-        out[idx] += p
+        out[idx, 0] += p
 
         # Figure out how much to offset the curve: the offset goes from
         # zero at the start of the scaled section to max_curve_offset as
@@ -1950,12 +1951,12 @@ def nyquist_plot(
         x_scl = np.ma.masked_where(scale_mask, resp.real)
         y_scl = np.ma.masked_where(scale_mask, resp.imag)
         if x_scl.count() >= 1 and y_scl.count() >= 1:
-            out[idx] += ax.plot(
+            out[idx, 1] += ax.plot(
                 x_scl * (1 + curve_offset),
                 y_scl * (1 + curve_offset),
                 primary_style[1], color=c, **kwargs)
         else:
-            out[idx] += [None]
+            out[idx, 1] += [None]
 
         # Plot the primary curve (invisible) for setting arrows
         x, y = resp.real.copy(), resp.imag.copy()
@@ -1970,15 +1971,15 @@ def nyquist_plot(
         # Plot the mirror image
         if mirror_style is not False:
             # Plot the regular and scaled segments
-            out[idx] += ax.plot(
+            out[idx, 2] += ax.plot(
                 x_reg, -y_reg, mirror_style[0], color=c, **kwargs)
             if x_scl.count() >= 1 and y_scl.count() >= 1:
-                out[idx] += ax.plot(
+                out[idx, 3] += ax.plot(
                     x_scl * (1 - curve_offset),
                     -y_scl * (1 - curve_offset),
                     mirror_style[1], color=c, **kwargs)
             else:
-                out[idx] += [None]
+                out[idx, 3] += [None]
 
             # Add the arrows (on top of an invisible contour)
             x, y = resp.real.copy(), resp.imag.copy()
@@ -1988,12 +1989,15 @@ def nyquist_plot(
             _add_arrows_to_line2D(
                 ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=-1)
         else:
-            out[idx] += [None, None]
+            out[idx, 2] += [None]
+            out[idx, 3] += [None]
 
         # Mark the start of the curve
         if start_marker:
-            ax.plot(resp[0].real, resp[0].imag, start_marker,
-                     color=c, markersize=start_marker_size)
+            segment = 0 if 0 in rescale_idx else 1      # regular vs scaled
+            out[idx, segment] += ax.plot(
+                resp[0].real, resp[0].imag, start_marker,
+                color=c, markersize=start_marker_size)
 
         # Mark the -1 point
         ax.plot([-1], [0], 'r+')

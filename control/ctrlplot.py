@@ -41,7 +41,10 @@ various plotting functions.
 #     # Customize axes (curvilinear grids, shared axes, etc)
 #
 #     # Plot the data
-#     lines = np.full(ax_array.shape, [])
+#     lines = np.empty(ax_array.shape, dtype=object)
+#     for i in range(ax_array.shape[0]):
+#         for j in range(ax_array.shape[1]):
+#             lines[i, j] = []
 #     line_labels = _process_line_labels(label, ntraces, nrows, ncols)
 #     color_offset, color_cycle = _get_color_offset(ax)
 #     for i, j in itertools.product(range(nrows), range(ncols)):

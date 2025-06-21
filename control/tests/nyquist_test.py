@@ -406,15 +406,16 @@ def test_linestyle_checks():
     # Set the line styles
     cplt = ct.nyquist_plot(
         sys, primary_style=[':', ':'], mirror_style=[':', ':'])
-    assert all([line.get_linestyle() == ':' for line in cplt.lines[0]])
+    assert all([lines[0].get_linestyle() == ':' for lines in cplt.lines[0, :]])
 
     # Set the line colors
     cplt = ct.nyquist_plot(sys, color='g')
-    assert all([line.get_color() == 'g' for line in cplt.lines[0]])
+    assert all([line.get_color() == 'g' for line in cplt.lines[0, 0]])
 
     # Turn off the mirror image
     cplt = ct.nyquist_plot(sys, mirror_style=False)
-    assert cplt.lines[0][2:] == [None, None]
+    assert cplt.lines[0, 2] == [None]
+    assert cplt.lines[0, 3] == [None]
 
     with pytest.raises(ValueError, match="invalid 'primary_style'"):
         ct.nyquist_plot(sys, primary_style=False)
@@ -532,22 +533,31 @@ def test_nyquist_rescale():
     sys.name = 'How example'
 
     # Default case
-    cplt = ct.nyquist_plot(sys, indent_direction='left', label='default [0.15]')
+    resp = ct.nyquist_response(sys, indent_direction='left')
+    cplt = resp.plot(label='default [0.15]')
+    assert len(cplt.lines[0, 0]) == 2
+    assert all([len(cplt.lines[0, i]) == 1 for i in range(1, 4)])
 
     # Sharper corner
     cplt = ct.nyquist_plot(
         sys*4, indent_direction='left',
         max_curve_magnitude=17, blend_fraction=0.05, label='fraction=0.05')
+    assert len(cplt.lines[0, 0]) == 2
+    assert all([len(cplt.lines[0, i]) == 1 for i in range(1, 4)])
 
     # More gradual corner
     cplt = ct.nyquist_plot(
         sys*0.25, indent_direction='left',
         max_curve_magnitude=13, blend_fraction=0.25, label='fraction=0.25')
+    assert len(cplt.lines[0, 0]) == 2
+    assert all([len(cplt.lines[0, i]) == 1 for i in range(1, 4)])
 
     # No corner
     cplt = ct.nyquist_plot(
         sys*12, indent_direction='left',
         max_curve_magnitude=19, blend_fraction=0, label='fraction=0')
+    assert len(cplt.lines[0, 0]) == 2
+    assert all([len(cplt.lines[0, i]) == 1 for i in range(1, 4)])
 
     # Bad value
     with pytest.raises(ValueError, match="blend_fraction must be between"):
