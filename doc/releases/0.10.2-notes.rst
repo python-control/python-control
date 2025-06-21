@@ -94,6 +94,12 @@ The following bugs have been fixed in this release:
 * `singular_values_plot`: color cycling was not working correctly when
   a list of systems or responses was provided.
 
+* `nyquist_plot`: The `lines` parameter of the `ControlPlot` object
+  now matches the documentation.  A 2D array is returned with the
+  first index corresponding to the response (system) index and the
+  second index corresponding to the segment type (primary, mirror x
+  unscaled, scaled).
+
 
 Improvements
 ............
@@ -197,6 +203,16 @@ were implemented in this release:
 * `phase_plane_plot`: makes use of the matplotlib
   `~matplotlib.pyplot.streamplot` function to provide better default
   phase plane diagrams.
+
+* `root_locus_plot`: added by the ability to recompute the root locus
+  when zooming in on portions of the root locus diagram.
+
+* `nyquist_plot`: updated the rescaling algorithm to use a more
+  gradual change in the magnitude of the Nyquist curve.  The
+  `blend_fraction` parameter can be used to start the rescaling prior
+  to reaching `max_curve_magnitude`, giving less confusing plots. Some
+  default parameter values have been adjusted to improve Nyquist
+  plots.
 
 
 Deprecations
