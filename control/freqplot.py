@@ -1756,8 +1756,8 @@ def nyquist_plot(
     to avoid poles, resulting in a scaling of the Nyquist plot, the line
     styles are according to the settings of the `primary_style` and
     `mirror_style` keywords.  By default the scaled portions of the primary
-    curve use a dotted line style and the scaled portion of the mirror
-    image use a dashdot line style.
+    curve use a dashdot line style and the scaled portions of the mirror
+    image use a dotted line style.
 
     Examples
     --------
