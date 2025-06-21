@@ -124,6 +124,17 @@ class PoleZeroList(list):
         """
         return pole_zero_plot(self, *args, **kwargs)
 
+    def replot(self, cplt: ControlPlot):
+        """Update the pole/zero loci of an existing plot.
+
+        Parameters
+        ----------
+        cplt: ControlPlot
+            Graphics handles of the existing plot.
+        """
+        pole_zero_replot(self, cplt)
+
+
 
 # Pole/zero map
 def pole_zero_map(sysdata):
@@ -511,6 +522,35 @@ def pole_zero_plot(
             TypeError("system lists not supported with legacy return values")
 
     return ControlPlot(out, ax, fig, legend=legend)
+
+
+def pole_zero_replot(pzmap_responses, cplt):
+    """Update the loci of a plot after zooming/panning.
+
+    Parameters
+    ----------
+    pzmap_responses : PoleZeroMap list
+        Responses to update.
+    cplt : ControlPlot
+        Collection of plot handles.
+    """
+
+    for idx, response in enumerate(pzmap_responses):
+
+        # remove the old data
+        for l in cplt.lines[idx, 2]:
+            l.set_data([], [])
+
+        # update the line data
+        if response.loci is not None:
+
+            for il, locus in enumerate(response.loci.transpose()):
+                try:
+                    cplt.lines[idx,2][il].set_data(real(locus), imag(locus))
+                except IndexError:
+                    # not expected, but more lines apparently needed
+                    cplt.lines[idx,2].append(cplt.ax[0,0].plot(
+                        real(locus), imag(locus)))
 
 
 # Utility function to find gain corresponding to a click event
