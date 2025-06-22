@@ -527,7 +527,6 @@ def margin(*args):
 
 def disk_margins(L, omega, skew=0.0, returnall=False):
     """Disk-based stability margins of loop transfer function.
-----------------------------------------------------------------
 
     Parameters
     ----------
