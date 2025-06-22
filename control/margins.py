@@ -537,7 +537,7 @@ def disk_margins(L, omega, skew=0.0, returnall=False):
         to evaluate the disk-based stability margins.
     skew : float or array_like, optional
         skew parameter(s) for disk margin (default = 0.0).
-        skew = 0.0 (default) "balanced" sensitivity 0.5*(S - T).
+        skew = 0.0 "balanced" sensitivity function 0.5*(S - T).
         skew = 1.0 sensitivity function S.
         skew = -1.0 complementary sensitivity function T.
     returnall : bool, optional
