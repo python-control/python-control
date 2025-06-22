@@ -546,7 +546,3 @@ if __name__ == '__main__':
     if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:
         #plt.tight_layout()
         plt.show()
-    
-
-
-
