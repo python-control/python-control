@@ -1572,12 +1572,13 @@ def input_output_response(
 
     If discontinuous inputs are given, the underlying SciPy numerical
     integration algorithms can sometimes produce erroneous results due to
-    the default tolerances that are used.  The `ivp_method` and
-    `ivp_keywords` parameters can be used to tune the ODE solver and
-    produce better results.  In particular, using 'LSODA' as the
-    `ivp_method` or setting the `rtol` parameter to a smaller value
-    (e.g. using ``ivp_kwargs={'rtol': 1e-4}``) can provide more accurate
-    results.
+    the default tolerances that are used.  The `solve_ivp_method` and
+    `solve_ivp_keywords` parameters can be used to tune the ODE solver and
+    produce better results. In particular, using 'LSODA' as the
+    `solve_ivp_method`, setting the `rtol` parameter to a smaller value
+    (e.g. using ``solve_ivp_kwargs={'rtol': 1e-4}``), or setting the
+    maximum step size to a smaller value (e.g. ``solve_ivp_kwargs=
+    {'max_step': 0.01}``) can provide more accurate results.
 
     """
     #
