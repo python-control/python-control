@@ -92,3 +92,11 @@ class TestPade:
                     np.array(refnum), np.array(num))
                 np.testing.assert_array_almost_equal_nulp(
                     np.array(refden), np.array(den))
+
+
+
+
+        
+
+
+        

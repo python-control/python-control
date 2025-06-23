@@ -23,6 +23,7 @@ import scipy as sp
 
 from . import config
 from .config import _process_param, _process_kwargs
+from .dde import dde_response
 from .iosys import InputOutputSystem, _parse_spec, _process_iosys_keywords, \
     common_timebase, iosys_repr, isctime, isdtime
 from .timeresp import TimeResponseData, TimeResponseList, \
@@ -1581,6 +1582,7 @@ def input_output_response(
     {'max_step': 0.01}``) can provide more accurate results.
 
     """
+    from .delaylti import DelayLTI
     #
     # Process keyword arguments
     #
@@ -1627,7 +1629,7 @@ def input_output_response(
         return TimeResponseList(responses)
 
     # Sanity checking on the input
-    if not isinstance(sys, NonlinearIOSystem):
+    if not (isinstance(sys, NonlinearIOSystem) or isinstance(sys, DelayLTI)):
         raise TypeError("System of type ", type(sys), " not valid")
 
     # Compute the time interval and number of steps
@@ -1702,6 +1704,12 @@ def input_output_response(
 
     # Process initial states
     X0, nstates = _process_vector_argument(X0, "X0", sys.nstates)
+
+    # Case DelayLTI
+    if isinstance(sys, DelayLTI):
+        return dde_response(
+            sys, T, U, X0, t_eval=t_eval, params=params
+        )
 
     # Update the parameter values (prior to evaluating outfcn)
     sys._update_params(params)
