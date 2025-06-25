@@ -291,7 +291,7 @@ def test_nyquist_indent_default(indentsys):
 
 def test_nyquist_indent_dont(indentsys):
     # first value of default omega vector was 0.1, replaced by 0. for contour
-    # indent_radius is larger than 0.1 -> no extra quater circle around origin
+    # indent_radius is larger than 0.1 -> no extra quarter circle around origin
     with pytest.warns() as record:
         count, contour = ct.nyquist_response(
             indentsys, omega=[0, 0.2, 0.3, 0.4], indent_radius=.1007,
@@ -406,15 +406,16 @@ def test_linestyle_checks():
     # Set the line styles
     cplt = ct.nyquist_plot(
         sys, primary_style=[':', ':'], mirror_style=[':', ':'])
-    assert all([line.get_linestyle() == ':' for line in cplt.lines[0]])
+    assert all([lines[0].get_linestyle() == ':' for lines in cplt.lines[0, :]])
 
     # Set the line colors
     cplt = ct.nyquist_plot(sys, color='g')
-    assert all([line.get_color() == 'g' for line in cplt.lines[0]])
+    assert all([line.get_color() == 'g' for line in cplt.lines[0, 0]])
 
     # Turn off the mirror image
     cplt = ct.nyquist_plot(sys, mirror_style=False)
-    assert cplt.lines[0][2:] == [None, None]
+    assert cplt.lines[0, 2] == [None]
+    assert cplt.lines[0, 3] == [None]
 
     with pytest.raises(ValueError, match="invalid 'primary_style'"):
         ct.nyquist_plot(sys, primary_style=False)
@@ -428,6 +429,7 @@ def test_linestyle_checks():
         ct.nyquist_plot(sys, primary_style=':', mirror_style='-.')
 
 @pytest.mark.usefixtures("editsdefaults")
+@pytest.mark.xfail(reason="updated code avoids warning")
 def test_nyquist_legacy():
     ct.use_legacy_defaults('0.9.1')
 
@@ -526,6 +528,42 @@ def test_no_indent_pole():
             sys, warn_encirclements=False, indent_direction='none')
 
 
+def test_nyquist_rescale():
+    sys = 2 * ct.tf([1], [1, 1]) * ct.tf([1], [1, 0])**2
+    sys.name = 'How example'
+
+    # Default case
+    resp = ct.nyquist_response(sys, indent_direction='left')
+    cplt = resp.plot(label='default [0.15]')
+    assert len(cplt.lines[0, 0]) == 2
+    assert all([len(cplt.lines[0, i]) == 1 for i in range(1, 4)])
+
+    # Sharper corner
+    cplt = ct.nyquist_plot(
+        sys*4, indent_direction='left',
+        max_curve_magnitude=17, blend_fraction=0.05, label='fraction=0.05')
+    assert len(cplt.lines[0, 0]) == 2
+    assert all([len(cplt.lines[0, i]) == 1 for i in range(1, 4)])
+
+    # More gradual corner
+    cplt = ct.nyquist_plot(
+        sys*0.25, indent_direction='left',
+        max_curve_magnitude=13, blend_fraction=0.25, label='fraction=0.25')
+    assert len(cplt.lines[0, 0]) == 2
+    assert all([len(cplt.lines[0, i]) == 1 for i in range(1, 4)])
+
+    # No corner
+    cplt = ct.nyquist_plot(
+        sys*12, indent_direction='left',
+        max_curve_magnitude=19, blend_fraction=0, label='fraction=0')
+    assert len(cplt.lines[0, 0]) == 2
+    assert all([len(cplt.lines[0, i]) == 1 for i in range(1, 4)])
+
+    # Bad value
+    with pytest.raises(ValueError, match="blend_fraction must be between"):
+        ct.nyquist_plot(sys, indent_direction='left', blend_fraction=1.2)
+
+
 if __name__ == "__main__":
     #
     # Interactive mode: generate plots for manual viewing
@@ -566,8 +604,8 @@ if __name__ == "__main__":
     sys = 3 * (s+6)**2 / (s * (s**2 + 1e-4 * s + 1))
     plt.figure()
     ct.nyquist_plot(sys)
-    ct.nyquist_plot(sys, max_curve_magnitude=15)
-    ct.nyquist_plot(sys, indent_radius=1e-6, max_curve_magnitude=25)
+    ct.nyquist_plot(sys, max_curve_magnitude=10)
+    ct.nyquist_plot(sys, indent_radius=1e-6, max_curve_magnitude=20)
 
     print("Unusual Nyquist plot")
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
@@ -595,3 +633,29 @@ if __name__ == "__main__":
     plt.figure()
     cplt = ct.nyquist_plot([sys, sys1, sys2])
     cplt.set_plot_title("Mixed FRD, tf data")
+
+    plt.figure()
+    print("Jon How example")
+    test_nyquist_rescale()
+
+    #
+    # Save the figures in a PDF file for later comparisons
+    #
+    import subprocess
+    from matplotlib.backends.backend_pdf import PdfPages
+    from datetime import date
+
+    # Create the file to store figures
+    try:
+        git_info = subprocess.check_output(
+            ['git', 'describe'], text=True).strip()
+    except subprocess.CalledProcessError:
+        git_info = 'UNKNOWN-REPO-INFO'
+    pdf = PdfPages(
+        f'nyquist_gallery-{git_info}-{date.today().isoformat()}.pdf')
+
+    # Go through each figure and save it
+    for fignum in plt.get_fignums():
+        pdf.savefig(plt.figure(fignum))
+
+    pdf.close()

@@ -521,7 +521,8 @@ def describing_function_plot(
     # Plot the Nyquist response
     cplt = dfresp.response.plot(**kwargs)
     ax = cplt.axes[0, 0]        # Get the axes where the plot was made
-    lines[0] = cplt.lines[0]    # Return Nyquist lines for first system
+    lines[0] = np.concatenate(  # Return Nyquist lines for first system
+        cplt.lines.flatten()).tolist()
 
     # Add the describing function curve to the plot
     lines[1] = ax.plot(dfresp.N_vals.real, dfresp.N_vals.imag)
