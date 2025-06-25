@@ -142,6 +142,7 @@ Frequency domain analysis:
 
     bandwidth
     dcgain
+    disk_margins
     linfnorm
     margin
     stability_margins

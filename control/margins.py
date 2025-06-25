@@ -11,12 +11,17 @@ from warnings import warn
 import numpy as np
 import scipy as sp
 
-from . import frdata, freqplot, xferfcn
+from . import frdata, freqplot, xferfcn, statesp
 from .exception import ControlMIMONotImplemented
 from .iosys import issiso
+from .ctrlutil import mag2db
+try:
+    from slycot import ab13md
+except ImportError:
+    ab13md = None
 
-__all__ = ['stability_margins', 'phase_crossover_frequencies', 'margin']
-
+__all__ = ['stability_margins', 'phase_crossover_frequencies', 'margin',
+           'disk_margins']
 
 # private helper functions
 def _poly_iw(sys):
@@ -167,6 +172,7 @@ def _poly_z_wstab(num, den, num_inv_zp, den_inv_zq, p_q, dt, epsw):
         w = np.array([])
 
     return z, w
+
 
 def _likely_numerical_inaccuracy(sys):
     # crude, conservative check for if
@@ -517,3 +523,135 @@ def margin(*args):
                          % len(args))
 
     return margin[0], margin[1], margin[3], margin[4]
+
+
+def disk_margins(L, omega, skew=0.0, returnall=False):
+    """Disk-based stability margins of loop transfer function.
+
+    Parameters
+    ----------
+    L : `StateSpace` or `TransferFunction`
+        Linear SISO or MIMO loop transfer function.
+    omega : sequence of array_like
+        1D array of (non-negative) frequencies (rad/s) at which
+        to evaluate the disk-based stability margins.
+    skew : float or array_like, optional
+        skew parameter(s) for disk margin (default = 0.0).
+        skew = 0.0 "balanced" sensitivity function 0.5*(S - T).
+        skew = 1.0 sensitivity function S.
+        skew = -1.0 complementary sensitivity function T.
+    returnall : bool, optional
+        If True, return frequency-dependent margins.
+        If False (default), return worst-case (minimum) margins.
+
+    Returns
+    -------
+    DM : float or array_like
+        Disk margin.
+    DGM : float or array_like
+        Disk-based gain margin.
+    DPM : float or array_like
+        Disk-based phase margin.
+
+    Example
+    --------
+    >> omega = np.logspace(-1, 3, 1001)
+    >> P = control.ss([[0, 10], [-10, 0]], np.eye(2), [[1, 10],
+    [-10, 1]], 0)
+    >> K = control.ss([], [], [], [[1, -2], [0, 1]])
+    >> L = P * K
+    >> DM, DGM, DPM = control.disk_margins(L, omega, skew=0.0)
+    """
+
+    # First argument must be a system
+    if not isinstance(L, (statesp.StateSpace, xferfcn.TransferFunction)):
+        raise ValueError(
+            "Loop gain must be state-space or transfer function object")
+
+    # Loop transfer function must be square
+    if statesp.ss(L).B.shape[1] != statesp.ss(L).C.shape[0]:
+        raise ValueError("Loop gain must be square (n_inputs = n_outputs)")
+
+    # Need slycot if L is MIMO, for mu calculation
+    if not L.issiso() and ab13md == None:
+        raise ControlMIMONotImplemented(
+            "Need slycot to compute MIMO disk_margins")
+
+    # Get dimensions of feedback system
+    num_loops = statesp.ss(L).C.shape[0]
+    I = statesp.ss([], [], [], np.eye(num_loops))
+
+    # Loop sensitivity function
+    S = I.feedback(L)
+
+    # Compute frequency response of the "balanced" (according
+    # to the skew parameter "sigma") sensitivity function [1-2]
+    ST = S + 0.5 * (skew - 1) * I
+    ST_mag, ST_phase, _ = ST.frequency_response(omega)
+    ST_jw = (ST_mag * np.exp(1j * ST_phase))
+    if not L.issiso():
+        ST_jw = ST_jw.transpose(2, 0, 1)
+
+    # Frequency-dependent complex disk margin, computed using
+    # upper bound of the structured singular value, a.k.a. "mu",
+    # of (S + (skew - I)/2).
+    DM = np.zeros(omega.shape)
+    DGM = np.zeros(omega.shape)
+    DPM = np.zeros(omega.shape)
+    for ii in range(0, len(omega)):
+        # Disk margin (a.k.a. "alpha") vs. frequency
+        if L.issiso() and ab13md == None:
+            # For the SISO case, the norm on (S + (skew - I)/2) is
+            # unstructured, and can be computed as the magnitude
+            # of the frequency response.
+            DM[ii] = 1.0 / ST_mag[ii]
+        else:
+            # For the MIMO case, the norm on (S + (skew - I)/2)
+            # assumes a single complex uncertainty block diagonal
+            # uncertainty structure. AB13MD provides an upper bound
+            # on this norm at the given frequency omega[ii].
+            DM[ii] = 1.0 / ab13md(ST_jw[ii], np.array(num_loops * [1]),
+                                  np.array(num_loops * [2]))[0]
+
+        # Disk-based gain margin (dB) and phase margin (deg)
+        with np.errstate(divide='ignore', invalid='ignore'):
+            # Real-axis intercepts with the disk
+            gamma_min = (1 - 0.5 * DM[ii] * (1 - skew)) \
+                      / (1 + 0.5 * DM[ii] * (1 + skew))
+            gamma_max = (1 + 0.5 * DM[ii] * (1 - skew)) \
+                      / (1 - 0.5 * DM[ii] * (1 + skew))
+
+            # Gain margin (dB)
+            DGM[ii] = mag2db(np.minimum(1 / gamma_min, gamma_max))
+            if np.isnan(DGM[ii]):
+                DGM[ii] = float('inf')
+
+            # Phase margin (deg)
+            if np.isinf(gamma_max):
+                DPM[ii] = 90.0
+            else:
+                DPM[ii] = (1 + gamma_min * gamma_max) \
+                        / (gamma_min + gamma_max)
+                if abs(DPM[ii]) >= 1.0:
+                    DPM[ii] = float('Inf')
+                else:
+                    DPM[ii] = np.rad2deg(np.arccos(DPM[ii]))
+
+    if returnall:
+        # Frequency-dependent disk margin, gain margin and phase margin
+        return DM, DGM, DPM
+    else:
+        # Worst-case disk margin, gain margin and phase margin
+        if DGM.shape[0] and not np.isinf(DGM).all():
+            with np.errstate(all='ignore'):
+                gmidx = np.where(DGM == np.min(DGM))
+        else:
+            gmidx = -1
+
+        if DPM.shape[0]:
+            pmidx = np.where(DPM == np.min(DPM))
+
+        return (
+            float('inf') if DM.shape[0] == 0 else np.amin(DM),
+            float('inf') if gmidx == -1 else DGM[gmidx][0],
+            float('inf') if DPM.shape[0] == 0 else DPM[pmidx][0])
