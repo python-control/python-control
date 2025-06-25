@@ -646,7 +646,11 @@ if __name__ == "__main__":
     from datetime import date
 
     # Create the file to store figures
-    git_info = subprocess.check_output(['git', 'describe'], text=True).strip()
+    try:
+        git_info = subprocess.check_output(
+            ['git', 'describe'], text=True).strip()
+    except subprocess.CalledProcessError:
+        git_info = 'UNKNOWN-REPO-INFO'
     pdf = PdfPages(
         f'nyquist_gallery-{git_info}-{date.today().isoformat()}.pdf')
 

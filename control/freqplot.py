@@ -1885,6 +1885,11 @@ def nyquist_plot(
     legend_loc, _, show_legend = _process_legend_keywords(
         kwargs, None, 'upper right')
 
+    # Figure out where the blended curve should start
+    if blend_fraction < 0 or blend_fraction > 1:
+        raise ValueError("blend_fraction must be between 0 and 1")
+    blend_curve_start = (1 - blend_fraction) * max_curve_magnitude
+
     # Create a list of lines for the output
     out = np.empty((len(nyquist_responses), 4), dtype=object)
     for i in range(len(nyquist_responses)):
@@ -1899,9 +1904,6 @@ def nyquist_plot(
             splane_contour = np.log(response.contour) / response.dt
 
         # Find the different portions of the curve (with scaled pts marked)
-        if blend_fraction < 0 or blend_fraction > 1:
-            raise ValueError("blend_fraction must be between 0 and 1")
-        blend_curve_start = (1 - blend_fraction) * max_curve_magnitude
         reg_mask = np.logical_or(
             np.abs(resp) > blend_curve_start,
             np.logical_not(np.isclose(splane_contour.real, 0)))
@@ -1918,8 +1920,7 @@ def nyquist_plot(
             abs_subset = np.abs(subset)
             unit_vectors = subset / abs_subset  # Preserve phase/direction
 
-            if blend_curve_start is None or \
-               blend_curve_start == max_curve_magnitude:
+            if blend_curve_start == max_curve_magnitude:
                 # Clip at max_curve_magnitude
                 resp[rescale_idx] = max_curve_magnitude * unit_vectors
             else:
