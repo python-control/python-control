@@ -551,10 +551,10 @@ class TimeResponseData:
     def states(self):
         """Time response state vector.
 
-        Time evolution of the state vector, indexed indexed by either the
-        state and time (if only a single trace is given) or the state, trace,
-        and time (for multiple traces).  See `TimeResponseData.squeeze`
-        for a description of how this can be modified using the `squeeze`
+        Time evolution of the state vector, indexed by either the state and
+        time (if only a single trace is given) or the state, trace, and
+        time (for multiple traces).  See `TimeResponseData.squeeze` for a
+        description of how this can be modified using the `squeeze`
         keyword.
 
         Input and output signal names can be used to index the data in
@@ -616,9 +616,9 @@ class TimeResponseData:
     def _legacy_states(self):
         """Time response state vector (legacy version).
 
-        Time evolution of the state vector, indexed indexed by either the
-        state and time (if only a single trace is given) or the state,
-        trace, and time (for multiple traces).
+        Time evolution of the state vector, indexed by either the state and
+        time (if only a single trace is given) or the state, trace, and
+        time (for multiple traces).
 
         The `legacy_states` property is not affected by the `squeeze` keyword
         and hence it will always have these dimensions.
