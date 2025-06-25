@@ -42,6 +42,9 @@ this release:
   r - K x`) in addition to the default "trajectory generation" pattern
   (:math:`u = u_\text{d} - K(x - x_\text{d})`).
 
+* `disk_margins`: compute disk-based stability margins for SISO and
+  MIMO systems.
+
 * `model_reduction`: allow specific states, inputs, or outputs to be
   either eliminated or retained.
 
