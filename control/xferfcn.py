@@ -1350,7 +1350,7 @@ def _c2d_matched(sysC, Ts, **kwargs):
         zpoles[idx] = z
         pregainden[idx] = 1 - z
     zgain = np.multiply.reduce(pregainnum) / np.multiply.reduce(pregainden)
-    gain = sysC.dcgain() / zgain
+    gain = sysC.dcgain() / zgain.real
     sysDnum, sysDden = zpk2tf(zzeros, zpoles, gain)
     return TransferFunction(sysDnum, sysDden, Ts, **kwargs)
 
