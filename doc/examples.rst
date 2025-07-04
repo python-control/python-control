@@ -39,6 +39,7 @@ other sources.
    examples/mrac_siso_lyapunov
    examples/markov
    examples/era_msd
+   examples/disk_margins
 
 Jupyter Notebooks
 =================

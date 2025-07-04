@@ -384,7 +384,7 @@ def test_siso_disk_margin():
     # Balanced (S - T) disk-based stability margins
     DM, DGM, DPM = disk_margins(L, omega, skew=0.0)
     assert_allclose([DM], [0.46], atol=0.1) # disk margin of 0.46
-    assert_allclose([DGM], [4.05], atol=0.1) # disk-based gain margin of 4.05 dB 
+    assert_allclose([DGM], [4.05], atol=0.1) # disk-based gain margin of 4.05 dB
     assert_allclose([DPM], [25.8], atol=0.1) # disk-based phase margin of 25.8 deg
 
     # For SISO systems, the S-based (S) disk margin should match the third output
@@ -408,13 +408,13 @@ def test_mimo_disk_margin():
         # Balanced (S - T) disk-based stability margins at plant output
         DMo, DGMo, DPMo = disk_margins(Lo, omega, skew=0.0)
         assert_allclose([DMo], [0.3754], atol=0.1) # disk margin of 0.3754
-        assert_allclose([DGMo], [3.3], atol=0.1) # disk-based gain margin of 3.3 dB 
+        assert_allclose([DGMo], [3.3], atol=0.1) # disk-based gain margin of 3.3 dB
         assert_allclose([DPMo], [21.26], atol=0.1) # disk-based phase margin of 21.26 deg
 
         # Balanced (S - T) disk-based stability margins at plant input
         DMi, DGMi, DPMi = disk_margins(Li, omega, skew=0.0)
         assert_allclose([DMi], [0.3754], atol=0.1) # disk margin of 0.3754
-        assert_allclose([DGMi], [3.3], atol=0.1) # disk-based gain margin of 3.3 dB 
+        assert_allclose([DGMi], [3.3], atol=0.1) # disk-based gain margin of 3.3 dB
         assert_allclose([DPMi], [21.26], atol=0.1) # disk-based phase margin of 21.26 deg
     else:
         # Slycot not installed.  Should throw exception.
@@ -435,7 +435,7 @@ def test_siso_disk_margin_return_all():
         atol=0.01) # sensitivity peak at 1.94 rad/s
     assert_allclose([min(DM)], [0.46], atol=0.1) # disk margin of 0.46
     assert_allclose([DGM[np.argmin(DM)]], [4.05],\
-        atol=0.1) # disk-based gain margin of 4.05 dB 
+        atol=0.1) # disk-based gain margin of 4.05 dB
     assert_allclose([DPM[np.argmin(DM)]], [25.8],\
         atol=0.1) # disk-based phase margin of 25.8 deg
 
@@ -457,7 +457,7 @@ def test_mimo_disk_margin_return_all():
             atol=0.01) # sensitivity peak at 0 rad/s (or smallest provided)
         assert_allclose([min(DMo)], [0.3754], atol=0.1) # disk margin of 0.3754
         assert_allclose([DGMo[np.argmin(DMo)]], [3.3],\
-            atol=0.1) # disk-based gain margin of 3.3 dB 
+            atol=0.1) # disk-based gain margin of 3.3 dB
         assert_allclose([DPMo[np.argmin(DMo)]], [21.26],\
             atol=0.1) # disk-based phase margin of 21.26 deg
 
@@ -468,7 +468,7 @@ def test_mimo_disk_margin_return_all():
         assert_allclose([min(DMi)], [0.3754],\
             atol=0.1) # disk margin of 0.3754
         assert_allclose([DGMi[np.argmin(DMi)]], [3.3],\
-            atol=0.1) # disk-based gain margin of 3.3 dB 
+            atol=0.1) # disk-based gain margin of 3.3 dB
         assert_allclose([DPMi[np.argmin(DMi)]], [21.26],\
             atol=0.1) # disk-based phase margin of 21.26 deg
     else:
