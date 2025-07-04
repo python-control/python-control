@@ -746,9 +746,9 @@ class OptimalControlProblem():
                 states = self.last_states
             else:
                 states = self._simulate_states(self.x, inputs)
-                self.last_x = self.x
-                self.last_states = states
-                self.last_coeffs = coeffs
+                self.last_x = self.x.copy()             # save initial state
+                self.last_states = states               # always a new object
+                self.last_coeffs = coeffs.copy()        # save coefficients
 
         return states, inputs
 
