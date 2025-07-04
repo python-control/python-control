@@ -103,6 +103,9 @@ The following bugs have been fixed in this release:
   second index corresponding to the segment type (primary, mirror x
   unscaled, scaled).
 
+* Fix some internal bugs that cropped up when using NumPy 2.3.1 but
+  were latent prior to that.
+
 
 Improvements
 ............
