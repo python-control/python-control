@@ -190,11 +190,11 @@ def test_describing_function_plot():
 
     cplt = response.plot()
     assert len(plt.gcf().get_axes()) == 1       # make sure there is a plot
-    assert len(cplt.lines[0]) == 4 and len(cplt.lines[1]) == 1
+    assert len(cplt.lines[0]) == 5 and len(cplt.lines[1]) == 1
 
     # Call plot directly
     cplt = ct.describing_function_plot(H_larger, F_saturation, amp, omega)
-    assert len(cplt.lines[0]) == 4 and len(cplt.lines[1]) == 1
+    assert len(cplt.lines[0]) == 5 and len(cplt.lines[1]) == 1
 
 
 def test_describing_function_exceptions():
