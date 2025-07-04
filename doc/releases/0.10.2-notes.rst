@@ -1,0 +1,239 @@
+.. currentmodule:: control
+
+.. _version-0.10.2:
+
+Version 0.10.2 Release Notes (current)
+--------------------------------------
+
+* Released: date of release
+* `GitHub release page
+  <https://github.com/python-control/python-control/releases/tag/0.10.2>`_
+
+This release contains numerous bug fixes and improvements, including
+substantial updates to the documentation, including refactoring of the
+online manual into a User Guide and a Reference Manual, as well as
+more consistent and complete docstrings. In addition, signals and
+systems can now be referenced using signal labels in addition to
+offsets, and phase plane plots make use of the matplotlib
+`~matplotlib.pyplot.streamplot` function.  Numerous other changes have
+been made to improve consistency of keyword arguments and function
+names, with legacy aliases available.
+
+This version of `python-control` requires Python 3.10 or higher, NumPy
+1.23 or higher (2.x recommended), and SciPy 1.8 or higher.
+
+
+New classes, functions, and methods
+...................................
+
+The following new classes, functions, and methods have been added in
+this release:
+
+* `find_operating_point`: this function replaces (with a legacy alias)
+  the `find_eqpt` function and now returns an `OperatingPoint` object
+  containing the information about the operating point.
+
+* `combine_tf` and `split_tf`: these two new functions allow you to
+  create an MIMO transfer function from SISO transfer functions and
+  vice versa.
+
+* `create_statefbk_iosystem` now allows the creation of state feedback
+  controllers using a "reference gain" pattern (:math:`u = k_\text{f}\,
+  r - K x`) in addition to the default "trajectory generation" pattern
+  (:math:`u = u_\text{d} - K(x - x_\text{d})`).
+
+* `disk_margins`: compute disk-based stability margins for SISO and
+  MIMO systems.
+
+* `model_reduction`: allow specific states, inputs, or outputs to be
+  either eliminated or retained.
+
+* `place_acker`: renamed version of `acker` (which is still accessible
+  via an alias).
+
+
+Bug fixes
+.........
+
+The following bugs have been fixed in this release:
+
+* `phase_plane_plot`: fixed a bug in which the return value was
+  returning a sublist of lines rather than just a list of lines in
+  `cplt.lines`.
+
+* Processing of the timebase parameter (`dt`) for I/O systems is now
+  handled uniformly across all I/O system factory functions.  This
+  affected the `zpk` function, which was defaulting to a discrete time
+  system to have timebase None instead of 0.
+
+* Multiplying (*), adding (+), or subtracting (-) a constant from any
+  (MIMO) LTI object now acts element-wise (same as ndarray's). This
+  fixes a bug where multiplying a MIMO LTI system by a constant was
+  multiplying by a matrix filled with the constant rather than a
+  diagonal matrix (scaled identity).
+
+* Fixed a bug where specifying an FRD system with fewer than 4
+  frequency points was generating an error because the default
+  settings try to set up a smooth (interpolating) response and the
+  default degree of the fit was 3.
+
+* Fixed some bugs where computing poles and zeros of transfer
+  functions could generate spurious error messages about unsafe
+  casting of complex numbers to real numbers.
+
+* `TimeResponseData.to_pandas`: multi-trace data (e.g., the output
+  from a MIMO step response) was not being processed correctly.  A new
+  column 'trace' is now generated for multi-trace responses.
+
+* Fixed a bug where where some arguments to `nyquist_plot` were not
+  being processed correctly and generated errors about unrecognized
+  keywords.
+
+* Updated `ctrb` and `obsv` to handle 1D `B` or `C` matrix correctly.
+
+* `bode_plot`: Fixed missing plot title when `display_margin` keyword
+  was used.
+
+* `singular_values_plot`: color cycling was not working correctly when
+  a list of systems or responses was provided.
+
+* `nyquist_plot`: The `lines` parameter of the `ControlPlot` object
+  now matches the documentation.  A 2D array is returned with the
+  first index corresponding to the response (system) index and the
+  second index corresponding to the segment type (primary, mirror x
+  unscaled, scaled).
+
+* Fix some internal bugs that cropped up when using NumPy 2.3.1 but
+  were latent prior to that.
+
+
+Improvements
+............
+
+The following additional improvements and changes in functionality
+were implemented in this release:
+
+* User documentation is now divided into a User Guide that provides a
+  description of the main functionality of the python-control package,
+  along with a Reference Manual describing classes, functions, and
+  parameters in more detail.
+
+* Signal responses and I/O subsystem specifications can now use signal
+  names in addition to indices to get the desired inputs, outputs, and
+  states (e.g., `response.outputs['y0', 'y1']`).  This is implemented
+  via a new `NamedSignal` object, which generalizes `numpy.ndarray`.
+
+* `find_operating_point` (legacy `find_eqpt`): accepts new parameters
+  `root_method` and `root_kwargs` to set the root finding algorithm
+  that is used.
+
+* `root_locus_map` now correctly handles the degenerate case of being
+  passed a single gain.
+
+* The `PoleZeroData` object now takes a `sort_loci` parameter when it
+  is created, with a default value of True.  This is useful if you
+  create a `PoleZeroData` object by hand (e.g., for producing stability
+  diagrams).
+
+* Factory functions for I/O system creation are now consistent in
+  terms of copying signal/system names, overriding system/signal
+  names, and converting between classes.
+
+* The `tf` factory function to allow a 2D list of SISO transfer
+  functions to be given as a means of creating a MIMO transfer
+  function (use the new `combine_tf` function).
+
+* The `nlsys` factory function can now create a `NonlinearIOSystem`
+  representation of a `StateSpace` system (passed as the first
+  argument to `nlsys`).
+
+* LTI systems now have member functions for computing the various time
+  responses and generating frequency domain plots.  See `LTI.to_ss`,
+  `LTI.to_tf`, `LTI.bode_plot`, `LTI.nyquist_plot`, `LTI.nichols_plot`
+  and `LTI.forced_response`, `LTI.impulse_response`,
+  `LTI.initial_response`, `LTI.step_response`.
+
+* String representations of I/O systems (accessed via `repr`, `print`,
+  and `str`) have been updated to create a more consistent form and
+  provide more useful information.  See
+  :ref:`displaying-lti-system-information` for more information.
+
+* Binary operations between MIMO and SISO functions are now supported,
+  with the SISO system being converted to a MIMO system as if it were
+  a scalar.
+
+* `nyquist_response`: generates an error if you force the system to
+  evaluate the dynamics at a pole.
+
+* `phase_crossover_frequencies`: turned off spurious warning messages.
+
+* `ss2tf`: added new `method=scipy` capability, allowing `ss2tf` to
+  work on MIMO systems even if Slycot is not present.
+
+* `flatsys.solve_flat_optimal` (legacy `flatsys.solve_flat_ocp`):
+  allows scalar time vector.
+
+* Improved checking of matrix shapes and better error messages in
+  state space factory functions and other operations where matrices
+  are passed as arguments.
+
+* `FrequencyResponseData`: use `~FrequencyResponseData.complex` to
+  access the (squeeze processed) complex frequency response (instead
+  of the legacy `response` property) and
+  `~FrequencyResponseData.frdata <FrequencyResponseData>` to access
+  the 3D frequency response data array (instead of the legacy `fresp`
+  attribute).
+
+* Time response and optimization function keywords have been
+  regularized to allow consistent use of keywords across related
+  functions:
+
+  - Parameters specifying the inputs, outputs, and states are referred
+    to as `inputs`, `outputs`, and `states` consistently throughout the
+    functions.
+
+  - Variables associated with inputs, outputs, states and time use
+    those words plus an appropriate modifier: `initial_state`,
+    `final_output`, `input_indices`, etc.
+
+  - Aliases are used both to maintain backward compatibility and to
+    allow shorthand descriptions: e.g., `U`, `Y`, `X0`. Short form
+    aliases are documented in docstrings by listing the parameter as
+    ``long_form (or sf) : type``.
+
+  - Existing legacy keywords are allowed and generate a
+    `PendingDeprecationWarning`.  Specifying a parameter value in two
+    different ways (e.g., via long form and an alias) generates a
+    `TypeError`.
+
+* `phase_plane_plot`: makes use of the matplotlib
+  `~matplotlib.pyplot.streamplot` function to provide better default
+  phase plane diagrams.
+
+* `root_locus_plot`: added by the ability to recompute the root locus
+  when zooming in on portions of the root locus diagram.
+
+* `nyquist_plot`: updated the rescaling algorithm to use a more
+  gradual change in the magnitude of the Nyquist curve.  The
+  `blend_fraction` parameter can be used to start the rescaling prior
+  to reaching `max_curve_magnitude`, giving less confusing plots. Some
+  default parameter values have been adjusted to improve Nyquist
+  plots.
+
+
+Deprecations
+............
+
+The following functions have been newly deprecated in this release and
+generate a warning message when used:
+
+* `FrequencyResponseData.response`: use
+  `FrequencyResponseData.complex` to return the complex value of the
+  frequency response.
+
+* `FrequencyResponseData.fresp`: use `FrequencyResponseData.frdata
+  <FrequencyResponseData>` to access the raw 3D frequency response
+  data array.
+
+The listed items are slated to be removed in future releases (usually
+the next major or minor version update).

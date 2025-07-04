@@ -14,10 +14,10 @@ systems (both linear time-invariant and nonlinear).  They are usually
 created from factory functions such as :func:`tf` and :func:`ss`, so the
 user should normally not need to instantiate these directly.
 
-The following figure illustrates the relationship between the classes.
+The following figure illustrates the relationship between the classes:
 
-.. image:: figures/classes.pdf
-   :width: 800
+.. figure:: figures/classes.svg
+   :width: 640
    :align: center
 
 .. autosummary::
@@ -33,6 +33,17 @@ The following figure illustrates the relationship between the classes.
    FrequencyResponseData
    InterconnectedSystem
    LinearICSystem
+
+The time response of an input/output system is represented using a
+special :class:`NamedSignal` class that allows the individual signal
+elements to be access using signal names in place of integer offsets:
+
+.. autosummary::
+   :toctree: generated/
+   :template: extended-class-template.rst
+   :nosignatures:
+
+   NamedSignal
 
 
 Response and Plotting Classes
@@ -95,5 +106,5 @@ operations:
    optimal.OptimalEstimationProblem
    optimal.OptimalEstimationResult
 
-More informaton on the functions used to create these classes can be
+More information on the functions used to create these classes can be
 found in the :ref:`nonlinear-systems` chapter.
