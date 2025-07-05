@@ -26,9 +26,11 @@ class TestDiscrete:
         sys = rss(3, 1, 1)
         T.siso_ss1 = StateSpace(sys.A, sys.B, sys.C, sys.D, None)
         T.siso_ss1c = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.0)
-        T.siso_ss1d = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.1)
-        T.siso_ss2d = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.2)
-        T.siso_ss3d = StateSpace(sys.A, sys.B, sys.C, sys.D, True)
+
+        dsys = ct.sample_system(sys, 1)
+        T.siso_ss1d = StateSpace(dsys.A, dsys.B, dsys.C, dsys.D, 0.1)
+        T.siso_ss2d = StateSpace(dsys.A, dsys.B, dsys.C, dsys.D, 0.2)
+        T.siso_ss3d = StateSpace(dsys.A, dsys.B, dsys.C, dsys.D, True)
 
         # Two input, two output continuous-time system
         A = [[-3., 4., 2.], [-1., -3., 0.], [2., 5., 3.]]
@@ -39,17 +41,18 @@ class TestDiscrete:
         T.mimo_ss1c = StateSpace(A, B, C, D, 0)
 
         # Two input, two output discrete-time system
-        T.mimo_ss1d = StateSpace(A, B, C, D, 0.1)
+        T.mimo_ss1d = ct.sample_system(T.mimo_ss1c, 0.1)
 
         # Same system, but with a different sampling time
-        T.mimo_ss2d = StateSpace(A, B, C, D, 0.2)
+        T.mimo_ss2d = StateSpace(
+            T.mimo_ss1d.A, T.mimo_ss1d.B, T.mimo_ss1d.C, T.mimo_ss1d.D, 0.2)
 
         # Single input, single output continuus and discrete transfer function
         T.siso_tf1 = TransferFunction([1, 1], [1, 2, 1], None)
-        T.siso_tf1c = TransferFunction([1, 1], [1, 2, 1], 0)
-        T.siso_tf1d = TransferFunction([1, 1], [1, 2, 1], 0.1)
-        T.siso_tf2d = TransferFunction([1, 1], [1, 2, 1], 0.2)
-        T.siso_tf3d = TransferFunction([1, 1], [1, 2, 1], True)
+        T.siso_tf1c = TransferFunction([1, 1], [1, 0.2, 1], 0)
+        T.siso_tf1d = TransferFunction([1, 1], [1, 0.2, 0.1], 0.1)
+        T.siso_tf2d = TransferFunction([1, 1], [1, 0.2, 0.1], 0.2)
+        T.siso_tf3d = TransferFunction([1, 1], [1, 0.2, 0.1], True)
 
         return T
 
