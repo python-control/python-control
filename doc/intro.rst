@@ -126,7 +126,7 @@ some things to keep in mind:
 
 * Vectors and matrices used as arguments to functions can be written
   using lists, with commas required between elements and column
-  vectors implemented as nested list .  So [1 2 3] must be written as
+  vectors implemented as nested lists.  So [1 2 3] must be written as
   [1, 2, 3] and matrices are written using 2D nested lists, e.g., [[1,
   2], [3, 4]].
 * Functions that in MATLAB would return variable numbers of values
@@ -150,12 +150,12 @@ This documentation has a number of notional conventions and functionality:
   Manual, which contains documentation for all functions, classes,
   configurable default parameters, and other detailed information.
 
-* Class, functions, and methods with additional documentation appear
+* Classes, functions, and methods with additional documentation appear
   in a bold, code font that link to the Reference Manual. Example: `ss`.
 
 * Links to other sections appear in blue. Example: :ref:`nonlinear-systems`.
 
-* Parameters appear in a (non-bode) code font, as do code fragments.
+* Parameters appear in a (non-bold) code font, as do code fragments.
   Example: `omega`.
 
 * Example code is contained in code blocks that can be copied using

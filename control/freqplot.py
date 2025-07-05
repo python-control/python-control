@@ -1659,7 +1659,7 @@ def nyquist_plot(
         portions of the contour are plotted using a different line style.
     label : str or array_like of str, optional
         If present, replace automatically generated label(s) with the given
-        label(s).  If sysdata is a list, strings should be specified for each
+        label(s).  If `data` is a list, strings should be specified for each
         system.
     label_freq : int, optional
         Label every nth frequency on the plot.  If not specified, no labels
@@ -1690,8 +1690,8 @@ def nyquist_plot(
         elements is equivalent to providing `omega_limits`.
     omega_num : int, optional
         Number of samples to use for the frequency range.  Defaults to
-        `config.defaults['freqplot.number_of_samples']`.  Ignored if data is
-        not a list of systems.
+        `config.defaults['freqplot.number_of_samples']`.  Ignored if `data`
+        is not a system or list of systems.
     plot : bool, optional
         (legacy) If given, `nyquist_plot` returns the legacy return values
         of (counts, contours).  If False, return the values with no plot.
