@@ -10,13 +10,12 @@ build-backend = "setuptools.build_meta"
 name = "control"
 description = "Python Control Systems Library"
 authors = [{name = "Python Control Developers", email = "python-control-developers@lists.sourceforge.net"}]
-license = {text = "BSD-3-Clause"}
+license = "BSD-3-Clause"
 readme = "README.rst"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
