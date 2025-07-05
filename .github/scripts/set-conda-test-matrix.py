@@ -27,5 +27,19 @@ for conda_pkg_file in Path("slycot-conda-pkgs").glob("*/*.tar.bz2"):
                 'blas_lib':  cbl}
         conda_jobs.append(cjob)
 
+# Make sure Windows jobs are included even if we didn't build any
+windows_pythons = ['3.11']  # Whatever you want to test
+
+for py in windows_pythons:
+    for blas in combinations['windows']:
+        cjob = {
+            'packagekey': f'windows-{py}',
+            'os': 'windows',
+            'python': py,
+            'blas_lib': blas,
+            'package_source': 'conda-forge'
+        }
+        conda_jobs.append(cjob)
+
 matrix = { 'include': conda_jobs }
 print(json.dumps(matrix))
