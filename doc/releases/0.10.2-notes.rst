@@ -9,15 +9,16 @@ Version 0.10.2 Release Notes (current)
 * `GitHub release page
   <https://github.com/python-control/python-control/releases/tag/0.10.2>`_
 
-This release contains numerous bug fixes and improvements, including
-substantial updates to the documentation, including refactoring of the
-online manual into a User Guide and a Reference Manual, as well as
-more consistent and complete docstrings. In addition, signals and
-systems can now be referenced using signal labels in addition to
-offsets, and phase plane plots make use of the matplotlib
-`~matplotlib.pyplot.streamplot` function.  Numerous other changes have
-been made to improve consistency of keyword arguments and function
-names, with legacy aliases available.
+This release includes numerous bug fixes and improvements, with major
+changes such as a substantial reorganization of the documentation into
+a User Guide and Reference Manual, more consistent and complete
+docstrings, and support for referencing signals and subsystems by name
+as well as by index. Phase plane plots now use matplotlib’s
+`streamplot` for better visuals. New functions include `combine_tf`
+and `split_tf` for MIMO/SISO conversion and `disk_margins` for
+stability analysis. Additional improvements include consistent keyword
+usage, expanded LTI system methods for plotting and responses, better
+error messages, and legacy aliases to maintain backward compatibility.
 
 This version of `python-control` requires Python 3.10 or higher, NumPy
 1.23 or higher (2.x recommended), and SciPy 1.8 or higher.

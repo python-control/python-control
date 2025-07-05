@@ -536,10 +536,12 @@ def disk_margins(L, omega, skew=0.0, returnall=False):
         1D array of (non-negative) frequencies (rad/s) at which
         to evaluate the disk-based stability margins.
     skew : float or array_like, optional
-        skew parameter(s) for disk margin (default = 0.0).
-        skew = 0.0 "balanced" sensitivity function 0.5*(S - T).
-        skew = 1.0 sensitivity function S.
-        skew = -1.0 complementary sensitivity function T.
+        Skew parameter(s) for disk margin (default = 0.0):
+
+        * skew = 0.0 "balanced" sensitivity function 0.5*(S - T)
+        * skew = 1.0 sensitivity function S
+        * skew = -1.0 complementary sensitivity function T
+
     returnall : bool, optional
         If True, return frequency-dependent margins.
         If False (default), return worst-case (minimum) margins.
@@ -553,7 +555,7 @@ def disk_margins(L, omega, skew=0.0, returnall=False):
     DPM : float or array_like
         Disk-based phase margin.
 
-    Example
+    Examples
     --------
     >> omega = np.logspace(-1, 3, 1001)
     >> P = control.ss([[0, 10], [-10, 0]], np.eye(2), [[1, 10],

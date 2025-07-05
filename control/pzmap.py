@@ -129,7 +129,7 @@ class PoleZeroList(list):
 
         Parameters
         ----------
-        cplt: ControlPlot
+        cplt : `ControlPlot`
             Graphics handles of the existing plot.
         """
         pole_zero_replot(self, cplt)

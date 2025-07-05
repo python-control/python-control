@@ -107,7 +107,6 @@ jobs:
           os:
             - 'ubuntu'
             - 'macos'
-            - 'windows'
           python:
             # build on one, expand matrix in conda-build from the Sylcot/conda-recipe/conda_build_config.yaml
             - '3.11'
@@ -332,7 +331,13 @@ jobs:
               echo "libblas * *mkl" >> $CONDA_PREFIX/conda-meta/pinned
               ;;
           esac
-          conda install -c ./slycot-conda-pkgs slycot
+          if [ "${{ matrix.os }}" = "windows" ]; then
+            echo "Installing slycot from conda-forge on Windows"
+            conda install slycot
+          else
+            echo "Installing built conda package from local channel"
+            conda install -c ./slycot-conda-pkgs slycot
+          fi	  
           conda list
       - name: Test with pytest
         run: JOBNAME="$JOBNAME" pytest control/tests

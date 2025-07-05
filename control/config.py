@@ -297,7 +297,7 @@ def use_legacy_defaults(version):
     Parameters
     ----------
     version : string
-        Version number of the defaults desired. Ranges from '0.1' to '0.10.1'.
+        Version number of `python-control` to use for setting defaults.
 
     Examples
     --------
@@ -341,6 +341,14 @@ def use_legacy_defaults(version):
     # Go backwards through releases and reset defaults
     #
     reset_defaults()            # start from a clean slate
+
+    # Version 0.10.2:
+    if major == 0 and minor < 10 or (minor == 10 and patch < 2):
+        from math import inf
+
+        # Reset Nyquist defaults
+        set_defaults('nyquist', arrows=2, max_curve_magnitude=20,
+                     blend_fraction=0, indent_points=50)
 
     # Version 0.9.2:
     if major == 0 and minor < 9 or (minor == 9 and patch < 2):

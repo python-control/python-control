@@ -110,8 +110,8 @@ Filenames
 * Source files are lower case, usually less than 10 characters (and 8
   or less is better).
 
-* Unit tests (in `control/tests/`) are of the form `module_test.py` or
-  `module_function.py`.
+* Unit tests (in `control/tests/`) are of the form `module_test.py`,
+  `module_functionality_test.py`, or `functionality_test.py`.
 
 
 Class names
