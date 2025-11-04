@@ -85,7 +85,7 @@ def h2syn(P, nmeas, ncon):
     return K
 
 
-def hinfsyn(P, nmeas, ncon):
+def hinfsyn(P, nmeas, ncon, gamTry):
     # TODO: document significance of rcond
     """H-infinity control synthesis for plant P.
 
@@ -97,6 +97,8 @@ def hinfsyn(P, nmeas, ncon):
         Number of measurements (input to controller).
     ncon : int
         Number of control inputs (output from controller).
+    gamTry : int, optional
+        Target performance level (default = None).
 
     Returns
     -------
@@ -137,7 +139,10 @@ def hinfsyn(P, nmeas, ncon):
     >>> P = ct.interconnect([P11, P12, P21, P22], inplist=['w', 'u'], outlist=['z', 'y'])
 
     >>> # Synthesize Hinf optimal stabilizing controller
-    >>> K, CL, gam, rcond = ct.hinfsyn(P, nmeas=1, ncon=1)
+    >>> K_opt, CL_opt, gam_opt, rcond_opt = ct.hinfsyn(P, nmeas=1, ncon=1)
+
+    >>> # Synthesize suboptimal controller with better numerical properties
+    >>> K, CL, gam, rcond = ct.hinfsyn(P, nmeas=1, ncon=1, gamTry=1.1*gam_opt)
     >>> T = ct.feedback(G, K, sign=1)
     >>> all(T.poles() < 0)
     True
@@ -156,8 +161,13 @@ def hinfsyn(P, nmeas, ncon):
     n = np.size(P.A, 0)
     m = np.size(P.B, 1)
     np_ = np.size(P.C, 0)
-    gamma = 1.e100
-    out = sb10ad(n, m, np_, ncon, nmeas, gamma, P.A, P.B, P.C, P.D)
+    if gamTry == None:
+        gamma = 1.e100,
+        job = 3
+    else:
+        gamma = gamTry
+        job = 4
+    out = sb10ad(n, m, np_, ncon, nmeas, gamma, P.A, P.B, P.C, P.D, job)
     gam = out[0]
     Ak = out[1]
     Bk = out[2]
