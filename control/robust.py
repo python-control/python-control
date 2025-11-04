@@ -85,7 +85,7 @@ def h2syn(P, nmeas, ncon):
     return K
 
 
-def hinfsyn(P, nmeas, ncon, gamTry):
+def hinfsyn(P, nmeas, ncon, gamTry=None):
     # TODO: document significance of rcond
     """H-infinity control synthesis for plant P.
 
