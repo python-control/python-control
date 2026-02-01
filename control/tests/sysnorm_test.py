@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 
-@pytest.mark.parametrize("method", ["slycot", "scipy", None])
+@pytest.mark.parametrize("method", [pytest.param("slycot", marks=pytest.mark.slycot), "scipy", None])
 def test_norm_1st_order_stable_system(method):
     """First-order stable continuous-time system"""
     s = ct.tf('s')
@@ -25,7 +25,7 @@ def test_norm_1st_order_stable_system(method):
     assert np.allclose(ct.norm(Gd1, p=2, method=method), 0.223513699524858) # Comparison to norm computed in MATLAB
 
 
-@pytest.mark.parametrize("method", ["slycot", "scipy", None])
+@pytest.mark.parametrize("method", [pytest.param("slycot", marks=pytest.mark.slycot), "scipy", None])
 def test_norm_1st_order_unstable_system(method):
     """First-order unstable continuous-time system"""
     s = ct.tf('s')
@@ -40,7 +40,7 @@ def test_norm_1st_order_unstable_system(method):
     with pytest.warns(UserWarning, match="System is unstable!"):
         assert ct.norm(Gd2, p=2, method=method) == float('inf') # Comparison to norm computed in MATLAB
 
-@pytest.mark.parametrize("method", ["slycot", "scipy", None])
+@pytest.mark.parametrize("method", [pytest.param("slycot", marks=pytest.mark.slycot), "scipy", None])
 def test_norm_2nd_order_system_imag_poles(method):
     """Second-order continuous-time system with poles on imaginary axis"""
     s = ct.tf('s')
@@ -57,7 +57,7 @@ def test_norm_2nd_order_system_imag_poles(method):
     with pytest.warns(UserWarning, match="Poles close to, or on, the complex unit circle."):
         assert ct.norm(Gd3, p=2, method=method) == float('inf') # Comparison to norm computed in MATLAB
 
-@pytest.mark.parametrize("method", ["slycot", "scipy", None])
+@pytest.mark.parametrize("method", [pytest.param("slycot", marks=pytest.mark.slycot), "scipy", None])
 def test_norm_3rd_order_mimo_system(method):
     """Third-order stable MIMO continuous-time system"""
     A = np.array([[-1.017041847539126,  -0.224182952826418,   0.042538079149249],
