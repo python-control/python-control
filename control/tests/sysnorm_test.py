@@ -76,3 +76,23 @@ def test_norm_3rd_order_mimo_system(method):
     Gd4 = ct.sample_system(G4, 0.1)
     assert np.allclose(ct.norm(Gd4, p='inf', method=method), 4.276759162964228) # Comparison to norm computed in MATLAB
     assert np.allclose(ct.norm(Gd4, p=2, method=method), 0.707434962289554) # Comparison to norm computed in MATLAB
+
+
+@pytest.mark.noslycot
+def test_sysnorm_no_slycot():
+    """Test that sysnorm raises ControlSlycot when slycot is requested but not available"""
+    s = ct.tf('s')
+    G = 1/(s+1)
+
+    with pytest.raises(ct.ControlSlycot, match="Can't find slycot module ab13bd"):
+        ct.norm(G, p=2, method='slycot')
+
+
+def test_norm_invalid_p():
+    """Test that norm raises Error for invalid norm request"""
+    s = ct.tf('s')
+    G = 1/(s+1)
+
+    with pytest.raises(ct.ControlArgument,
+                       match="Norm computation for p=myownnorm currently not supported."):
+        ct.norm(G, p='myownnorm', method=None)
