@@ -109,6 +109,11 @@ class TestLTI:
         np.testing.assert_allclose(sys1.bandwidth(), 0.099762834511098)
         np.testing.assert_allclose(bandwidth(sys1), 0.099762834511098)
 
+        # test a first-order discrete-time system, compared with matlab
+        sysd1 = tf([0.1, 0], [1, -0.9], 1)
+        np.testing.assert_allclose(sysd1.bandwidth(), 0.105207775532932)
+        np.testing.assert_allclose(bandwidth(sysd1), 0.105207775532932)
+
         # test a second-order system, compared with matlab
         wn2 = 1
         zeta2 = 0.001

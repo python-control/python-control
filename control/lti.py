@@ -211,8 +211,14 @@ class LTI(InputOutputSystem):
             # solve for the bandwidth, use scipy.optimize.root_scalar() to
             # solve using bisection
             import scipy
+
+            if self.isdtime(strict=True):
+                cvt_w = lambda w: np.exp(1j * w * self.dt)
+            else:
+                cvt_w = lambda w: 1j * w
+
             result = scipy.optimize.root_scalar(
-                lambda w: np.abs(self(w*1j)) - np.abs(dcgain)*10**(dbdrop/20),
+                lambda w: np.abs(self(cvt_w(w))) - np.abs(dcgain)*10**(dbdrop/20),
                 bracket=[omega[idx_dropped[0] - 1], omega[idx_dropped[0]]],
                 method='bisect')
 
