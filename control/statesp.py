@@ -2383,8 +2383,9 @@ def _convert_to_statespace(sys, use_prefix_suffix=False, method=None):
     import itertools
 
     from .xferfcn import TransferFunction
+    from .delaylti import DelayLTI
 
-    if isinstance(sys, StateSpace):
+    if isinstance(sys, StateSpace) or isinstance(sys, DelayLTI):
         return sys
 
     elif isinstance(sys, TransferFunction):
