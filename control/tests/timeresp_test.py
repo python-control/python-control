@@ -2,6 +2,7 @@
 
 from copy import copy
 from math import isclose
+import warnings
 
 import numpy as np
 import pytest
@@ -826,6 +827,14 @@ class TestTimeresp:
         np.testing.assert_allclose(ideal_tfinal, tfinal, rtol=1e-4)
         T = _default_time_vector(tfsys)
         np.testing.assert_allclose(T[-1], tfinal, atol=0.5*ideal_dt)
+
+    def test_discrete_time_negative_one_settling(self):
+        #system with -1 pole
+        TF = TransferFunction([1,3,0],[1,3,2], dt=True)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            impulse_response(TF)
+
 
     @pytest.mark.parametrize("wn, zeta", [(10, 0), (100, 0), (100, .1)])
     def test_auto_generated_time_vector_dt_cont1(self, wn, zeta):
