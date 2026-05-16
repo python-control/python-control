@@ -6,12 +6,15 @@ from math import isclose
 import numpy as np
 import pytest
 
+
 import control as ct
 from control import StateSpace, TransferFunction, c2d, isctime, ss2tf, tf2ss
 from control.exception import pandas_check
 from control.timeresp import _default_time_vector, _ideal_tfinal_and_dt, \
     forced_response, impulse_response, initial_response, step_info, \
     step_response
+
+import warnings
 
 
 class TSys:
@@ -817,7 +820,7 @@ class TestTimeresp:
 
     @pytest.mark.parametrize(
         "tfsys, tfinal",
-        [(TransferFunction(1, [1, .5]), 13.81551),        #  pole at 0.5
+        [(TransferFunction(1, [1, .5]), 25),        #  pole at 0.5
          (TransferFunction(1, [1, .5]).sample(.1), 25),  # discrete pole at 0.5
          (TransferFunction(1, [1, .5, 0]), 25)])         # poles at 0.5 and 0
     def test_auto_generated_time_vector_tfinal(self, tfsys, tfinal):
@@ -826,6 +829,14 @@ class TestTimeresp:
         np.testing.assert_allclose(ideal_tfinal, tfinal, rtol=1e-4)
         T = _default_time_vector(tfsys)
         np.testing.assert_allclose(T[-1], tfinal, atol=0.5*ideal_dt)
+    
+    def test_discrete_time_negative_one_settling(self):
+        #system with -1 pole
+        TF = TransferFunction([1,3,0],[1,3,2], dt =True)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            impulse_response(TF)
+        
 
     @pytest.mark.parametrize("wn, zeta", [(10, 0), (100, 0), (100, .1)])
     def test_auto_generated_time_vector_dt_cont1(self, wn, zeta):

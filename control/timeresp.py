@@ -2172,12 +2172,13 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         m_z = np.abs(p) < sqrt_eps
         p = p[~m_z]
         # Negative reals- treated as oscillatory mode
-        m_nr = (p.real < 0) & (np.abs(p.imag) < sqrt_eps)
+        m_nr = (p.real < 0) & (np.abs(p.imag) < sqrt_eps) & (np.abs(p.real+1)>sqrt_eps)
         p_nr, p = p[m_nr], p[~m_nr]
         if p_nr.size > 0:
             t_emp = np.max(log_decay_percent / np.abs((np.log(p_nr)/dt).real))
             tfinal = max(tfinal, t_emp)
         # discrete integrators
+
         m_int = (p.real - 1 < sqrt_eps) & (np.abs(p.imag) < sqrt_eps)
         p_int, p = p[m_int], p[~m_int]
         # pure oscillatory modes
