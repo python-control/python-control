@@ -199,14 +199,16 @@ def dlqe(*args, **kwargs):
 
     .. math::  E\{w w^T\} = QN,  E\{v v^T\} = RN,  E\{w v^T\} = NN
 
-    The dlqe() function computes the observer gain matrix L such that the
-    stationary (non-time-varying) Kalman filter
+    The dlqe() function computes the one-step predictor gain matrix L such
+    that the stationary (non-time-varying) Kalman filter
 
     .. math:: x_e[n+1] = A x_e[n] + B u[n] + L(y[n] - C x_e[n] - D u[n])
 
-    produces a state estimate x_e[n] that minimizes the expected squared
-    error using the sensor measurements y. The noise cross-correlation `NN`
-    is set to zero when omitted.
+    produces a state estimate x_e[n] whose steady-state estimation error
+    x[n] - x_e[n] has minimum covariance using the sensor measurements y.
+    If `return_filter_form` is True, `dlqe` instead returns the filter-form
+    correction gain whose corresponding predictor gain is `A L`. The noise
+    cross-correlation `NN` is set to zero when omitted.
 
     Parameters
     ----------
@@ -220,20 +222,39 @@ def dlqe(*args, **kwargs):
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot'
         first and then 'scipy'.
+    return_filter_form : bool, optional
+        If True, return the Kalman filter gain
+        :math:`P C^T (C P C^T + R_N)^{-1}` instead of the default predictor
+        gain :math:`A P C^T (C P C^T + R_N)^{-1}`.
 
     Returns
     -------
     L : 2D array
-        Kalman estimator gain.
+        Kalman estimator gain. By default, this is the predictor-form gain.
+        If `return_filter_form` is True, this is the filter-form gain.
     P : 2D array
-        Solution to Riccati equation.
+        Steady-state prediction error covariance (prior covariance) that
+        solves the Riccati equation.
 
         .. math::
 
-            A P + P A^T - (P C^T + G N) R^{-1}  (C P + N^T G^T) + G Q G^T = 0
+            P = A P A^T
+                - A P C^T (C P C^T + R_N)^{-1} C P A^T
+                + G Q_N G^T
 
     E : 1D array
-        Eigenvalues of estimator poles eig(A - L C).
+        Eigenvalues of estimator poles. With the default predictor-form gain,
+        these are `eig(A - L C)`. With `return_filter_form=True`, these are
+        `eig(A @ (I - L C))`.
+
+    Notes
+    -----
+    By default, `dlqe` returns the predictor-form gain
+    :math:`A P C^T (C P C^T + R_N)^{-1}`.  Use
+    `return_filter_form=True` to return the filter-form gain
+    :math:`P C^T (C P C^T + R_N)^{-1}` instead.  The returned covariance
+    `P` is the steady-state prediction error covariance used in both gain
+    formulas.
 
     Examples
     --------
@@ -250,8 +271,9 @@ def dlqe(*args, **kwargs):
     # Process the arguments and figure out what inputs we received
     #
 
-    # Get the method to use (if specified as a keyword)
+    # Get keywords
     method = kwargs.pop('method', None)
+    return_filter_form = kwargs.pop('return_filter_form', False)
     if kwargs:
         raise TypeError("unrecognized keyword(s): ", str(kwargs))
 
@@ -300,6 +322,9 @@ def dlqe(*args, **kwargs):
     # Compute the result (dimension and symmetry checking done in dare())
     P, E, LT = dare(A.T, C.T, G @ QN @ G.T, RN, method=method,
                     _Bs="C", _Qs="QN", _Rs="RN", _Ss="NN")
+    if return_filter_form:
+        L = sp.linalg.solve((C @ P @ C.T + RN).T, (P @ C.T).T).T
+        return L, P, E
     return LT.T, P, E
 
 

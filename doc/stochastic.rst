@@ -183,9 +183,14 @@ called in several forms:
 where :code:`sys` is an :class:`LTI` object, and `A`, `G`, `C`, `QN`, `RN`,
 and `NN` are 2D arrays of appropriate dimension.  If :code:`sys` is a
 discrete-time system, the first two forms will compute the discrete
-time optimal controller.  For the second two forms, the :func:`dlqr`
+time optimal estimator.  For the second two forms, the :func:`dlqe`
 function can be used.  Additional arguments and details are given on
-the :func:`lqr` and :func:`dlqr` documentation pages.
+the :func:`lqe` and :func:`dlqe` documentation pages.
+
+For discrete-time systems, :func:`dlqe` returns the predictor-form gain
+:math:`A P C^T (C P C^T + R_N)^{-1}` by default.  Use
+``return_filter_form=True`` to return the filter-form gain
+:math:`P C^T (C P C^T + R_N)^{-1}` instead.
 
 .. testsetup:: kalman
 
