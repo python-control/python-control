@@ -432,6 +432,36 @@ def test_linear_interconnect():
         outlist=['plant.y'], outputs='y')
     assert clsys.syslist[0].name == 'ctrl'
 
+
+def test_interconnect_zero_input_one_output():
+    plant = ct.ss(
+        [[1, 1], [0, -2]],
+        [[0], [1]],
+        [[1, 0]],
+        [[0]],
+        inputs=['u'],
+        outputs=['y'],
+        name='plant',
+        dt=True,
+    )
+    controller = ct.ss(
+        [[2.25, 1], [-5, -0.5]],
+        [[-1.25], [4.5]],
+        [[-0.5, 1.5]],
+        [[0]],
+        inputs=['y'],
+        outputs=['u'],
+        name='controller',
+        dt=True,
+    )
+
+    sys = ct.interconnect([plant, controller], inplist=None, outlist=['y'])
+
+    assert sys.ninputs == 0
+    assert sys.noutputs == 1
+    assert sys.D.shape == (1, 0)
+
+
 @pytest.mark.parametrize(
     "connections, inplist, outlist, inputs, outputs", [
         pytest.param(
