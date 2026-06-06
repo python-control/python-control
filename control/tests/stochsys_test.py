@@ -85,6 +85,35 @@ def test_DLQE(method):
     L, P, poles = dlqe(A, G, C, QN, RN, method=method)
     check_DLQE(L, P, poles, G, QN, RN)
 
+@pytest.mark.parametrize("method", [None,
+                                    pytest.param('slycot', marks=pytest.mark.slycot),
+                                    'scipy'])
+def test_DLQE_return_filter_form(method):
+    A = np.array([[0., 1.], [0., 0.5]])
+    G = np.eye(2)
+    C = np.array([[1., 0.]])
+    QN = np.eye(2)
+    RN = np.array([[1.]])
+
+    L_pred, P_pred, E_pred = dlqe(A, G, C, QN, RN, method=method)
+    L_filter, P_filter, E_filter = dlqe(
+        A, G, C, QN, RN, method=method, return_filter_form=True)
+    L_expected = np.linalg.solve(
+        (C @ P_pred @ C.T + RN).T, (P_pred @ C.T).T).T
+
+    assert np.linalg.matrix_rank(A) < A.shape[0]
+    assert not np.allclose(L_filter, L_pred)
+    np.testing.assert_allclose(P_filter, P_pred)
+    np.testing.assert_allclose(E_filter, E_pred)
+    np.testing.assert_allclose(L_filter, L_expected)
+    np.testing.assert_allclose(L_pred, A @ L_filter)
+    np.testing.assert_allclose(
+        np.sort_complex(E_pred),
+        np.sort_complex(np.linalg.eigvals(A - L_pred @ C)))
+    np.testing.assert_allclose(
+        np.sort_complex(E_filter),
+        np.sort_complex(np.linalg.eigvals(A @ (np.eye(2) - L_filter @ C))))
+
 def test_lqe_discrete():
     """Test overloading of lqe operator for discrete-time systems"""
     csys = ct.rss(2, 1, 1)
@@ -102,6 +131,13 @@ def test_lqe_discrete():
     # Calling lqe() with a discrete-time system should call dlqe()
     K_lqe, S_lqe, E_lqe = ct.lqe(dsys, Q, R)
     K_dlqe, S_dlqe, E_dlqe = ct.dlqe(dsys, Q, R)
+    np.testing.assert_almost_equal(K_lqe, K_dlqe)
+    np.testing.assert_almost_equal(S_lqe, S_dlqe)
+    np.testing.assert_almost_equal(E_lqe, E_dlqe)
+
+    # Optional dlqe() keywords should pass through lqe() for DT systems
+    K_lqe, S_lqe, E_lqe = ct.lqe(dsys, Q, R, return_filter_form=True)
+    K_dlqe, S_dlqe, E_dlqe = ct.dlqe(dsys, Q, R, return_filter_form=True)
     np.testing.assert_almost_equal(K_lqe, K_dlqe)
     np.testing.assert_almost_equal(S_lqe, S_dlqe)
     np.testing.assert_almost_equal(E_lqe, E_dlqe)
