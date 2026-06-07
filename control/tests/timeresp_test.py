@@ -1,5 +1,6 @@
 """timeresp_test.py - test time response functions"""
 
+import warnings
 from copy import copy
 from math import isclose
 
@@ -582,6 +583,17 @@ class TestTimeresp:
 
         np.testing.assert_array_equal(response.inputs,Uexpected)
 
+    def test_discrete_time_impulse_negative_poles_no_warning(self):
+        # A negative pole on the unit circle should be treated as oscillatory.
+        sysd = ct.TransferFunction([1, 3, 0], [1, 3, 2], dt=True)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RuntimeWarning)
+            response = ct.impulse_response(sysd, 5)
+
+        np.testing.assert_allclose(response.time, np.arange(6))
+        assert np.all(np.isfinite(response.outputs))
+
     @pytest.mark.parametrize("tsystem", ["siso_ss1"], indirect=True)
     def test_impulse_response_warnD(self, tsystem):
         """Test warning about direct feedthrough"""
@@ -826,6 +838,15 @@ class TestTimeresp:
         np.testing.assert_allclose(ideal_tfinal, tfinal, rtol=1e-4)
         T = _default_time_vector(tfsys)
         np.testing.assert_allclose(T[-1], tfinal, atol=0.5*ideal_dt)
+
+    @pytest.mark.parametrize(
+        "tfsys, tfinal",
+        [(TransferFunction(1, [1, .5], dt=True), 9.96578),  # pole at -0.5
+         (TransferFunction(1, [1, 1], dt=True), 10)])       # pole at -1
+    def test_discrete_negative_real_pole_tfinal(self, tfsys, tfinal):
+        """Confirm discrete negative real pole time horizon estimates."""
+        ideal_tfinal, _ = _ideal_tfinal_and_dt(tfsys)
+        np.testing.assert_allclose(ideal_tfinal, tfinal, rtol=1e-4)
 
     @pytest.mark.parametrize("wn, zeta", [(10, 0), (100, 0), (100, .1)])
     def test_auto_generated_time_vector_dt_cont1(self, wn, zeta):
