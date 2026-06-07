@@ -372,6 +372,29 @@ def test_nyquist_indent_im():
     assert _Z(sys) == response.count + _P(sys)
 
 
+def test_nyquist_indent_near_imaginary_axis():
+    """Test indent direction for poles near the imaginary axis."""
+    sys = ct.tf([1, 11, 10], [0.01, 1, 0.01, 1])
+    omega = np.linspace(0, 2, 21)
+
+    _, contour_default = ct.nyquist_response(
+        sys, omega, indent_radius=0.1, return_contour=True,
+        warn_encirclements=False)
+    _, contour_right = ct.nyquist_response(
+        sys, omega, indent_radius=0.1, indent_direction='right',
+        return_contour=True, warn_encirclements=False)
+    _, contour_left = ct.nyquist_response(
+        sys, omega, indent_radius=0.1, indent_direction='left',
+        return_contour=True, warn_encirclements=False)
+
+    # The pole near +1j has a small positive real part, so the default
+    # behavior indents to the left.  Explicit directions override this.
+    pole_index = np.argmin(np.abs(contour_default.imag - 1))
+    assert contour_default[pole_index].real < 0
+    assert contour_right[pole_index].real > 0
+    assert contour_left[pole_index].real < 0
+
+
 def test_nyquist_exceptions():
     # MIMO not implemented
     sys = ct.rss(2, 2, 2)

@@ -1312,6 +1312,8 @@ def nyquist_response(
         # Use existing dictionary, to keep track of processed keywords
         _kwargs |= kwargs
 
+    indent_direction_arg = 'indent_direction' in _kwargs
+
     # Get values for params
     omega_num_given = omega_num is not None
     omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
@@ -1469,8 +1471,21 @@ def nyquist_response(
                             - (s - p).real
 
                         # Figure out which way to offset the contour point
-                        if p.real < 0 or (p.real == 0 and
-                                        indent_direction == 'right'):
+                        if indent_direction_arg:
+                            if indent_direction == 'right':
+                                # Indent to the right
+                                splane_contour[i] += offset
+
+                            elif indent_direction == 'left':
+                                # Indent to the left
+                                splane_contour[i] -= offset
+
+                            else:
+                                raise ValueError(
+                                    "unknown value for indent_direction")
+
+                        elif p.real < 0 or (p.real == 0 and
+                                            indent_direction == 'right'):
                             # Indent to the right
                             splane_contour[i] += offset
 
