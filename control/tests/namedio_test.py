@@ -59,6 +59,40 @@ def test_named_ss():
         "<StateSpace random: ['u1'] -> ['y1', 'y2']>"
 
 
+@pytest.mark.parametrize(
+    "sys",
+    [
+        ct.ss(
+            [[-1, 0], [0, -2]], [[1, 0], [0, 1]],
+            [[1, 0], [0, 1]], [[0, 0], [0, 0]],
+            inputs=['e1', 'e2'], outputs=['u1', 'u2'],
+            states=['x1', 'x2'], name='plant'),
+        ct.tf(
+            [[[1], [2]], [[3], [4]]],
+            [[[1, 1], [1, 2]], [[1, 3], [1, 4]]],
+            inputs=['e1', 'e2'], outputs=['u1', 'u2'], name='plant'),
+    ],
+)
+@pytest.mark.parametrize(
+    "operation",
+    [
+        lambda sys: -sys,
+        lambda sys: sys * 2,
+        lambda sys: 2 * sys,
+        lambda sys: ct.negate(sys),
+        lambda sys: ct.series(sys, 2),
+        lambda sys: ct.series(2, sys),
+    ],
+)
+def test_named_scalar_operations_preserve_signal_names(sys, operation):
+    result = operation(sys)
+
+    assert result.input_labels == sys.input_labels
+    assert result.output_labels == sys.output_labels
+    if isinstance(sys, ct.StateSpace):
+        assert result.state_labels == sys.state_labels
+
+
 # List of classes that are expected
 fun_instance = {
     ct.rss: (ct.NonlinearIOSystem, ct.StateSpace, ct.StateSpace),
