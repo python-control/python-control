@@ -143,6 +143,31 @@ class TestFeedback:
             0.142857142857143, -0.571428571428571, 0.857142857142857]])
         np.testing.assert_array_almost_equal(ans2.D, [[-0.285714285714286]])
 
+    def test_mimo_ss_scalar_feedback(self):
+        """MIMO state space system with scalar feedback block."""
+        sys_static = StateSpace([], [], [], [[1, 0], [0, 2]])
+        ans1 = feedback(sys_static)
+        ans2 = feedback(sys_static, np.eye(2))
+        np.testing.assert_array_almost_equal(ans1.D, ans2.D)
+
+        ans3 = feedback(sys_static, 2)
+        ans4 = feedback(sys_static, 2 * np.eye(2))
+        np.testing.assert_array_almost_equal(ans3.D, ans4.D)
+
+        sys_dynamic = StateSpace(
+            [[-1, 0], [0, -2]], [[1, 0], [0, 1]],
+            [[1, 0], [0, 1]], [[0, 0], [0, 0]])
+        ans5 = feedback(sys_dynamic)
+        ans6 = feedback(sys_dynamic, np.eye(2))
+        np.testing.assert_array_almost_equal(ans5.A, ans6.A)
+        np.testing.assert_array_almost_equal(ans5.B, ans6.B)
+        np.testing.assert_array_almost_equal(ans5.C, ans6.C)
+        np.testing.assert_array_almost_equal(ans5.D, ans6.D)
+
+        sys_nonsquare = StateSpace([], [], [], [[1, 2, 3], [4, 5, 6]])
+        with pytest.raises(ValueError, match="compatible inputs/outputs"):
+            feedback(sys_nonsquare)
+
 
     def testSSTF(self, tsys):
         """State space system with transfer function feedback block."""
