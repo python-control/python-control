@@ -188,7 +188,9 @@ def root_locus_plot(
     if isinstance(sysdata, list) and all(
             [isinstance(sys, LTI) for sys in sysdata]) or \
             isinstance(sysdata, LTI):
-        responses = root_locus_map(sysdata, gains=gains)
+        responses = root_locus_map(
+            sysdata, gains=gains, xlim=kwargs.get('xlim'),
+            ylim=kwargs.get('ylim'))
     else:
         responses = sysdata
 
