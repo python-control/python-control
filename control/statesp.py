@@ -2295,7 +2295,7 @@ def _ssmatrix(data, axis=1, square=None, rows=None, cols=None, name=None):
 
     Returns
     -------
-    arr : 2D array, with shape (0, 0) if a is empty
+    arr : 2D array, with shape (0, 0) for empty vectors or matrices
 
     """
     # Process the name of the object, if available
@@ -2310,9 +2310,9 @@ def _ssmatrix(data, axis=1, square=None, rows=None, cols=None, name=None):
     if (ndim > 2):
         raise ValueError(f"state-space matrix{name} must be 2-dimensional")
 
-    elif (ndim == 2 and shape == (1, 0)) or \
-         (ndim == 1 and shape == (0, )):
-        # Passed an empty matrix or empty vector; change shape to (0, 0)
+    elif (ndim == 2 and shape == (0, 0)) or \
+            (ndim == 1 and shape == (0, )):
+        # Passed a 0-by-0 matrix or empty vector; change shape to (0, 0)
         shape = (0, 0)
 
     elif ndim == 1:
