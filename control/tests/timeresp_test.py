@@ -1245,6 +1245,17 @@ class TestTimeresp:
         assert y.shape == ysh_no
         assert x.shape == (T.size, sys.nstates)
 
+    def test_forced_response_transpose_without_time_vector(self):
+        sys = ct.ss(
+            [[0.5]], [[1.0, -0.25]], [[1.0]], [[0.0, 0.0]], dt=True)
+        U = np.column_stack((np.arange(5.0), np.arange(5.0) + 10))
+
+        response = ct.forced_response(sys, inputs=U, transpose=True)
+
+        np.testing.assert_allclose(response.time, np.arange(U.shape[0]))
+        np.testing.assert_allclose(response.inputs, U)
+        assert response.outputs.shape == (U.shape[0], sys.noutputs)
+
 
 @pytest.mark.pandas
 def test_to_pandas():
