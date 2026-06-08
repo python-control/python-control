@@ -2302,7 +2302,8 @@ def _ssmatrix(data, axis=1, square=None, rows=None, cols=None, name=None):
     name = "" if name is None else " " + name
 
     # Convert the data into an array (always making a copy)
-    arr = np.array(data, dtype=float)
+    dtype = complex if np.iscomplexobj(data) else float
+    arr = np.array(data, dtype=dtype)
     ndim = arr.ndim
     shape = arr.shape
 
