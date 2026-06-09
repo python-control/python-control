@@ -2,10 +2,10 @@
 
 from copy import copy
 from math import isclose
+import warnings
 
 import numpy as np
 import pytest
-
 
 import control as ct
 from control import StateSpace, TransferFunction, c2d, isctime, ss2tf, tf2ss
@@ -14,7 +14,7 @@ from control.timeresp import _default_time_vector, _ideal_tfinal_and_dt, \
     forced_response, impulse_response, initial_response, step_info, \
     step_response
 
-import warnings
+
 
 
 class TSys:
