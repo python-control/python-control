@@ -180,6 +180,19 @@ def test_root_locus_plots(sys, grid, xlim, ylim, interactive):
     # TODO: add tests to make sure everything "looks" OK
 
 
+@pytest.mark.usefixtures("mplcleanup")
+def test_root_locus_plot_initial_limits_refine_gains():
+    sys = ct.tf([1000], [1, 25, 100, 0])
+    xlim = (-10.813628105112421, 14.760795435937652)
+    ylim = (-35.61713798641108, 33.879716621220311)
+
+    cplt = ct.root_locus_plot(
+        sys, grid=False, xlim=xlim, ylim=ylim, interactive=False)
+    expected = ct.root_locus_map(sys, xlim=xlim, ylim=ylim)
+
+    assert len(cplt.lines[0, 2][0].get_xdata()) == len(expected.gains)
+
+
 # Test deprecated keywords
 @pytest.mark.parametrize("keyword", ["kvect", "k"])
 @pytest.mark.usefixtures("mplcleanup")
