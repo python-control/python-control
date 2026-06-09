@@ -832,7 +832,7 @@ class TestTimeresp:
     
     def test_discrete_time_negative_one_settling(self):
         #system with -1 pole
-        TF = TransferFunction([1,3,0],[1,3,2], dt =True)
+        TF = TransferFunction([1,3,0],[1,3,2], dt=True)
         with warnings.catch_warnings():
             warnings.simplefilter("error")
             impulse_response(TF)
