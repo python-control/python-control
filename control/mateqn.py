@@ -47,14 +47,32 @@ except ImportError:
 try:
     from slycot import sb04qd
 except ImportError:
-    sb0qmd = None
+    sb04qd = None
 
 try:
     from slycot import sg03ad
 except ImportError:
-    sb04ad = None
+    sg03ad = None
 
 __all__ = ['lyap', 'dlyap', 'dare', 'care']
+
+
+def _warn_ill_conditioned_E(E):
+    """Warn that the inv(E) congruence transform will lose accuracy.
+
+    The scipy generalized-Lyapunov fallback reduces the problem to a
+    standard Lyapunov equation by inverting E, so a poorly conditioned E
+    costs accuracy (continuous and discrete paths alike, regardless of
+    whether the underlying scipy solve happens to warn).  SLICOT sg03ad
+    (method='slycot') avoids inverting E and is preferable in that case.
+    """
+    condE = np.linalg.cond(E)
+    if condE > 1.0 / np.sqrt(finfo(float).eps):
+        warnings.warn(
+            f"E is ill-conditioned (cond(E) = {condE:.2g}); the "
+            "method='scipy' generalized Lyapunov solution may have reduced "
+            "accuracy.  Use method='slycot' (SLICOT sg03ad) for a more "
+            "robust solution.", UserWarning, stacklevel=3)
 
 #
 # Lyapunov equation solvers lyap and dlyap
@@ -102,6 +120,21 @@ def lyap(A, Q, C=None, E=None, method=None):
     -------
     X : 2D array
         Solution to the Lyapunov or Sylvester equation.
+
+    Notes
+    -----
+    For the generalized Lyapunov equation, method='slycot' uses the
+    SLICOT routine SG03AD, based on the generalized Schur method of
+    Penzl [1]_, which also handles singular E.  With method='scipy', the
+    equation is transformed to a standard Lyapunov equation by inverting
+    E, which requires E to be nonsingular and loses accuracy when E is
+    ill-conditioned (a UserWarning is then issued); method='slycot' does
+    not invert E and is preferable in that case.
+
+    References
+    ----------
+    .. [1] Penzl, T., "Numerical solution of generalized Lyapunov
+       equations", Advances in Computational Mathematics, 8:33-48, 1998.
 
     """
     # Decide what method to use
@@ -162,8 +195,23 @@ def lyap(A, Q, C=None, E=None, method=None):
         _check_shape(E, n, n, square=True, name="E")
 
         if method == 'scipy':
-            raise ControlArgument(
-                "method='scipy' not valid for generalized Lyapunov equation")
+            # Transform to a standard Lyapunov equation by multiplying
+            # from the left by inv(E) and from the right by inv(E).T:
+            #
+            #     (E^-1 A) X + X (E^-1 A)^T + E^-1 Q E^-T = 0
+            #
+            # This requires E to be nonsingular; the SLICOT routine
+            # SG03AD used by method='slycot' (based on the generalized
+            # Schur method of Penzl (1998)) also handles singular E.
+            try:
+                At = solve(E, A)
+                Qt = solve(E, solve(E, Q).T).T
+            except np.linalg.LinAlgError:
+                raise ControlArgument(
+                    "method='scipy' requires E to be nonsingular; "
+                    "use method='slycot' (SLICOT sg03ad) for singular E")
+            _warn_ill_conditioned_E(E)
+            return sp.linalg.solve_continuous_lyapunov(At, -Qt)
 
         # Make sure we have access to the write Slycot routine
         try:
@@ -229,6 +277,32 @@ def dlyap(A, Q, C=None, E=None, method=None):
     X : 2D array (or matrix)
         Solution to the Lyapunov or Sylvester equation.
 
+    Notes
+    -----
+    For the generalized Lyapunov equation, method='slycot' uses the
+    SLICOT routine SG03AD, based on the generalized Schur method of
+    Penzl [1]_, which also handles singular E.  With method='scipy', the
+    equation is transformed to a standard Lyapunov equation by inverting
+    E, which requires E to be nonsingular and loses accuracy when E is
+    ill-conditioned (a UserWarning is then issued); method='slycot' does
+    not invert E and is preferable in that case.
+
+    For the Sylvester equation, method='slycot' uses the
+    Hessenberg-Schur method of the SLICOT routine SB04QD [2]_ and
+    method='scipy' uses the Bartels-Stewart method [3]_; both reduce the
+    coefficient matrices to (Hessenberg-)Schur form and solve the result
+    by back-substitution, with O(n^3 + m^3) cost.
+
+    References
+    ----------
+    .. [1] Penzl, T., "Numerical solution of generalized Lyapunov
+       equations", Advances in Computational Mathematics, 8:33-48, 1998.
+    .. [2] Golub, G.H., Nash, S., and Van Loan, C., "A Hessenberg-Schur
+       method for the problem AX + XB = C", IEEE Trans. Automatic
+       Control, AC-24, pp. 909-913, 1979.
+    .. [3] Bartels, R.H. and Stewart, G.W., "Solution of the matrix
+       equation AX + XB = C", Comm. ACM, 15(9), pp. 820-826, 1972.
+
     """
     # Decide what method to use
     method = _slycot_or_scipy(method)
@@ -279,8 +353,40 @@ def dlyap(A, Q, C=None, E=None, method=None):
         _check_shape(C, n, m, name="C")
 
         if method == 'scipy':
-            raise ControlArgument(
-                "method='scipy' not valid for Sylvester equation")
+            # Solve the discrete-time Sylvester equation
+            #
+            #     A X Q^T - X + C = 0
+            #
+            # by the Bartels-Stewart method, matching the complexity of
+            # the Hessenberg-Schur algorithm of the SLICOT routine
+            # SB04QD used by method='slycot' (Golub, Nash, and Van
+            # Loan, 1979): with complex Schur forms A = U Ta U^H and
+            # Q^T = V Tq V^H and Y = U^H X V, the transformed equation
+            # Ta Y Tq - Y + U^H C V = 0 is solved column by column,
+            # each column requiring one triangular solve.  O(n^3 + m^3)
+            # flops overall.
+            Ta, U = sp.linalg.schur(A, output='complex')
+            Tq, V = sp.linalg.schur(Q.T, output='complex')
+            Ct = U.conj().T @ C @ V
+            # Solvability requires lam_A * lam_Q != 1 for all pairs of
+            # eigenvalues (the diagonals of the triangular factors)
+            if np.min(np.abs(np.outer(np.diag(Tq), np.diag(Ta)) - 1.)) \
+                    < finfo(float).eps * max(
+                        1., np.abs(np.diag(Ta)).max()
+                        * np.abs(np.diag(Tq)).max()):
+                raise ControlArgument(
+                    "A and Q have a pair of eigenvalues whose product "
+                    "is (almost) equal to 1; the discrete-time "
+                    "Sylvester equation is singular")
+            Y = np.empty((n, m), dtype=complex)
+            TaY = np.empty((n, m), dtype=complex)   # running Ta @ Y
+            In = np.eye(n)
+            for k in range(m):
+                rhs = -Ct[:, k] - TaY[:, :k] @ Tq[:k, k]
+                Y[:, k] = sp.linalg.solve_triangular(
+                    Tq[k, k] * Ta - In, rhs)
+                TaY[:, k] = Ta @ Y[:, k]
+            return np.real(U @ Y @ V.conj().T)
 
         # Solve the Sylvester equation by calling Slycot function sb04qd
         X = sb04qd(n, m, -A, Q.T, C)
@@ -292,8 +398,23 @@ def dlyap(A, Q, C=None, E=None, method=None):
         _check_shape(E, n, n, square=True, name="E")
 
         if method == 'scipy':
-            raise ControlArgument(
-                "method='scipy' not valid for generalized Lyapunov equation")
+            # Transform to a standard Lyapunov equation by multiplying
+            # from the left by inv(E) and from the right by inv(E).T:
+            #
+            #     (E^-1 A) X (E^-1 A)^T - X + E^-1 Q E^-T = 0
+            #
+            # This requires E to be nonsingular; the SLICOT routine
+            # SG03AD used by method='slycot' (based on the generalized
+            # Schur method of Penzl (1998)) also handles singular E.
+            try:
+                At = solve(E, A)
+                Qt = solve(E, solve(E, Q).T).T
+            except np.linalg.LinAlgError:
+                raise ControlArgument(
+                    "method='scipy' requires E to be nonsingular; "
+                    "use method='slycot' (SLICOT sg03ad) for singular E")
+            _warn_ill_conditioned_E(E)
+            return sp.linalg.solve_discrete_lyapunov(At, Qt)
 
         # Solve the generalized Lyapunov equation by calling Slycot
         # function sg03ad

@@ -90,19 +90,22 @@ class TestMatrixEquations:
             X_scipy = lyap(A, B, C, method='scipy')
             assert_array_almost_equal(X_scipy, X)
 
-    @pytest.mark.slycot
-    def test_lyap_g(self):
+    @pytest.mark.parametrize('method',
+                             ['scipy',
+                              pytest.param('slycot', marks=pytest.mark.slycot)])
+    def test_lyap_g(self, method):
         A = array([[-1, 2], [-3, -4]])
         Q = array([[3, 1], [1, 1]])
         E = array([[1, 2], [2, 1]])
-        X = lyap(A, Q, None, E)
+        X = lyap(A, Q, None, E, method=method)
         # print("The solution obtained is ", X)
         assert_array_almost_equal(A @ X @ E.T + E @ X @ A.T + Q,
                                   zeros((2,2)))
 
-        # Make sure that trying to solve with SciPy generates an error
-        with pytest.raises(ControlArgument, match="'scipy' not valid"):
-            X = lyap(A, Q, None, E, method='scipy')
+        # Compare methods
+        if method == 'slycot':
+            X_scipy = lyap(A, Q, None, E, method='scipy')
+            assert_array_almost_equal(X_scipy, X)
 
     @pytest.mark.parametrize('method',
                              ['scipy',
@@ -125,39 +128,73 @@ class TestMatrixEquations:
             X_scipy = dlyap(A,Q, method='scipy')
             assert_array_almost_equal(X_scipy, X)
 
-    @pytest.mark.slycot
-    def test_dlyap_g(self):
+    @pytest.mark.parametrize('method',
+                             ['scipy',
+                              pytest.param('slycot', marks=pytest.mark.slycot)])
+    def test_dlyap_g(self, method):
         A = array([[-0.6, 0],[-0.1, -0.4]])
         Q = array([[3, 1],[1, 1]])
         E = array([[1, 1],[2, 1]])
-        X = dlyap(A, Q, None, E)
+        X = dlyap(A, Q, None, E, method=method)
         # print("The solution obtained is ", X)
         assert_array_almost_equal(A @ X @ A.T - E @ X @ E.T + Q,
                                   zeros((2,2)))
 
-        # Make sure that trying to solve with SciPy generates an error
-        with pytest.raises(ControlArgument, match="'scipy' not valid"):
-            X = dlyap(A, Q, None, E, method='scipy')
+        # Compare methods
+        if method == 'slycot':
+            X_scipy = dlyap(A, Q, None, E, method='scipy')
+            assert_array_almost_equal(X_scipy, X)
 
-    @pytest.mark.slycot
-    def test_dlyap_sylvester(self):
+    @pytest.mark.parametrize('method',
+                             ['scipy',
+                              pytest.param('slycot', marks=pytest.mark.slycot)])
+    def test_dlyap_sylvester(self, method):
         A = 5
         B = array([[4, 3], [4, 3]])
         C = array([2, 1])
-        X = dlyap(A,B,C)
+        X = dlyap(A, B, C, method=method)
         # print("The solution obtained is ", X)
         assert_array_almost_equal(A * X @ B.T - X + C, zeros((1,2)))
 
         A = array([[2, 1], [1, 2]])
         B = array([[1, 2], [0.5, 0.1]])
         C = array([[1, 0], [0, 1]])
-        X = dlyap(A, B, C)
+        X = dlyap(A, B, C, method=method)
         # print("The solution obtained is ", X)
         assert_array_almost_equal(A @ X @ B.T - X + C, zeros((2,2)))
 
-        # Make sure that trying to solve with SciPy generates an error
-        with pytest.raises(ControlArgument, match="'scipy' not valid"):
-            X = dlyap(A, B, C, method='scipy')
+        # Compare methods
+        if method == 'slycot':
+            X_scipy = dlyap(A, B, C, method='scipy')
+            assert_array_almost_equal(X_scipy, X)
+
+    @pytest.mark.parametrize("cdlyap", [lyap, dlyap])
+    def test_lyap_g_singular_E_scipy(self, cdlyap):
+        """Generalized Lyapunov with singular E raises on scipy path"""
+        A = array([[-1, 2], [-3, -4]])
+        Q = array([[3, 1], [1, 1]])
+        E = array([[1, 2], [2, 4]])     # singular
+        with pytest.raises(ControlArgument, match="E to be nonsingular"):
+            cdlyap(A, Q, None, E, method='scipy')
+
+    @pytest.mark.parametrize("cdlyap", [lyap, dlyap])
+    def test_lyap_g_ill_conditioned_E_scipy(self, cdlyap):
+        """Generalized Lyapunov with ill-conditioned E warns on scipy path"""
+        A = array([[-1, 2], [-3, -4]])
+        Q = array([[3, 1], [1, 1]])
+        E = array([[1, 1], [1, 1 + 1e-12]])     # nonsingular, cond ~ 4e12
+        with pytest.warns(UserWarning, match="ill-conditioned"):
+            cdlyap(A, Q, None, E, method='scipy')
+
+    def test_dlyap_sylvester_singular_scipy(self):
+        """Discrete Sylvester with an eigenvalue product of 1 is singular"""
+        # eig(A) = {2, 3}, eig(Q) = {0.5, 0.7}; the product 2 * 0.5 = 1
+        # makes the discrete-time Sylvester operator singular
+        A = array([[2., 0.], [0., 3.]])
+        Q = array([[0.5, 0.], [0., 0.7]])
+        C = array([[1., 0.], [0., 1.]])
+        with pytest.raises(ControlArgument, match="singular"):
+            dlyap(A, Q, C, method='scipy')
 
     @pytest.mark.parametrize('method',
                              ['scipy',
@@ -274,7 +311,6 @@ class TestMatrixEquations:
         lam = eigvals(A - B @ G)
         assert_array_less(abs(lam), 1.0)
 
-    @pytest.mark.slycot
     def test_dare_compare(self):
         A = np.array([[-0.6, 0], [-0.1, -0.4]])
         Q = np.array([[2, 1], [1, 0]])
