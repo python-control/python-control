@@ -125,11 +125,13 @@ def lyap(A, Q, C=None, E=None, method=None):
     -----
     For the generalized Lyapunov equation, method='slycot' uses the
     SLICOT routine SG03AD, based on the generalized Schur method of
-    Penzl [1]_, which also handles singular E.  With method='scipy', the
-    equation is transformed to a standard Lyapunov equation by inverting
-    E, which requires E to be nonsingular and loses accuracy when E is
-    ill-conditioned (a UserWarning is then issued); method='slycot' does
-    not invert E and is preferable in that case.
+    Penzl [1]_, which factors the matrix pencil without inverting E.
+    With method='scipy', the equation is transformed to a standard
+    Lyapunov equation by inverting E, which requires E to be nonsingular
+    and loses accuracy when E is ill-conditioned (a UserWarning is then
+    issued); method='slycot' does not invert E and is preferable in that
+    case.  Both methods require E nonsingular; a truly singular
+    (descriptor) E is not currently handled by either.
 
     References
     ----------
@@ -200,16 +202,18 @@ def lyap(A, Q, C=None, E=None, method=None):
             #
             #     (E^-1 A) X + X (E^-1 A)^T + E^-1 Q E^-T = 0
             #
-            # This requires E to be nonsingular; the SLICOT routine
-            # SG03AD used by method='slycot' (based on the generalized
-            # Schur method of Penzl (1998)) also handles singular E.
+            # This requires E to be nonsingular.  SG03AD (method='slycot',
+            # Penzl's generalized Schur method) factors the pencil without
+            # inverting E, but a truly singular E is not handled by either
+            # method.
             try:
                 At = solve(E, A)
                 Qt = solve(E, solve(E, Q).T).T
             except np.linalg.LinAlgError:
                 raise ControlArgument(
                     "method='scipy' requires E to be nonsingular; "
-                    "use method='slycot' (SLICOT sg03ad) for singular E")
+                    "a truly singular E (descriptor system) is not "
+                    "supported by either method")
             _warn_ill_conditioned_E(E)
             return sp.linalg.solve_continuous_lyapunov(At, -Qt)
 
@@ -281,11 +285,13 @@ def dlyap(A, Q, C=None, E=None, method=None):
     -----
     For the generalized Lyapunov equation, method='slycot' uses the
     SLICOT routine SG03AD, based on the generalized Schur method of
-    Penzl [1]_, which also handles singular E.  With method='scipy', the
-    equation is transformed to a standard Lyapunov equation by inverting
-    E, which requires E to be nonsingular and loses accuracy when E is
-    ill-conditioned (a UserWarning is then issued); method='slycot' does
-    not invert E and is preferable in that case.
+    Penzl [1]_, which factors the matrix pencil without inverting E.
+    With method='scipy', the equation is transformed to a standard
+    Lyapunov equation by inverting E, which requires E to be nonsingular
+    and loses accuracy when E is ill-conditioned (a UserWarning is then
+    issued); method='slycot' does not invert E and is preferable in that
+    case.  Both methods require E nonsingular; a truly singular
+    (descriptor) E is not currently handled by either.
 
     For the Sylvester equation, method='slycot' uses the
     Hessenberg-Schur method of the SLICOT routine SB04QD [2]_ and
@@ -403,16 +409,18 @@ def dlyap(A, Q, C=None, E=None, method=None):
             #
             #     (E^-1 A) X (E^-1 A)^T - X + E^-1 Q E^-T = 0
             #
-            # This requires E to be nonsingular; the SLICOT routine
-            # SG03AD used by method='slycot' (based on the generalized
-            # Schur method of Penzl (1998)) also handles singular E.
+            # This requires E to be nonsingular.  SG03AD (method='slycot',
+            # Penzl's generalized Schur method) factors the pencil without
+            # inverting E, but a truly singular E is not handled by either
+            # method.
             try:
                 At = solve(E, A)
                 Qt = solve(E, solve(E, Q).T).T
             except np.linalg.LinAlgError:
                 raise ControlArgument(
                     "method='scipy' requires E to be nonsingular; "
-                    "use method='slycot' (SLICOT sg03ad) for singular E")
+                    "a truly singular E (descriptor system) is not "
+                    "supported by either method")
             _warn_ill_conditioned_E(E)
             return sp.linalg.solve_discrete_lyapunov(At, Qt)
 
