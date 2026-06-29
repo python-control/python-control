@@ -58,21 +58,23 @@ __all__ = ['lyap', 'dlyap', 'dare', 'care']
 
 
 def _warn_ill_conditioned_E(E):
-    """Warn that the inv(E) congruence transform will lose accuracy.
+    """Warn that an ill-conditioned E costs accuracy.
 
     The scipy generalized-Lyapunov fallback reduces the problem to a
     standard Lyapunov equation by inverting E, so a poorly conditioned E
     costs accuracy (continuous and discrete paths alike, regardless of
-    whether the underlying scipy solve happens to warn).  SLICOT sg03ad
-    (method='slycot') avoids inverting E and is preferable in that case.
+    whether the underlying scipy solve happens to warn).  The generalized
+    Lyapunov problem is itself ill-conditioned (about cond(E)**2) when E
+    is, so method='slycot', though it does not form inv(E) explicitly, is
+    not measurably more accurate in that regime.
     """
     condE = np.linalg.cond(E)
     if condE > 1.0 / np.sqrt(finfo(float).eps):
         warnings.warn(
-            f"E is ill-conditioned (cond(E) = {condE:.2g}); the "
-            "method='scipy' generalized Lyapunov solution may have reduced "
-            "accuracy.  Use method='slycot' (SLICOT sg03ad) for a more "
-            "robust solution.", UserWarning, stacklevel=3)
+            f"E is ill-conditioned (cond(E) = {condE:.2g}); the generalized "
+            "Lyapunov solution may have reduced accuracy.  The problem itself "
+            "is ill-conditioned for such E, so method='slycot' is not "
+            "measurably more accurate.", UserWarning, stacklevel=3)
 
 #
 # Lyapunov equation solvers lyap and dlyap
@@ -129,8 +131,10 @@ def lyap(A, Q, C=None, E=None, method=None):
     With method='scipy', the equation is transformed to a standard
     Lyapunov equation by inverting E, which requires E to be nonsingular
     and loses accuracy when E is ill-conditioned (a UserWarning is then
-    issued); method='slycot' does not invert E and is preferable in that
-    case.  Both methods require E nonsingular; a truly singular
+    issued).  The generalized Lyapunov problem is itself ill-conditioned
+    (about cond(E)**2) when E is, so method='slycot', though it does not
+    invert E, is not measurably more accurate in that case.  Both methods
+    require E nonsingular; a truly singular
     (descriptor) E is not currently handled by either.
 
     References
@@ -289,8 +293,10 @@ def dlyap(A, Q, C=None, E=None, method=None):
     With method='scipy', the equation is transformed to a standard
     Lyapunov equation by inverting E, which requires E to be nonsingular
     and loses accuracy when E is ill-conditioned (a UserWarning is then
-    issued); method='slycot' does not invert E and is preferable in that
-    case.  Both methods require E nonsingular; a truly singular
+    issued).  The generalized Lyapunov problem is itself ill-conditioned
+    (about cond(E)**2) when E is, so method='slycot', though it does not
+    invert E, is not measurably more accurate in that case.  Both methods
+    require E nonsingular; a truly singular
     (descriptor) E is not currently handled by either.
 
     For the Sylvester equation, method='slycot' uses the
