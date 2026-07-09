@@ -446,7 +446,7 @@ def streamplot(
     Returns
     -------
     out : StreamplotSet
-        Containter object with lines and arrows contained in the
+        Container object with lines and arrows contained in the
         streamplot. See `matplotlib.axes.Axes.streamplot` for details.
 
     Other Parameters

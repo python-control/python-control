@@ -976,7 +976,7 @@ class StateSpace(NonlinearIOSystem, LTI):
             # The QZ algorithm solves the generalized eigenvalue problem: given
             # `L = [A, B; C, D]` and `M = [I_nxn 0]`, find all finite lambda
             # for which there exist nontrivial solutions of the equation
-            # `Lz - lamba Mz`.
+            # `Lz - lambda Mz`.
             #
             # The generalized eigenvalue problem is only solvable if its
             # arguments are square matrices.

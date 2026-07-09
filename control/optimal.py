@@ -2544,7 +2544,7 @@ def disturbance_range_constraint(sys, lb, ub):
 # constraint followed by the arguments.  However, they are now specified
 # directly as SciPy constraint objects.
 #
-# The _process_constraints() function will covert everything to a consistent
+# The _process_constraints() function will convert everything to a consistent
 # internal representation (currently a tuple with the constraint type as the
 # first element.
 #

@@ -839,7 +839,7 @@ class InterconnectedSystem(NonlinearIOSystem):
                 iosys_repr(sys, format='info'), width=78,
                 initial_indent=" * ", subsequent_indent="    ")) + "\n"
 
-        # Build a list of input, output, and inpout signals
+        # Build a list of input, output, and input/output signals
         input_list, output_list, inpout_list = [], [], []
         for sys in self.syslist:
             input_list += [sys.name + "." + lbl for lbl in sys.input_labels]
@@ -2641,7 +2641,7 @@ def interconnect(
     dprint = lambda s: None if not debug else print(s)
 
     #
-    # Pre-process connecton list
+    # Pre-process connection list
     #
     # Support for various "vector" forms of specifications is handled here,
     # by expanding any specifications that refer to more than one signal.

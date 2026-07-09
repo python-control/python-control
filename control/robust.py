@@ -64,7 +64,7 @@ def h2syn(P, nmeas, ncon):
     """
     # Check for ss system object, need a utility for this?
 
-    # TODO: Check for continous or discrete, only continuous supported right now
+    # TODO: Check for continuous or discrete, only continuous supported right now
 
     try:
         from slycot import sb10hd
@@ -146,7 +146,7 @@ def hinfsyn(P, nmeas, ncon):
 
     # Check for ss system object, need a utility for this?
 
-    # TODO: Check for continous or discrete, only continuous supported right now
+    # TODO: Check for continuous or discrete, only continuous supported right now
 
     try:
         from slycot import sb10ad

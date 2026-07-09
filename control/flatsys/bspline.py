@@ -54,7 +54,7 @@ class BSplineFamily(BasisFamily):
             raise NotImplementedError(
                 "breakpoints for each spline variable not yet supported")
         elif breakpoints.ndim != 1:
-            raise ValueError("breakpoints must be convertable to a 1D array")
+            raise ValueError("breakpoints must be convertible to a 1D array")
         elif breakpoints.size < 2:
             raise ValueError("break point vector must have at least 2 values")
         elif np.any(np.diff(breakpoints) <= 0):

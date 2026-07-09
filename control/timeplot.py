@@ -477,7 +477,7 @@ def time_response_plot(
     # of signals (when overlay_signal is True or plot+inputs = 'overlay'.
     #
     # Traces are labeled at the top of the first row of plots (regular) or
-    # the left edge of rows (tranpose).
+    # the left edge of rows (transpose).
     #
 
     # Time units on the bottom
