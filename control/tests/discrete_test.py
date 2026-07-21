@@ -561,3 +561,36 @@ def test_c2d_matched(num, den, dt, method):
         for czero in sys_ct.zeros():
             zzero = zzeros[(np.abs(zzeros - cmath.exp(czero * dt))).argmin()]
             assert cmath.isclose(cmath.exp(czero * dt), zzero)
+
+
+@pytest.mark.parametrize("num, den", [
+    ([1.], [1., 0.]),                   # integrator (pole at s = 0)
+    ([1.], [1., 0., 0.]),               # double integrator
+    ([2., 5.], [1., 0.]),               # PI controller
+    ([1.], [1., 1., 0.]),               # type 1 plant, 1/(s(s+1))
+    ([1., 0.], [1., 2., 5.]),           # differentiator (zero at s = 0)
+    ([2., 0., 0.], [1., 3., 3., 1.]),   # double zero at s = 0
+    ([1., 0.], [1., 0., 0.]),           # zero and pole at s = 0
+])
+@pytest.mark.parametrize("dt", [0.1, 0.5])
+def test_c2d_matched_origin(num, den, dt):
+    # A pole or zero at s = 0 (integrators, PI/PID, type-1/2 plants) used to
+    # give an all-NaN numerator: the DC-gain match divides by the vanishing
+    # 1 - z factor of the origin pole/zero (#950, #951).
+    sys_ct = ct.tf(num, den)
+    sys_dt = ct.sample_system(sys_ct, dt, method='matched')
+    assert np.all(np.isfinite(sys_dt.num[0][0]))
+    assert np.all(np.isfinite(sys_dt.den[0][0]))
+    # the gain is matched just off the origin, so |G_d(e^jwT)| -> |G_c(jw)|
+    w = 1e-3 / dt
+    assert np.isclose(abs(sys_ct(1j * w)),
+                      abs(sys_dt(cmath.exp(1j * w * dt))), rtol=1e-4)
+
+
+@pytest.mark.parametrize("dt", [0.1, 0.5, 2])
+@pytest.mark.parametrize("k", [1, 2, 3])
+def test_c2d_matched_integrator(k, dt):
+    # matched discretization of 1/s**k is the textbook Ts**k / (z - 1)**k
+    sys_dt = ct.tf([1.], [1.] + [0.] * k).sample(dt, method='matched')
+    np.testing.assert_allclose(sys_dt.num[0][0], [dt**k])
+    np.testing.assert_allclose(sys_dt.den[0][0], np.poly([1.] * k))
