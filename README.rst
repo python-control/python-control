@@ -177,3 +177,7 @@ Your contributions are welcome!  Simply fork the GitHub repository and send a
 Please see the `Developer's Wiki`_ for detailed instructions.
 
 .. _Developer's Wiki: https://github.com/python-control/python-control/wiki
+
+Please follow the `AI Policy of NumPy`_ when writing issues and pull requests.
+
+.. _AI Policy of NumPy: https://numpy.org/doc/stable/dev/ai_policy.html
