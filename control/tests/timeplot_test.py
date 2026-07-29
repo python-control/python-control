@@ -369,6 +369,24 @@ def test_list_responses(resp_fcn):
             assert cplt.lines[row, col][0].get_color() == 'tab:blue'
             assert cplt.lines[row, col][1].get_color() == 'tab:orange'
 
+    # Make sure the public plotting function also accepts response lists
+    plt.figure()
+    cplt = ct.time_response_plot(resp_combined)
+    assert cplt.lines.shape == shape
+    for row in range(2):        # just look at the outputs
+        for col in range(shape[1]):
+            assert cplt.lines[row, col][0].get_color() == 'tab:blue'
+            assert cplt.lines[row, col][1].get_color() == 'tab:orange'
+
+    # Plain Python lists of time responses should follow the same path
+    plt.figure()
+    cplt = ct.time_response_plot([resp1, resp2])
+    assert cplt.lines.shape == shape
+    for row in range(2):        # just look at the outputs
+        for col in range(shape[1]):
+            assert cplt.lines[row, col][0].get_color() == 'tab:blue'
+            assert cplt.lines[row, col][1].get_color() == 'tab:orange'
+
 
 @pytest.mark.slycot
 @pytest.mark.usefixtures('mplcleanup')

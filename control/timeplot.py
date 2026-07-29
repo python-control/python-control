@@ -52,7 +52,7 @@ def time_response_plot(
 
     Parameters
     ----------
-    data : `TimeResponseData`
+    data : `TimeResponseData` or list of `TimeResponseData`
         Data to be plotted.
     plot_inputs : bool or str, optional
         Sets how and where to plot the inputs:
@@ -175,6 +175,24 @@ def time_response_plot(
 
     """
     from .ctrlplot import _process_ax_keyword, _process_line_labels
+
+    # If given a list of time responses, plot them sequentially on the same
+    # axes using the same path as TimeResponseList.plot().
+    if isinstance(data, list):
+        if len(data) == 0:
+            raise ValueError("response list must contain at least one response")
+
+        from .timeresp import TimeResponseList
+
+        list_kwargs = dict(
+            ax=ax, plot_inputs=plot_inputs, plot_outputs=plot_outputs,
+            transpose=transpose, overlay_traces=overlay_traces,
+            overlay_signals=overlay_signals, add_initial_zero=add_initial_zero,
+            trace_labels=trace_labels, title=title, relabel=relabel)
+        if label is not None:
+            list_kwargs['label'] = label
+
+        return TimeResponseList(data).plot(*fmt, **list_kwargs, **kwargs)
 
     #
     # Process keywords and set defaults
