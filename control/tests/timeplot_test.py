@@ -321,6 +321,34 @@ def test_combine_time_responses():
         ct.combine_time_responses([resp1, resp])
 
 
+@pytest.mark.usefixtures('mplcleanup')
+def test_time_response_plot_response_list():
+    sys = ct.ss(ct.tf([1, 2], [3, 4, 5]))
+    timepts = np.linspace(0, 10)
+    resp1 = ct.input_output_response(sys, timepts, np.sin(timepts))
+    resp2 = ct.input_output_response(sys, timepts, np.cos(timepts))
+
+    cplt = ct.time_response_plot(
+        [resp1, resp2], trace_labels=["sine input", "cosine input"])
+    assert cplt.lines.shape == (2, 2)
+    assert cplt.axes[0, 0].get_title() == "sine input"
+    assert cplt.axes[0, 1].get_title() == "cosine input"
+    assert all(len(lines.item()) == 1 for lines in np.nditer(
+        cplt.lines, flags=["refs_ok"]))
+    plt.close()
+
+    cplt = ct.time_response_plot([resp1, resp2], plot_inputs=True)
+    assert cplt.lines.shape == (2, 2)
+    assert all(len(lines.item()) == 1 for lines in np.nditer(
+        cplt.lines, flags=["refs_ok"]))
+    plt.close()
+
+    cplt = ct.time_response_plot([resp1, resp2], plot_inputs='overlay')
+    assert cplt.lines.shape == (1, 2)
+    assert all(len(lines.item()) == 2 for lines in np.nditer(
+        cplt.lines, flags=["refs_ok"]))
+
+
 @pytest.mark.parametrize("resp_fcn", [
     ct.step_response, ct.initial_response, ct.impulse_response,
     ct.forced_response, ct.input_output_response])

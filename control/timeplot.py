@@ -52,8 +52,9 @@ def time_response_plot(
 
     Parameters
     ----------
-    data : `TimeResponseData`
-        Data to be plotted.
+    data : `TimeResponseData` or list of `TimeResponseData`
+        Data to be plotted.  Lists of responses are combined into a
+        multi-trace response before plotting.
     plot_inputs : bool or str, optional
         Sets how and where to plot the inputs:
             * False: don't plot the inputs
@@ -179,6 +180,9 @@ def time_response_plot(
     #
     # Process keywords and set defaults
     #
+    if isinstance(data, (list, tuple)):
+        data = combine_time_responses(data, trace_labels=trace_labels)
+
     # Set up defaults
     ax_user = ax
     sharex = config._get_param('timeplot', 'sharex', kwargs, pop=True)
