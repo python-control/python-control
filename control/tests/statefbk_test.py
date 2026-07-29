@@ -1233,6 +1233,39 @@ def test_refgain_pattern(ninputs, Kf):
     np.testing.assert_almost_equal(clsys.D[:sys.nstates, :], manual.D)
 
 
+def test_refgain_pattern_integral_action():
+    sys = ct.ss(
+        [[0.0, 1.0], [-2.0, -3.0]],
+        [[0.0, 1.0], [1.0, 0.0]],
+        np.eye(2),
+        np.zeros((2, 2)),
+    )
+    Kp = np.array([[1.0, 2.0], [3.0, 4.0]])
+    Ki = np.array([[5.0], [6.0]])
+    K = np.hstack([Kp, Ki])
+    Kf = np.diag([7.0, 8.0])
+    C_int = np.array([[1.0, 0.0]])
+
+    ctrl, clsys = ct.create_statefbk_iosystem(
+        sys, K, Kf, integral_action=C_int, feedfwd_pattern='refgain')
+
+    np.testing.assert_array_equal(ctrl.A, np.zeros((1, 1)))
+    np.testing.assert_array_equal(ctrl.B, np.hstack([-np.eye(1, 2), C_int]))
+    np.testing.assert_array_equal(ctrl.C, -Ki)
+    np.testing.assert_array_equal(ctrl.D, np.hstack([Kf, -Kp]))
+
+    np.testing.assert_array_equal(
+        clsys.A, np.block([[sys.A - sys.B @ Kp, -sys.B @ Ki],
+                           [C_int, np.zeros((1, 1))]]))
+    np.testing.assert_array_equal(
+        clsys.B, np.vstack([sys.B @ Kf, -np.eye(1, sys.ninputs)]))
+    np.testing.assert_array_equal(
+        clsys.C, np.block([[np.eye(sys.nstates), np.zeros((sys.nstates, 1))],
+                           [-Kp, -Ki]]))
+    np.testing.assert_array_equal(
+        clsys.D, np.vstack([np.zeros((sys.nstates, sys.ninputs)), Kf]))
+
+
 def test_create_statefbk_errors():
     sys = ct.rss(2, 2, 1, strictly_proper=True)
     sys.C = np.eye(2)

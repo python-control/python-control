@@ -1006,7 +1006,7 @@ def create_statefbk_iosystem(
             A_lqr = np.eye(C.shape[0])
         B_lqr = np.hstack([-np.eye(C.shape[0], sys_ninputs), C])
         C_lqr = -K[:, sys_nstates:]                     # integral gain (opt)
-        D_lqr = np.hstack([Kf, -K])
+        D_lqr = np.hstack([Kf, -K[:, :sys_nstates]])
 
         ctrl = ss(
             A_lqr, B_lqr, C_lqr, D_lqr, dt=sys.dt, name=name,
