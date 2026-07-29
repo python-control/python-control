@@ -54,9 +54,9 @@ def lqe(*args, **kwargs):
 
     .. math:: dx_e/dt = A x_e + B u + L(y - C x_e - D u)
 
-    produces a state estimate x_e that minimizes the expected squared error
-    using the sensor measurements y. The noise cross-correlation `NN` is
-    set to zero when omitted.
+    produces a state estimate x_e that minimizes the mean squared
+    estimation error x - x_e using the sensor measurements y. The noise
+    cross-correlation `NN` is set to zero when omitted.
 
     The function can be called with either 3, 4, 5, or 6 arguments:
 
@@ -204,9 +204,9 @@ def dlqe(*args, **kwargs):
 
     .. math:: x_e[n+1] = A x_e[n] + B u[n] + L(y[n] - C x_e[n] - D u[n])
 
-    produces a state estimate x_e[n] that minimizes the expected squared
-    error using the sensor measurements y. The noise cross-correlation `NN`
-    is set to zero when omitted.
+    produces a state estimate x_e[n] that minimizes the mean squared
+    estimation error x[n] - x_e[n] using the sensor measurements y. The
+    noise cross-correlation `NN` is set to zero when omitted.
 
     Parameters
     ----------
