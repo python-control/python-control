@@ -8,6 +8,7 @@ BG,  26 Jul 2020 merge statesp_array_test.py differences into statesp_test.py
 """
 
 import operator
+import warnings
 
 import numpy as np
 import pytest
@@ -136,7 +137,6 @@ class TestStateSpace:
          ((np.ones((3, 3)), np.ones((3, 2)),
            np.ones((2, 3)), np.ones((2, 3))), ValueError,
           r"Incompatible dimensions of D matrix; expected \(2, 2\)"),
-         (([1j], 2, 3, 0), TypeError, "real number, not 'complex'"),
         ])
     def test_constructor_invalid(self, args, exc, errmsg):
         """Test invalid input to StateSpace() constructor"""
@@ -145,6 +145,22 @@ class TestStateSpace:
             StateSpace(*args)
         with pytest.raises(exc, match=errmsg):
             ss(*args)
+
+    def test_constructor_complex_matrices(self):
+        """Test complex-valued matrices in StateSpace() constructor"""
+        A = np.array([[1 + 1j, 2 - 3j], [3 + 2j, 4 - 1j]])
+        B = np.array([[1 - 2j], [3 + 4j]])
+        C = np.array([[5 + 6j, 7 - 8j]])
+        D = np.array([[9 + 10j]])
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            sys = StateSpace(A, B, C, D)
+
+        np.testing.assert_allclose(sys.A, A)
+        np.testing.assert_allclose(sys.B, B)
+        np.testing.assert_allclose(sys.C, C)
+        np.testing.assert_allclose(sys.D, D)
 
     def test_constructor_warns(self, sys322ABCD):
         """Test ambiguos input to StateSpace() constructor"""
