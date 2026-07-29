@@ -555,7 +555,10 @@ class StateSpace(NonlinearIOSystem, LTI):
     # Negation of a system
     def __neg__(self):
         """Negate a state space system."""
-        return StateSpace(self.A, self.B, -self.C, -self.D, self.dt)
+        return StateSpace(
+            self.A, self.B, -self.C, -self.D, self.dt,
+            inputs=self.input_labels, outputs=self.output_labels,
+            states=self.state_labels)
 
     # Addition of two state space systems (parallel interconnection)
     def __add__(self, other):
@@ -645,7 +648,10 @@ class StateSpace(NonlinearIOSystem, LTI):
             A, C = self.A, self.C
             B = self.B * other
             D = self.D * other
-            dt = self.dt
+            return StateSpace(
+                A, B, C, D, self.dt,
+                inputs=self.input_labels, outputs=self.output_labels,
+                states=self.state_labels)
 
         elif isinstance(other, np.ndarray):
             other = np.atleast_2d(other)
@@ -706,7 +712,10 @@ class StateSpace(NonlinearIOSystem, LTI):
             # Just multiplying by a scalar; change the input
             B = other * self.B
             D = other * self.D
-            return StateSpace(self.A, B, self.C, D, self.dt)
+            return StateSpace(
+                self.A, B, self.C, D, self.dt,
+                inputs=self.input_labels, outputs=self.output_labels,
+                states=self.state_labels)
 
         elif isinstance(other, np.ndarray):
             other = np.atleast_2d(other)

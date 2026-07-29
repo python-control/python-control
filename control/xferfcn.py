@@ -554,7 +554,9 @@ class TransferFunction(LTI):
         for i in range(self.noutputs):
             for j in range(self.ninputs):
                 num[i, j] *= -1
-        return TransferFunction(num, self.den, self.dt)
+        return TransferFunction(
+            num, self.den, self.dt,
+            inputs=self.input_labels, outputs=self.output_labels)
 
     def __add__(self, other):
         """Add two LTI objects (parallel connection)."""
@@ -620,8 +622,13 @@ class TransferFunction(LTI):
         if isinstance(other, (StateSpace, np.ndarray)):
             other = _convert_to_transfer_function(other)
         elif isinstance(other, (int, float, complex, np.number)):
-            # Multiply by a scaled identity matrix (transfer function)
-            other = _convert_to_transfer_function(np.eye(self.ninputs) * other)
+            num = deepcopy(self.num_array)
+            for i in range(self.noutputs):
+                for j in range(self.ninputs):
+                    num[i, j] *= other
+            return TransferFunction(
+                num, self.den, self.dt,
+                inputs=self.input_labels, outputs=self.output_labels)
         if not isinstance(other, TransferFunction):
             return NotImplemented
 
@@ -669,8 +676,13 @@ class TransferFunction(LTI):
 
         # Convert the second argument to a transfer function.
         if isinstance(other, (int, float, complex, np.number)):
-            # Multiply by a scaled identity matrix (transfer function)
-            other = _convert_to_transfer_function(np.eye(self.noutputs) * other)
+            num = deepcopy(self.num_array)
+            for i in range(self.noutputs):
+                for j in range(self.ninputs):
+                    num[i, j] *= other
+            return TransferFunction(
+                num, self.den, self.dt,
+                inputs=self.input_labels, outputs=self.output_labels)
         else:
             other = _convert_to_transfer_function(other)
 
