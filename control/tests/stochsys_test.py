@@ -85,6 +85,95 @@ def test_DLQE(method):
     L, P, poles = dlqe(A, G, C, QN, RN, method=method)
     check_DLQE(L, P, poles, G, QN, RN)
 
+
+def test_lqe_symmetrizes_projected_process_covariance():
+    A = np.array([
+        [-1.945215, 0.071519, 0.060276, 0.054488, 0.042365],
+        [0.064589, -1.956241, 0.089177, 0.043759, 0.038344],
+        [0.079173, 0.052889, -1.943196, 0.096366, 0.038344],
+        [0., 0., 0., -2.920827, 0.052889],
+        [0., 0., 0., 0.056804, -2.90744],
+    ])
+    G = np.array([
+        [0.087129, 0.020218, 0.83262],
+        [0.778157, 0.870012, 0.978618],
+        [0.799159, 0.461479, 0.780529],
+        [0., 0., 0.],
+        [0., 0., 0.],
+    ])
+    C = np.array([
+        [0.118274, 0.639921, 0.143353, 0.944669, 0.521848],
+        [0.414662, 0.264556, 0.774234, 0.45615, 0.568434],
+        [0.01879, 0.617635, 0.612096, 0.616934, 0.943748],
+    ])
+    QN = np.array([
+        [3.661526, -1.465017, 1.00303],
+        [-1.465017, 1.013103, -0.582237],
+        [1.00303, -0.582237, 0.502097],
+    ])
+    RN = np.array([
+        [1.17295, -0.446977, -0.010618],
+        [-0.446977, 3.675234, 0.558705],
+        [-0.010618, 0.558705, 0.53198],
+    ])
+
+    L, P, poles = lqe(A, G, C, QN, RN, method='scipy')
+
+    assert L.shape == (A.shape[0], C.shape[0])
+    assert P.shape == A.shape
+    assert poles.shape == (A.shape[0],)
+
+
+def test_dlqe_symmetrizes_projected_process_covariance():
+    A = np.array([
+        [0.109763, 0.143038, 0.120553, 0.054488, 0.042365],
+        [0.108977, 0.084731, 0.129179, 0.043759, 0.089177],
+        [0.192733, 0.076688, 0.158345, 0.096366, 0.038344],
+        [0., 0., 0., 0.279173, 0.052889],
+        [0., 0., 0., 0.056804, 0.29256],
+    ])
+    G = np.array([
+        [0.087129, 0.020218, 0.83262],
+        [0.778157, 0.870012, 0.978618],
+        [0.799159, 0.461479, 0.780529],
+        [0., 0., 0.],
+        [0., 0., 0.],
+    ])
+    C = np.array([
+        [0.118274, 0.639921, 0.143353, 0.944669, 0.521848],
+        [0.414662, 0.264556, 0.774234, 0.45615, 0.568434],
+        [0.01879, 0.617635, 0.612096, 0.616934, 0.943748],
+    ])
+    QN = np.array([
+        [3.661526, -1.465017, 1.00303],
+        [-1.465017, 1.013103, -0.582237],
+        [1.00303, -0.582237, 0.502097],
+    ])
+    RN = np.array([
+        [1.17295, -0.446977, -0.010618],
+        [-0.446977, 3.675234, 0.558705],
+        [-0.010618, 0.558705, 0.53198],
+    ])
+
+    L, P, poles = dlqe(A, G, C, QN, RN, method='scipy')
+
+    assert L.shape == (A.shape[0], C.shape[0])
+    assert P.shape == A.shape
+    assert poles.shape == (A.shape[0],)
+
+
+@pytest.mark.parametrize("cdlqe", [lqe, dlqe])
+def test_lqe_rejects_user_supplied_asymmetric_covariance(cdlqe):
+    A = np.diag([0.4, 0.5])
+    G = np.eye(2)
+    C = np.array([[1., 0.]])
+    QN = np.array([[1., 1.], [0., 1.]])
+    RN = np.array([[1.]])
+
+    with pytest.raises(ControlArgument, match="QN must be a symmetric matrix"):
+        cdlqe(A, G, C, QN, RN, method='scipy')
+
+
 def test_lqe_discrete():
     """Test overloading of lqe operator for discrete-time systems"""
     csys = ct.rss(2, 1, 1)

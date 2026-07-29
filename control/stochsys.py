@@ -32,6 +32,10 @@ __all__ = ['lqe', 'dlqe', 'create_estimator_iosystem', 'white_noise',
            'correlation']
 
 
+def _symmetrize_covariance(M):
+    return (M + M.T) / 2
+
+
 # contributed by Sawyer B. Fuller <minster@uw.edu>
 def lqe(*args, **kwargs):
     r"""lqe(A, G, C, QN, RN, [, NN])
@@ -174,10 +178,11 @@ def lqe(*args, **kwargs):
 
 
     # Check dimensions of G (needed before calling care())
-    _check_shape(QN, G.shape[1], G.shape[1], name="QN")
+    _check_shape(QN, G.shape[1], G.shape[1], symmetric=True, name="QN")
 
     # Compute the result (dimension and symmetry checking done in care())
-    P, E, LT = care(A.T, C.T, G @ QN @ G.T, RN, method=method,
+    QG = _symmetrize_covariance(G @ QN @ G.T)
+    P, E, LT = care(A.T, C.T, QG, RN, method=method,
                     _Bs="C", _Qs="QN", _Rs="RN", _Ss="NN")
     return LT.T, P, E
 
@@ -295,10 +300,11 @@ def dlqe(*args, **kwargs):
         raise ControlNotImplemented("cross-covariance not yet implemented")
 
     # Check dimensions of G (needed before calling care())
-    _check_shape(QN, G.shape[1], G.shape[1], name="QN")
+    _check_shape(QN, G.shape[1], G.shape[1], symmetric=True, name="QN")
 
     # Compute the result (dimension and symmetry checking done in dare())
-    P, E, LT = dare(A.T, C.T, G @ QN @ G.T, RN, method=method,
+    QG = _symmetrize_covariance(G @ QN @ G.T)
+    P, E, LT = dare(A.T, C.T, QG, RN, method=method,
                     _Bs="C", _Qs="QN", _Rs="RN", _Ss="NN")
     return LT.T, P, E
 

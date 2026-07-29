@@ -39,7 +39,7 @@ from numpy.testing import assert_array_almost_equal, assert_array_less
 import pytest
 from scipy.linalg import eigvals, solve
 
-from control.mateqn import lyap, dlyap, care, dare
+from control.mateqn import _check_shape, lyap, dlyap, care, dare
 from control.exception import ControlArgument, ControlDimension
 
 
@@ -430,3 +430,26 @@ class TestMatrixEquations:
                 cdare(A, B, Qfs, R, S, E)
             with pytest.raises(ControlArgument):
                 cdare(A, B, Q, Rfs, S, E)
+
+    def test_symmetric_shape_check_tolerance(self):
+        eps = np.finfo(float).eps
+
+        _check_shape(
+            np.array([[1., 100 * eps], [0., 1.]]),
+            2, 2, symmetric=True, name="M")
+        _check_shape(
+            np.array([[1., 0.], [-100 * eps, 1.]]),
+            2, 2, symmetric=True, name="M")
+        _check_shape(
+            np.array([[1., 1j * eps], [-1j * eps, 1.]]),
+            2, 2, symmetric=True, name="M")
+
+        with pytest.raises(ControlArgument, match="M must be a symmetric"):
+            _check_shape(
+                np.array([[1., 1e-3], [0., 1.]]),
+                2, 2, symmetric=True, name="M")
+
+        with pytest.raises(ControlArgument, match="M must be a symmetric"):
+            _check_shape(
+                np.array([[1., 1j], [1j, 1.]]),
+                2, 2, symmetric=True, name="M")

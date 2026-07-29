@@ -653,7 +653,9 @@ def _check_shape(M, n, m, square=False, symmetric=False, name="??"):
 def _is_symmetric(M):
     M = np.atleast_2d(M)
     if isinstance(M[0, 0], inexact):
-        eps = finfo(M.dtype).eps
-        return ((M - M.T) < eps).all()
+        eps = finfo(M.real.dtype if np.iscomplexobj(M) else M.dtype).eps
+        if np.iscomplexobj(M):
+            return sp.linalg.ishermitian(M, atol=100 * eps, rtol=100 * eps)
+        return sp.linalg.issymmetric(M, atol=100 * eps, rtol=100 * eps)
     else:
         return (M == M.T).all()
