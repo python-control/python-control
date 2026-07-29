@@ -1960,7 +1960,7 @@ def _clean_part(data, name="<unknown>"):
     if isinstance(data, np.ndarray) and data.ndim == 2 and \
        data.dtype == object and isinstance(data[0, 0], np.ndarray):
         # Data is already in the right format
-        return data
+        out = data
     elif isinstance(data, ndarray) and data.ndim == 3 and \
           isinstance(data[0, 0, 0], valid_types):
         out = np.empty(data.shape[0:2], dtype=np.ndarray)
@@ -1995,15 +1995,26 @@ def _clean_part(data, name="<unknown>"):
             "The numerator and denominator inputs must be scalars or vectors "
             "(for\nSISO), or lists of lists of vectors (for SISO or MIMO).")
 
-    # Check for coefficients that are ints and convert to floats
+    # Check for real numeric coefficients and normalize floating arrays
     for i in range(out.shape[0]):
         for j in range(out.shape[1]):
-            for k in range(len(out[i, j])):
-                if isinstance(out[i, j][k], (int, np.integer)):
-                    out[i, j][k] = float(out[i, j][k])
-                elif isinstance(out[i, j][k], unsupported_types):
+            coefficients = np.asarray(out[i, j])
+            convert_to_float = np.issubdtype(coefficients.dtype, np.floating)
+            if np.iscomplexobj(coefficients):
+                real_coefficients = coefficients.real
+                zero_tol = 1000 * np.finfo(float).eps * max(
+                    1, np.max(np.abs(real_coefficients)))
+                if np.any(np.abs(coefficients.imag) > zero_tol):
                     raise TypeError(
-                        f"unsupported data type: {type(out[i, j][k])}")
+                        f"unsupported data type: {type(coefficients.flat[0])}")
+                coefficients = real_coefficients
+                convert_to_float = True
+            for k in range(len(coefficients)):
+                if isinstance(coefficients[k], unsupported_types):
+                    raise TypeError(
+                        f"unsupported data type: {type(coefficients[k])}")
+            out[i, j] = np.asarray(
+                coefficients, dtype=float) if convert_to_float else coefficients
     return out
 
 

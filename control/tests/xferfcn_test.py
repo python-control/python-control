@@ -52,6 +52,9 @@ class TestXferFcn:
 
         with pytest.raises(TypeError, match="unsupported data type"):
             ct.tf([1j], [1, 2, 3])
+        for dtype in [np.complex64, np.complex128]:
+            with pytest.raises(TypeError, match="unsupported data type"):
+                ct.tf(np.array([1 + 1j], dtype=dtype), [1, 2, 3])
 
         # good input
         TransferFunction([[[0, 1], [2, 3]],
@@ -1549,6 +1552,19 @@ def test_zpk(zeros, poles, gain, args, kwargs):
 
     if kwargs.get('name'):
         assert sys.name == kwargs.get('name')
+
+
+@pytest.mark.parametrize("dtype", [np.complex64, np.complex128])
+def test_zpk_complex_dtype_real_coefficients(dtype):
+    zeros = np.array([1 + 1j, 1 - 1j], dtype=dtype)
+    poles = np.array([-1 + 1j, -1 - 1j], dtype=dtype)
+
+    sys = ct.zpk(zeros, poles, gain=1, dt=0)
+
+    assert sys.num_array[0, 0].dtype == float
+    assert sys.den_array[0, 0].dtype == float
+    assert "float32" not in str(sys)
+
 
 @pytest.mark.parametrize("create, args, kwargs, convert", [
     (StateSpace, ([-1], [1], [1], [0]), {}, ss2tf),
