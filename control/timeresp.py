@@ -1112,7 +1112,7 @@ def forced_response(
                 raise ValueError('Parameters `T` and `U` can\'t both be '
                                  'zero for discrete-time simulation')
             # Set T to equally spaced samples with same length as U
-            if U.ndim == 1:
+            if U.ndim == 1 or transpose:
                 n_steps = U.shape[0]
             else:
                 n_steps = U.shape[1]
