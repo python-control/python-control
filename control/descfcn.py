@@ -188,8 +188,7 @@ def describing_function(
 
     # Go through all of the amplitudes we were given
     retdf = np.empty(np.shape(A), dtype=complex)
-    df = retdf                  # Access to the return array
-    df.shape = (-1, )           # as a 1D array
+    df = retdf.reshape((-1, ))  # Access to the return array as a 1D array
     for i, a in enumerate(np.atleast_1d(A)):
         # Make sure we got a valid argument
         if a == 0:
