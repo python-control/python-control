@@ -1003,6 +1003,8 @@ class StateSpace(NonlinearIOSystem, LTI):
         """
         # Convert the system to state space, if possible
         try:
+            if np.isscalar(other) and self.ninputs == self.noutputs:
+                other = other * eye(self.ninputs)
             other = _convert_to_statespace(other)
         except:
             pass
