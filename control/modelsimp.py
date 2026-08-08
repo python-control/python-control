@@ -73,7 +73,7 @@ def hankel_singular_values(sys):
     WoWc = Wo @ Wc
     w, v = np.linalg.eig(WoWc)
 
-    hsv = np.sqrt(w)
+    hsv = np.sqrt(w.real)
     hsv = np.array(hsv)
     hsv = np.sort(hsv)
     # Return the Hankel singular values, high to low
