@@ -1334,23 +1334,40 @@ def _c2d_matched(sysC, Ts, **kwargs):
         raise ControlMIMONotImplemented("Not implemented for MIMO systems")
 
     # Pole-zero match method of continuous to discrete time conversion
-    szeros, spoles, _ = tf2zpk(sysC.num[0][0], sysC.den[0][0])
+    szeros, spoles, sgain = tf2zpk(sysC.num[0][0], sysC.den[0][0])
     zzeros = [0] * len(szeros)
     zpoles = [0] * len(spoles)
-    pregainnum = [0] * len(szeros)
-    pregainden = [0] * len(spoles)
+    # The gain is matched at the origin (z = 1).  A pole or zero at s = 0 maps
+    # to z = 1, so its 1 - z factor vanishes and matching the DC gain there is
+    # 0/0 or inf/inf -> a NaN numerator for integrators, PI/PID and other
+    # type-1/type-2 systems.  Keep the origin factors out of the gain product
+    # and restore their scaling through the z - 1 ~ s*Ts limit, which recovers
+    # Ts/(z - 1) for 1/s, Ts**2/(z - 1)**2 for 1/s**2, etc. (completes #951).
+    origin_zeros = origin_poles = 0
+    numgain, dengain = sgain, 1.0
+    pregainnum = pregainden = 1.0
     for idx, s in enumerate(szeros):
-        sTs = s * Ts
-        z = exp(sTs)
-        zzeros[idx] = z
-        pregainnum[idx] = 1 - z
+        zzeros[idx] = exp(s * Ts)
+        if s == 0:
+            origin_zeros += 1
+        else:
+            numgain *= -s
+            pregainnum *= 1 - zzeros[idx]
     for idx, s in enumerate(spoles):
-        sTs = s * Ts
-        z = exp(sTs)
-        zpoles[idx] = z
-        pregainden[idx] = 1 - z
-    zgain = np.multiply.reduce(pregainnum) / np.multiply.reduce(pregainden)
-    gain = sysC.dcgain() / zgain.real
+        zpoles[idx] = exp(s * Ts)
+        if s == 0:
+            origin_poles += 1
+        else:
+            dengain *= -s
+            pregainden *= 1 - zpoles[idx]
+    zgain = pregainnum / pregainden
+    if origin_zeros or origin_poles:
+        # DC gain of the system with the origin factors divided out, rescaled
+        # by Ts**(origin poles - origin zeros) from the z - 1 ~ s*Ts limit
+        gain = (numgain / dengain).real \
+            * Ts**(origin_poles - origin_zeros) / zgain.real
+    else:
+        gain = sysC.dcgain() / zgain.real
     sysDnum, sysDden = zpk2tf(zzeros, zpoles, gain)
     return TransferFunction(sysDnum, sysDden, Ts, **kwargs)
 
