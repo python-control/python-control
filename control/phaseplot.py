@@ -892,6 +892,7 @@ def separatrices(
                 timepts = np.linspace(0, timescale)
 
             # Run the trajectory starting in eigenvector directions
+            dir = dir.real      # use real components only
             for eps in [-radius, radius]:
                 x0 = xeq + dir * eps
                 if evals[j].real < 0:

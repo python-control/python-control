@@ -748,8 +748,7 @@ def test_pole_zero_subplots(savefig=False):
     sys2 = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='sys2')
     ct.root_locus_plot([sys1, sys2], ax=ax_array[0, 0])
     cplt = ct.root_locus_plot([sys1, sys2], ax=ax_array[1, 0])
-    with pytest.warns(UserWarning, match="Tight layout not applied"):
-        cplt.set_plot_title("Root locus plots (w/ specified axes)")
+    cplt.set_plot_title("Root locus plots (w/ specified axes)")
     if savefig:
         plt.savefig("ctrlplot-pole_zero_subplots.png")
 

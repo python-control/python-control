@@ -374,7 +374,7 @@ def test_nyquist_indent_im():
 
 def test_nyquist_indent_near_imaginary_axis():
     """Test indent direction for poles near the imaginary axis."""
-    sys = ct.tf([1, 11, 10], [0.01, 1, 0.01, 1])
+    sys = ct.zpk([-10, -1], [-100, 0.001+1j, 0.001-1j], 10)
     omega = np.linspace(0, 2, 21)
 
     _, contour_default = ct.nyquist_response(

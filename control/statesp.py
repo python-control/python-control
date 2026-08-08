@@ -261,9 +261,9 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         # Reset shapes if the system is static
         if static:
-            A.shape = (0, 0)
-            B.shape = (0, self.ninputs)
-            C.shape = (self.noutputs, 0)
+            A = A.reshape((0, 0))
+            B = B.reshape((0, self.ninputs))
+            C = C.reshape((self.noutputs, 0))
 
         # Check to make sure everything is consistent
         _check_shape(A, self.nstates, self.nstates, name="A")
