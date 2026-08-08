@@ -69,9 +69,11 @@ def phase_plane_plot(
         List of the form [xmin, xmax, ymin, ymax] describing the
         boundaries of the phase plot or an array of shape (N, 2)
         giving points of at which to plot the vector field.
-    timedata : int or list of int
-        Time to simulate each streamline.  If a list is given, a different
-        time can be used for each initial condition in `pointdata`.
+    timedata : int, 1D array, or 2D array
+        Time to simulate each streamline. If a 1D array is given, then the
+        times at which to sample the simulation for all streamlines.
+        If a 2D array is given, then for each row the times at which
+        to sample the simulation for the corresponding streamline.
     gridtype : str, optional
         The type of grid to use for generating initial conditions:
         'meshgrid' (default) generates a mesh of initial conditions within
@@ -544,9 +546,11 @@ def streamlines(
         List of the form [xmin, xmax, ymin, ymax] describing the
         boundaries of the phase plot or an array of shape (N, 2)
         giving points of at which to plot the vector field.
-    timedata : int or list of int
-        Time to simulate each streamline.  If a list is given, a different
-        time can be used for each initial condition in `pointdata`.
+    timedata : int, 1D array, or 2D array
+        Time to simulate each streamline. If a 1D array is given, then the
+        times at which to sample the simulation for all streamlines.
+        If a 2D array is given, then for each row the times at which
+        to sample the simulation for the corresponding streamline.
     gridtype : str, optional
         The type of grid to use for generating initial conditions:
         'meshgrid' (default) generates a mesh of initial conditions within
@@ -765,9 +769,11 @@ def separatrices(
         List of the form [xmin, xmax, ymin, ymax] describing the
         boundaries of the phase plot or an array of shape (N, 2)
         giving points of at which to plot the vector field.
-    timedata : int or list of int
-        Time to simulate each streamline.  If a list is given, a different
-        time can be used for each initial condition in `pointdata`.
+    timedata : int, 1D array, or 2D array
+        Time to simulate each streamline. If a 1D array is given, then the
+        times at which to sample the simulation for all streamlines.
+        If a 2D array is given, then for each row the times at which
+        to sample the simulation for the corresponding streamline.
     gridtype : str, optional
         The type of grid to use for generating initial conditions:
         'meshgrid' (default) generates a mesh of initial conditions within
