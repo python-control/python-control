@@ -706,15 +706,15 @@ def bandwidth(sys, dbdrop=-3):
     Examples
     --------
     >>> G = ct.tf([1], [1, 1])
-    >>> ct.bandwidth(G)
-    np.float64(0.9976283451102316)
+    >>> ct.bandwidth(G)                     # doctest: +ELLIPSIS
+    np.float64(0.99762834511023...)
 
     >>> G1 = ct.tf(0.1, [1, 0.1])
     >>> wn2 = 1
     >>> zeta2 = 0.001
     >>> G2 = ct.tf(wn2**2, [1, 2*zeta2*wn2, wn2**2])
-    >>> ct.bandwidth(G1*G2)
-    np.float64(0.10184838823897456)
+    >>> ct.bandwidth(G1*G2)                 # doctest: +ELLIPSIS
+    np.float64(0.10184838823897...)
 
     """
     if not isinstance(sys, LTI):

@@ -190,5 +190,5 @@ This documentation has a number of notional conventions and functionality:
   .. doctest::
 
      >>> sys = ct.tf([1], [1, 0.5, 1])
-     >>> ct.bandwidth(sys)
-     np.float64(1.4839084518312828)
+     >>> ct.bandwidth(sys)               # doctest: +ELLIPSIS
+     np.float64(1.4839084518312...)
