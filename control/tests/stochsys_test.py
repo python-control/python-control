@@ -35,6 +35,54 @@ def test_LQE(method):
     L, P, poles = lqe(A, G, C, QN, RN, method=method)
     check_LQE(L, P, poles, G, QN, RN)
 
+def test_lqe_symmetric_kwargs():
+    A = np.array([
+        [-1., 0.],
+        [0., -2.]
+    ])
+    G = np.eye(2)
+    C = np.eye(2)
+    QN = np.array([
+        [1., 0.2],
+        [0.2 + 1e-15, 1.]
+    ])
+    RN = np.eye(2)
+
+    # Exact symmetry check should fail
+    with pytest.raises(ControlArgument, match="symmetric"):
+        lqe(A, G, C, QN, RN, method="scipy")
+
+    # Passing rtol should allow the nearly symmetric matrix
+    lqe(
+        A, G, C, QN, RN,
+        method="scipy",
+        symmetric_kwargs={"rtol": 1e-12},
+    )
+
+def test_dlqe_symmetric_kwargs():
+    A = np.array([
+        [0.5, 0.],
+        [0., 0.4]
+    ])
+    G = np.eye(2)
+    C = np.eye(2)
+    QN = np.array([
+        [1., 0.2],
+        [0.2 + 1e-15, 1.]
+    ])
+    RN = np.eye(2)
+
+    # Exact symmetry check should fail
+    with pytest.raises(ControlArgument, match="symmetric"):
+        dlqe(A, G, C, QN, RN, method="scipy")
+
+    # Passing rtol should allow the nearly symmetric matrix
+    dlqe(
+        A, G, C, QN, RN,
+        method="scipy",
+        symmetric_kwargs={"rtol": 1e-12},
+    )
+
 @pytest.mark.parametrize("cdlqe", [lqe, dlqe])
 def test_lqe_call_format(cdlqe):
     # Create a random state space system for testing
