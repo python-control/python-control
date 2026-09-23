@@ -1063,12 +1063,12 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         Forms the Redheffer star product of two LTI systems [1]_.  This
         connects the first `nu` outputs of `other` to the last `nu`
-        inputs of `self`, and the last `ny` outputs of `self` to the 
+        inputs of `self`, and the last `ny` outputs of `self` to the
         first `ny` inputs of `other`.  If `other` has fewer inputs and
-        outputs than `self`, this forms the lower LFT of `self` and 
-        `other`.  If `self` has fewer inputs and outputs than `other`, 
+        outputs than `self`, this forms the lower LFT of `self` and
+        `other`.  If `self` has fewer inputs and outputs than `other`,
         this forms the upper LFT of `other` and `self`.  This implementation
-        is compatible with the MATLAB ``lft`` function found here: 
+        is compatible with the MATLAB ``lft`` function found here:
         https://www.mathworks.com/help/control/ref/inputoutputmodel.lft.html
 
         Parameters
@@ -1101,7 +1101,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         ----------------
         inputs, outputs, states : int, list of str, or None, optional
             Description of the system inputs, outputs, and states.
-            If not specified, input and output labels are inherited 
+            If not specified, input and output labels are inherited
             from the corresponding signals of `self` and `other`.  See
             `InputOutputSystem` for more information.
         name : string, optional

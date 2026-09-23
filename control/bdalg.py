@@ -322,9 +322,9 @@ def lft(sys1, sys2, nu=-1, ny=-1, **kwargs):
     inputs of `sys1`, and the last `ny` outputs of `sys1` to the 
     first `ny` inputs of `sys2`.  If `sys2` has fewer inputs and
     outputs than `sys1`, this forms the lower LFT of `sys1` and
-    `sys2`. If `sys1` has fewer inputs and outputs than `sys2`, 
+    `sys2`.  If `sys1` has fewer inputs and outputs than `sys2`,
     this forms the upper LFT of `sys2` and `sys1`.  This implementation
-    is compatible with the MATLAB ``lft`` function found here: 
+    is compatible with the MATLAB ``lft`` function found here:
     https://www.mathworks.com/help/control/ref/inputoutputmodel.lft.html
 
     Parameters
@@ -356,8 +356,8 @@ def lft(sys1, sys2, nu=-1, ny=-1, **kwargs):
     ----------------
     inputs, outputs, states : int, list of str, or None, optional
         Description of the system inputs, outputs, and states.  If
-        not specified, input and output labels are inherited from 
-        the corresponding signals of `sys1` and `sys2`.  See 
+        not specified, input and output labels are inherited from
+        the corresponding signals of `sys1` and `sys2`.  See
         `InputOutputSystem` for more information.
     name : string, optional
         Set the name of the resulting system.
@@ -370,8 +370,8 @@ def lft(sys1, sys2, nu=-1, ny=-1, **kwargs):
         inputs of `sys1` or the number of outputs of `sys2`.
     TypeError
         If `sys1` or `sys2` is not an I/O system, or cannot be
-        converted to one, or if either is a `FrequencyResponseData` 
-        system.  
+        converted to one, or if either is a `FrequencyResponseData`
+        system.
 
     See Also
     --------
@@ -427,7 +427,7 @@ def lft(sys1, sys2, nu=-1, ny=-1, **kwargs):
         sys1 = ss._convert_to_statespace(sys1)
     if isinstance(sys2, convertible_types):
         sys2 = ss._convert_to_statespace(sys2)
-    
+
     # Maximal values for nu, ny
     if ny == -1:
         ny = min(sys2.ninputs, sys1.noutputs)
