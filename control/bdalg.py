@@ -323,7 +323,9 @@ def lft(sys1, sys2, nu=-1, ny=-1, **kwargs):
     first `ny` inputs of `sys2`.  If `sys2` has fewer inputs and
     outputs than `sys1`, this forms the lower LFT of `sys1` and
     `sys2`. If `sys1` has fewer inputs and outputs than `sys2`, 
-    this forms the upper LFT of `sys2` and `sys1`.
+    this forms the upper LFT of `sys2` and `sys1`.  This implementation
+    is compatible with the MATLAB ``lft`` function found here: 
+    https://www.mathworks.com/help/control/ref/inputoutputmodel.lft.html
 
     Parameters
     ----------
