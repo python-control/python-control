@@ -1068,7 +1068,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         outputs than `self`, this forms the lower LFT of `self` and
         `other`.  If `self` has fewer inputs and outputs than `other`,
         this forms the upper LFT of `other` and `self`.  This implementation
-        is compatible with the MATLAB ``lft`` function found here:
+        is compatible with the MATLAB `lft` function found here:
         https://www.mathworks.com/help/control/ref/inputoutputmodel.lft.html
 
         Parameters
