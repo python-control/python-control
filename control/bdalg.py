@@ -348,15 +348,17 @@ def lft(sys1, sys2, nu=-1, ny=-1, **kwargs):
     out : `InputOutputSystem`
         The result of the linear fractional transformation, with
         input and output labels inherited from the corresponding
-        signals of `sys1` and `sys2` unless overridden.
+        signals of `sys1` and `sys2` unless overridden.  If the
+        inherited input or output labels contain duplicates, the
+        default names are used for that set of signals.
 
     Other Parameters
     ----------------
     inputs, outputs, states : int, list of str, or None, optional
         Description of the system inputs, outputs, and states.  If
-        not specified, these are inherited from the corresponding
-        signals of `sys1` and `sys2`.  See `InputOutputSystem` for
-        more information.
+        not specified, input and output labels are inherited from 
+        the corresponding signals of `sys1` and `sys2`.  See 
+        `InputOutputSystem` for more information.
     name : string, optional
         Set the name of the resulting system.
 

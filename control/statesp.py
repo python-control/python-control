@@ -1093,14 +1093,16 @@ class StateSpace(NonlinearIOSystem, LTI):
         `StateSpace`
             The result of the linear fractional transformation, with
             input and output labels inherited from the corresponding
-            signals of `self` and `other` unless overridden.
+            signals of `self` and `other` unless overridden.  If the
+            inherited input or output labels contain duplicates, the
+            default names are used for that set of signals.
 
         Other Parameters
         ----------------
         inputs, outputs, states : int, list of str, or None, optional
             Description of the system inputs, outputs, and states.
-            If not specified, these are inherited from the
-            corresponding signals of `self` and `other`.  See
+            If not specified, input and output labels are inherited 
+            from the corresponding signals of `self` and `other`.  See
             `InputOutputSystem` for more information.
         name : string, optional
             Set the name of the resulting system.
