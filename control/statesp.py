@@ -1115,6 +1115,7 @@ class StateSpace(NonlinearIOSystem, LTI):
         .. [1] J. Doyle, A. Packard, and K. Zhou, "Review of LFTs,
            LMIs, and mu," Proceedings of the 30th IEEE Conference on
            Decision and Control, Brighton, England, 1991, pp. 1227-1232.
+           https://doyle.caltech.edu/images/doyle/7/70/CDC1991.pdf
 
         Examples
         --------
