@@ -1058,40 +1058,101 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         return StateSpace(A, B, C, D, dt)
 
-    def lft(self, other, nu=-1, ny=-1):
+    def lft(self, other, nu=-1, ny=-1, **kwargs):
         """Return the linear fractional transformation.
 
-        A definition of the LFT operator can be found in Appendix A.7,
-        page 512 in [1]_.  An alternative definition can be found here:
-        https://www.mathworks.com/help/control/ref/lft.html
+        Forms the Redheffer star product of two LTI systems [1]_.  This
+        connects the first `nu` outputs of `other` to the last `nu`
+        inputs of `self`, and the last `ny` outputs of `self` to the
+        first `ny` inputs of `other`.  If `other` has fewer inputs and
+        outputs than `self`, this forms the lower LFT of `self` and
+        `other`.  If `self` has fewer inputs and outputs than `other`,
+        this forms the upper LFT of `other` and `self`.  This implementation
+        is compatible with the MATLAB `lft` function found here:
+        https://www.mathworks.com/help/control/ref/inputoutputmodel.lft.html
 
         Parameters
         ----------
         other : `StateSpace`
             The lower LTI system.
         ny : int, optional
-            Dimension of (plant) measurement output.
+            Dimension of the output of `self` that is connected to
+            `other`.  Must not exceed the number of outputs of `self`
+            or the number of inputs of `other`.  If not specified,
+            defaults to the largest value allowed by the shapes of
+            `self` and `other`.
         nu : int, optional
-            Dimension of (plant) control input.
+            Dimension of the output of `other` that is connected to
+            `self`.  Must not exceed the number of inputs of `self`
+            or the number of outputs of `other`.  If not specified,
+            defaults to the largest value allowed by the shapes of
+            `self` and `other`.
 
         Returns
         -------
         `StateSpace`
+            The result of the linear fractional transformation, with
+            input and output labels inherited from the corresponding
+            signals of `self` and `other` unless overridden.  If the
+            inherited input or output labels contain duplicates, the
+            default names are used for that set of signals.
+
+        Other Parameters
+        ----------------
+        inputs, outputs, states : int, list of str, or None, optional
+            Description of the system inputs, outputs, and states.
+            If not specified, input and output labels are inherited
+            from the corresponding signals of `self` and `other`.  See
+            `InputOutputSystem` for more information.
+        name : string, optional
+            Set the name of the resulting system.
+
+        Raises
+        ------
+        ValueError
+            If `ny` exceeds the number of outputs of `self` or the
+            number of inputs of `other`, or if `nu` exceeds the number
+            of inputs of `self` or the number of outputs of `other`.
 
         References
         ----------
-        .. [1] S. Skogestad, Multivariable Feedback Control.  Second
-           edition, 2005.
+        .. [1] J. Doyle, A. Packard, and K. Zhou, "Review of LFTs,
+           LMIs, and mu," Proceedings of the 30th IEEE Conference on
+           Decision and Control, Brighton, England, 1991, pp. 1227-1232.
+           https://doyle.caltech.edu/images/doyle/7/70/CDC1991.pdf
+
+        Examples
+        --------
+        >>> G1 = ct.rss(3, inputs=3, outputs=3)
+        >>> G2 = ct.rss(3, inputs=3, outputs=3)
+        >>> G = G1.lft(G2, nu=2, ny=1)
+        >>> G.ninputs, G.noutputs, G.nstates
+        (3, 3, 6)
+
+        >>> G1 = ct.rss(3, inputs=4, outputs=4)
+        >>> G2 = ct.rss(2, inputs=2, outputs=2)
+        >>> G = G1.lft(G2)
+        >>> G.ninputs, G.noutputs, G.nstates
+        (2, 2, 5)
 
         """
         other = _convert_to_statespace(other)
+
         # maximal values for nu, ny
         if ny == -1:
             ny = min(other.ninputs, self.noutputs)
         if nu == -1:
             nu = min(other.noutputs, self.ninputs)
+
         # dimension check
-        # TODO
+        if ny > self.noutputs or ny > other.ninputs:
+            raise ValueError(
+                "ny can't exceed the number of outputs of self or "
+                "inputs of other")
+        if nu > self.ninputs or nu > other.noutputs:
+            raise ValueError(
+                "nu can't exceed the number of inputs of self or "
+                "outputs of other")
 
         dt = common_timebase(self.dt, other.dt)
 
@@ -1160,7 +1221,22 @@ class StateSpace(NonlinearIOSystem, LTI):
             [D11 + D12 @ H21, D12 @ H22],
             [Dbar21 @ H11, Dbar22 + Dbar21 @ H12]
         ])
-        return StateSpace(Ares, Bres, Cres, Dres, dt)
+        
+        inputs = self.input_labels[:self.ninputs-nu] + \
+            other.input_labels[ny:]
+        outputs = self.output_labels[:self.noutputs-ny] + \
+            other.output_labels[nu:]
+
+        # If self and other have clashing input and output names, fallback
+        # to default names
+        if len(set(inputs)) != len(inputs):
+            inputs = len(inputs)
+        if len(set(outputs)) != len(outputs):
+            outputs = len(outputs)
+
+        sys = StateSpace(
+            Ares, Bres, Cres, Dres, dt, inputs=inputs, outputs=outputs)
+        return StateSpace(sys, **kwargs)
 
     def minreal(self, tol=0.0):
         """Remove unobservable and uncontrollable states.

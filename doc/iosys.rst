@@ -75,6 +75,7 @@ Block diagram algebra is implemented using the following functions:
    series
    parallel
    feedback
+   lft
    negate
    append
 
@@ -100,6 +101,64 @@ The :func:`feedback` function is also implemented via the
 the following command will also work::
 
   Gyu = G1.feedback(G2)
+
+A generalized form of feedback interconnection, the star
+product or linear fractional transformation (LFT), is
+available via the :func:`lft` function and illustrated in the following
+diagram:
+
+.. image:: figures/bdalg-lft.png
+   :width: 240
+   :align: center
+
+This function creates the system `G` by connecting the last `ny`
+outputs of `G1` (signal `y1`) to the first `ny` inputs of `G2`, and
+the first `nu` outputs of `G2` (signal `y2`) to the last `nu` inputs
+of `G1`.  The resulting inputs of `G` are `[w1;w2]`, and the outputs
+`[z1;z2]`. Such an interconnection could be created for `G1` and `G2` 
+of any input/output system except `FrequencyResponseData` using:
+
+.. code::
+
+  Gzw = ct.lft(G1, G2, nu, ny)
+
+For `StateSpace` systems, the :func:`lft` function is also available
+through the :func:`StateSpace.lft` method, where `G1` must be a
+`StateSpace` and `G2` something convertible to `StateSpace` as shown
+below:
+
+.. code::
+
+  Gzw = G1.lft(G2, nu, ny)
+
+If `nu` and `ny` are omitted, they default to the largest values
+allowed by the shapes of `G1` and `G2`. This can be useful for
+generating lower and upper LFTs, an example of which is shown in the
+diagram below:
+
+.. image:: figures/bdalg-ullft.png
+   :width: 480
+   :align: center
+
+To construct this example we define a plant `P`, controller `K` and
+uncertainty block `Delta`:
+
+.. code::
+
+  P = ss(..., inputs=["u_delta", "w", "u"], outputs=["y_delta", "z", "v"])
+  K = ss(..., input="v", output="u")
+  Delta = ss(..., input="y_delta", output="u_delta")
+
+The lower LFT `PK` and upper LFT `PDelta` can then be made using:
+
+.. code::
+
+  PK = ct.lft(P, K)
+  PDelta = ct.lft(Delta, P)
+
+It is important to enter the systems in this order as `ct.lft(P, Delta)` would 
+result in a lower LFT of `P` and `Delta` with `u` and `v` being connected to
+the `Delta` block as opposed to `u_delta` and `y_delta`.
 
 All block diagram algebra functions allow the name of the system and
 labels for signals to be specified using the usual `name`, `inputs`,

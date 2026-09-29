@@ -1055,6 +1055,52 @@ class TestStateSpace:
         np.testing.assert_allclose(np.array(pk.C).reshape(-1), Cmatlab)
         np.testing.assert_allclose(np.array(pk.D).reshape(-1), Dmatlab)
 
+    @pytest.mark.parametrize('nu, ny, errmatch',
+                             [(3, -1, "nu can't exceed"),
+                              (-1, 3, "ny can't exceed")])
+    def test_lft_invalid(self, nu, ny, errmatch):
+        """Test that lft() rejects out-of-range nu, ny values"""
+        P = rss(states=2, outputs=2, inputs=2)
+        K = rss(states=2, outputs=2, inputs=2)
+        with pytest.raises(ValueError, match=errmatch):
+            P.lft(K, nu, ny)
+
+    def test_lft_labels(self):
+        """Test that lft() propagates signal labels and allows overrides"""
+        P = rss(
+            states=2, outputs=['y1_p', 'y2_p', 'y3_p'],
+            inputs=['u1_p', 'u2_p'], strictly_proper=True)
+        K = rss(
+            states=2, outputs=['y1_k', 'y2_k', 'y3_k'],
+            inputs=['u1_k', 'u2_k'], strictly_proper=True)
+
+        # case 1: nu = 2, ny = 1
+        pk = P.lft(K, nu=2, ny=1)
+        assert pk.input_labels == ['u2_k']
+        assert pk.output_labels == ['y1_p', 'y2_p', 'y3_k']
+
+        # case 2: nu = 1, ny = 2
+        pk = P.lft(K, nu=1, ny=2)
+        assert pk.input_labels == ['u1_p']
+        assert pk.output_labels == ['y1_p', 'y2_k', 'y3_k']
+
+        # test that keyword arguments passed to lft() override the labels
+        pk = P.lft(
+            K, nu=2, ny=0,
+            inputs=['u1', 'u2'], outputs=['y1', 'y2', 'y3', 'y4'],
+            states=['x1', 'x2', 'x3', 'x4'])
+        assert pk.input_labels == ['u1', 'u2']
+        assert pk.output_labels == ['y1', 'y2', 'y3', 'y4']
+        assert pk.state_labels == ['x1', 'x2', 'x3', 'x4']
+
+        # check that labels go back to default if duplicate labels occur
+        P = rss(states=3, inputs=4, outputs=4, strictly_proper=True)
+        K = rss(states=2, inputs=3, outputs=3, strictly_proper=True)
+
+        pk = P.lft(K, nu=2, ny=1)
+        assert pk.input_labels == ['u[0]', 'u[1]', 'u[2]', 'u[3]']
+        assert pk.output_labels == ['y[0]', 'y[1]', 'y[2]', 'y[3]']
+
     def test_repr(self, sys322):
         """Test string representation"""
         ref322 = """StateSpace(

@@ -56,6 +56,7 @@ System Interconnections
     parallel
     negate
     feedback
+    lft
     interconnect
     append
     combine_tf

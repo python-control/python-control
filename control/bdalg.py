@@ -21,9 +21,10 @@ from . import frdata as frd
 from . import statesp as ss
 from . import xferfcn as tf
 from .iosys import InputOutputSystem
+from .nlsys import interconnect
 
 __all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect',
-           'combine_tf', 'split_tf']
+           'lft', 'combine_tf', 'split_tf']
 
 
 def series(*sys, **kwargs):
@@ -65,7 +66,7 @@ def series(*sys, **kwargs):
 
     See Also
     --------
-    append, feedback, interconnect, negate, parallel
+    append, feedback, interconnect, lft, negate, parallel
 
     Notes
     -----
@@ -138,7 +139,7 @@ def parallel(*sys, **kwargs):
 
     See Also
     --------
-    append, feedback, interconnect, negate, series
+    append, feedback, interconnect, lft, negate, series
 
     Notes
     -----
@@ -200,7 +201,7 @@ def negate(sys, **kwargs):
 
     See Also
     --------
-    append, feedback, interconnect, parallel, series
+    append, feedback, interconnect, lft, parallel, series
 
     Notes
     -----
@@ -265,7 +266,7 @@ def feedback(sys1, sys2=1, sign=-1, **kwargs):
 
     See Also
     --------
-    append, interconnect, negate, parallel, series
+    append, interconnect, lft, negate, parallel, series
 
     Notes
     -----
@@ -313,6 +314,177 @@ def feedback(sys1, sys2=1, sign=-1, **kwargs):
     sys.update_names(**kwargs)
     return sys
 
+def lft(sys1, sys2, nu=-1, ny=-1, **kwargs):
+    """Linear fractional transformation of two I/O systems.
+
+    Forms the Redheffer star product of `sys1` and `sys2` [1]_.
+    This connects the first `nu` outputs of `sys2` to the last `nu`
+    inputs of `sys1`, and the last `ny` outputs of `sys1` to the 
+    first `ny` inputs of `sys2`.  If `sys2` has fewer inputs and
+    outputs than `sys1`, this forms the lower LFT of `sys1` and
+    `sys2`.  If `sys1` has fewer inputs and outputs than `sys2`,
+    this forms the upper LFT of `sys2` and `sys1`.  This implementation
+    is compatible with the MATLAB `lft` function found here:
+    https://www.mathworks.com/help/control/ref/inputoutputmodel.lft.html
+
+    Parameters
+    ----------
+    sys1, sys2 : scalar, array, or `InputOutputSystem`
+        I/O systems to perform linear fractional transformation on.
+        `FrequencyResponseData` systems are not supported.
+    ny : int, optional
+        Dimension of the output of `sys1` that is connected to `sys2`.
+        Must not exceed the number of outputs of `sys1` or the number
+        of inputs of `sys2`.  If not specified, defaults to the
+        largest value allowed by the shapes of `sys1` and `sys2`.
+    nu : int, optional
+        Dimension of the output of `sys2` that is connected to `sys1`.
+        Must not exceed the number of inputs of `sys1` or the number
+        of outputs of `sys2`.  If not specified, defaults to the
+        largest value allowed by the shapes of `sys1` and `sys2`.
+
+    Returns
+    -------
+    out : `InputOutputSystem`
+        The result of the linear fractional transformation, with
+        input and output labels inherited from the corresponding
+        signals of `sys1` and `sys2` unless overridden.  If the
+        inherited input or output labels contain duplicates, the
+        default names are used for that set of signals.
+
+    Other Parameters
+    ----------------
+    inputs, outputs, states : int, list of str, or None, optional
+        Description of the system inputs, outputs, and states.  If
+        not specified, input and output labels are inherited from
+        the corresponding signals of `sys1` and `sys2`.  See
+        `InputOutputSystem` for more information.
+    name : string, optional
+        Set the name of the resulting system.
+
+    Raises
+    ------
+    ValueError
+        If `ny` exceeds the number of outputs of `sys1` or the
+        number of inputs of `sys2`, or if `nu` exceeds the number of
+        inputs of `sys1` or the number of outputs of `sys2`.
+    TypeError
+        If `sys1` or `sys2` is not an I/O system, or cannot be
+        converted to one, or if either is a `FrequencyResponseData`
+        system.
+
+    See Also
+    --------
+    append, feedback, interconnect, negate, parallel, series
+
+    Notes
+    -----
+    This function is a wrapper for `StateSpace.lft`.  If `sys1` and
+    `sys2` are `StateSpace` systems, or can be converted to
+    `StateSpace` systems, the linear-algebraic implementation in
+    `StateSpace.lft` is used directly.  For other I/O systems,
+    the same interconnection is built using `interconnect`.
+
+    References
+    ----------
+    .. [1] J. Doyle, A. Packard, and K. Zhou, "Review of LFTs,
+       LMIs, and mu," Proceedings of the 30th IEEE Conference on
+       Decision and Control, Brighton, England, 1991, pp. 1227-1232.
+       https://doyle.caltech.edu/images/doyle/7/70/CDC1991.pdf
+
+    Examples
+    --------
+    >>> G1 = ct.rss(3, inputs=3, outputs=3)
+    >>> G2 = ct.rss(3, inputs=3, outputs=3)
+    >>> G = ct.lft(G1, G2, nu=2, ny=1)
+    >>> G.ninputs, G.noutputs, G.nstates
+    (3, 3, 6)
+
+    >>> G1 = ct.rss(3, inputs=4, outputs=4)
+    >>> G2 = ct.rss(2, inputs=2, outputs=2)
+    >>> G = ct.lft(G1, G2)
+    >>> G.ninputs, G.noutputs, G.nstates
+    (2, 2, 5)
+
+    """
+    # Check for correct input types
+    if not isinstance(sys1, (int, float, complex, np.number, np.ndarray,
+                             InputOutputSystem)):
+        raise TypeError("sys1 must be an I/O system, scalar, or array")
+    elif not isinstance(sys2, (int, float, complex, np.number, np.ndarray,
+                               InputOutputSystem)):
+        raise TypeError("sys2 must be an I/O system, scalar, or array")
+
+    if isinstance(sys1, frd.FrequencyResponseData) or \
+            isinstance(sys2, frd.FrequencyResponseData):
+        raise TypeError("FrequencyResponseData systems are not supported")
+
+    # Convert systems to statespace if possible
+    convertible_types = (
+        int, float, complex, np.number, np.ndarray, tf.TransferFunction,
+        )
+    if isinstance(sys1, convertible_types):
+        sys1 = ss._convert_to_statespace(sys1)
+    if isinstance(sys2, convertible_types):
+        sys2 = ss._convert_to_statespace(sys2)
+
+    # Maximal values for nu, ny
+    if ny == -1:
+        ny = min(sys2.ninputs, sys1.noutputs)
+    if nu == -1:
+        nu = min(sys2.noutputs, sys1.ninputs)
+
+    # Check that nu, ny are within bounds
+    if ny > sys1.noutputs or ny > sys2.ninputs:
+        raise ValueError(
+            "ny can't exceed the number of outputs of sys1 or "
+            "inputs of sys2")
+    if nu > sys1.ninputs or nu > sys2.noutputs:
+        raise ValueError(
+            "nu can't exceed the number of inputs of sys1 or "
+            "outputs of sys2")
+
+    # If sys1 and sys2 are StateSpace, use ss.lft function
+    if isinstance(sys1, ss.StateSpace) and isinstance(sys2, ss.StateSpace):
+        return sys1.lft(sys2, nu, ny, **kwargs)
+    
+    # If sys1 and sys2 are not StateSpace, use interconnect
+    n1i, n1o = sys1.ninputs, sys1.noutputs
+    n2i, n2o = sys2.ninputs, sys2.noutputs
+
+    connections = [
+        [(0, n1i - nu + i), (1, i)] for i in range(nu)
+    ] + [
+        [(1, i), (0, n1o - ny + i)] for i in range(ny)
+    ]
+
+    inplist = [(0, i) for i in range(n1i - nu)] + \
+              [(1, i) for i in range(ny, n2i)]
+
+    outlist = [(0, i) for i in range(n1o - ny)] + \
+              [(1, i) for i in range(nu, n2o)]
+
+    if not 'inputs' in kwargs:
+        inputs = sys1.input_labels[:n1i-nu] + sys2.input_labels[ny:]
+        # If sys1 and sys2 have clashing input labels, fallback to 
+        # default names
+        if len(set(inputs)) != len(inputs):
+            inputs = len(inputs)
+        kwargs['inputs'] = inputs
+
+    if not 'outputs' in kwargs:
+        outputs = sys1.output_labels[:n1o-ny] + sys2.output_labels[nu:]
+        # If sys1 and sys2 have clashing output labels, fallback to 
+        # default names
+        if len(set(outputs)) != len(outputs):
+            outputs = len(outputs)
+        kwargs['outputs'] = outputs
+
+    return interconnect(
+        [sys1, sys2], connections=connections,
+        inplist=inplist, outlist=outlist, **kwargs)
+
+
 def append(*sys, **kwargs):
     """append(sys1, sys2[, ..., sysn])
 
@@ -349,7 +521,7 @@ def append(*sys, **kwargs):
 
     See Also
     --------
-    interconnect, feedback, negate, parallel, series
+    interconnect, feedback, lft, negate, parallel, series
 
     Examples
     --------
@@ -411,7 +583,7 @@ def connect(sys, Q, inputv, outputv):
 
     See Also
     --------
-    append, feedback, interconnect, negate, parallel, series
+    append, feedback, interconnect, lft, negate, parallel, series
 
     Notes
     -----

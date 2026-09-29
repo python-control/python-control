@@ -6,7 +6,7 @@ RMM, 30 Mar 2011 (based on TestBDAlg from v0.4a)
 import control as ctrl
 import numpy as np
 import pytest
-from control.bdalg import _ensure_tf, append, connect, feedback
+from control.bdalg import _ensure_tf, append, connect, feedback, lft
 from control.lti import poles, zeros
 from control.statesp import StateSpace
 from control.tests.conftest import assert_tf_close_coeff
@@ -340,6 +340,146 @@ class TestFeedback:
             with pytest.raises(IndexError):
                 connect(sys, Q, [2], [1, -1])
 
+
+class TestLft:
+    """Tests for the lft function in bdalg.py."""
+
+    @pytest.mark.parametrize('nu, ny', [(-1, -1), (2, 1), (1, 2)])
+    def test_lft_matches_statespace_method(self, nu, ny):
+        """Test that lft() reproduces StateSpace.lft() for SS inputs."""
+        P = ctrl.rss(states=3, outputs=3, inputs=3, strictly_proper=True)
+        K = ctrl.rss(states=3, outputs=3, inputs=3, strictly_proper=True)
+
+        ans = lft(P, K, nu, ny)
+        ref = P.lft(K, nu, ny)
+
+        np.testing.assert_array_almost_equal(ans.A, ref.A)
+        np.testing.assert_array_almost_equal(ans.B, ref.B)
+        np.testing.assert_array_almost_equal(ans.C, ref.C)
+        np.testing.assert_array_almost_equal(ans.D, ref.D)
+
+    @pytest.mark.parametrize('nu, ny, errmatch',
+                             [(3, -1, "nu can't exceed"),
+                              (-1, 3, "ny can't exceed")])
+    def test_lft_invalid_nu_ny(self, nu, ny, errmatch):
+        """Test that lft() rejects out-of-range nu, ny values."""
+        P = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+        K = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+        with pytest.raises(ValueError, match=errmatch):
+            lft(P, K, nu, ny)
+
+    def test_lft_label_propagation(self):
+        """Test that lft() propagates signal labels and allows overrides."""
+        P = ctrl.rss(
+            states=2, outputs=['y1_p', 'y2_p', 'y3_p'],
+            inputs=['u1_p', 'u2_p'], strictly_proper=True)
+        K = ctrl.rss(
+            states=2, outputs=['y1_k', 'y2_k', 'y3_k'],
+            inputs=['u1_k', 'u2_k'], strictly_proper=True)
+
+        # case 1: nu = 2, ny = 1
+        pk = lft(P, K, nu=2, ny=1)
+        assert pk.input_labels == ['u2_k']
+        assert pk.output_labels == ['y1_p', 'y2_p', 'y3_k']
+
+        # case 2: nu = 1, ny = 2
+        pk = lft(P, K, nu=1, ny=2)
+        assert pk.input_labels == ['u1_p']
+        assert pk.output_labels == ['y1_p', 'y2_k', 'y3_k']
+
+        # test that keyword arguments passed to lft() override the labels
+        pk = lft(
+            P, K, nu=2, ny=0,
+            inputs=['u1', 'u2'], outputs=['y1', 'y2', 'y3', 'y4'],
+            states=['x1', 'x2', 'x3', 'x4'])
+        assert pk.input_labels == ['u1', 'u2']
+        assert pk.output_labels == ['y1', 'y2', 'y3', 'y4']
+        assert pk.state_labels == ['x1', 'x2', 'x3', 'x4']
+
+        # check that labels go back to default if duplicate labels occur
+        P = ctrl.rss(states=3, inputs=4, outputs=4, strictly_proper=True)
+        K = ctrl.rss(states=2, inputs=3, outputs=3, strictly_proper=True)
+
+        pk = lft(P, K, nu=2, ny=1)
+        assert pk.input_labels == ['u[0]', 'u[1]', 'u[2]', 'u[3]']
+        assert pk.output_labels == ['y[0]', 'y[1]', 'y[2]', 'y[3]']
+
+    @pytest.mark.slycot
+    @pytest.mark.parametrize('nu, ny', [(-1, -1), (1, 1)])
+    def test_lft_tf_inputs(self, nu, ny):
+        """Test that lft() accepts TransferFunction inputs."""
+        P_ss = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+        K_ss = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+        P_tf = ctrl.tf(P_ss)
+        K_tf = ctrl.tf(K_ss)
+
+        ref = P_ss.lft(K_ss, nu, ny)
+        ans = lft(P_tf, K_tf, nu, ny)
+
+        for s in [0, 1, 1j]:
+            np.testing.assert_allclose(ans(s), ref(s), atol=1e-6)
+
+    def test_lft_scalar_inputs(self):
+        """Test that lft() accepts a scalar for either argument."""
+        x1, x2 = 2.5, -3.
+        K = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+        P = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+
+        ans = lft(x1, K)
+        ref = StateSpace([], [], [], [x1]).lft(K)
+        np.testing.assert_array_almost_equal(ans.A, ref.A)
+        np.testing.assert_array_almost_equal(ans.B, ref.B)
+        np.testing.assert_array_almost_equal(ans.C, ref.C)
+        np.testing.assert_array_almost_equal(ans.D, ref.D)
+
+        ans = lft(P, x2)
+        ref = P.lft(StateSpace([], [], [], [x2]))
+        np.testing.assert_array_almost_equal(ans.A, ref.A)
+        np.testing.assert_array_almost_equal(ans.B, ref.B)
+        np.testing.assert_array_almost_equal(ans.C, ref.C)
+        np.testing.assert_array_almost_equal(ans.D, ref.D)
+
+    def test_lft_array_inputs(self):
+        """Test that lft() accepts an array for either argument."""
+        D1 = np.array([[1., 2.], [3., 4.]])
+        D2 = np.array([[0.5, 0.], [0., 0.5]])
+        K = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+        P = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+
+        ans = lft(D1, K)
+        ref = StateSpace([], [], [], D1).lft(K)
+        np.testing.assert_array_almost_equal(ans.A, ref.A)
+        np.testing.assert_array_almost_equal(ans.B, ref.B)
+        np.testing.assert_array_almost_equal(ans.C, ref.C)
+        np.testing.assert_array_almost_equal(ans.D, ref.D)
+
+        ans = lft(P, D2)
+        ref = P.lft(StateSpace([], [], [], D2))
+        np.testing.assert_array_almost_equal(ans.A, ref.A)
+        np.testing.assert_array_almost_equal(ans.B, ref.B)
+        np.testing.assert_array_almost_equal(ans.C, ref.C)
+        np.testing.assert_array_almost_equal(ans.D, ref.D)
+
+    def test_lft_args(self):
+        P = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+
+        # If first or second argument is not LTI or convertable to it, 
+        # generate an exception
+        args = ('hello world', P)
+        with pytest.raises(TypeError):
+            lft(*args)
+        args = (P, 'hello world')
+        with pytest.raises(TypeError):
+            lft(*args)
+
+        # If first or second argument is FRD, generate an exception
+        h = TransferFunction([1], [1, 2, 3])
+        omega = np.logspace(-1, 2, 10)
+        frd = ctrl.FRD(h, omega)
+        with pytest.raises(TypeError):
+            lft(1, frd)
+        with pytest.raises(TypeError):
+            lft(frd, 1)
 
 @pytest.mark.parametrize(
     "op, nsys, ninputs, noutputs, nstates", [
