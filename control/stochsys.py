@@ -33,7 +33,7 @@ __all__ = ['lqe', 'dlqe', 'create_estimator_iosystem', 'white_noise',
 
 
 # contributed by Sawyer B. Fuller <minster@uw.edu>
-def lqe(*args, **kwargs):
+def lqe(*args, symmetric_kwargs=None, **kwargs):
     r"""lqe(A, G, C, QN, RN, [, NN])
 
     Continuous-time linear quadratic estimator (Kalman filter).
@@ -83,6 +83,9 @@ def lqe(*args, **kwargs):
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
         and then 'scipy'.
+    symmetric_kwargs : dict, optional
+        Keyword arguments passed to `scipy.linalg.issymmetric` or
+        `scipy.linalg.ishermitian`.
 
     Returns
     -------
@@ -178,12 +181,12 @@ def lqe(*args, **kwargs):
 
     # Compute the result (dimension and symmetry checking done in care())
     P, E, LT = care(A.T, C.T, G @ QN @ G.T, RN, method=method,
-                    _Bs="C", _Qs="QN", _Rs="RN", _Ss="NN")
+                    _Bs="C", _Qs="QN", _Rs="RN", _Ss="NN", symmetric_kwargs=symmetric_kwargs)
     return LT.T, P, E
 
 
 # contributed by Sawyer B. Fuller <minster@uw.edu>
-def dlqe(*args, **kwargs):
+def dlqe(*args, symmetric_kwargs=None, **kwargs):
     r"""dlqe(A, G, C, QN, RN, [, N])
 
     Discrete-time linear quadratic estimator (Kalman filter).
@@ -220,6 +223,9 @@ def dlqe(*args, **kwargs):
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot'
         first and then 'scipy'.
+    symmetric_kwargs : dict, optional
+        Keyword arguments passed to `scipy.linalg.issymmetric` or
+        `scipy.linalg.ishermitian`.
 
     Returns
     -------
@@ -299,7 +305,7 @@ def dlqe(*args, **kwargs):
 
     # Compute the result (dimension and symmetry checking done in dare())
     P, E, LT = dare(A.T, C.T, G @ QN @ G.T, RN, method=method,
-                    _Bs="C", _Qs="QN", _Rs="RN", _Ss="NN")
+                    _Bs="C", _Qs="QN", _Rs="RN", _Ss="NN", symmetric_kwargs=symmetric_kwargs)
     return LT.T, P, E
 
 
@@ -312,7 +318,7 @@ def create_estimator_iosystem(
         control_indices=None, disturbance_indices=None,
         estimate_labels='xhat[{i}]', covariance_labels='P[{i},{j}]',
         measurement_labels=None, control_labels=None,
-        inputs=None, outputs=None, states=None, **kwargs):
+        inputs=None, outputs=None, states=None, symmetric_kwargs=None, **kwargs):
     r"""Create an I/O system implementing a linear quadratic estimator.
 
     This function creates an input/output system that implements a
@@ -410,6 +416,9 @@ def create_estimator_iosystem(
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
         name 'sys[id]' is generated with a unique integer id.
+    symmetric_kwargs : dict, optional
+        Keyword arguments passed to `scipy.linalg.issymmetric` or
+        `scipy.linalg.ishermitian`.
 
     Notes
     -----
@@ -492,7 +501,7 @@ def create_estimator_iosystem(
     if P0 is None:
         # Initialize P0 to the steady state value
         _, P0, _ = lqe(A, G, C, QN, RN)
-    P0 = _check_shape(P0, sys.nstates, sys.nstates, symmetric=True, name='P0')
+    P0 = _check_shape(P0, sys.nstates, sys.nstates, symmetric=True, name='P0', symmetric_kwargs=symmetric_kwargs)
 
     # Figure out the labels to use
     estimate_labels = _process_labels(
