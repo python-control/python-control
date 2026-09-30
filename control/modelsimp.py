@@ -22,8 +22,9 @@ from .statesp import StateSpace
 from .timeresp import TimeResponseData
 
 __all__ = ['hankel_singular_values', 'balanced_reduction', 'model_reduction',
-           'minimal_realization', 'eigensys_realization', 'markov', 'hsvd',
-           'balred', 'modred', 'minreal', 'era']
+           'minimal_realization', 'eigensys_realization',
+           'observer_kalman_identification', 'markov', 'hsvd', 'balred',
+           'modred', 'minreal', 'era', 'okid']
 
 
 # Hankel Singular Value Decomposition
@@ -724,9 +725,232 @@ def markov(*args, m=None, transpose=False, dt=None, truncate=False):
     # Return the first m Markov parameters
     return H if not transpose else np.transpose(H)
 
+def observer_kalman_identification(*args, m=None, transpose=False, dt=True, truncate=False):
+    """observer_kalman_identification(Y, U, [, m])
+
+    Calculate the first `m` Markov parameters [D CB CAB ...]
+    from data.
+
+    This function computes the Markov parameters for a discrete time system
+
+    .. math::
+
+        x[k+1] &= A x[k] + B u[k] \\\\
+        y[k] &= C x[k] + D u[k]
+
+    given data for u and y.  The algorithm assumes that that C A^k B = 0 for
+    k > m-2 (see [1]_, [2]_).  Note that the problem is ill-posed if the length of
+    the input data is less than the desired number of Markov parameters (a
+    warning message is generated in this case).
+
+    The function can be called with either 1, 2 or 3 arguments:
+
+    * ``H = observer_kalman_identification(data)``
+    * ``H = observer_kalman_identification(data, m)``
+    * ``H = observer_kalman_identification(Y, U)``
+    * ``H = observer_kalman_identification(Y, U, m)``
+
+    where `data` is an `TimeResponseData` object, and `Y`, `U`, are 1D or 2D
+    array and m is an integer.
+
+    Parameters
+    ----------
+    Y : array_like
+        Output data. If the array is 1D, the system is assumed to be
+        single input. If the array is 2D and transpose=False, the columns
+        of `Y` are taken as time points, otherwise the rows of `Y` are
+        taken as time points.
+    U : array_like
+        Input data, arranged in the same way as `Y`.
+    data : TimeResponseData
+        Response data from which the Markov parameters where estimated.
+        Input and output data must be 1D or 2D array.
+    m : int, optional
+        Number of Markov parameters to output. Defaults to len(U).
+    dt : True of float, optional
+        True indicates discrete time with unspecified sampling time and a
+        positive float is discrete time with the specified sampling time.
+        It can be used to scale the Markov parameters in order to match
+        the unit-area impulse response of python-control. Default is True
+        for array_like and dt=data.time[1]-data.time[0] for
+        TimeResponseData as input.
+    truncate : bool, optional
+        Do not use first m equation for least least squares. Default is False.
+    transpose : bool, optional
+        Assume that input data is transposed relative to the standard
+        :ref:`time-series-convention`. For TimeResponseData this parameter
+        is ignored. Default is False.
+
+    Returns
+    -------
+    H : ndarray
+        First m Markov parameters, [D CB CAB ...].
+
+    See Also
+    --------
+    markov
+
+    Notes
+    -----
+    The :func:`~control.markov` command estimates the Markov parameters directly, which can be hard for slightly damped systems.
+    The :func:`~control.observer_kalman_identification` command uses a Kalman filter, which is better suited for slightly damped systems.
+
+    References
+    ----------
+    .. [1] J.-N. Juang, M. Phan, L. G. Horta, and R. W. Longman,
+       Identification of observer/Kalman filter Markov parameters - Theory
+       and experiments. Journal of Guidance Control and Dynamics, 16(2),
+       320-329, 2012. http://doi.org/10.2514/3.21006
+
+    .. [2] J.-N. Juang, Applied System Identification, 1994
+
+    Examples
+    --------
+    >>> T = np.linspace(0, 10, 100)
+    >>> U = np.ones((1, 100))
+    >>> T, Y = ct.forced_response(ct.tf([1], [1, 0.5], True), T, U)
+    >>> H = ct.okid(Y, U, 3, transpose=False)
+
+    """
+    # Convert input parameters to 2D arrays (if they aren't already)
+
+    # Get the system description
+    if len(args) < 1:
+        raise ControlArgument("not enough input arguments")
+    
+    if isinstance(args[0], TimeResponseData):
+        data = args[0]
+        Umat = np.array(data.inputs, ndmin=2)
+        Ymat = np.array(data.outputs, ndmin=2)
+        if dt is None:
+            dt = data.time[1] - data.time[0]
+            if not np.allclose(np.diff(data.time), dt):
+                raise ValueError("response time values must be equally "
+                                 "spaced.")
+        transpose = data.transpose
+        if data.transpose and not data.issiso:
+            Umat, Ymat = np.transpose(Umat), np.transpose(Ymat)
+        if len(args) == 2:
+            m = args[1]
+        elif len(args) > 2:
+            raise ControlArgument("too many positional arguments")
+    else:
+        if len(args) < 2:
+            raise ControlArgument("not enough input arguments")
+        Umat = np.array(args[1], ndmin=2)
+        Ymat = np.array(args[0], ndmin=2)
+        if dt is None:
+            dt = True
+        if transpose:
+            Umat, Ymat = np.transpose(Umat), np.transpose(Ymat)
+        if len(args) == 3:
+            m = args[2]
+        elif len(args) > 3:
+            raise ControlArgument("too many positional arguments")
+
+    # Make sure the number of time points match
+    if Umat.shape[1] != Ymat.shape[1]:
+        raise ControlDimension(
+            "Input and output data are of differnent lengths")
+    l = Umat.shape[1]
+
+    # If number of desired parameters was not given, set to size of input data
+    if m is None:
+        m = l
+
+    # Paper equation 8, Page 8
+    # There is a mistake in the paper, but it is right in the book
+    t = 0
+    if truncate:
+        t = m
+
+    # The okid in the paper estimates `m + 1` Markov parameters
+    # Change to `m` to match control.markov,
+    # TODO:What is the best way to match control.markov
+    # m = m - 1 
+
+    q = Ymat.shape[0] # number of outputs
+    p = Umat.shape[0] # number of inputs
+
+    # Make sure there is enough data to compute parameters
+    if m*p > (l-t):
+        warnings.warn("Not enough data for requested number of parameters")
+
+    # the algorithm - Construct a matrix of control virtual inputs to invert
+    #
+    # (q,l)   = (q,(p+q)*m+p) @ ((p+q)*m+p,l)
+    # YY.T    = Ybar @ VV.T
+    #
+    # This algorithm sets up the following problem and solves it for
+    # the observer Markov parameters
+    #
+    # (l,q)   = (l,(p+q)*m+p) @ ((p+q)*m+p,q) 
+    # YY      = VV @ Ybar.T
+    #
+    # truncated version t=m, do not use first m equation
+    #
+    # Note: This algorithm assumes C A^{j} B = 0
+    # for j > m-2.  See equation (3) in
+    #
+    #   J.-N. Juang, M. Phan, L. G. Horta, and R. W. Longman, Identification
+    #   of observer/Kalman filter Markov parameters - Theory and
+    #   experiments. Journal of Guidance Control and Dynamics, 16(2),
+    #   320-329, 2012. http://doi.org/10.2514/3.21006
+    #
+
+    Vmat = np.concatenate((Umat, Ymat),axis=0)
+
+    VVT = np.zeros(((p + q)*m + p, l))
+    
+    VVT[:p, :] = Umat
+    for i in range(m):
+        # Shift previous column down and keep zeros at the top
+        VVT[(p+q)*i+p:(p+q)*(i+1)+p, i+1:] = Vmat[:, :l-i-1]
+
+    YY = Ymat[:, t:].T
+    VV = VVT[:, t:].T
+
+    # Solve for the observer Markov parameters from  YY = VV @ Ybar.T
+    YbarT, _, _, _ = np.linalg.lstsq(VV, YY, rcond=None)
+    Ybar = YbarT.T
+
+    # Paper equation 11, Page 9
+    D = Ybar[:, :p]
+    
+    Ybar_r = Ybar[:, p:].reshape(q, m, p+q) # output, time*v_input -> output, time, v_input
+    Ybar_r = Ybar_r.transpose(0, 2, 1) # output, v_input, time
+
+    Ybar1 = Ybar_r[:, :p, :] # select observer Markov parameters generated by input
+    Ybar2 = Ybar_r[:, p:, :] # select observer Markov parameters generated by output
+
+    # Using recursive substitution to solve for Markov parameters   
+    Y = np.zeros((q, p, m))
+    # Paper equation 12, Page 9
+    Y[:, :, 0] = Ybar1[:, :, 0] + Ybar2[:, :, 0] @ D
+
+    # Paper equation 15, Page 10
+    for k in range(1, m):
+        Y[:, :, k] = Ybar1[:, :, k] + Ybar2[:, :, k] @ D
+        for i in range(k-1):
+            Y[:, :, k] += Ybar2[:, :, i] @ Y[:, :, k-i-1]
+
+    # Paper equation 11, Page 9
+    H = np.zeros((q, p, m+1))
+    H[:, :, 0] = D
+    H[:, :, 1:] = Y[:, :, :]
+    H = H/dt # scaling
+
+    # for siso return a 1D array instead of a 3D array
+    if q == 1 and p == 1:
+        H = np.squeeze(H)
+
+    # Return the first m Markov parameters
+    return H if not transpose else np.transpose(H)
+
 # Function aliases
 hsvd = hankel_singular_values
 balred = balanced_reduction
 modred = model_reduction
 minreal = minimal_realization
 era = eigensys_realization
+okid = observer_kalman_identification
