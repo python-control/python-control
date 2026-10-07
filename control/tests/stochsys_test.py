@@ -59,7 +59,9 @@ def test_lqe_symmetric_kwargs():
         symmetric_kwargs={"rtol": 1e-12},
     )
 
-def test_dlqe_symmetric_kwargs():
+@pytest.mark.parametrize("return_filter_form", [False, True])
+@pytest.mark.parametrize("cdlqe", [lqe, dlqe])
+def test_dlqe_symmetric_kwargs(cdlqe, return_filter_form):
     A = np.array([
         [0.5, 0.],
         [0., 0.4]
@@ -71,14 +73,16 @@ def test_dlqe_symmetric_kwargs():
         [0.2 + 1e-15, 1.]
     ])
     RN = np.eye(2)
+    sys = ct.ss(A, G, C, 0, dt=True)
 
     # Exact symmetry check should fail
     with pytest.raises(ControlArgument, match="symmetric"):
-        dlqe(A, G, C, QN, RN, method="scipy")
+        cdlqe(sys, QN, RN, method="scipy",
+              return_filter_form=return_filter_form)
 
     # Passing rtol should allow the nearly symmetric matrix
-    dlqe(
-        A, G, C, QN, RN,
+    cdlqe(
+        sys, QN, RN, return_filter_form=return_filter_form,
         method="scipy",
         symmetric_kwargs={"rtol": 1e-12},
     )
@@ -132,6 +136,100 @@ def test_DLQE(method):
     A, G, C, QN, RN = (np.array([[X]]) for X in [0., .1, 1., 10., 2.])
     L, P, poles = dlqe(A, G, C, QN, RN, method=method)
     check_DLQE(L, P, poles, G, QN, RN)
+
+
+@pytest.mark.parametrize("method", [
+    None, pytest.param('slycot', marks=pytest.mark.slycot), 'scipy'])
+@pytest.mark.parametrize("a", [0., 0.7, 1.2])
+@pytest.mark.parametrize("return_filter_form", [False, True])
+def test_dlqe_scalar_gain(method, a, return_filter_form):
+    # The scalar DARE is P**2 + (r * (1 - a**2) - q) * P - q * r = 0.
+    g, qn, r = 0.3, 2., 0.7
+    q = g**2 * qn
+    b = r * (1 - a**2) - q
+    p = (-b + np.sqrt(b**2 + 4 * q * r)) / 2
+    m = p / (p + r)
+
+    L, P, E = dlqe(a, g, 1, qn, r, method=method,
+                   return_filter_form=return_filter_form)
+    assert L.shape == P.shape == (1, 1)
+    assert E.shape == (1,)
+    np.testing.assert_allclose(P, [[p]], rtol=1e-10)
+    np.testing.assert_allclose(L, [[m if return_filter_form else a * m]],
+                               rtol=1e-10, atol=1e-14)
+    np.testing.assert_allclose(E, [a * (1 - m)], rtol=1e-10, atol=1e-14)
+
+
+@pytest.mark.parametrize("method", [
+    None, pytest.param('slycot', marks=pytest.mark.slycot), 'scipy'])
+@pytest.mark.parametrize("A", [
+    [[1.1, 0.2, 0], [0, 0.7, 0.1], [0, 0, 0.3]],
+    [[1.1, 0.2, 0], [0, 0.7, 0.1], [0, 0, 0]],
+])
+def test_dlqe_filter_form_covariance(A, method):
+    A = np.array(A)
+    G = np.array([[1, 0.25], [0.5, 1], [1, -0.5]])
+    C = np.array([[1, 0, 0.25], [0.5, 1, 0]])
+    QN = np.array([[0.5, 0.125], [0.125, 0.75]])
+    RN = np.array([[0.75, 0.25], [0.25, 1.5]])
+
+    # Independently converge the measurement update and prediction, using
+    # the Joseph form to compute the posterior covariance.
+    prior = np.eye(3)
+    for _ in range(200):
+        M = np.linalg.solve(C @ prior @ C.T + RN, C @ prior).T
+        correction = np.eye(3) - M @ C
+        posterior = correction @ prior @ correction.T + M @ RN @ M.T
+        next_prior = A @ posterior @ A.T + G @ QN @ G.T
+        if np.linalg.norm(next_prior - prior) < 1e-13:
+            break
+        prior = next_prior
+    else:
+        pytest.fail("Kalman covariance iteration did not converge")
+
+    L, P, E = dlqe(A, G, C, QN, RN, method=method)
+    Lpred, Ppred, Epred = dlqe(A, G, C, QN, RN, method=method,
+                              return_filter_form=False)
+    Lfilter, Pfilter, Efilter = dlqe(A, G, C, QN, RN, method=method,
+                                    return_filter_form=True)
+    np.testing.assert_allclose(P, prior, rtol=1e-10, atol=1e-12)
+    np.testing.assert_allclose(Lfilter, M, rtol=1e-10, atol=1e-12)
+    np.testing.assert_allclose(L, A @ M, rtol=1e-10, atol=1e-12)
+    np.testing.assert_allclose(Lpred, L)
+    np.testing.assert_allclose(Ppred, P)
+    np.testing.assert_allclose(Pfilter, P)
+    np.testing.assert_allclose(Epred, E)
+    np.testing.assert_allclose(Efilter, E)
+    np.testing.assert_allclose(
+        np.sort_complex(E), np.sort_complex(np.linalg.eigvals(A @ correction)),
+        rtol=1e-10, atol=1e-12)
+    assert np.max(np.abs(E)) < 1
+
+    # The two-step filter and the existing predictor give the same next
+    # estimate, even when A is singular and cannot recover M from A @ M.
+    xhat, innovation = np.array([0.1, -0.2, 0.3]), np.array([0.4, -0.5])
+    np.testing.assert_allclose(
+        A @ (xhat + Lfilter @ innovation), A @ xhat + L @ innovation)
+    np.testing.assert_allclose(
+        P, A @ posterior @ A.T + G @ QN @ G.T, rtol=1e-10, atol=1e-12)
+
+
+@pytest.mark.parametrize("return_filter_form", [False, True])
+@pytest.mark.parametrize("dt", [True, 0.1])
+def test_dlqe_filter_form_call_format(return_filter_form, dt):
+    sys = ct.ss([[0.7, 0.2], [0, 0]], [[1], [0.3]], [[1, 0.4]], 0, dt=dt)
+    expected = dlqe(sys.A, sys.B, sys.C, 0.5, 0.8,
+                    return_filter_form=return_filter_form)
+    for cdlqe in (dlqe, lqe):
+        result = cdlqe(sys, 0.5, 0.8, return_filter_form=return_filter_form)
+        for actual, reference in zip(result, expected):
+            np.testing.assert_allclose(actual, reference)
+        with pytest.raises(ct.ControlNotImplemented, match="cross-covariance"):
+            cdlqe(sys, 0.5, 0.8, 0, return_filter_form=return_filter_form)
+        with pytest.raises(TypeError, match="unrecognized keyword"):
+            cdlqe(sys, 0.5, 0.8, return_filter_form=return_filter_form,
+                  unknown=True)
+
 
 def test_lqe_discrete():
     """Test overloading of lqe operator for discrete-time systems"""

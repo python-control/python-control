@@ -83,6 +83,10 @@ def lqe(*args, symmetric_kwargs=None, **kwargs):
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
         and then 'scipy'.
+    return_filter_form : bool, optional
+        For a discrete-time `sys`, return the measurement-update gain instead
+        of the predictor gain.  Default is False.  See `dlqe` for details.
+        Only supported for discrete-time systems.
     symmetric_kwargs : dict, optional
         Keyword arguments passed to `scipy.linalg.issymmetric` or
         `scipy.linalg.ishermitian`.
@@ -132,7 +136,7 @@ def lqe(*args, symmetric_kwargs=None, **kwargs):
     # If we were passed a discrete-time system as the first arg, use dlqe()
     if isinstance(args[0], LTI) and isdtime(args[0], strict=True):
         # Call dlqe
-        return dlqe(*args, **kwargs)
+        return dlqe(*args, symmetric_kwargs=symmetric_kwargs, **kwargs)
 
     # Get the method to use (if specified as a keyword)
     method = kwargs.pop('method', None)
@@ -186,8 +190,8 @@ def lqe(*args, symmetric_kwargs=None, **kwargs):
 
 
 # contributed by Sawyer B. Fuller <minster@uw.edu>
-def dlqe(*args, symmetric_kwargs=None, **kwargs):
-    r"""dlqe(A, G, C, QN, RN, [, N])
+def dlqe(*args, return_filter_form=False, symmetric_kwargs=None, **kwargs):
+    r"""dlqe(A, G, C, QN, RN, [, NN])
 
     Discrete-time linear quadratic estimator (Kalman filter).
 
@@ -207,14 +211,31 @@ def dlqe(*args, symmetric_kwargs=None, **kwargs):
 
     .. math:: x_e[n+1] = A x_e[n] + B u[n] + L(y[n] - C x_e[n] - D u[n])
 
-    produces a state estimate x_e[n] that minimizes the mean squared
-    estimation error x[n] - x_e[n] using the sensor measurements y. The
-    noise cross-correlation `NN` is set to zero when omitted.
+    produces a prior state estimate x_e[n] using measurements through y[n-1].
+    This estimate minimizes the mean squared estimation error x[n] - x_e[n].
+    The noise cross-correlation `NN` is set to zero when omitted.
+
+    If `return_filter_form` is True, the returned gain is instead the
+    measurement-update gain L_f for the current state estimate:
+
+    .. math::
+
+        x_f[n] &= x_e[n] + L_f (y[n] - C x_e[n] - D u[n]) \\
+        L_f &= P C^T (C P C^T + RN)^{-1}
+
+    The next prior estimate is A x_f[n] + B u[n].  The predictor gain is
+    L = A L_f, but computing L_f does not require A to be invertible.
+
+    The system matrices can also be supplied as a discrete-time `StateSpace`
+    system: ``L, P, E = dlqe(sys, QN, RN)``.
 
     Parameters
     ----------
     A, G, C : 2D array_like
         Dynamics, process noise (disturbance), and output matrices.
+    sys : `StateSpace`
+        Discrete-time linear I/O system, with the process noise input taken
+        as the system input.
     QN, RN : 2D array_like
         Process and sensor noise covariance matrices.
     NN : 2D array, optional
@@ -223,6 +244,10 @@ def dlqe(*args, symmetric_kwargs=None, **kwargs):
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot'
         first and then 'scipy'.
+    return_filter_form : bool, optional
+        Return the measurement-update gain L_f if True.  If False (default),
+        return the predictor gain L = A L_f.  The covariance `P` and poles `E`
+        are the same for both forms.
     symmetric_kwargs : dict, optional
         Keyword arguments passed to `scipy.linalg.issymmetric` or
         `scipy.linalg.ishermitian`.
@@ -230,21 +255,29 @@ def dlqe(*args, symmetric_kwargs=None, **kwargs):
     Returns
     -------
     L : 2D array
-        Kalman estimator gain.
+        Kalman predictor gain, or measurement-update gain if
+        `return_filter_form` is True.
     P : 2D array
-        Solution to Riccati equation.
+        Prior estimation error covariance (before the measurement update),
+        given by the solution to the discrete-time Riccati equation:
 
         .. math::
 
-            A P + P A^T - (P C^T + G N) R^{-1}  (C P + N^T G^T) + G Q G^T = 0
+            P &= A P A^T + G QN G^T \\
+              &\quad - A P C^T (C P C^T + RN)^{-1} C P A^T
 
     E : 1D array
-        Eigenvalues of estimator poles eig(A - L C).
+        Eigenvalues of the estimator error dynamics: eig(A - L C) for the
+        predictor form, or eig(A - A L C) for the filter form.
 
     Examples
     --------
     >>> L, P, E = dlqe(A, G, C, QN, RN)                         # doctest: +SKIP
     >>> L, P, E = dlqe(A, G, C, QN, RN, NN)                     # doctest: +SKIP
+    >>> import control as ct
+    >>> M, P, E = ct.dlqe(0, 1, 1, 1, 1, return_filter_form=True)
+    >>> M
+    array([[0.5]])
 
     See Also
     --------
@@ -306,6 +339,10 @@ def dlqe(*args, symmetric_kwargs=None, **kwargs):
     # Compute the result (dimension and symmetry checking done in dare())
     P, E, LT = dare(A.T, C.T, G @ QN @ G.T, RN, method=method,
                     _Bs="C", _Qs="QN", _Rs="RN", _Ss="NN", symmetric_kwargs=symmetric_kwargs)
+    if return_filter_form:
+        # Solve for the measurement-update gain using the prior covariance.
+        # This also works when A is singular.
+        return np.linalg.solve(C @ P @ C.T + RN, C @ P).T, P, E
     return LT.T, P, E
 
 

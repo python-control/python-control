@@ -182,10 +182,42 @@ called in several forms:
 
 where :code:`sys` is an :class:`LTI` object, and `A`, `G`, `C`, `QN`, `RN`,
 and `NN` are 2D arrays of appropriate dimension.  If :code:`sys` is a
-discrete-time system, the first two forms will compute the discrete
-time optimal controller.  For the second two forms, the :func:`dlqr`
+discrete-time system, the first two forms will compute the discrete-time
+optimal estimator.  For the second two forms, the :func:`dlqe`
 function can be used.  Additional arguments and details are given on
-the :func:`lqr` and :func:`dlqr` documentation pages.
+the :func:`lqe` and :func:`dlqe` documentation pages.
+
+In discrete time, :func:`dlqe` returns the predictor gain :math:`L` by
+default.  For the system :math:`x[n+1] = A x[n] + B u[n] + G w[n]`,
+:math:`y[n] = C x[n] + D u[n] + v[n]`, the prior estimate uses measurements
+through time :math:`n-1` and advances according to
+
+.. math::
+
+   \hat{x}[n+1|n] = A \hat{x}[n|n-1] + B u[n]
+       + L (y[n] - C \hat{x}[n|n-1] - D u[n]).
+
+To update the current state estimate using :math:`y[n]`, set
+`return_filter_form` to True.  This returns the measurement-update gain
+:math:`M = P C^T (C P C^T + RN)^{-1}`, which is related to the predictor
+gain by :math:`L = A M`, and can be computed even when :math:`A` is singular:
+
+.. code::
+
+   M, P, E = ct.dlqe(A, G, C, QN, RN, return_filter_form=True)
+
+The two-step filter uses this gain as follows:
+
+.. math::
+
+   \hat{x}[n|n] &= \hat{x}[n|n-1]
+       + M (y[n] - C \hat{x}[n|n-1] - D u[n]), \\
+   \hat{x}[n+1|n] &= A \hat{x}[n|n] + B u[n].
+
+Both gain forms return the same prior covariance `P` and estimator poles
+`E`.  The posterior covariance is :math:`(I - M C) P`, and the poles are
+the eigenvalues of :math:`A (I - M C)`.  The option is also supported by
+:func:`lqe` when passed a discrete-time system.
 
 .. testsetup:: kalman
 
