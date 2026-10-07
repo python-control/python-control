@@ -370,6 +370,29 @@ def test_list_responses(resp_fcn):
             assert cplt.lines[row, col][1].get_color() == 'tab:orange'
 
 
+@pytest.mark.parametrize("plot_inputs, shape", [
+    (None, (2, 1)), (True, (2, 1)), ('overlay', (1, 1)), (False, (1, 1))])
+@pytest.mark.usefixtures('mplcleanup')
+def test_time_response_plot_list(plot_inputs, shape):
+    # A list of responses is plotted like a TimeResponseList (gh-1171)
+    sys = ct.ss(ct.tf([1, 2], [3, 4, 5]))
+    timepts = np.linspace(0, 10)
+    resp1 = ct.input_output_response(sys, timepts, np.sin(timepts))
+    resp2 = ct.input_output_response(sys, timepts, np.cos(timepts))
+
+    cplt = ct.time_response_plot([resp1, resp2], plot_inputs=plot_inputs)
+    assert cplt.lines.shape == shape
+
+    plt.figure()
+    cplt_list = ct.TimeResponseList([resp1, resp2]).plot(
+        plot_inputs=plot_inputs)
+    assert cplt_list.lines.shape == shape
+    for lines, lines_list in zip(cplt.lines.flat, cplt_list.lines.flat):
+        assert len(lines) == len(lines_list)
+        for line, line_list in zip(lines, lines_list):
+            np.testing.assert_equal(line.get_ydata(), line_list.get_ydata())
+
+
 @pytest.mark.slycot
 @pytest.mark.usefixtures('mplcleanup')
 def test_linestyles():

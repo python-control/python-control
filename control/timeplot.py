@@ -52,8 +52,9 @@ def time_response_plot(
 
     Parameters
     ----------
-    data : `TimeResponseData`
-        Data to be plotted.
+    data : `TimeResponseData` or list of `TimeResponseData`
+        Data to be plotted.  The responses in a list are plotted on the
+        same axes, as `TimeResponseList.plot` does.
     plot_inputs : bool or str, optional
         Sets how and where to plot the inputs:
             * False: don't plot the inputs
@@ -175,6 +176,17 @@ def time_response_plot(
 
     """
     from .ctrlplot import _process_ax_keyword, _process_line_labels
+    from .timeresp import TimeResponseList
+
+    # Plot a list of responses one at a time, as `TimeResponseList.plot` does
+    if isinstance(data, (list, tuple)):
+        if label is not None:
+            kwargs['label'] = label
+        return TimeResponseList(data).plot(
+            *fmt, ax=ax, plot_inputs=plot_inputs, plot_outputs=plot_outputs,
+            transpose=transpose, overlay_traces=overlay_traces,
+            overlay_signals=overlay_signals, add_initial_zero=add_initial_zero,
+            trace_labels=trace_labels, title=title, relabel=relabel, **kwargs)
 
     #
     # Process keywords and set defaults
