@@ -1255,6 +1255,27 @@ class TestTimeresp:
         assert x.shape == (T.size, sys.nstates)
 
 
+@pytest.mark.parametrize("ninputs", [1, 2])
+def test_forced_response_transpose_discrete(ninputs):
+    # Transposed inputs have time along the first axis, including when the
+    # time vector is computed from them (gh-931)
+    sys = ct.rss(3, 2, ninputs, dt=0.1)
+    U = np.random.default_rng(0).standard_normal((ninputs, 10))
+
+    resp = ct.forced_response(sys, U=U, squeeze=False)
+    resp_t = ct.forced_response(
+        sys, U=U.T, transpose=True, squeeze=False)
+    np.testing.assert_equal(resp_t.time, resp.time)
+    np.testing.assert_allclose(np.transpose(resp_t.outputs), resp.outputs)
+
+    # Scalar input with a given time vector
+    T = np.arange(10) * 0.1
+    resp = ct.forced_response(sys, T=T, U=1.0, squeeze=False)
+    resp_t = ct.forced_response(
+        sys, T=T, U=1.0, transpose=True, squeeze=False)
+    np.testing.assert_allclose(np.transpose(resp_t.outputs), resp.outputs)
+
+
 @pytest.mark.pandas
 def test_to_pandas():
     # Create a SISO time response

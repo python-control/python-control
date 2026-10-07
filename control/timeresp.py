@@ -1112,7 +1112,8 @@ def forced_response(
                 raise ValueError('Parameters `T` and `U` can\'t both be '
                                  'zero for discrete-time simulation')
             # Set T to equally spaced samples with same length as U
-            if U.ndim == 1:
+            # (time is along the first axis of a transposed U)
+            if U.ndim == 1 or transpose:
                 n_steps = U.shape[0]
             else:
                 n_steps = U.shape[1]
@@ -1121,6 +1122,9 @@ def forced_response(
         else:
             if U.ndim == 0:
                 U = np.full((n_inputs, T.shape[0]), U)
+                if transpose:
+                    # U gets transposed back when its shape is checked
+                    U = U.T
     else:
         if T is None:
             raise ValueError('Parameter `T` is mandatory for continuous '
