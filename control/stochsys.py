@@ -74,7 +74,8 @@ def lqe(*args, symmetric_kwargs=None, **kwargs):
         Dynamics, process noise (disturbance), and output matrices.
     sys : `StateSpace` or `TransferFunction`
         Linear I/O system, with the process noise input taken as the system
-        input.
+        input (`G = sys.B`).  Thus `QN` must be square with dimension
+        `sys.ninputs`, not necessarily `sys.nstates`.
     QN, RN : 2D array_like
         Process and sensor noise covariance matrices.
     NN : 2D array, optional
@@ -219,6 +220,10 @@ def dlqe(*args, symmetric_kwargs=None, **kwargs):
         Process and sensor noise covariance matrices.
     NN : 2D array, optional
         Cross covariance matrix (not yet supported).
+    sys : `StateSpace`
+        If a state-space system is passed instead of `A`, `G`, and `C`,
+        its input matrix `sys.B` is used as `G`.  Consequently `QN`
+        must have shape (`sys.ninputs`, `sys.ninputs`).
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot'
