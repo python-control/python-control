@@ -181,7 +181,17 @@ called in several forms:
   * ``L, P, E = lqe(A, G, C, QN, RN, NN)``
 
 where :code:`sys` is an :class:`LTI` object, and `A`, `G`, `C`, `QN`, `RN`,
-and `NN` are 2D arrays of appropriate dimension.  If :code:`sys` is a
+and `NN` are 2D arrays of appropriate dimension.
+
+For the state-space system form ``lqe(sys, QN, RN)``, the process noise
+matrix :math:`G` is taken to be :code:`sys.B`.  This models disturbances
+entering through the system's input channels: ``QN`` must have shape
+``(sys.ninputs, sys.ninputs)``, which may differ from the number of states.
+The same convention applies to ``dlqe(sys, QN, RN)`` for discrete-time
+systems.  To model noise entering through a different matrix, specify
+:math:`G` explicitly using the ``lqe(A, G, C, QN, RN)`` form (or ``dlqe``).
+For example, use ``G = np.eye(sys.nstates)`` if independent disturbances
+are modelled as entering every state derivative.  If :code:`sys` is a
 discrete-time system, the first two forms will compute the discrete
 time optimal controller.  For the second two forms, the :func:`dlqr`
 function can be used.  Additional arguments and details are given on
