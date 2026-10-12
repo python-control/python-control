@@ -191,7 +191,9 @@ The same convention applies to ``dlqe(sys, QN, RN)`` for discrete-time
 systems.  To model noise entering through a different matrix, specify
 :math:`G` explicitly using the ``lqe(A, G, C, QN, RN)`` form (or ``dlqe``).
 For example, use ``G = np.eye(sys.nstates)`` if independent disturbances
-are modelled as entering every state derivative.  If :code:`sys` is a
+are modelled as entering every state derivative.
+
+If :code:`sys` is a
 discrete-time system, the first two forms will compute the discrete
 time optimal controller.  For the second two forms, the :func:`dlqr`
 function can be used.  Additional arguments and details are given on
