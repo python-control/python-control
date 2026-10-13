@@ -65,14 +65,14 @@ def lqe(*args, symmetric_kwargs=None, **kwargs):
     * ``L, P, E = lqe(A, G, C, QN, RN)``
     * ``L, P, E = lqe(A, G, C, QN, RN, NN)``
 
-    where `sys` is an `LTI` object, and `A`, `G`, `C`, `QN`, `RN`, and `NN`
-    are 2D arrays or matrices of appropriate dimension.
+    where `sys` is a `StateSpace` object, and `A`, `G`, `C`, `QN`, `RN`, and
+    `NN` are 2D arrays or matrices of appropriate dimension.
 
     Parameters
     ----------
     A, G, C : 2D array_like
         Dynamics, process noise (disturbance), and output matrices.
-    sys : `StateSpace` or `TransferFunction`
+    sys : `StateSpace`
         Linear I/O system, with the process noise input taken as the system
         input (`G = sys.B`).  Thus `QN` must be square with dimension
         `sys.ninputs`, not necessarily `sys.nstates`.
