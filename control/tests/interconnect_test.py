@@ -746,3 +746,52 @@ def test_parallel_interconnect():
     np.testing.assert_allclose(sys_bd.B, sys_ic.B)
     np.testing.assert_allclose(sys_bd.C, sys_ic.C)
     np.testing.assert_allclose(sys_bd.D, sys_ic.D)
+
+
+# Bug identified in issue #1257: MIMO feedthrough path visiting a subsystem multiple times
+def test_interconnect_mimo_feedthrough_no_algebraic_loop():
+    # 2-input, 2-output plant with direct feedthrough only in g11
+    A = np.array([[-2.0, 0.0], [0.0, -3.0]])
+    B = np.array([[1.0, 0.0], [0.0, 1.0]])
+    C = np.array([[1.0, 0.0], [0.0, 1.0]])
+    D = np.array([[1.0, 0.0], [0.0, 0.0]])
+    plant = ct.ss(
+        A, B, C, D, inputs=['u[0]', 'u[1]'], outputs=['y[0]', 'y[1]'],
+        name='plant')
+
+    # PI controllers with D = 1
+    A_pi = np.array([[0.0]])
+    B_pi = np.array([[1.0]])
+    C_pi = np.array([[1.0]])
+    D_pi = np.array([[1.0]])
+    pi1 = ct.ss(A_pi, B_pi, C_pi, D_pi, inputs='e[0]', outputs='u[1]', name='pi1')
+    pi2 = ct.ss(A_pi, B_pi, C_pi, D_pi, inputs='e[1]', outputs='u[0]', name='pi2')
+
+    err = ct.summing_junction(
+        inputs=['r', '-y'], outputs='e', dimension=2, name='err')
+
+    # Without the fix, this raises RuntimeError: algebraic loop detected
+    sys = ct.interconnect(
+        [err, pi1, pi2, plant], inplist=['r'], outlist=['y'])
+
+    # Compare closed loop poles against ct.feedback
+    K_ss = ct.ss(
+        np.zeros((2, 2)),
+        np.eye(2),
+        np.array([[0.0, 1.0], [1.0, 0.0]]),
+        np.array([[0.0, 1.0], [1.0, 0.0]])
+    )
+    expected_poles = np.sort_complex(ct.feedback(plant, K_ss).poles())
+    np.testing.assert_allclose(
+        np.sort_complex(sys.poles()), expected_poles, rtol=1e-5)
+
+
+def test_interconnect_algebraic_loop_detection():
+    # True algebraic loop: feedback through static feedthrough blocks
+    P = ct.ss([], [], [], [[1.0]], inputs='u', outputs='y', name='P')
+    sumj = ct.summing_junction(inputs=['r', 'y'], outputs='u', name='sumj')
+    with pytest.raises(RuntimeError, match='algebraic loop detected'):
+        ct.interconnect(
+            [sumj, P], connections=[['P.u', 'sumj.u'], ['sumj.y', 'P.y']],
+            inplist=['r'], outlist=['P.y'])
+
