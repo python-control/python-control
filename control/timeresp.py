@@ -1698,14 +1698,15 @@ def step_info(
             steady_state_value: complex = np.nan
 
             if not np.isnan(InfValue) and not np.isinf(InfValue):
-                # RiseTime
-                tr_lower_index = np.nonzero(
-                    sgnInf * (yout - RiseTimeLimits[0] * InfValue) >= 0
-                    )[0][0]
-                tr_upper_index = np.nonzero(
-                    sgnInf * (yout - RiseTimeLimits[1] * InfValue) >= 0
-                    )[0][0]
-                rise_time = T[tr_upper_index] - T[tr_lower_index]
+                # RiseTime (undefined if the response never gets there,
+                # e.g. if the time vector is too short)
+                tr_lower = np.nonzero(
+                    sgnInf * (yout - RiseTimeLimits[0] * InfValue) >= 0)[0]
+                tr_upper = np.nonzero(
+                    sgnInf * (yout - RiseTimeLimits[1] * InfValue) >= 0)[0]
+                if tr_lower.size and tr_upper.size:
+                    tr_upper_index = tr_upper[0]
+                    rise_time = T[tr_upper_index] - T[tr_lower[0]]
 
                 # SettlingTime
                 outside_threshold = np.nonzero(
@@ -1717,8 +1718,11 @@ def step_info(
                 if settled < len(T):
                     settling_time = T[settled]
 
-                settling_min = min((yout[tr_upper_index:]).min(), InfValue)
-                settling_max = max((yout[tr_upper_index:]).max(), InfValue)
+                if tr_lower.size and tr_upper.size:
+                    settling_min = min(
+                        (yout[tr_upper_index:]).min(), InfValue)
+                    settling_max = max(
+                        (yout[tr_upper_index:]).max(), InfValue)
 
                 # Overshoot
                 y_os = (sgnInf * yout).max()

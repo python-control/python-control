@@ -1483,3 +1483,22 @@ def test_timeresp_aliases():
 
     with pytest.raises(TypeError, match="unrecognized keyword"):
         ct.step_info(sys, timepts, unknown=True)
+
+
+def test_step_info_rise_not_reached():
+    # Response that never reaches 90% of the final value: the rise time
+    # (and settling min/max) are undefined, but step_info should not fail
+    timepts = np.linspace(0, 1, 101)
+    yout = 1 - np.exp(-timepts)
+    step_info = ct.step_info(yout, timepts, yfinal=1)
+    assert np.isnan(step_info['RiseTime'])
+    assert np.isnan(step_info['SettlingMin'])
+    assert np.isnan(step_info['SettlingMax'])
+    assert np.isnan(step_info['SettlingTime'])
+    assert step_info['SteadyStateValue'] == 1
+
+    # Large feedthrough: default time vector ends before 90% is reached
+    sys = ct.tf([2.99, -0.0685], [1, 2.83])
+    step_info = ct.step_info(sys)
+    assert isclose(step_info['SteadyStateValue'], sys.dcgain())
+    assert step_info['Peak'] == pytest.approx(2.99)
