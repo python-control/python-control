@@ -258,6 +258,49 @@ def test_gangof4_plots(savefigs=False):
         plt.savefig('freqplot-gangof4.png')
 
 
+
+@pytest.mark.usefixtures("mplcleanup")
+def test_gangof4_plot_precomputed_response():
+    """A precomputed response must use the same 2x2 plot API as P/C input."""
+    P = ct.tf([1], [1, 1], name="P")
+    C = ct.tf([2], [1], name="C")
+    response = ct.gangof4_response(P, C, omega=np.logspace(-2, 2, 16))
+
+    cplt = ct.gangof4_plot(response, dB=True)
+
+    assert cplt.axes.shape == (2, 2)
+    assert all(len(lines) > 0 for lines in cplt.lines.flat)
+
+
+def test_gangof4_plot_precomputed_passes_kwargs(monkeypatch):
+    """Plot options must be forwarded as keywords, not a positional dict."""
+    response = ct.gangof4_response(ct.tf([1], [1, 1]), ct.tf([2], [1]))
+    seen = {}
+    sentinel = object()
+
+    def check_plot(*args, **kwargs):
+        assert not args
+        seen.update(kwargs)
+        return sentinel
+
+    monkeypatch.setattr(response, "plot", check_plot)
+    assert ct.gangof4_plot(response, dB=True, label="closed loop", Hz=False) is sentinel
+    assert seen == {"dB": True, "label": "closed loop"}
+
+
+@pytest.mark.parametrize("frequency_kwargs", [
+    {"omega": np.array([1.0, 2.0])},
+    {"omega_limits": [0.1, 10]},
+    {"omega_num": 100},
+    {"Hz": True},
+])
+def test_gangof4_plot_precomputed_rejects_frequency_kwargs(frequency_kwargs):
+    """A response with fixed frequencies cannot select them again."""
+    response = ct.gangof4_response(ct.tf([1], [1, 1]), ct.tf([2], [1]))
+    with pytest.raises(ValueError, match="not allowed"):
+        ct.gangof4_plot(response, **frequency_kwargs)
+
+
 @pytest.mark.parametrize("response_cmd, return_type", [
     (ct.frequency_response, ct.FrequencyResponseData),
     (ct.nyquist_response, ct.freqplot.NyquistResponseData),
