@@ -2311,12 +2311,11 @@ def gangof4_plot(
 
     """
     if len(args) == 1 and isinstance(args[0], FrequencyResponseData):
-        if any([kw is not None
-                for kw in [omega, omega_limits, omega_num, Hz]]):
+        if any(kw is not None for kw in [omega, omega_limits, omega_num]) or Hz:
             raise ValueError(
                 "omega, omega_limits, omega_num, Hz not allowed when "
                 "given a Gang of 4 response as first argument")
-        return args[0].plot(kwargs)
+        return args[0].plot(**kwargs)
     else:
         if len(args) > 3:
             raise TypeError(
