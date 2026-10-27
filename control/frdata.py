@@ -121,7 +121,7 @@ class FrequencyResponseData(LTI):
     Notes
     -----
     The main data members are `omega` and `frdata`, where `omega` is a 1D
-    array of frequency points and and `frdata` is a 3D array of frequency
+    array of frequency points and `frdata` is a 3D array of frequency
     responses, with the first dimension corresponding to the output index of
     the FRD, the second dimension corresponding to the input index, and the
     3rd dimension corresponding to the frequency points in omega.  For example,
