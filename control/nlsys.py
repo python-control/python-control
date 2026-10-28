@@ -1567,7 +1567,7 @@ def input_output_response(
     This is often useful for interconnected control systems where the
     process dynamics are the first system and all other components start
     with zero initial condition since this can be specified as [xsys_0, 0].
-    A warning is issued if the initial conditions are padded and and the
+    A warning is issued if the initial conditions are padded and the
     final listed initial state is not zero.
 
     If discontinuous inputs are given, the underlying SciPy numerical
