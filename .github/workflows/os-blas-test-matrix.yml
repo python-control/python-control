@@ -43,11 +43,11 @@ jobs:
 
     steps:
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
       - name: Checkout Slycot
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           repository: python-control/Slycot
           fetch-depth: 0
@@ -113,7 +113,7 @@ jobs:
 
     steps:
       - name: Checkout Slycot
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           repository: python-control/Slycot
           fetch-depth: 0
@@ -163,7 +163,7 @@ jobs:
           name: slycot-wheels
           pattern: slycot-wheels-*
       - name: Checkout python-control
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
       - name: Download wheels (if any)
         uses: actions/download-artifact@v4
         with:
@@ -190,7 +190,7 @@ jobs:
           name: slycot-conda-pkgs
           pattern: slycot-conda-pkgs-*
       - name: Checkout python-control
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
       - name: Download conda packages
         uses: actions/download-artifact@v4
         with:
@@ -215,14 +215,14 @@ jobs:
 
     steps:
       - name: Checkout Slycot
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           repository: 'python-control/Slycot'
           path: slycot-src
       - name: Checkout python-control
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
       - name: Setup Ubuntu
@@ -287,12 +287,12 @@ jobs:
 
     steps:
       - name: Checkout Slycot
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           repository: 'python-control/Slycot'
           path: slycot-src
       - name: Checkout python-control
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
       - name: Setup macOS
         if: matrix.os == 'macos'
         run: brew install coreutils

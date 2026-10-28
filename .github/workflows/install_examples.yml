@@ -8,7 +8,7 @@ jobs:
 
     steps:
     - name: Check out the python-control sources
-      uses: actions/checkout@v3
+      uses: actions/checkout@v7
 
     - name: Setup Conda
       uses: conda-incubator/setup-miniconda@v3

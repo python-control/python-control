@@ -8,18 +8,18 @@ jobs:
 
     steps:
     - name: Checkout python-control
-      uses: actions/checkout@v3
+      uses: actions/checkout@v7
       with:
         path: python-control
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v7
       with:
         python-version: '3.12'
     - name: Install Python dependencies and test tools
       run: pip install -v './python-control[test]'
 
     - name: Checkout Slycot
-      uses: actions/checkout@v3
+      uses: actions/checkout@v7
       with:
         repository: python-control/Slycot
         submodules: recursive
