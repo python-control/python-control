@@ -9,19 +9,18 @@ jobs:
     steps:
     - name: Check out the python-control sources
       uses: actions/checkout@v3
-    - name: Set up conda using the preinstalled GHA Miniconda
-      run: echo $CONDA/bin >> $GITHUB_PATH
-    - name: Install Python dependencies from conda-forge
-      run: |
-        conda create \
-           --name control-examples-env \
-           --channel conda-forge \
-           --strict-channel-priority \
-           --quiet --yes \
-           python=3.12 pip \
-           numpy matplotlib scipy \
-           slycot pmw jupyter \
-           ipython!=9.0
+
+    - name: Setup Conda
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        python-version: 3.12
+        activate-environment: control-examples-env
+        environment-file: .github/conda-env/example-env.yml
+        miniforge-version: latest
+        channels: conda-forge,defaults
+        channel-priority: strict
+        auto-update-conda: false
+        auto-activate-base: false
 
     - name: Install from source
       run: |

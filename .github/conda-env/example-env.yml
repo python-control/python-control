@@ -1,0 +1,10 @@
+name: control-examples-env
+dependencies:
+  - pip
+  - numpy
+  - matplotlib
+  - scipy
+  - slycot
+  - pmw
+  - jupyter
+  - ipython!=9.0
