@@ -104,6 +104,7 @@ def test_kwarg_search(module, prefix):
      (control.dlqr, 1, 0, ([[1, 0], [0, 1]], [[1]]), {}),
      (control.drss, 0, 0, (2, 1, 1), {}),
      (control.feedback, 2, 0, (), {}),
+     (control.lft, 2, 0, (), {}),
      (control.flatsys.flatsys, 1, 0, (), {}),
      (control.input_output_response, 1, 0, ([0, 1, 2], [1, 1, 1]), {}),
      (control.lqe, 1, 0, ([[1]], [[1]]), {}),
@@ -139,6 +140,7 @@ def test_kwarg_search(module, prefix):
      (control.StateSpace.sample, 1, 0, (0.1,), {}),
      (control.StateSpace, 0, 0,
       ([[-1, 0], [0, -1]], [[1], [1]], [[1, 1]], 0), {}),
+     (control.StateSpace.lft, 2, 0, (), {}),
      (control.TransferFunction, 0, 0, ([1], [1, 1]), {})]
 )
 def test_unrecognized_kwargs(function, nsssys, ntfsys, moreargs, kwargs,
@@ -273,6 +275,7 @@ kwarg_unittest = {
     'interconnect': interconnect_test.test_interconnect_exceptions,
     'time_response_plot': timeplot_test.test_errors,
     'linearize': test_unrecognized_kwargs,
+    'lft': test_unrecognized_kwargs,
     'lqe': test_unrecognized_kwargs,
     'lqr': test_unrecognized_kwargs,
     'LTI.forced_response': statesp_test.test_convenience_aliases,
@@ -348,6 +351,7 @@ kwarg_unittest = {
         interconnect_test.test_interconnect_exceptions,
     'StateSpace.__init__': test_unrecognized_kwargs,
     'StateSpace.initial_response': timeresp_test.test_timeresp_aliases,
+    'StateSpace.lft': test_unrecognized_kwargs,
     'StateSpace.sample': test_unrecognized_kwargs,
     'TimeResponseData.__call__': trdata_test.test_response_copy,
     'TimeResponseData.plot': timeplot_test.test_errors,

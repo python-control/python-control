@@ -594,6 +594,94 @@ class TestIOSys:
         lti_t, lti_y = ct.forced_response(linsys, T, U, X0)
         np.testing.assert_allclose(ios_y, lti_y,atol=0.002,rtol=0.)
 
+    def test_lft(self, tsys):
+        """Test that lft() with a NonlinearIOSystem matches a hand-built
+        LFT using interconnect() and labels propagate correctly."""
+        # Set up parameters for simulation
+        T, U, X0 = tsys.T, tsys.U, tsys.X0
+
+        sys1_ss = ct.rss(states=2, inputs=2, outputs=3, strictly_proper=True)
+        sys2_ss = ct.rss(states=2, inputs=2, outputs=3, strictly_proper=True)
+
+        sys1_nl = ct.NonlinearIOSystem(
+            lambda t, x, u, params: sys1_ss.A @ x + sys1_ss.B @ u,
+            lambda t, x, u, params: sys1_ss.C @ x + sys1_ss.D @ u,
+            states=2, inputs=['u1a', 'u1b'], outputs=['y1a', 'y1b', 'y1c'],
+            name='sys1')
+        sys2_nl = ct.NonlinearIOSystem(
+            lambda t, x, u, params: sys2_ss.A @ x + sys2_ss.B @ u,
+            lambda t, x, u, params: sys2_ss.C @ x + sys2_ss.D @ u,
+            states=2, inputs=['u2a', 'u2b'], outputs=['y2a', 'y2b', 'y2c'],
+            name='sys2')
+
+        # case 1: nu = -1, ny = -1
+        sys_lft = ct.lft(sys1_nl, sys2_nl)
+        sys_interconnect = ct.interconnect(
+            [sys1_nl, sys2_nl],
+            connections=[
+                ['sys1.u1a', 'sys2.y2a'],
+                ['sys1.u1b', 'sys2.y2b'],
+                ['sys2.u2a', 'sys1.y1b'],
+                ['sys2.u2b', 'sys1.y1c'],
+            ],
+            inplist=[],
+            outlist=['sys1.y1a', 'sys2.y2c'],
+        )
+
+        lft_t, lft_y = ct.input_output_response(sys_lft, T, X0=X0)
+        ic_t, ic_y = ct.input_output_response(sys_interconnect, T, X0=X0)
+        np.testing.assert_allclose(lft_y, ic_y, atol=1e-10)
+        # check label propagation
+        assert sys_lft.output_labels == ['y1a', 'y2c']
+
+        # case 2: nu = 1, ny = 2
+        sys_lft = ct.lft(sys1_nl, sys2_nl, 1, 2)
+        sys_interconnect = ct.interconnect(
+            [sys1_nl, sys2_nl],
+            connections=[
+                ['sys1.u1b', 'sys2.y2a'],
+                ['sys2.u2a', 'sys1.y1b'],
+                ['sys2.u2b', 'sys1.y1c'],
+            ],
+            inplist=['sys1.u1a'],
+            outlist=['sys1.y1a', 'sys2.y2b', 'sys2.y2c'],
+        )
+        lft_t, lft_y = ct.input_output_response(sys_lft, T, U)
+        ic_t, ic_y = ct.input_output_response(sys_interconnect, T, U)
+        np.testing.assert_allclose(lft_y, ic_y, atol=1e-10)
+        # check label propagation
+        assert sys_lft.input_labels == ['u1a']
+        assert sys_lft.output_labels == ['y1a', 'y2b', 'y2c']
+        
+        # check input, output and name overriding
+        sys_lft = ct.lft(
+            sys1_nl, sys2_nl, 1, 2,
+            inputs=['u'], 
+            outputs=['y1','y2','y3'],
+            name='new_sys'
+            )
+        assert sys_lft.input_labels == ['u']
+        assert sys_lft.output_labels == ['y1', 'y2', 'y3']
+        assert sys_lft.name == 'new_sys'
+
+        # check that labels go back to default if duplicate labels occur
+        sys3_ss = ct.rss(states=3, inputs=4, outputs=4,
+                          strictly_proper=True)
+        sys4_ss = ct.rss(states=2, inputs=3, outputs=3,
+                          strictly_proper=True)
+        sys3_nl = ct.NonlinearIOSystem(
+            lambda t, x, u, params: sys3_ss.A @ x + sys3_ss.B @ u,
+            lambda t, x, u, params: sys3_ss.C @ x + sys3_ss.D @ u,
+            states=3, inputs=4, outputs=4, name='sys3')
+        sys4_nl = ct.NonlinearIOSystem(
+            lambda t, x, u, params: sys4_ss.A @ x + sys4_ss.B @ u,
+            lambda t, x, u, params: sys4_ss.C @ x + sys4_ss.D @ u,
+            states=2, inputs=3, outputs=3, name='sys4')
+
+        sys_lft = ct.lft(sys3_nl, sys4_nl, nu=2, ny=1)
+        assert sys_lft.input_labels == ['u[0]', 'u[1]', 'u[2]', 'u[3]']
+        assert sys_lft.output_labels == ['y[0]', 'y[1]', 'y[2]', 'y[3]']
+
     def test_bdalg_functions(self, tsys):
         """Test block diagram functions algebra on I/O systems"""
         # Set up parameters for simulation
@@ -638,6 +726,12 @@ class TestIOSys:
         iosys_feedback = ct.feedback(linio1, linio2)
         lin_t, lin_y = ct.forced_response(linsys_feedback, T, U, X0)
         ios_t, ios_y = ct.input_output_response(iosys_feedback, T, U, X0)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
+
+        linsys_lft = ct.lft(linsys1, linsys2, nu=1, ny=1)
+        iosys_lft = ct.lft(linio1, linio2, nu=1, ny=1)
+        lin_t, lin_y = ct.forced_response(linsys_lft, T, U, X0)
+        ios_t, ios_y = ct.input_output_response(iosys_lft, T, U, X0)
         np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
     def test_algebraic_functions(self, tsys):
