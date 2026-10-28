@@ -951,10 +951,14 @@ class InterconnectedSystem(NonlinearIOSystem):
         ylist = np.zeros((noutputs + ninputs,))
 
         # To allow for feedthrough terms, iterate multiple times to allow
-        # feedthrough elements to propagate.  For n systems, we could need to
-        # cycle through n+1 times before reaching steady state
+        # feedthrough elements to propagate. For an interconnected system,
+        # an acyclic feedthrough path can traverse through multiple channels
+        # of the same subsystem in MIMO blocks. The maximum number of feedthrough
+        # propagation steps before reaching steady state (or confirming convergence)
+        # is therefore bounded by the number of internal inputs ninputs (or
+        # the number of subsystems).
         # TODO (later): see if there is a more efficient way to compute
-        cycle_count = len(self.syslist) + 1
+        cycle_count = max(len(self.syslist), ninputs) + 1
         while cycle_count > 0:
             state_index, input_index, output_index = 0, 0, 0
             for sys in self.syslist:
