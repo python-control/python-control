@@ -29,7 +29,7 @@ jobs:
             mplbackend: QtAgg
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v7
 
     - name: Setup Conda
       uses: conda-incubator/setup-miniconda@v3

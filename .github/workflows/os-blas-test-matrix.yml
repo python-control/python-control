@@ -43,11 +43,11 @@ jobs:
 
     steps:
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
       - name: Checkout Slycot
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           repository: python-control/Slycot
           fetch-depth: 0
@@ -113,29 +113,27 @@ jobs:
 
     steps:
       - name: Checkout Slycot
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           repository: python-control/Slycot
           fetch-depth: 0
           submodules: 'recursive'
       - name: Setup Conda
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
-          python-version: ${{ matrix.python }}
+          auto-update-conda: true
           activate-environment: build-env
-          environment-file: .github/conda-env/build-env.yml
           miniforge-version: latest
-          channels: conda-forge,defaults
+          conda-build-version: 26.3.0
           channel-priority: strict
-          auto-update-conda: false
-          auto-activate-base: false
       - name: Conda build
         shell: bash -el {0}
         run: |
           set -e
-          conda mambabuild conda-recipe
+          conda install conda-index
+          conda build conda-recipe --python ${{ matrix.python }}
           # preserve directory structure for custom conda channel
-          find "${CONDA_PREFIX}/conda-bld" -maxdepth 2 -name 'slycot*.tar.bz2' | while read -r conda_pkg; do
+          find "${CONDA_PREFIX}" -maxdepth 2 -name 'slycot*.tar.bz2' | while read -r conda_pkg; do
             conda_platform=$(basename $(dirname "${conda_pkg}"))
             mkdir -p "slycot-conda-pkgs/${conda_platform}"
             cp "${conda_pkg}" "slycot-conda-pkgs/${conda_platform}/"
@@ -163,7 +161,7 @@ jobs:
           name: slycot-wheels
           pattern: slycot-wheels-*
       - name: Checkout python-control
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
       - name: Download wheels (if any)
         uses: actions/download-artifact@v4
         with:
@@ -190,7 +188,7 @@ jobs:
           name: slycot-conda-pkgs
           pattern: slycot-conda-pkgs-*
       - name: Checkout python-control
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
       - name: Download conda packages
         uses: actions/download-artifact@v4
         with:
@@ -215,14 +213,14 @@ jobs:
 
     steps:
       - name: Checkout Slycot
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           repository: 'python-control/Slycot'
           path: slycot-src
       - name: Checkout python-control
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
       - name: Setup Ubuntu
@@ -287,12 +285,12 @@ jobs:
 
     steps:
       - name: Checkout Slycot
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           repository: 'python-control/Slycot'
           path: slycot-src
       - name: Checkout python-control
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
       - name: Setup macOS
         if: matrix.os == 'macos'
         run: brew install coreutils
