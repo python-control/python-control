@@ -28,7 +28,7 @@ def _h2norm_slycot(sys, print_warning=True):
     try:
         from slycot import ab13bd
     except ImportError:
-        ct.ControlSlycot("Can't find slycot module ab13bd")
+        raise ct.ControlSlycot("Can't find slycot module ab13bd")
 
     try:
         from slycot.exceptions import SlycotArithmeticError
