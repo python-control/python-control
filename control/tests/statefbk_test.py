@@ -167,14 +167,71 @@ class TestStatefbk:
         C = np.array([[4., 5.], [6., 7.]])
         D = np.array([[13., 14.], [15., 16.]])
         sys = ss(A, B, C, D)
-        Rctrue = np.array([[4.30116263, 5.6961343], [0., 0.23249528]])
+        # gh-1123: the 'cf' factor is lower triangular (Wc = Rc' Rc)
+        Rctrue = np.array([[0.175412, 0.], [4.297584, 5.700877]])
         Rc = gram(sys, 'cf')
         np.testing.assert_array_almost_equal(Rc, Rctrue)
         sysd = ct.c2d(sys, 0.2)
-        Rctrue = np.array([[1.91488054, 2.53468814],
-                           [0.        , 0.10290372]])
+        Rctrue = np.array([[0.077677, 0.        ],
+                           [1.913304, 2.536776]])
         Rc = gram(sysd, 'cf')
         np.testing.assert_array_almost_equal(Rc, Rctrue)
+
+    @pytest.mark.slycot
+    def testGramRcNonnormal(self):
+        # gh-1123: for a system in Schur form with large off-diagonal
+        # entries, passing A.T to sb03od (the previous implementation)
+        # makes the routine reduce the transposed matrix back to Schur
+        # form, and the additional transformations introduce
+        # significant errors in the factored controllability Gramian.
+        # The system below consists of two cascaded, lightly damped
+        # resonant blocks (poles at -0.001 +/- 100j) with strong
+        # coupling to a slow pole.  Its Gramian, computed in extended
+        # precision, has entries over a wide range of magnitudes; the
+        # previous implementation gives a relative error of about 1e-7
+        # in Wc = Rc' Rc (and an O(1) relative error in the (1, 2)
+        # entry), while the current one is normwise accurate to
+        # machine precision.
+        A = np.array([[-1e-3, 1e6, 1e6, 0., 0.],
+                      [-0.01, -1e-3, 0., 0., 0.],
+                      [0., 0., -1e-3, 1e6, 1e6],
+                      [0., 0., -0.01, -1e-3, 0.],
+                      [0., 0., 0., 0., -0.5]])
+        B = np.ones((5, 1))
+        sys = ss(A, B, np.eye(5), np.zeros((5, 1)))
+        # Reference values for Wtrue: computed by solving the
+        # continuous Lyapunov equation A W + W A' = -B B' in extended
+        # precision.  The equation was assembled in Kronecker (vec)
+        # form and solved by LU decomposition using mpmath with 60
+        # significant digits (mp.dps = 60), with the float64 entries
+        # of A and B B' converted exactly (mp.mpf of each entry).
+        # Back-substitution of the result into the equation gives a
+        # residual of 4.6e-26 relative to ||A|| ||W||, so the values
+        # below are exact at float64 precision.
+        Wtrue = np.array([
+            [1.2499769131085409e+28, -1.2499769133585267e+19,
+             2.4999538264670675e+19, -9.5611639087090350e+05,
+             7.6196325582424242e+03],
+            [-1.2499769133585267e+19, 1.2499769133585267e+20,
+             -4.9998120322969727e+10, 2.4999538269680298e+11,
+             -1.5009246623238371e+02],
+            [2.4999538264670675e+19, -4.9998120322969727e+10,
+             9.9998145349069382e+10, -5.0098137819226004e+01,
+             1.5009628266829540e+02],
+            [-9.5611639087090350e+05, 2.4999538269680298e+11,
+             -5.0098137819226004e+01, 1.0009813781922600e+03,
+             -9.9992580176238322e-01],
+            [7.6196325582424242e+03, -1.5009246623238371e+02,
+             1.5009628266829540e+02, -9.9992580176238322e-01,
+             1.0000000000000000e+00]])
+        Rc = gram(sys, 'cf')
+        # The returned factor is lower triangular (gh-1123 changed it
+        # from upper triangular); the norm check below alone would
+        # also pass for an upper triangular factor.
+        np.testing.assert_array_equal(Rc, np.tril(Rc))
+        Wc = Rc.T @ Rc
+        assert np.linalg.norm(Wc - Wtrue) / np.linalg.norm(Wtrue) < 1e-12
+        np.testing.assert_allclose(Wc[1, 2], Wtrue[1, 2], rtol=1e-4)
 
     @pytest.mark.slycot
     def testGramWo(self):

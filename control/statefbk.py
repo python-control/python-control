@@ -1132,7 +1132,19 @@ def gram(sys, type):
     Returns
     -------
     gram : 2D array
-        Gramian of system.
+        Gramian of system.  For `type` 'cf' and 'of', the Cholesky
+        factor of the Gramian is returned, satisfying
+        ``Wc = Rc' * Rc`` (respectively ``Wo = Ro' * Ro``).  The 'cf'
+        factor is lower triangular, while the 'of' factor is upper
+        triangular.  Note that the 'cf' factor was upper triangular in
+        earlier versions; the identity ``Wc = Rc' * Rc`` is unchanged,
+        but code that passes the factor to routines sensitive to the
+        triangular direction or the multiplication order (for example
+        `scipy.linalg.cho_solve` or `scipy.linalg.solve_triangular`)
+        needs to be updated: `cho_solve` cannot be used with the new
+        factor as before (no flag setting solves ``Wc x = b``), and
+        triangular solves must be done in two steps, first with
+        ``Rc'`` and then with ``Rc``.
 
     Raises
     ------
@@ -1207,9 +1219,23 @@ def gram(sys, type):
         if type == 'cf':
             m = sys.B.shape[1]
             B = np.zeros_like(A)
-            B[0:m, 0:n] = sys.B.transpose()
+            B[0:n, 0:m] = sys.B
+            # Pass A itself with trans='T' instead of passing A.T with
+            # trans='N' (gh-1123): with fact='N', sb03od computes a
+            # Schur factorization of the matrix it is given, so if A is
+            # already in Schur form, passing A.T makes the routine
+            # reduce the transposed (lower quasi-triangular) matrix back to
+            # Schur form; the additional orthogonal transformations
+            # introduce rounding errors that can be significant for
+            # non-normal systems.  Passing A itself avoids that extra
+            # transformation.  With trans='T', sb03od returns an upper
+            # triangular factor U satisfying Wc = U @ U.T; return U.T
+            # so that the factor R returned here still satisfies
+            # Wc = R.T @ R (note that R is lower triangular, while the
+            # factor returned for 'of' is upper triangular).
             X, scale, w = sb03od(
-                n, m, A.transpose(), Q, B, dico, fact='N', trans=tra)
+                n, m, A, Q, B, dico, fact='N', trans='T')
+            X = X.transpose()
         elif type == 'of':
             m = sys.C.shape[0]
             C = np.zeros_like(A)
