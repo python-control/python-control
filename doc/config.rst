@@ -410,11 +410,14 @@ Plotting parameters
    warning if the number of net encirclements is a non-integer value.
 
 .. py:data:: nyquist.indent_direction
-   :type: str
-   :value: 'right'
+   :type: str or None
+   :value: None
 
    Set the direction of indentation in :func:`nyquist_response` for poles
-   on the imaginary axis.  Valid values are 'right', 'left', or 'none'.
+   on or near the imaginary axis.  None selects the side automatically:
+   right of stable poles and poles exactly on the axis, left of unstable
+   poles.  'right' and 'left' force that direction for all poles within
+   ``indent_radius`` of the axis; 'none' disables indentation.
 
 .. py:data:: nyquist.indent_points
    :type: int

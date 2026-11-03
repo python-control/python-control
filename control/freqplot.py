@@ -1104,7 +1104,7 @@ _nyquist_defaults = {
     'nyquist.arrow_size': 8,                    # pixel size for arrows
     'nyquist.encirclement_threshold': 0.05,     # warning threshold
     'nyquist.indent_radius': 1e-4,              # indentation radius
-    'nyquist.indent_direction': 'right',        # indentation direction
+    'nyquist.indent_direction': None,           # automatic indentation
     'nyquist.indent_points': 200,               # number of points to insert
     'nyquist.max_curve_magnitude': 15,          # rescale large values
     'nyquist.blend_fraction': 0.15,             # when to start scaling
@@ -1240,10 +1240,13 @@ def nyquist_response(
         Define the threshold for generating a warning if the number of net
         encirclements is a non-integer value.  Default value is 0.05 and can
         be set using `config.defaults['nyquist.encirclement_threshold']`.
-    indent_direction : str, optional
-        For poles on the imaginary axis, set the direction of indentation to
-        be 'right' (default), 'left', or 'none'.  The default value can
-        be set using `config.defaults['nyquist.indent_direction']`.
+    indent_direction : str or None, optional
+        Direction to indent around poles within `indent_radius` of the
+        imaginary axis: 'right', 'left', or 'none' (disable indentation).
+        The default, None, indents to the right of stable poles and poles
+        exactly on the imaginary axis, and to the left of unstable poles.
+        The default value can be set using
+        `config.defaults['nyquist.indent_direction']`.
     indent_points : int, optional
         Number of points to insert in the Nyquist contour around poles that
         are at or near the imaginary axis.
@@ -1277,10 +1280,18 @@ def nyquist_response(
     If a continuous-time system contains poles on or near the imaginary
     axis, a small indentation will be used to avoid the pole.  The radius
     of the indentation is given by `indent_radius` and it is taken to the
-    right of stable poles and the left of unstable poles.  If a pole is
-    exactly on the imaginary axis, the `indent_direction` parameter can be
-    used to set the direction of indentation.  Setting `indent_direction`
-    to 'none' will turn off indentation.
+    right of stable poles and the left of unstable poles by default.  Poles
+    exactly on the imaginary axis are indented to the right.  Setting
+    `indent_direction` to 'left' or 'right' overrides this choice for all
+    poles within `indent_radius` of the axis; 'none' turns off indentation.
+    Explicit directions can change which open-loop poles are enclosed by
+    the contour, and hence the number of encirclements.
+
+    When `omega` is supplied, no extra points are added for indentations.
+    The frequencies must resolve each detour sufficiently.  Automatic
+    frequency selection adds `indent_points` around nearby poles.  A forced
+    detour around the far side of an off-axis pole can change both the real
+    and imaginary parts of the corresponding contour points.
 
     For those portions of the Nyquist plot in which the contour is indented
     to avoid poles, resulting in a scaling of the Nyquist plot, the line
@@ -1312,8 +1323,6 @@ def nyquist_response(
         # Use existing dictionary, to keep track of processed keywords
         _kwargs |= kwargs
 
-    indent_direction_arg = 'indent_direction' in _kwargs
-
     # Get values for params
     omega_num_given = omega_num is not None
     omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
@@ -1322,10 +1331,15 @@ def nyquist_response(
     encirclement_threshold = config._get_param(
         'nyquist', 'encirclement_threshold', _kwargs,
         _nyquist_defaults, pop=True)
-    indent_direction = config._get_param(
-        'nyquist', 'indent_direction', _kwargs, _nyquist_defaults, pop=True)
+    # Unlike most configuration parameters, None explicitly selects automatic
+    # indentation, even if the configured default specifies a direction.
+    indent_direction = _kwargs.pop('indent_direction', config._get_param(
+        'nyquist', 'indent_direction', defval=_nyquist_defaults))
     indent_points = config._get_param(
         'nyquist', 'indent_points', _kwargs, _nyquist_defaults, pop=True)
+
+    if indent_direction not in (None, 'left', 'right', 'none'):
+        raise ValueError("unknown value for indent_direction")
 
     if _check_kwargs and _kwargs:
         raise TypeError("unrecognized keywords: ", str(_kwargs))
@@ -1401,26 +1415,26 @@ def nyquist_response(
             #
             # Check to make sure indent radius is small enough
             #
-            # If there is a closed loop pole that is near the imaginary axis
-            # at a point that is near an open loop pole, it is possible that
+            # If there is a closed loop pole inside an indentation circle,
             # indentation might skip or create an extraneous encirclement.
+            # Forced detours can reach past the imaginary-axis strip of
+            # width indent_radius, so check proximity to the indented poles.
             # We check for that situation here and generate a warning if that
             # could happen.
             #
+            indent_poles = splane_poles[abs(splane_poles.real) < indent_radius]
             for p_cl in splane_cl_poles:
-                # See if any closed loop poles are near the imaginary axis
-                if abs(p_cl.real) <= indent_radius:
+                if len(indent_poles) > 0:
                     # See if any open loop poles are close to closed loop poles
-                    if len(splane_poles) > 0:
-                        p_ol = splane_poles[
-                            (np.abs(splane_poles - p_cl)).argmin()]
+                    p_ol = indent_poles[
+                        (np.abs(indent_poles - p_cl)).argmin()]
 
-                        if abs(p_ol - p_cl) <= indent_radius and \
-                                warn_encirclements:
-                            warnings.warn(
-                                "indented contour may miss closed loop pole; "
-                                "consider reducing indent_radius to below "
-                                f"{abs(p_ol - p_cl):5.2g}", stacklevel=2)
+                    if abs(p_ol - p_cl) <= indent_radius and \
+                            warn_encirclements:
+                        warnings.warn(
+                            "indented contour may miss closed loop pole; "
+                            "consider reducing indent_radius to below "
+                            f"{abs(p_ol - p_cl):5.2g}", stacklevel=2)
 
             #
             # See if we should add some frequency points near imaginary poles
@@ -1428,16 +1442,26 @@ def nyquist_response(
             for p in splane_poles:
                 # See if we need to process this pole (skip if on the negative
                 # imaginary axis or not near imaginary axis + user override)
-                if p.imag < 0 or abs(p.real) > indent_radius or \
+                if p.imag < 0 or abs(p.real) >= indent_radius or \
                    omega_range_given:
                     continue
 
+                # Find the circle's intersections with the imaginary axis.
+                half_height = np.sqrt(indent_radius**2 - p.real**2)
+                start_freq = max(0, p.imag - half_height)
+                end_freq = p.imag + half_height
+                side = 1 if indent_direction == 'right' or (
+                    indent_direction is None and p.real <= 0) else -1
+                if side * p.real > 0 and p.imag < indent_radius:
+                    # A major arc crossing the real axis starts there, so that
+                    # the primary contour still joins its mirror image.
+                    start_freq = 0
+
                 # Find the frequencies before the pole frequency
                 below_points = np.argwhere(
-                    splane_contour.imag - abs(p.imag) < -indent_radius)
+                    splane_contour.imag < start_freq)
                 if below_points.size > 0:
                     first_point = below_points[-1].item()
-                    start_freq = p.imag - indent_radius
                 else:
                     # Add the points starting at the beginning of the contour
                     assert splane_contour[0] == 0
@@ -1446,7 +1470,7 @@ def nyquist_response(
 
                 # Find the frequencies after the pole frequency
                 above_points = np.argwhere(
-                    splane_contour.imag - abs(p.imag) > indent_radius)
+                    splane_contour.imag > end_freq)
                 last_point = above_points[0].item()
 
                 # Add points for half/quarter circle around pole frequency
@@ -1454,7 +1478,7 @@ def nyquist_response(
                 splane_contour = np.concatenate((
                     splane_contour[0:first_point+1],
                     (1j * np.linspace(
-                        start_freq, p.imag + indent_radius, indent_points)),
+                        start_freq, end_freq, indent_points)),
                     splane_contour[last_point:]))
 
             # Indent points that are too close to a pole
@@ -1462,41 +1486,45 @@ def nyquist_response(
                 for i, s in enumerate(splane_contour):
                     # Find the nearest pole
                     p = splane_poles[(np.abs(splane_poles - s)).argmin()]
+                    if s.imag == 0 and p.imag < 0:
+                        p = p.conjugate()
+
+                    side = 1 if indent_direction == 'right' or (
+                        indent_direction is None and p.real <= 0) else -1
+                    major_arc = side * p.real > 0
+                    crosses_origin = major_arc and 0 <= p.imag < indent_radius
 
                     # See if we need to indent around it
-                    if abs(s - p) < indent_radius:
-                        # Figure out how much to offset (simple trigonometry)
-                        offset = np.sqrt(
-                            indent_radius ** 2 - (s - p).imag ** 2) \
-                            - (s - p).real
-
-                        # Figure out which way to offset the contour point
-                        if indent_direction_arg:
-                            if indent_direction == 'right':
-                                # Indent to the right
-                                splane_contour[i] += offset
-
-                            elif indent_direction == 'left':
-                                # Indent to the left
-                                splane_contour[i] -= offset
-
-                            else:
-                                raise ValueError(
-                                    "unknown value for indent_direction")
-
-                        elif p.real < 0 or (p.real == 0 and
-                                            indent_direction == 'right'):
-                            # Indent to the right
-                            splane_contour[i] += offset
-
-                        elif p.real > 0 or (p.real == 0 and
-                                            indent_direction == 'left'):
-                            # Indent to the left
-                            splane_contour[i] -= offset
-
+                    if abs(p.real) >= indent_radius:
+                        continue
+                    half_height = np.sqrt(indent_radius**2 - p.real**2)
+                    if abs(s - p) < indent_radius or (
+                            crosses_origin and
+                            0 <= s.imag <= p.imag + half_height):
+                        if major_arc:
+                            # The far side of an off-axis pole requires a major
+                            # arc to join the imaginary axis continuously.
+                            angle = np.arccos(-side * p.real / indent_radius)
+                            start_freq = max(0, p.imag - half_height)
+                            start_angle = -angle
+                            if crosses_origin:
+                                start_freq = 0
+                                start_angle = -np.arcsin(
+                                    p.imag / indent_radius)
+                            fraction = (s.imag - start_freq) / (
+                                p.imag + half_height - start_freq)
+                            theta = start_angle + fraction * (
+                                angle - start_angle)
+                            splane_contour[i] = p + indent_radius * (
+                                side * np.cos(theta) + 1j * np.sin(theta))
+                            if s.imag == 0:
+                                splane_contour[i] = splane_contour[i].real
                         else:
-                            raise ValueError(
-                                "unknown value for indent_direction")
+                            # Preserve the frequencies on the near-side arc.
+                            offset = np.sqrt(
+                                indent_radius**2 - (s - p).imag**2)
+                            splane_contour[i] = (
+                                p.real + side * offset + 1j * s.imag)
 
         # change contour to z-plane if necessary
         if sys.isctime():
@@ -1536,17 +1564,21 @@ def nyquist_response(
         if isinstance(sys, (StateSpace, TransferFunction)):
             # Count the number of open/closed loop RHP poles
             if sys.isctime():
-                if indent_direction == 'right':
-                    P = (sys.poles().real > 0).sum()
-                else:
-                    P = (sys.poles().real >= 0).sum()
+                P = (sys.poles().real >= 0).sum()
                 Z = (sys.feedback().poles().real >= 0).sum()
             else:
-                if indent_direction == 'right':
-                    P = (np.abs(sys.poles()) > 1).sum()
-                else:
-                    P = (np.abs(sys.poles()) >= 1).sum()
+                P = (np.abs(sys.poles()) >= 1).sum()
                 Z = (np.abs(sys.feedback().poles()) >= 1).sum()
+
+            if indent_direction != 'none':
+                # Explicit directions can include stable poles or exclude
+                # unstable poles.  Use the mapped poles for discrete systems
+                # so the pole count and the contour use the same boundary.
+                enclosed = splane_poles.real > 0
+                if indent_direction is not None:
+                    enclosed[abs(splane_poles.real) < indent_radius] = (
+                        indent_direction == 'left')
+                P = enclosed.sum()
 
             # Check to make sure the results make sense; warn if not
             if Z != count + P and warn_encirclements:
@@ -1662,9 +1694,10 @@ def nyquist_plot(
         Define the threshold for generating a warning if the number of net
         encirclements is a non-integer value.  Default value is 0.05 and can
         be set using `config.defaults['nyquist.encirclement_threshold']`.
-    indent_direction : str, optional
-        For poles on the imaginary axis, set the direction of indentation to
-        be 'right' (default), 'left', or 'none'.
+    indent_direction : str or None, optional
+        Direction to indent around poles on or near the imaginary axis:
+        'right', 'left', or 'none' (disable indentation).  The default, None,
+        selects the side automatically; see `nyquist_response`.
     indent_points : int, optional
         Number of points to insert in the Nyquist contour around poles that
         are at or near the imaginary axis.
@@ -1761,11 +1794,13 @@ def nyquist_plot(
     If a continuous-time system contains poles on or near the imaginary
     axis, a small indentation will be used to avoid the pole.  The radius
     of the indentation is given by `indent_radius` and it is taken to the
-    right of stable poles and the left of unstable poles.  If a pole is
-    exactly on the imaginary axis, the `indent_direction` parameter can be
-    used to set the direction of indentation.  Setting `indent_direction`
-    to 'none' will turn off indentation.  If `return_contour` is True,
-    the exact contour used for evaluation is returned.
+    right of stable poles and the left of unstable poles by default.  Poles
+    exactly on the imaginary axis are indented to the right.  Setting
+    `indent_direction` to 'left' or 'right' overrides this choice for all
+    poles within `indent_radius` of the axis; 'none' turns off indentation.
+    Explicit directions can change which open-loop poles are enclosed by
+    the contour, and hence the number of encirclements.  If `return_contour`
+    is True, the exact contour used for evaluation is returned.
 
     For those portions of the Nyquist plot in which the contour is indented
     to avoid poles, resulting in a scaling of the Nyquist plot, the line

@@ -395,6 +395,131 @@ def test_nyquist_indent_near_imaginary_axis():
     assert contour_left[pole_index].real < 0
 
 
+@pytest.mark.parametrize(
+    'direction', ['default', None, 'left', 'right', 'none'])
+@pytest.mark.parametrize('distance', [-2, -1, -.99, -.5, -1e-10,
+                                     0, 1e-10, .5, .99, 1, 2])
+@pytest.mark.parametrize('dt', [0, .1])
+def test_nyquist_indent_geometry(direction, distance, dt):
+    """Indentations are circles centered on the pole, on the chosen side."""
+    radius = .1
+    pole = distance * radius
+    if dt:
+        pole = np.exp(pole * dt)
+    sys = ct.tf([1], [1, -pole], dt)
+    pole = np.log(complex(pole)).real / dt if dt else pole
+    if abs(distance) == 1:
+        # Make this a tangent circle in the mapped plane as well.
+        radius = abs(pole)
+    omega = np.linspace(0, .2, 101)
+    kwargs = {} if direction == 'default' else {'indent_direction': direction}
+    if direction == 'none' and distance == 0:
+        with pytest.raises(
+                RuntimeError, match='attempt to evaluate at a pole'):
+            ct.nyquist_response(sys, omega, **kwargs)
+        return
+    response = ct.nyquist_response(
+        sys, omega, indent_radius=radius, warn_encirclements=False, **kwargs)
+    contour = np.log(response.contour) / dt if dt else response.contour
+
+    # At/outside the radius, and with 'none', do not change the contour.
+    if abs(pole) >= radius or direction == 'none':
+        np.testing.assert_allclose(contour, 1j * omega, atol=1e-14)
+        return
+
+    side = -1 if direction == 'left' or (
+        direction in ['default', None] and pole > 0) else 1
+    indented = abs(contour.real) > 1e-14
+    assert np.any(indented)
+    assert np.all(side * contour[indented].real > 0)
+    np.testing.assert_allclose(abs(contour[indented] - pole), radius)
+    np.testing.assert_allclose(contour[0], pole + side * radius, atol=1e-14)
+
+
+@pytest.mark.parametrize('direction', [None, 'left', 'right'])
+@pytest.mark.parametrize('distance', [-.999, -.5, -1e-10, 0, 1e-10, .5, .999])
+@pytest.mark.parametrize('frequency', [0, .05, 1])
+@pytest.mark.parametrize('dt', [0, .1])
+def test_nyquist_indent_generated_contour(direction, distance, frequency, dt):
+    """Automatic sampling resolves the full detour, including major arcs."""
+    radius = .1
+    real = distance * radius
+    sys = ct.tf([1], [1, -real]) if frequency == 0 else ct.tf(
+        [1, 1], [1, -2 * real, real**2 + frequency**2])
+    if dt:
+        sys = ct.c2d(sys, dt)
+    poles = np.log(sys.poles()) / dt if dt else sys.poles()
+    pole = poles[np.argmin(abs(poles - (real + 1j * frequency)))]
+    with warnings.catch_warnings():
+        warnings.simplefilter('error')
+        response = ct.nyquist_response(
+            sys, indent_radius=radius, indent_direction=direction)
+
+    contour = np.log(response.contour) / dt if dt else response.contour
+    local = contour[abs(contour - pole) <= radius * (1+1e-9)]
+    assert len(local) >= 40
+    np.testing.assert_allclose(abs(local - pole), radius)
+    assert np.max(abs(np.diff(local))) < radius / 2
+    assert response.contour[0].imag == 0
+
+    # Count the open-loop poles enclosed by the actual indented contour.
+    enclosed = direction == 'left' or (direction is None and pole.real > 0)
+    assert response.count == -(1 if frequency == 0 else 2) * enclosed
+
+
+@pytest.mark.parametrize('configured', [None, 'left', 'right', 'none'])
+@pytest.mark.parametrize(
+    'explicit', ['default', None, 'left', 'right', 'none'])
+def test_nyquist_indent_configuration(configured, explicit, editsdefaults):
+    """Keyword arguments override configuration, including explicit None."""
+    ct.defaults['nyquist.indent_direction'] = configured
+    sys = ct.tf([1], [1, -.05])
+    kwargs = {} if explicit == 'default' else {'indent_direction': explicit}
+    contour = ct.nyquist_response(
+        sys, [0, .2, 1], indent_radius=.1,
+        warn_encirclements=False, **kwargs).contour
+    direction = configured if explicit == 'default' else explicit
+    expected = {'left': -.05, 'right': .15, 'none': 0, None: -.05}[direction]
+    np.testing.assert_allclose(contour[0], expected)
+
+
+@pytest.mark.parametrize('omega', [None, [0, 1, 10]])
+def test_nyquist_indent_invalid_direction(omega):
+    """Validate the direction even when no poles need indentation."""
+    with pytest.raises(ValueError, match='unknown value for indent_direction'):
+        ct.nyquist_response(ct.tf([1], [1, 1]), omega, indent_direction='up')
+
+
+@pytest.mark.parametrize('representation', ['tf', 'ss'])
+def test_nyquist_indent_issue1191(representation):
+    """Roundoff in imaginary poles must not override an explicit direction."""
+    sys = ct.tf([1, 11, 10], [.01, 1, .01, 1])
+    if representation == 'ss':
+        sys = ct.ss(sys)
+    responses = [ct.nyquist_response(
+        sys, indent_radius=.2, indent_direction=direction)
+        for direction in ['right', 'left']]
+    for response, side in zip(responses, [1, -1]):
+        indented = (abs(response.contour.real) > 1e-10) & (
+            abs(response.contour.imag - 1) <= .2 + 1e-10)
+        assert np.all(side * response.contour[indented].real > 0)
+        phase = np.unwrap(np.angle(response.response[indented]))
+        # A simple pole reverses the direction of the s-plane detour.
+        assert side * (phase[-1] - phase[0]) < 0
+    assert responses[0].count == responses[1].count + 2
+
+
+def test_nyquist_indent_forced_closed_loop_pole_warning():
+    """A forced far-side detour can also cross a stable closed-loop pole."""
+    sys = ct.tf([.08], [1, .05])
+    with pytest.warns(UserWarning) as record:
+        ct.nyquist_response(sys, indent_radius=.1, indent_direction='left')
+    assert len(record) == 2
+    assert re.search('indented contour may miss closed loop pole',
+                     str(record[0].message))
+    assert 'does not match Nyquist criterion' in str(record[1].message)
+
+
 def test_nyquist_exceptions():
     # MIMO not implemented
     sys = ct.rss(2, 2, 2)
