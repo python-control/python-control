@@ -7,6 +7,8 @@ BG, 30 Jun 2020 -- convert to pytest, gh-425
 BG, 16 Nov 2020 -- pick from gh-438 and add discrete test
 """
 
+import warnings
+
 import numpy as np
 import pytest
 from numpy import inf, nan
@@ -114,7 +116,7 @@ def test_margin_3input(tsys):
      (([1], [1, 1]), [0.], [1.]),
      (([2], [1, 3, 3, 1]), [1.732, 0.], [-0.25, 2.]),
      ((np.array([3, 11, 3]) * 1e-4, [1., -2.7145, 2.4562, -0.7408], .1),
-      [1.6235, 0.], [-0.28598, 1.88889]),
+      [10*np.pi, 1.6235, 0.], [7.23432e-05, -0.28598, 1.88889]),
      (([200.0], [1.0, 21.0, 20.0, 0.0]),
       [4.47213595, 0], [-0.47619048, inf]),
      ])
@@ -148,6 +150,57 @@ def test_mag_phase_omega():
     marg1 = np.array(out)[ind]
     marg2 = np.array(out2)[ind]
     assert_allclose(marg1, marg2, atol=1.5e-3)
+
+@pytest.mark.parametrize("method", ["poly", "frd", "best"])
+@pytest.mark.parametrize(
+    "num, den, gm_ref",
+    [([1.], [1., -1.], 2.),
+     ([1.5], [1., -0.5], 1.),
+     ([0.4], [1., 0.2], 2.)])
+def test_stability_margins_discrete_nyquist(num, den, gm_ref, method):
+    """Phase crossover exactly at the Nyquist frequency w = pi/dt.
+
+    For real coefficients L(-1) is always real, so a loop with L(-1) < 0
+    has a phase crossover at w = pi/dt with gain margin -1/L(-1).
+    """
+    L = TransferFunction(num, den, 1.)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        gm, pm, sm, wpc, wgc, wms = stability_margins(L, method=method)
+    assert_allclose(gm, gm_ref, rtol=1e-6)
+    assert_allclose(wpc, np.pi / L.dt, rtol=1e-6)
+
+
+def test_z_filter_nyquist_endpoint():
+    """_z_filter keeps z = -1 exactly, without snapping nearby roots.
+
+    A genuine root just below pi keeps its computed frequency, its
+    lower-half conjugate stays excluded, and -1 is kept whether its
+    imaginary zero is positive or negative (arg pi or -pi).
+    """
+    from control.margins import _z_filter
+    # note: the -1 literals must be built with complex() - the expression
+    # -1 - 0j has a *positive* imaginary zero, so it does not cover arg -pi
+    zend = [complex(-1., -0.), complex(-1., 0.)]
+    assert np.angle(zend[0]) == -np.pi
+    assert np.angle(zend[1]) == np.pi
+    z = np.array([np.exp(1j * (np.pi - 1e-6)),
+                  np.exp(-1j * (np.pi - 1e-6))] + zend)
+    zf, omega = _z_filter(z, dt=2.0, eps=0.1)
+    assert_allclose(np.sort(omega),
+                    np.sort([np.pi / 2, np.pi / 2, (np.pi - 1e-6) / 2]))
+
+
+@pytest.mark.parametrize("method", ["poly", "frd", "best"])
+def test_stability_margins_discrete_nyquist_positive(method):
+    """L(-1) > 0: no phase crossover at the Nyquist frequency."""
+    L = TransferFunction([0.4], [1., 2.], 1.)
+    assert L(-1).real > 0
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        gm = stability_margins(L, method=method)[0]
+    assert gm == inf
+
 
 
 def test_frd():

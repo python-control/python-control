@@ -102,8 +102,12 @@ def _z_filter(z, dt, eps):
     # |z| == 1 with some float precision tolerance
     z = z[np.abs(np.abs(z) - 1.) < eps]
     zarg = np.angle(z)
-    zidx = (0 <= zarg) * (zarg < np.pi)
-    omega = zarg[zidx] / dt
+    # also keep the Nyquist endpoint z = -1: its argument is exactly pi,
+    # or exactly -pi when the root carries a negative imaginary zero.
+    # No tolerance is applied to the angle: a genuine root near, but not
+    # at, -1 must keep its computed frequency.  abs() maps -pi to +pi.
+    zidx = ((0 <= zarg) * (zarg < np.pi)) | (np.abs(zarg) == np.pi)
+    omega = np.abs(zarg[zidx]) / dt
     return z[zidx], omega
 
 
@@ -292,6 +296,12 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
         raise ControlMIMONotImplemented(
             "Can only do margins for SISO system")
 
+    # response at the Nyquist frequency w = pi/dt, if it can be evaluated
+    # exactly: the FRD frequency grid excludes this endpoint, so a phase
+    # crossover there would otherwise be missed
+    nyquist_dt = None
+    nyquist_resp = None
+
     if method == 'frd':
         # convert to FRD if we got a transfer function
         if isinstance(sys, xferfcn.TransferFunction):
@@ -300,6 +310,8 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
                 sys = frdata.FRD(sys, omega_sys)
             else:
                 omega_sys = omega_sys[omega_sys < np.pi / sys.dt]
+                nyquist_resp = sys(-1)  # L(exp(j pi))
+                nyquist_dt = sys.dt
                 sys = frdata.FRD(sys, omega_sys, smooth=True)
     elif method == 'best':
         # convert to FRD if anticipated numerical issues
@@ -310,6 +322,8 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
                 stacklevel=2)
                 omega_sys = freqplot._default_frequency_range(sys)
                 omega_sys = omega_sys[omega_sys < np.pi / sys.dt]
+                nyquist_resp = sys(-1)  # L(exp(j pi))
+                nyquist_dt = sys.dt
                 sys = frdata.FRD(sys, omega_sys, smooth=True)
     elif method != 'poly':
         raise ValueError("method " + method + " unknown")
@@ -381,6 +395,14 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
             [sp.optimize.brentq(_arg, sys.omega[i], sys.omega[i+1])
              for i in widx])
         w180_resp = sys(1j * w_180)
+
+        # the phase can also cross -180 degrees exactly at the Nyquist
+        # frequency w = pi/dt, which the frequency grid does not include
+        if nyquist_dt is not None and np.pi / nyquist_dt >= epsw:
+            resp = np.asarray(nyquist_resp, dtype=complex)
+            if np.isclose(resp.imag, 0) and resp.real < 0:
+                w_180 = np.append(w_180, np.pi / nyquist_dt)
+                w180_resp = np.append(w180_resp, resp.real)
 
         # Find all crossings, note that this depends on omega having
         # a correct range
