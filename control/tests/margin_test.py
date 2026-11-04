@@ -116,7 +116,7 @@ def test_margin_3input(tsys):
      (([1], [1, 1]), [0.], [1.]),
      (([2], [1, 3, 3, 1]), [1.732, 0.], [-0.25, 2.]),
      ((np.array([3, 11, 3]) * 1e-4, [1., -2.7145, 2.4562, -0.7408], .1),
-      [10*np.pi, 1.6235, 0.], [7.23432e-05, -0.28598, 1.88889]),
+      [1.6235, 0., 10*np.pi], [-0.28598, 1.88889, 7.23432e-05]),
      (([200.0], [1.0, 21.0, 20.0, 0.0]),
       [4.47213595, 0], [-0.47619048, inf]),
      ])
@@ -171,26 +171,6 @@ def test_stability_margins_discrete_nyquist(num, den, gm_ref, method):
     assert_allclose(wpc, np.pi / L.dt, rtol=1e-6)
 
 
-def test_z_filter_nyquist_endpoint():
-    """_z_filter keeps z = -1 exactly, without snapping nearby roots.
-
-    A genuine root just below pi keeps its computed frequency, its
-    lower-half conjugate stays excluded, and -1 is kept whether its
-    imaginary zero is positive or negative (arg pi or -pi).
-    """
-    from control.margins import _z_filter
-    # note: the -1 literals must be built with complex() - the expression
-    # -1 - 0j has a *positive* imaginary zero, so it does not cover arg -pi
-    zend = [complex(-1., -0.), complex(-1., 0.)]
-    assert np.angle(zend[0]) == -np.pi
-    assert np.angle(zend[1]) == np.pi
-    z = np.array([np.exp(1j * (np.pi - 1e-6)),
-                  np.exp(-1j * (np.pi - 1e-6))] + zend)
-    zf, omega = _z_filter(z, dt=2.0, eps=0.1)
-    assert_allclose(np.sort(omega),
-                    np.sort([np.pi / 2, np.pi / 2, (np.pi - 1e-6) / 2]))
-
-
 @pytest.mark.parametrize("method", ["poly", "frd", "best"])
 def test_stability_margins_discrete_nyquist_positive(method):
     """L(-1) > 0: no phase crossover at the Nyquist frequency."""
@@ -200,6 +180,26 @@ def test_stability_margins_discrete_nyquist_positive(method):
         warnings.simplefilter("ignore")
         gm = stability_margins(L, method=method)[0]
     assert gm == inf
+
+
+def test_stability_margins_moving_average_phase():
+    """No gain crossover at w = pi/dt when |L(-1)| = 0.
+
+    Regression test for the review on gh-1268: for an even-length moving
+    average the |L| = 1 polynomial has off-circle roots with argument
+    exactly pi, which must not be accepted as a gain crossover at the
+    Nyquist frequency (that reported pm = 0 for a loop whose true phase
+    margin is about 70 degrees).
+    """
+    N = 16
+    num = np.r_[0.0, np.full(N, 1.0 / N)]
+    L = TransferFunction(num, np.polysub(np.r_[1.0, np.zeros(N)], num), 1.)
+    assert abs(complex(L(-1))) < 1e-12
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        gm, pm, sm, wpc, wgc, wms = stability_margins(L, method="poly")
+    assert wpc != pytest.approx(np.pi) or gm == inf
+    assert pm > 0 and wgc != pytest.approx(np.pi)
 
 
 

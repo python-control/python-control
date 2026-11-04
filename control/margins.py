@@ -102,12 +102,8 @@ def _z_filter(z, dt, eps):
     # |z| == 1 with some float precision tolerance
     z = z[np.abs(np.abs(z) - 1.) < eps]
     zarg = np.angle(z)
-    # also keep the Nyquist endpoint z = -1: its argument is exactly pi,
-    # or exactly -pi when the root carries a negative imaginary zero.
-    # No tolerance is applied to the angle: a genuine root near, but not
-    # at, -1 must keep its computed frequency.  abs() maps -pi to +pi.
-    zidx = ((0 <= zarg) * (zarg < np.pi)) | (np.abs(zarg) == np.pi)
-    omega = np.abs(zarg[zidx]) / dt
+    zidx = (0 <= zarg) * (zarg < np.pi)
+    omega = zarg[zidx] / dt
     return z[zidx], omega
 
 
@@ -349,6 +345,18 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
             z, w_180 = _poly_z_real_crossing(*zargs, epsw=epsw)
             w180_resp = sys(z)
 
+            # the phase can also cross -180 degrees exactly at the Nyquist
+            # frequency w = pi/dt: _z_filter excludes arg = pi, so the
+            # polynomial search never returns z = -1.  Check it directly
+            # instead of widening the filter, which is shared with the
+            # gain-crossover search and must not admit off-circle roots
+            # whose argument happens to be pi.
+            if np.pi / sys.dt >= epsw:
+                resp = np.asarray(sys(-1), dtype=complex)
+                if np.isclose(resp.imag, 0) and resp.real < 0:
+                    w_180 = np.append(w_180, np.pi / sys.dt)
+                    w180_resp = np.append(w180_resp, resp.real)
+
             # phase margin
             z, wc = _poly_z_mag1_crossing(*zargs, epsw=epsw)
             wc_resp = sys(z)
@@ -488,6 +496,12 @@ def phase_crossover_frequencies(sys):
         zargs = _poly_z_invz(sys)
         z, omega = _poly_z_real_crossing(*zargs, epsw=0.)
         gains = np.real(sys(z, warn_infinite=False))
+
+        # the Nyquist plot also intersects the real axis at w = pi/dt
+        # (the response at z = -1 is real for real coefficients); the
+        # polynomial search never returns z = -1, so add it directly
+        omega = np.append(omega, np.pi / tf.dt)
+        gains = np.append(gains, np.real(tf(-1)))
 
     return omega, gains
 
