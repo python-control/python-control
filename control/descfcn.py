@@ -346,7 +346,19 @@ def describing_function_response(
     response = nyquist_response(
         H, omega, warn_encirclements=warn_nyquist, warn_nyquist=warn_nyquist,
         _check_kwargs=_check_kwargs, **kwargs)
-    H_omega, H_vals = response.contour.imag, H(response.contour)
+    # For a discrete-time system the contour lies on the unit circle,
+    # exp(1j * omega * dt): the frequency is its angle divided by dt,
+    # not its imaginary part, and H must be evaluated on the unit
+    # circle rather than at 1j * omega
+    if H.isdtime(strict=True):
+        H_omega = np.angle(response.contour) / H.dt
+        def _H_eval(w):
+            return H(np.exp(1j * w * H.dt))
+    else:
+        H_omega = response.contour.imag
+        def _H_eval(w):
+            return H(1j * w)
+    H_vals = H(response.contour)
 
     # Compute the describing function
     df = describing_function(F, A)
@@ -375,7 +387,7 @@ def describing_function_response(
                     # Note: imposing bounds messed up the optimization (?)
                     if x[0] < 0 or x[1] < 0:
                         return 1
-                    return abs(1 + H(1j * x[1]) *
+                    return abs(1 + _H_eval(x[1]) *
                                describing_function(F, x[0]))**2
                 res = scipy.optimize.minimize(
                     _cost, [a_guess, omega_guess])
@@ -386,7 +398,7 @@ def describing_function_response(
                 else:
                     a_final, omega_final = res.x[0], res.x[1]
 
-            pos = H(1j * omega_final)
+            pos = _H_eval(omega_final)
 
             # Save the final estimate
             positions.append(pos)

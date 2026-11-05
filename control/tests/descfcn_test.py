@@ -172,6 +172,54 @@ def test_describing_function_response():
             H_multiple(1j*w), decimal=5)
 
 
+@pytest.mark.parametrize("dt,omega_ref", [(1, 1.3181), (0.5, 2.6362)])
+def test_describing_function_response_discrete(dt, omega_ref):
+    """Discrete-time systems: frequency on the unit circle, not sin(w*dt).
+
+    gh-1269: describing_function_response reported about sin(w*dt) for
+    the oscillation frequency and evaluated H at z = 1j*w instead of
+    exp(1j*w*dt).  The crossing amplitude and frequency for this loop
+    are known from a dense unit-circle scan: H(exp(j*w*dt)) crosses the
+    negative real axis at w = omega_ref with H = -0.5, giving
+    a = 4/pi * 0.5 = 0.6366 for the sign nonlinearity.
+    """
+    H = ct.tf([0.5], [1, -0.5, 0], dt=dt)
+    response = ct.describing_function_response(
+        H, np.sign, np.linspace(0.01, 5, 400),
+        omega=np.linspace(1e-3, np.pi / dt, 2000))
+    assert len(response.intersections) == 1
+    a, w = response.intersections[0]
+    assert w == pytest.approx(omega_ref, rel=2e-2)
+    assert a == pytest.approx(0.6366, rel=2e-2)
+    # the returned position is the response on the unit circle
+    np.testing.assert_almost_equal(
+        response.positions[0], H(np.exp(1j * w * dt)), decimal=5)
+
+
+def test_describing_function_response_timebase():
+    """Timebase edge cases (gh-1269 review).
+
+    dt=None means an unspecified (continuous-compatible) timebase and
+    must behave exactly like continuous time; dt=True is discrete time
+    with unspecified sample time, with frequency in rad/sample.
+    """
+    amp = np.linspace(1, 4, 10)
+    F = ct.saturation_nonlinearity(1)
+    xsects_ref = ct.describing_function_response(
+        ct.tf([8], [1, 2, 2, 1]), F, amp)
+    xsects_none = ct.describing_function_response(
+        ct.tf([8], [1, 2, 2, 1], dt=None), F, amp)
+    np.testing.assert_allclose(xsects_ref.intersections,
+                               xsects_none.intersections)
+
+    H_true = ct.tf([0.5], [1, -0.5, 0], dt=True)
+    xsects_true = ct.describing_function_response(
+        H_true, np.sign, np.linspace(0.01, 5, 400),
+        omega=np.linspace(1e-3, np.pi, 2000))
+    a, w = xsects_true.intersections[0]
+    assert w == pytest.approx(1.3181, rel=2e-2)
+
+
 def test_describing_function_plot():
     # Simple linear system with at most 1 intersection
     H_larger = ct.tf([1], [1, 2, 2, 1]) * 8
