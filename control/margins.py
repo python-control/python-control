@@ -134,9 +134,40 @@ def _poly_z_mag1_crossing(num, den, num_inv_zp, den_inv_zq, p_q, dt, epsw):
     z = np.roots(np.polysub(p1, p2))
     eps = np.finfo(float).eps**(1 / len(p2))
     z, w = _z_filter(z, dt, eps)
-    z = z[w > epsw]
-    w = w[w > epsw]
-    return z, w
+    above_cutoff = w > epsw
+    z = z[above_cutoff]
+    theta = w[above_cutoff] * dt
+
+    # The radial tolerance grows with degree. Verify the gain at the
+    # candidate frequency on the unit circle before reporting a crossover.
+    def magnitudes(angle):
+        point = np.exp(1j * angle)
+        return np.abs(np.polyval(num, point)), np.abs(np.polyval(den, point))
+
+    def magnitude_difference(angle):
+        num_mag, den_mag = magnitudes(angle)
+        return num_mag - den_mag
+
+    tol = np.sqrt(np.finfo(float).eps)
+    num_mag, den_mag = magnitudes(theta)
+
+    # Refine inaccurate near-circle roots locally using the frequency
+    # response. The search radius is in radians, independent of degree.
+    radius = np.sqrt(tol)
+    near_circle = np.abs(np.abs(z) - 1) < radius
+    inaccurate = ~np.isclose(num_mag, den_mag, atol=0, rtol=tol)
+    for i in np.flatnonzero(near_circle & inaccurate):
+        lo = max(0., theta[i] - radius)
+        hi = min(np.pi, theta[i] + radius)
+        ends = magnitude_difference(np.array([lo, hi]))
+        if np.all(np.isfinite(ends)) and np.sign(ends[0]) != np.sign(ends[1]):
+            theta[i] = sp.optimize.brentq(magnitude_difference, lo, hi)
+            num_mag[i], den_mag[i] = magnitudes(theta[i])
+
+    w = theta / dt
+    valid = (den_mag > 0) & np.isfinite(den_mag) & (w > epsw) & (theta < np.pi)
+    valid &= np.isclose(num_mag, den_mag, atol=0, rtol=tol)
+    return np.exp(1j * theta[valid]), w[valid]
 
 
 def _poly_z_wstab(num, den, num_inv_zp, den_inv_zq, p_q, dt, epsw):
