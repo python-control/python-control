@@ -373,6 +373,44 @@ def test_stability_margins_discrete(cnum, cden, dt,
         out = stability_margins(tf)
     assert_allclose(out, ref, rtol=rtol)
 
+
+@pytest.mark.parametrize("method", ["poly", "best"])
+def test_discrete_gain_crossovers_on_unit_circle(method):
+    n = 17
+    num = np.full(n, 1 / n)
+    loop = tf(num, np.r_[1, -num], dt=1)
+
+    _, pm, _, _, wgc, _ = stability_margins(loop, method=method, returnall=True)
+
+    assert_allclose(wgc, [0.1064535], rtol=1e-6)
+    assert_allclose(pm, [70.2119], rtol=1e-6)
+    assert_allclose(np.abs(loop(np.exp(1j * wgc))), 1)
+
+
+@pytest.mark.parametrize("method", ["poly", "best"])
+def test_discrete_gain_below_unity(method):
+    # |z**8 - 0.5| >= 0.5 on the unit circle, so |L(z)| <= 0.5.
+    loop = tf([0.25], np.r_[1, np.zeros(7), -0.5], dt=1)
+
+    _, pm, _, _, wgc, _ = stability_margins(loop, method=method, returnall=True)
+
+    assert len(wgc) == len(pm) == 0
+
+
+def test_discrete_gain_crossover_refinement():
+    # For L(z) = k * ((z + 1) / (z - a))**n, solve |L(z)| = 1
+    # directly in cos(theta) to check the numerically sensitive root.
+    n, a, k, dt = 10, 0.2, 1000, 0.2
+    loop = tf(k * np.poly([-1.] * n), np.poly([a] * n), dt=dt)
+    power = k**(2 / n)
+    theta = np.arccos((1 + a * a - 2 * power) / (2 * (power + a)))
+
+    _, _, _, _, wgc, _ = stability_margins(loop, method="poly", returnall=True)
+
+    assert_allclose(wgc * dt, [theta], atol=1e-8, rtol=0)
+    assert_allclose(np.abs(loop(np.exp(1j * wgc * dt))), 1, rtol=1e-8)
+
+
 def test_siso_disk_margin():
     # Frequencies of interest
     omega = np.logspace(-1, 2, 1001)
