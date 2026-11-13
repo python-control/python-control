@@ -195,8 +195,6 @@ class ControlPlot():
         ----------
         title : str
             Title text.
-        fig : Figure, optional
-            Matplotlib figure.  Defaults to current figure.
         frame : str, optional
             Coordinate frame for centering: 'axes' (default) or 'figure'.
         **kwargs : `matplotlib.pyplot.suptitle` keywords, optional
