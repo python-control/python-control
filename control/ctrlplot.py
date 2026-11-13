@@ -197,8 +197,6 @@ class ControlPlot():
             Title text.
         frame : str, optional
             Coordinate frame for centering: 'axes' (default) or 'figure'.
-        **kwargs : `matplotlib.pyplot.suptitle` keywords, optional
-            Additional keywords (passed to matplotlib).
 
         """
         _update_plot_title(
@@ -538,6 +536,23 @@ def _make_legend_labels(labels, ignore_common=False):
 
 def _update_plot_title(
         title, fig=None, frame='axes', use_existing=True, **kwargs):
+    """Set or extend the centered title of a figure.
+
+    Parameters
+    ----------
+    title : str
+        Title text.
+    fig : Figure, optional
+        Matplotlib figure.  Defaults to the current figure.
+    frame : str, optional
+        Coordinate frame for centering: 'axes' (default) or 'figure'.
+    use_existing : bool, optional
+        If True (default), extend the figure's existing title instead of
+        replacing it.
+    **kwargs : `matplotlib.pyplot.suptitle` keywords, optional
+        Additional keywords (passed to matplotlib).
+
+    """
     if title is False or title is None:
         return
     if fig is None:
