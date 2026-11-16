@@ -509,3 +509,19 @@ def test_model_reduction(method, kwargs, nstates, noutputs, ninputs):
             sys.A, sys.B[:, :ninputs], sys.C[:noutputs, :],
             sys.D[:noutputs, :][:, :ninputs])
         np.testing.assert_allclose(red(0), chk(0))
+
+
+@pytest.mark.parametrize("dt", [0, None, True, 0.1])
+@pytest.mark.parametrize("method, kwargs", [
+    ('truncate', {'elim_states': [1]}),
+    ('truncate', {'elim_states': [0, 1]}),
+    ('truncate', {'elim_inputs': [1], 'elim_outputs': [1]}),
+    ('matchdc', {'elim_inputs': [1], 'elim_outputs': [1]}),
+])
+def test_model_reduction_preserves_timebase(dt, method, kwargs):
+    sys = ct.ss([[-0.2, 0], [0, -0.5]], np.eye(2), np.eye(2),
+                np.zeros((2, 2)), dt=dt)
+    red = ct.model_reduction(sys, method=method, **kwargs)
+
+    assert red.dt == dt
+    assert type(red.dt) is type(dt)

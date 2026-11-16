@@ -250,7 +250,7 @@ def model_reduction(
     Cr = Cr[keep_outputs, :]
     Dr = Dr[keep_outputs, :][:, keep_inputs]
 
-    rsys = StateSpace(Ar, Br, Cr, Dr)
+    rsys = StateSpace(Ar, Br, Cr, Dr, sys.dt)
     return rsys
 
 
