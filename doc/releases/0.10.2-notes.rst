@@ -107,6 +107,17 @@ The following bugs have been fixed in this release:
 * Fix some internal bugs that cropped up when using NumPy 2.3.1 but
   were latent prior to that.
 
+* `gram`: improved the numerical accuracy of the factored
+  controllability Gramian (type 'cf') for non-normal systems by
+  passing the system matrix to the underlying SLICOT routine without
+  transposing it.  Note that the factor returned for 'cf' is now
+  lower triangular (it was previously upper triangular), although it
+  still satisfies ``Wc = Rc' * Rc``; code that uses the factor with
+  triangular solvers, such as ``scipy.linalg.cho_solve``, needs to
+  be updated for the new direction (``cho_solve`` cannot be used
+  with the factor as before; triangular solves must be done in two
+  steps, first with ``Rc'`` and then with ``Rc``).
+
 
 Improvements
 ............
