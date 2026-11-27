@@ -52,7 +52,7 @@ def time_response_plot(
 
     Parameters
     ----------
-    data : `TimeResponseData`
+    data : `TimeResponseData` or list of `TimeResponseData`
         Data to be plotted.
     plot_inputs : bool or str, optional
         Sets how and where to plot the inputs:
@@ -175,6 +175,35 @@ def time_response_plot(
 
     """
     from .ctrlplot import _process_ax_keyword, _process_line_labels
+
+    if isinstance(data, (list, tuple)):
+        if len(data) == 0:
+            raise ValueError("no time response data to plot")
+        if label is None:
+            labels = [None] * len(data)
+        elif isinstance(label, str) or len(label) != len(data):
+            raise ValueError(
+                "label must be a sequence with one entry per response")
+        else:
+            labels = label
+
+        lines = None
+        for i, response in enumerate(data):
+            cplt = time_response_plot(
+                response, *fmt, ax=ax, plot_inputs=plot_inputs,
+                plot_outputs=plot_outputs, transpose=transpose,
+                overlay_traces=overlay_traces,
+                overlay_signals=overlay_signals,
+                add_initial_zero=add_initial_zero, label=labels[i],
+                trace_labels=trace_labels, title=title, relabel=relabel,
+                **kwargs)
+            if lines is None:
+                lines = cplt.lines
+            else:
+                for row in range(cplt.lines.shape[0]):
+                    for col in range(cplt.lines.shape[1]):
+                        lines[row, col] += cplt.lines[row, col]
+        return ControlPlot(lines, cplt.axes, cplt.figure, legend=cplt.legend)
 
     #
     # Process keywords and set defaults

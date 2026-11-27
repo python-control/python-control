@@ -739,21 +739,9 @@ class TimeResponseList(list):
         See `time_response_plot` for details.
 
         """
-        from .ctrlplot import ControlPlot
+        from .timeplot import time_response_plot
 
-        lines = None
-        label = kwargs.pop('label', [None] * len(self))
-        for i, response in enumerate(self):
-            cplt = TimeResponseData.plot(
-                response, *args, label=label[i], **kwargs)
-            if lines is None:
-                lines = cplt.lines
-            else:
-                # Append the lines in the new plot to previous lines
-                for row in range(cplt.lines.shape[0]):
-                    for col in range(cplt.lines.shape[1]):
-                        lines[row, col] += cplt.lines[row, col]
-        return ControlPlot(lines, cplt.axes, cplt.figure)
+        return time_response_plot(self, *args, **kwargs)
 
 
 # Process signal labels
