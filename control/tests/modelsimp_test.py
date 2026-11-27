@@ -509,3 +509,16 @@ def test_model_reduction(method, kwargs, nstates, noutputs, ninputs):
             sys.A, sys.B[:, :ninputs], sys.C[:noutputs, :],
             sys.D[:noutputs, :][:, :ninputs])
         np.testing.assert_allclose(red(0), chk(0))
+
+
+@pytest.mark.parametrize("dt", [0, 0.1, True, None])
+def test_model_reduction_preserves_dt(dt):
+    sys = ct.ss(
+        [[-0.2, 0.0], [0.0, -0.5]],
+        np.eye(2), np.eye(2), np.zeros((2, 2)), dt=dt)
+    red = ct.model_reduction(sys, elim_states=[1], method='truncate')
+    assert red.dt == sys.dt
+    assert red.isdtime(strict=True) == sys.isdtime(strict=True)
+
+    red_io = ct.model_reduction(sys, elim_inputs=[1], method='truncate')
+    assert red_io.dt == sys.dt
