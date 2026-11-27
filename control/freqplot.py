@@ -2261,7 +2261,7 @@ def gangof4_response(
 
 def gangof4_plot(
         *args, omega=None, omega_limits=None, omega_num=None,
-        Hz=False, **kwargs):
+        Hz=None, **kwargs):
     """gangof4_plot(response) \
     gangof4_plot(P, C, omega)
 
@@ -2316,7 +2316,7 @@ def gangof4_plot(
             raise ValueError(
                 "omega, omega_limits, omega_num, Hz not allowed when "
                 "given a Gang of 4 response as first argument")
-        return args[0].plot(kwargs)
+        return args[0].plot(**kwargs)
     else:
         if len(args) > 3:
             raise TypeError(
@@ -2325,7 +2325,8 @@ def gangof4_plot(
         args = args[0:2]
         return gangof4_response(
             *args, omega=omega, omega_limits=omega_limits,
-            omega_num=omega_num, Hz=Hz).plot(**kwargs)
+            omega_num=omega_num,
+            Hz=False if Hz is None else Hz).plot(**kwargs)
 
 
 #

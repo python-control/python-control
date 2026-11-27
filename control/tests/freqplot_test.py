@@ -258,6 +258,24 @@ def test_gangof4_plots(savefigs=False):
         plt.savefig('freqplot-gangof4.png')
 
 
+@pytest.mark.usefixtures('mplcleanup')
+def test_gangof4_plot_response():
+    proc = ct.tf([1], [1, 1, 1], name="process")
+    ctrl = ct.tf([100], [1, 5], name="control")
+    resp = ct.gangof4_response(proc, ctrl)
+
+    cplt = ct.gangof4_plot(resp)
+    assert cplt.lines.shape == (2, 2)
+
+    cplt2 = ct.gangof4_plot(resp, color='r')
+    assert cplt2.lines[0, 0][-1].get_color() == 'r'
+
+    for kw in [{'omega': [0.1, 1]}, {'omega_limits': [0.1, 10]},
+               {'omega_num': 10}, {'Hz': True}]:
+        with pytest.raises(ValueError, match="not allowed"):
+            ct.gangof4_plot(resp, **kw)
+
+
 @pytest.mark.parametrize("response_cmd, return_type", [
     (ct.frequency_response, ct.FrequencyResponseData),
     (ct.nyquist_response, ct.freqplot.NyquistResponseData),
