@@ -8,6 +8,7 @@ well as some of the support functions associated with static nonlinearities.
 """
 
 import math
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -170,6 +171,30 @@ def test_describing_function_response():
         np.testing.assert_almost_equal(
             -1/ct.describing_function(F_backlash, a),
             H_multiple(1j*w), decimal=5)
+
+
+@pytest.mark.parametrize("dt, w_expected", [
+    (1, np.arccos(0.25)),
+    (0.5, 2 * np.arccos(0.25)),
+    (True, np.arccos(0.25)),
+])
+def test_describing_function_response_discrete(dt, w_expected):
+    H = ct.tf([0.5], [1, -0.5, 0], dt=dt)
+    dt_num = 1.0 if dt is True else dt
+    omega = np.linspace(1e-3, np.pi / dt_num, 2000)
+    amp = np.linspace(0.01, 5, 400)
+    F = ct.descfcn.relay_hysteresis_nonlinearity(1, 0)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        resp = ct.describing_function_response(H, F, amp, omega)
+    assert len(resp.intersections) == 1
+    a, w = resp.intersections[0]
+    np.testing.assert_allclose(w, w_expected, rtol=1e-5)
+    np.testing.assert_allclose(a, 2 / np.pi, rtol=1e-5)
+    z = np.exp(1j * w * dt_num)
+    np.testing.assert_allclose(
+        H(z), -1 / ct.describing_function(F, a), rtol=1e-5)
+    np.testing.assert_allclose(resp.positions[0], H(z), rtol=1e-6)
 
 
 def test_describing_function_plot():
