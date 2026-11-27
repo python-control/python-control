@@ -370,6 +370,40 @@ def test_list_responses(resp_fcn):
             assert cplt.lines[row, col][1].get_color() == 'tab:orange'
 
 
+@pytest.mark.usefixtures('mplcleanup')
+def test_time_response_plot_list():
+    sys = ct.ss(ct.tf([1, 2], [3, 4, 5]), name='sys')
+    timepts = np.linspace(0, 10)
+    resp1 = ct.input_output_response(sys, timepts, np.sin(timepts))
+    resp2 = ct.input_output_response(sys, timepts, np.cos(timepts))
+
+    # Plotting a plain list of responses with default options
+    cplt = ct.time_response_plot([resp1, resp2])
+    assert cplt.lines.shape == (2, 1)
+    assert len(cplt.lines[0, 0]) == 2
+    assert len(cplt.lines[1, 0]) == 2
+    plt.close()
+
+    # Plotting with explicit plot_inputs and custom labels
+    cplt = ct.time_response_plot(
+        [resp1, resp2], plot_inputs=True, label=['sin', 'cos'])
+    assert cplt.lines.shape == (2, 1)
+    legend_texts = [t.get_text() for t in cplt.axes[0, 0].get_legend().get_texts()]
+    assert legend_texts == ['sin', 'cos']
+    plt.close()
+
+    # Plotting a TimeResponseList directly via time_response_plot
+    step_list = ct.step_response([sys, sys * 2])
+    cplt = ct.time_response_plot(step_list)
+    assert cplt.lines.shape == (1, 1)
+    assert len(cplt.lines[0, 0]) == 2
+    plt.close()
+
+    # Empty list raises ValueError
+    with pytest.raises(ValueError, match="no time response data"):
+        ct.time_response_plot([])
+
+
 @pytest.mark.slycot
 @pytest.mark.usefixtures('mplcleanup')
 def test_linestyles():
