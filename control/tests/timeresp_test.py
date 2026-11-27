@@ -1254,6 +1254,27 @@ class TestTimeresp:
         assert y.shape == ysh_no
         assert x.shape == (T.size, sys.nstates)
 
+    @pytest.mark.parametrize("ninp, nout", [(1, 1), (2, 2)])
+    def test_forced_response_discrete_transpose_no_t(self, ninp, nout):
+        sys = ct.drss(3, nout, ninp)
+        n_steps = 8
+        u_transposed = np.ones((n_steps, ninp))
+        resp = ct.forced_response(sys, U=u_transposed, transpose=True)
+        assert resp.time.shape == (n_steps,)
+        if ninp == 1 and nout == 1:
+            assert resp.outputs.shape == (n_steps,)
+            assert resp.inputs.shape == (n_steps,)
+        else:
+            assert resp.outputs.shape == (n_steps, nout)
+            assert resp.inputs.shape == (n_steps, ninp)
+
+        # Also check 1D U with SISO discrete system and transpose=True
+        if ninp == 1:
+            resp_1d = ct.forced_response(
+                sys, U=np.ones(n_steps), transpose=True)
+            assert resp_1d.time.shape == (n_steps,)
+            np.testing.assert_allclose(resp_1d.outputs, resp.outputs)
+
 
 @pytest.mark.pandas
 def test_to_pandas():
